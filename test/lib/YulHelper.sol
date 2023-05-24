@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 
-contract JsonDeployer is Test {
+contract YulHelper is Test {
     ///@notice Deploys json object
     ///@param jsonFileName - Artifact filename of the Yul contract. For example, the file name for "Example.yul/Object" is "Example.yul/Object.json"
     ///@return deployedAddress - The address that the contract was deployed to
@@ -24,5 +24,9 @@ contract JsonDeployer is Test {
 
         ///@notice return the address that the contract was deployed to
         return deployedAddress;
+    }
+
+    function get(string memory jsonFileName) public returns (bytes memory) {
+        return vm.getCode(string.concat("out/", jsonFileName));
     }
 }

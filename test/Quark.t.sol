@@ -2,25 +2,35 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import "./lib/JsonDeployer.sol";
+import "./lib/YulHelper.sol";
+import "forge-std/console.sol";
 
-contract ExampleTest is Test {
-    address public adder;
+contract QuarkTest is Test {
+    event Ping(uint256 value);
+
+    address public quark;
 
     constructor() {
-        adder = new JsonDeployer().deploy("Quark.yul/Quark.json");
-        console.log("deployed to: %s", adder);
+        quark = new YulHelper().deploy("Quark.yul/Quark.json");
+        console.log("deployed to: %s", quark);
     }
 
     function setUp() public {
         // nothing
     }
 
-    function testADDRESS() public {
-        bytes memory testFn = new bytes(1);
-        testFn[0] = 0x30; // ADDRESS
-        (bool success, bytes memory data) = adder.call(testFn);
+    function testReflect() public {
+        bytes memory reflect = new YulHelper().get("Reflect.yul/Reflect.json");
+        console.logBytes(reflect);
+
+        vm.breakpoint("a");
+
+        // TODO: Check the emitter?
+        vm.expectEmit(false, false, false, true);
+        emit Ping(55);
+
+        (bool success, bytes memory data) = quark.call(reflect);
         assertEq(success, true);
-        assertEq(data, abi.encode(2));
+        assertEq(data, abi.encode());
     }
 }
