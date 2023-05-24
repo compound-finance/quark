@@ -44,6 +44,9 @@ contract QuarkTest is Test {
         console.logBytes(incrementer);
 
         assertEq(counter.number(), 0);
+
+        vm.breakpoint("a");
+
         (bool success0, bytes memory data0) = quark.call(incrementer);
         assertEq(success0, true);
         assertEq(data0, abi.encode());

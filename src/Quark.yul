@@ -193,8 +193,166 @@ object "Quark" {
           mstore(0x40, add(ptr, size))
         }
 
-        // Call back to the Relayer contract to get the Quark code
-        // TODO: Check revert
+        function lte(a, b) -> r {
+          r := iszero(gt(a, b))
+        }
+
+        function gte(a, b) -> r {
+          r := iszero(lt(a, b))
+        }
+
+        function opcode_ex_bytes(opcode) -> sz {
+          /** Returns an extra data associated with this opcode.
+            * Specifiy, opcodes like PUSH1 are written in the EVM
+            * assembly code as [PUSH1, x] so the opcode is two-bytes
+            * wide (instead of most operations being one-byte wide). For
+            * PUSH2, it's three-bytes wide. As such, we need to be able
+            * to skip over the extra bytes when walking the opcodes. This
+            * function makes it easy to know what should be skipped.
+          */
+          sz := 0
+          if and(gte(opcode, 0x60), lte(opcode, 0x7F)) {
+            // PUSHX
+            sz := add(1, sub(opcode, 0x60)) // PUSH1 is 1 extra byte, PUSH2 is 2 extra bytes, etc.
+          }
+        }
+
+        function is_jump(opcode) -> res {
+          /** Simple function to check if the operation is a jump and needs
+            * to have the operand offset.
+          */
+          res := or(eq(opcode, 0x56), eq(opcode, 0x57)) // JUMP or JUMPI
+        }
+
+        function load_byte_at(ptr, i) -> b {
+          /** We don't have granularity in the EVM to read at
+            * specific bytes, only at 32-byte words. Thus, if we have something
+            * like 0x1122334455... and we want to load the second byte, we
+            * must mload the entire word, shift right to get the correct byte
+            * to the right-most position and then mask it out with 0x000000...FF.
+            * This is what this function purports to do.
+            */
+          let word_idx := div(i, 32)
+          let offset := sub(i, mul(word_idx, 32))
+          let word_ptr := add(ptr, word_idx)
+          let word := mload(word_ptr)
+          b := and(shr(word, mul(offset, 8)), 0xFF)
+        }
+
+        function store_byte_at(ptr, i, v) {
+          /** We don't have granularity in the EVM to read and write at
+            * specific bytes, only at 32-byte words. Thus, if we have something
+            * like 0x1122334455... and we want to change the second byte, we
+            * must mload the entire word, bitmask out the second-highest byte and
+            * `or` in the new byte and then mstore the new value. That's what this
+            * function purports to do.
+            */
+          let word_idx := div(i, 32)
+          let offset := sub(i, mul(word_idx, 32))
+          let word_ptr := add(ptr, word_idx)
+          let current_word := mload(word_ptr)
+          let bitmask := not(shl(0xFF, mul(offset, 8)))
+          let shifted_v := shl(v, mul(offset, 8))
+          let r := or(and(current_word, bitmask), shifted_v)
+          mstore(word_ptr, r)
+        }
+
+        function rewrite(src, sz, dst, offset) -> dst_sz {
+          /** This is the crux of rewriting our contract code
+            * to allow an offset in position. This is a problem because jumps
+            * in the EVM are absolute, not relative. Thus if there's code that
+            * looks like:
+            *
+            * 000: CALLVALUE
+            * 001: PUSH1 05
+            * 003: JUMPI
+            * 004: REVERT
+            * 005: JUMPDEST
+            *
+            * But we want to prepend some code in front of it, it would become:
+            *
+            * 000: PUSH1 55  // New code
+            * 002: LOG       // New code
+            * 003: CALLVALUE // Original code, shifted
+            * 004: PUSH1 05
+            * 006: JUMPI     // OH NO!!
+            * 007: REVERT
+            * 008: JUMPDEST
+            *
+            * But that's a huge problem because our jump instruction is still
+            * trying to jump to 003 but it really meant to jump to 008 since
+            * everything was shifted by 3 bytes in the PC. To remedy this situation
+            * we can automatically rewrite the contract as such:
+            *
+            * 000: PUSH1 55  // New code
+            * 002: LOG       // New code
+            * 003: CALLVALUE // Original code
+            * 004: PUSH1 05
+            * 006: PUSH1 06  // <-- INSERTED CODE
+            * 008: ADD       // <-- INSERTED CODE
+            * 009: JUMPI
+            * 00A: REVERT
+            * 00B: JUMPDEST
+            *
+            * That is, before an JUMP or JUMPI, we need to add a `PUSH offset; ADD` which tracks an offset from the original
+            * source code and adds that to whatever the dst of the JUMP was going to be. To make it even more frustrating, each
+            * time we add that code, we push the offset back even further (more code!) and thus we need to keep a running tally.
+            *
+            * This is pretty insane, but there's no reason it shouldn't work in the general case and doesn't rely on any tricks.
+            */
+          for { let i := 0 } lt(i, sz) { i := add(i, 1) }
+          {
+            // Get the current opcode from the src as we walk it
+            let opcode := load_byte_at(src, i)
+            let is_jmp := is_jump(opcode)
+
+            // TODO: we need to figure out the *best* PUSH instruction based on offset-- right now we're using PUSH1 so it only works for a small script
+
+            // If this isn't a JUMP, we don't need to do anything, just keep walking
+            if is_jmp {
+              // These are the two instructions we'll need to add: [PUSH2, offset, ADD]
+              // TODO: Allow PUSH2, etc
+              let push_opcode := 0x60 // `PUSH1`
+              let push_value := add(offset, 3) // We need to account for the size of this change, as well!
+              let add_opcode := 0x60 // `ADD`
+
+              store_byte_at(dst, add(i, offset), push_opcode)
+              offset := add(offset, 1)
+              store_byte_at(dst, add(i, offset), push_value)
+              offset := add(offset, 1)
+              store_byte_at(dst, add(i, offset), add_opcode)
+              offset := add(offset, 1)
+            }
+
+            // Skip over any data bytes, leaving them alone
+            let extra_bytes := opcode_ex_bytes(opcode)
+            i := add(i, extra_bytes)
+          }
+
+          dst_sz := add(sz, offset)
+        }
+
+        function breakpoint(i) {
+          /** YUL to call a Forge breakpoint.
+            *
+            * for a, use i = 0 
+            * for b, use i = 1, ...
+            */
+          // breakpoint(string)
+          let sig := 0xf0259e92
+
+          let callbytes := allocate(0x80)
+          mstore(add(callbytes, 0), sig) // sig
+          mstore(add(callbytes, 1), 0x20) // offset
+          mstore(add(callbytes, 2), 1) // len
+          mstore(add(callbytes, 3), shl(add(0x61, i), 31)) // 'a' + i
+          let callbytes_offset := add(callbytes, 28) // skip the first 28 bytes since we start directly with the 4-byte sig
+          let callbytes_len := add(4, mul(3, 32)) // 3 words + 4 bytes
+          pop(call(gas(), 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D, 0, callbytes_offset, callbytes_len, 0, 0))
+        }
+
+        // Call back to the Relayer contract (who is the caller) to get the Quark code
+        // TODO: Check for reverts
         pop(call(gas(), caller(), 0, 0, 0, 0, 0))
 
         // Read the return data from the Relayer
@@ -202,8 +360,16 @@ object "Quark" {
         let quark_offset := allocate(quark_size)
         returndatacopy(quark_offset, 0, quark_size)
 
+        breakpoint(1) // 'b'
+
+        // Next, we need to prepend our data and rewrite the script with the new offset
+        let quark_final := allocate(mul(quark_size, 5)) // This is an overestimate to how large the new script could possibly be!
+        let quark_final_sz := rewrite(quark_offset, quark_size, quark_final, 0) // TODO: Prepend
+
+        // Boy howdy, need to see how this works!!!
+
         // Return the Quark data
-        return(quark_offset, quark_size)
+        return(quark_final, quark_final_sz)
       }
     }
   }
