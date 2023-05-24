@@ -1,4 +1,4 @@
-object "Reflect" {
+object "Logger" {
   code {
     mstore(0x80, 55)
     // Ping(uint256)

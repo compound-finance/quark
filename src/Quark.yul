@@ -1,9 +1,36 @@
 object "Quark" {
   code {
+    /** This is the init code (constructor) for
+      * the Quark Relayer contract.
+      *
+      * This simply returns the Relayer code below.
+      */
     datacopy(0, dataoffset("Relayer"), datasize("Relayer"))
     return(0, datasize("Relayer"))
   }
+
   object "Relayer" {
+    /** This is the core Quark Relayer contract, which
+      * is what users call into (the "to" address).
+      *
+      * The calldata pass in calls to this function will
+      * be executed as Solidity code from a pre-determined
+      * address (based on create2, but not on the contract
+      * code itself).
+      *
+      * You can call this function as many times as you like,
+      * and you will execute different code *from the same address*.
+      *
+      * Note: do not wrap your code in any Solidity contract or ABI
+      *       encoding-- it should be the raw evm code to execute.
+      *
+      * Note: you currently need your code to self-destruct at the end
+      *       in order to clean up. We hope to remove this constraint.
+      *
+      * Note: self-destruct is required for this trick to work, and
+      *       may later be removed according to EIP-4758.
+      */
+
     code {
       /**
         * First, we'll check if we're inside a Quark,
@@ -129,6 +156,7 @@ object "Quark" {
         let virt := create2(0, virt_offset, virt_size, 0)
 
         // Invoke the newly deployed virtual contract (i.e. run the user-supplied code)
+        // TODO: Check revert
         pop(call(gas(), virt, 0, 0, 0, 0, 0))
 
         // Self-destruct the Virtual contract
@@ -136,25 +164,46 @@ object "Quark" {
 
         // Clear the quark code (to reclaim gas)
         clear_quark(quark_size)
+
+        // We don't return any meaningful value,
+        // though we could pass back the result
+        // of the function call.
+        return(0, 0)
       }
     }
 
     object "Virtual" {
+      /** This is the contract that is deployed (and then destructed)
+        * where your Quark code will run.
+        *
+        * The constructor is below (there is no contract code-- that's
+        * the user-spplied Quark code), so the constructor is simply
+        * responsible for loading and then returning the Quark code.
+        *
+        * Since this is based on create2, we can't accept the Quark
+        * code as input. Instead, we call back to the Relayer contract,
+        * which has stored the Quark code. We simply then return that value.
+        */
       code {
         function allocate(size) -> ptr {
-            ptr := mload(0x40)
-            if iszero(ptr) { ptr := 0x60 }
-            mstore(0x40, add(ptr, size))
+          /** Allocates memory in a safe way. Returns a pointer to it.
+          */
+          ptr := mload(0x40)
+          if iszero(ptr) { ptr := 0x60 }
+          mstore(0x40, add(ptr, size))
         }
 
-        // TODO: Double check this doesn't revert?
+        // Call back to the Relayer contract to get the Quark code
+        // TODO: Check revert
         pop(call(gas(), caller(), 0, 0, 0, 0, 0))
 
-        let ctx_size := returndatasize()
-        let ctx_offset := allocate(ctx_size)
-        returndatacopy(ctx_offset, 0, ctx_size)
+        // Read the return data from the Relayer
+        let quark_size := returndatasize()
+        let quark_offset := allocate(quark_size)
+        returndatacopy(quark_offset, 0, quark_size)
 
-        return(ctx_offset, ctx_size)
+        // Return the Quark data
+        return(quark_offset, quark_size)
       }
     }
   }

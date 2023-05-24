@@ -26,7 +26,7 @@ contract YulHelper is Test {
         return deployedAddress;
     }
 
-    function get(string memory jsonFileName) public returns (bytes memory) {
+    function get(string memory jsonFileName) public view returns (bytes memory) {
         return vm.getCode(string.concat("out/", jsonFileName));
     }
 }
