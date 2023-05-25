@@ -43,6 +43,18 @@ This script will...
 0x303030505050...
 ```
 
+## Getting Started
+
+For local development or to use the quark-trx tool, simply run `forge build` and `npm install`:
+
+```sh
+forge build
+```
+
+```sh
+npm install
+```
+
 ## Writing Transaction Scripts
 
 For Quark to be exciting, you need to be able to write your own transaction scripts. There are two ways of doing this: 1) write a script directly in YUL, which is Solidity's intermediate representation, or 2) experimentally, write a script in Solidity and convert a given function into a transactoin script.
@@ -57,7 +69,59 @@ Transaction scripts _must start with the magic header 0x303030505050_ (`ADDRESS;
 
 Note: storage(0) is reserved for the user's true EOA account, storage(1) is for the relayer and storage(2) is also reserved. Aside of that, you can use any storage or memory you'd lile.
 
+### Solidity
+
+There is _very experimental_ support for turning a Solidity contract into a transaction script. Currently, you should build a Solidity contract as so:
+
+```rs
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
+contract Fun {
+  event FunTimes(uint256);
+
+  function hello() external {
+    emit FunTimes(55);
+  }
+}
+```
+
+Run the quark-trx tool, specifying the name of the contract and name of the function you can to run:
+
+```sh
+npm run quark-trx examples/Fun.sol hello
+```
+
+This should (may?) return bytecode that should (might?) work as a transaction script. There is a lot of work to be done on how to create minimal scripts as its not previously been a common use-case of Solidity. That said, any language that could compile to Yul, for instance, could be used and it would be cool to see a simple Transaction Script language built.
+
 ### YUL
+
+You can use the `quark-trx` tool for this, and if so, you can skip the verbatim line, as the tool will insert this for you:
+
+```as
+object "Logger" {
+  code {
+    // Store a value (55) in memory
+    mstore(0x80, 55)
+
+    // ABI topic for `Ping(uint256)`
+    let topic := 0x48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f
+
+    // emit Ping(55)
+    log1(0x80, 0x20, topic)
+
+    return(0, 0)
+  }
+}
+```
+
+Then run:
+
+```
+npm run quark-trx examples/Ping.yul
+```
+
+### Raw YUL
 
 Here's an example script in YUL:
 
@@ -88,49 +152,12 @@ In that code, we emit a simple Ethereum log. The compiled bytecode looks like th
 
 This is a valid transaction script and can be sent to the Quark Relayer.
 
-### Solidity
-
-There is _very experimental_ support for turning a Solidity contract into a transaction script. Currently, you should build a Solidity contract as so:
-
-```rs
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
-
-contract Fun {
-  event FunTimes(uint256);
-
-  function hello() external {
-    emit FunTimes(55);
-  }
-}
-```
-
-Then compile the contract to ir, e.g.:
-
-```sh
-forge build --extra-output ir --extra-output-files ir --via-ir
-```
-
-Make sure npm is installed:
-
-```sh
-npm install
-```
-
-Finally, run the capture script specifying the name of the contract and name of the function you can to run:
-
-```sh
-node script/capture.mjs Fun hello
-```
-
-This should (may?) return bytecode that should (might?) work as a transaction script. There is a lot of work to be done on how to create minimal scripts as its not previously been a common use-case of Solidity. That said, any language that could compile to Yul, for instance, could be used and it would be cool to see a simple Transaction Script language built.
-
 ## Testing
 
 You can run tests by running:
 
 ```sh
-forge test
+forge test --ffi
 ```
 
 ## Technical Limitations

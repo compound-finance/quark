@@ -1,7 +1,5 @@
 object "Incrementer" {
   code {
-    verbatim_0i_0o(hex"303030505050")
-
     let account := sload(0)
     log1(0, 0, account)
     switch account
@@ -22,5 +20,7 @@ object "Incrementer" {
     pop(call(gas(), counter, 0, 0x9c, 4, 0, 0))
     pop(call(gas(), counter, 0, 0x9c, 4, 0, 0))
     pop(call(gas(), counter, 0, 0x9c, 4, 0, 0))
+
+    return (0, 0)
   }
 }

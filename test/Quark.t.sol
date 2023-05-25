@@ -5,7 +5,8 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import "./lib/YulHelper.sol";
-import "../src/Counter.sol";
+import "./lib/QuarkHelper.sol";
+import "./lib/Counter.sol";
 
 interface QuarkInterface {
     function quarkAddress25(address) external returns (address);
@@ -31,21 +32,21 @@ contract QuarkTest is Test {
         // nothing
     }
 
-    function testLogger() public {
-        bytes memory logger = new YulHelper().get("Logger.yul/Logger.json");
-        console.logBytes(logger);
+    function testPing() public {
+        bytes memory ping = new QuarkHelper().getExample("examples/Ping.yul");
+        console.logBytes(ping);
 
         // TODO: Check who emitted.
         vm.expectEmit(false, false, false, true);
         emit Ping(55);
 
-        (bool success, bytes memory data) = quark.call(logger);
+        (bool success, bytes memory data) = quark.call(ping);
         assertEq(success, true);
         assertEq(data, abi.encode());
     }
 
     function testIncrementer() public {
-        bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
+        bytes memory incrementer = new QuarkHelper().getExample("examples/test/Incrementer.yul");
         console.logBytes(incrementer);
 
         // assertEq(incrementer, QuarkInterface(quark).virtualCode81());
@@ -58,15 +59,5 @@ contract QuarkTest is Test {
         assertEq(success0, true);
         assertEq(data0, abi.encode());
         assertEq(counter.number(), 3);
-    }
-
-    function testFun() public {
-        bytes memory fun = new YulHelper().get("Fun.yul/Fun_14_deployed.json");
-        console.logBytes(fun);
-
-        vm.prank(address(0xaa));
-        (bool success0, bytes memory data0) = quark.call(fun);
-        assertEq(success0, true);
-        assertEq(data0, abi.encode());
     }
 }

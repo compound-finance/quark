@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "quark-trx": "node script/quark-trx.mjs"
+  },
   "dependencies": {
     "solc": "^0.8.20"
   }
