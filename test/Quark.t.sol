@@ -7,6 +7,11 @@ import "forge-std/console.sol";
 import "./lib/YulHelper.sol";
 import "../src/Counter.sol";
 
+interface QuarkInterface {
+    function quarkAddress25(address) external returns (address);
+    function virtualCode81() external returns (bytes memory);
+}
+
 contract QuarkTest is Test {
     event Ping(uint256 value);
 
@@ -43,10 +48,12 @@ contract QuarkTest is Test {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
         console.logBytes(incrementer);
 
+        // assertEq(incrementer, QuarkInterface(quark).virtualCode81());
+        // assertEq(address(0x6c022704D948c71930B35B6F6bb725bc8d687E7F), QuarkInterface(quark).quarkAddress25(address(1)));
+
         assertEq(counter.number(), 0);
 
-        vm.breakpoint("a");
-
+        vm.prank(address(0x88));
         (bool success0, bytes memory data0) = quark.call(incrementer);
         assertEq(success0, true);
         assertEq(data0, abi.encode());
