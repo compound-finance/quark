@@ -404,10 +404,71 @@ object "Quark" {
             * 00B: JUMPDEST
             *
             * That is, before an JUMP or JUMPI, we need to add a `PUSH offset; ADD` which tracks an offset from the original
-            * source code and adds that to whatever the dst of the JUMP was going to be. To make it even more frustrating, each
-            * time we add that code, we push the offset back even further (more code!) and thus we need to keep a running tally.
+            * source code and adds that to whatever the dst of the JUMP was going to be. This feels almost right, but it
+            * doesn't work because if you're jumping backwards, then you might have:
             *
-            * This is pretty insane, but there's no reason it shouldn't work in the general case and doesn't rely on any tricks.
+            * 000: PUSH1 55  // New code
+            * 002: LOG       // New code
+            * 003: CALLVALUE // Original code
+            * 004: JUMPDEST
+            * 004: PUSH1 04
+            * 006: PUSH1 06  // <-- INSERTED CODE
+            * 008: ADD       // <-- INSERTED CODE
+            * 009: JUMPI
+            * 00A: REVERT
+            *
+            * The JUMPDEST is behind you. Now, we could realize that 99% of JUMPs are of the form:
+            * `PUSH X; JUMP` and rewrite those to `PUSH X+OFFSET; JUMP` which would beget two new
+            * issues: a) what do we do if there's not a PUSH X before a jump, but also b) what if
+            * we overflow the PUSH command, e.g. from a PUSH1 that now needs to be a PUSH2, which
+            * would lead us right back to needing to have dynamic offsets and the problem above.
+            *
+            * There is one solution that should work both for dynamic jumps, forward and backward
+            * jumps, and everything else that is elegant but also complex: a static analysis jump
+            * table. Here, we store a mapping of where each JUMPDEST moved to from the src to the
+            * dst and then we (at runtime) have a mapping s.t. each jump goes to the new JUMPDEST.
+            * We could store this literally as a table, e.g.
+            *
+            * Jump Table [Logical]
+            * 005 -> 01d
+            *
+            * This table says that the JUMPDEST at 005 should now map to 00B.
+            * We can then rewrite all JUMP and JUMPI instructions to pull
+            * from this table. The easiest way is to write the table as a
+            * code segment and change JUMP to `JUMP[I] {jump table fn}`,
+            * and the argument `dst` will be consumed by the function,
+            * correctly jumping to the correct new dst. Here's sample code:
+            *
+            * 000: PUSH1 55  // New code
+            * 002: LOG       // New code
+            * 003: JUMPDEST  // [Start of jump table]
+            * 004: DUP1 
+            * 005: PUSH1 005 // entry0.src
+            * 007: EQ
+            * 008: PUSH1 01d // entry0.dst
+            * 00a: SWAP1
+            * 00b: PUSH1 012
+            * 00d: JUMPI
+            * 00e: POP
+            * 00f: PUSH1 000 // [Default case - Error]
+            * 011: JUMP      
+            * 012: JUMPDEST  // [Success case]
+            * 013: SWAP      //
+            * 014: POP
+            * 015: JUMP 
+            * 016: CALLVALUE // Original code
+            * 017: PUSH1 005
+            * 019: PUSH1 003 // INSERTED CODE -- go to jump table
+            * 01b: JUMPI
+            * 01c: REVERT
+            * 01d: JUMPDEST
+            *
+            * This is significantly more complex than the other approaches, but it is
+            * completely safe, even if the code, for instance, had `PUSH1 004; PUSH1 001; ADD; JUMPI`.
+            * That is, other than the potential increase in gas cost, the code should have the identical
+            * effect of the unmodified code. The complex part is that we need to walk the
+            * code twice. First to collect JUMPDEST instructions once, and then a second time
+            * to actually write the complete program.
             */
           for { let i := 0 } lt(i, sz) { i := add(i, 1) }
           {
