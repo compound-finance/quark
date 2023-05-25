@@ -53,10 +53,20 @@ contract QuarkTest is Test {
 
         assertEq(counter.number(), 0);
 
-        vm.prank(address(0x88));
+        vm.prank(address(0xaa));
         (bool success0, bytes memory data0) = quark.call(incrementer);
         assertEq(success0, true);
         assertEq(data0, abi.encode());
-        assertEq(counter.number(), 1);
+        assertEq(counter.number(), 3);
+    }
+
+    function testFun() public {
+        bytes memory fun = new YulHelper().get("Fun.yul/Fun_14_deployed.json");
+        console.logBytes(fun);
+
+        vm.prank(address(0xaa));
+        (bool success0, bytes memory data0) = quark.call(fun);
+        assertEq(success0, true);
+        assertEq(data0, abi.encode());
     }
 }

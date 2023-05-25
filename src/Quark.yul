@@ -155,6 +155,11 @@ object "Quark" {
         v := calldataload(pos)
       }
 
+      function revert_err(offset, size) {
+        datacopy(0, offset, size)
+        revert(0, size)
+      }
+
       switch running_quark()
       case true {
         /** If we're in a running quark, simply return
@@ -254,20 +259,29 @@ object "Quark" {
           // Deploy the Virtual contract
           let virt := create2(0, virt_offset, add(virt_size, 32), 0)
 
+          // Clear the quark code (to reclaim gas)
+          clear_quark(quark_size)
+
+          breakpoint(0)
+
           // Ensure the contract was created, and if not, bail
           if iszero(extcodesize(virt)) {
-            revert(0, 0)
+            revert_err(dataoffset("Create2Failed"), datasize("Create2Failed"))
           }
 
           // Invoke the newly deployed virtual contract (i.e. run the user-supplied code)
-          // TODO: Check revert
-          pop(call(gas(), virt, 0, 0, 0, 0, 0))
+          let succ := call(gas(), virt, 0, 0, 0, 0, 0)
+
+          if iszero(succ) {
+            revert_err(dataoffset("InvocationFailure"), datasize("InvocationFailure"))
+          }
 
           // Self-destruct the Virtual contract by calling it again
-          pop(call(gas(), virt, 0, 0, 0, 0, 0))
+          succ := call(gas(), virt, 0, 0, 0, 0, 0)
 
-          // Clear the quark code (to reclaim gas)
-          clear_quark(quark_size)
+          if iszero(succ) {
+            revert_err(dataoffset("CleanupFailure"), datasize("CleanupFailure"))
+          }
 
           // We don't return any meaningful value,
           // though we could pass back the result
@@ -276,6 +290,10 @@ object "Quark" {
         }
       }
     }
+
+    data "Create2Failed" hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000e43726561746532206661696c6564000000000000000000000000000000000000"
+    data "InvocationFailure" hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001b436f6e747261637420496e766f636174696f6e204661696c7572650000000000"
+    data "CleanupFailure" hex"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000018436f6e747261637420436c65616e7570204661696c7572650000000000000000"
 
     object "Virtual" {
       /** This is the contract that is deployed (and then destructed)
@@ -296,37 +314,6 @@ object "Quark" {
           ptr := mload(0x40)
           if iszero(ptr) { ptr := 0x60 }
           mstore(0x40, add(ptr, size))
-        }
-
-        function lte(a, b) -> r {
-          r := iszero(gt(a, b))
-        }
-
-        function gte(a, b) -> r {
-          r := iszero(lt(a, b))
-        }
-
-        function opcode_ex_bytes(opcode) -> sz {
-          /** Returns an extra data associated with this opcode.
-            * Specifiy, opcodes like PUSH1 are written in the EVM
-            * assembly code as [PUSH1, x] so the opcode is two-bytes
-            * wide (instead of most operations being one-byte wide). For
-            * PUSH2, it's three-bytes wide. As such, we need to be able
-            * to skip over the extra bytes when walking the opcodes. This
-            * function makes it easy to know what should be skipped.
-          */
-          sz := 0
-          if and(gte(opcode, 0x60), lte(opcode, 0x7F)) {
-            // PUSHX
-            sz := add(1, sub(opcode, 0x60)) // PUSH1 is 1 extra byte, PUSH2 is 2 extra bytes, etc.
-          }
-        }
-
-        function is_jump(opcode) -> res {
-          /** Simple function to check if the operation is a jump and needs
-            * to have the operand offset.
-          */
-          res := or(eq(opcode, 0x56), eq(opcode, 0x57)) // JUMP or JUMPI
         }
 
         function load_byte_at(ptr, i) -> b {
@@ -351,174 +338,10 @@ object "Quark" {
           mstore8(add(ptr, i), v)
         }
 
-        function byte_count(v) -> c {
-          /** Returns the smallest number of bytes that can fit c
-            * byte_count(0) -> 0
-            * byte_count(100) -> 1
-            * byte_count(1000) -> 2
-            */
-          c := 0
-          for {} gt(v, 0) {}
-          {
-            c := add(c, 1)
-            v := shr(8, v)
-          }
-        }
-
-        function rewrite(src, sz, dst, offset) -> dst_sz {
-          breakpoint(0)
-          /** This is the crux of rewriting our contract code
-            * to allow an offset in position. This is a problem because jumps
-            * in the EVM are absolute, not relative. Thus if there's code that
-            * looks like:
-            *
-            * 000: CALLVALUE
-            * 001: PUSH1 05
-            * 003: JUMPI
-            * 004: REVERT
-            * 005: JUMPDEST
-            *
-            * But we want to prepend some code in front of it, it would become:
-            *
-            * 000: PUSH1 55  // New code
-            * 002: LOG       // New code
-            * 003: CALLVALUE // Original code, shifted
-            * 004: PUSH1 05
-            * 006: JUMPI     // OH NO!!
-            * 007: REVERT
-            * 008: JUMPDEST
-            *
-            * But that's a huge problem because our jump instruction is still
-            * trying to jump to 003 but it really meant to jump to 008 since
-            * everything was shifted by 3 bytes in the PC. To remedy this situation
-            * we can automatically rewrite the contract as such:
-            *
-            * 000: PUSH1 55  // New code
-            * 002: LOG       // New code
-            * 003: CALLVALUE // Original code
-            * 004: PUSH1 05
-            * 006: PUSH1 06  // <-- INSERTED CODE
-            * 008: ADD       // <-- INSERTED CODE
-            * 009: JUMPI
-            * 00A: REVERT
-            * 00B: JUMPDEST
-            *
-            * That is, before an JUMP or JUMPI, we need to add a `PUSH offset; ADD` which tracks an offset from the original
-            * source code and adds that to whatever the dst of the JUMP was going to be. This feels almost right, but it
-            * doesn't work because if you're jumping backwards, then you might have:
-            *
-            * 000: PUSH1 55  // New code
-            * 002: LOG       // New code
-            * 003: CALLVALUE // Original code
-            * 004: JUMPDEST
-            * 004: PUSH1 04
-            * 006: PUSH1 06  // <-- INSERTED CODE
-            * 008: ADD       // <-- INSERTED CODE
-            * 009: JUMPI
-            * 00A: REVERT
-            *
-            * The JUMPDEST is behind you. Now, we could realize that 99% of JUMPs are of the form:
-            * `PUSH X; JUMP` and rewrite those to `PUSH X+OFFSET; JUMP` which would beget two new
-            * issues: a) what do we do if there's not a PUSH X before a jump, but also b) what if
-            * we overflow the PUSH command, e.g. from a PUSH1 that now needs to be a PUSH2, which
-            * would lead us right back to needing to have dynamic offsets and the problem above.
-            *
-            * There is one solution that should work both for dynamic jumps, forward and backward
-            * jumps, and everything else that is elegant but also complex: a static analysis jump
-            * table. Here, we store a mapping of where each JUMPDEST moved to from the src to the
-            * dst and then we (at runtime) have a mapping s.t. each jump goes to the new JUMPDEST.
-            * We could store this literally as a table, e.g.
-            *
-            * Jump Table [Logical]
-            * 005 -> 01d
-            *
-            * This table says that the JUMPDEST at 005 should now map to 00B.
-            * We can then rewrite all JUMP and JUMPI instructions to pull
-            * from this table. The easiest way is to write the table as a
-            * code segment and change JUMP to `JUMP[I] {jump table fn}`,
-            * and the argument `dst` will be consumed by the function,
-            * correctly jumping to the correct new dst. Here's sample code:
-            *
-            * 000: PUSH1 55  // New code
-            * 002: LOG       // New code
-            * 003: JUMPDEST  // [Start of jump table]
-            * 004: DUP1 
-            * 005: PUSH1 005 // entry0.src
-            * 007: EQ
-            * 008: PUSH1 01d // entry0.dst
-            * 00a: SWAP1
-            * 00b: PUSH1 012
-            * 00d: JUMPI
-            * 00e: POP
-            * 00f: PUSH1 000 // [Default case - Error]
-            * 011: JUMP      
-            * 012: JUMPDEST  // [Success case]
-            * 013: SWAP      //
-            * 014: POP
-            * 015: JUMP 
-            * 016: CALLVALUE // Original code
-            * 017: PUSH1 005
-            * 019: PUSH1 003 // INSERTED CODE -- go to jump table
-            * 01b: JUMPI
-            * 01c: REVERT
-            * 01d: JUMPDEST
-            *
-            * This is significantly more complex than the other approaches, but it is
-            * completely safe, even if the code, for instance, had `PUSH1 004; PUSH1 001; ADD; JUMPI`.
-            * That is, other than the potential increase in gas cost, the code should have the identical
-            * effect of the unmodified code. The complex part is that we need to walk the
-            * code twice. First to collect JUMPDEST instructions once, and then a second time
-            * to actually write the complete program.
-            */
-          for { let i := 0 } lt(i, sz) { i := add(i, 1) }
-          {
-            // Get the current opcode from the src as we walk it
-            let opcode := load_byte_at(src, i)
-            let is_jmp := is_jump(opcode)
-
-            // We're just going to use PUSH3 since it should be suffiently large-- also it sticks out like a sore thumb
-
-            // If this isn't a JUMP, we don't need to do anything, just keep walking
-            if is_jmp {
-              breakpoint(1)
-
-              let push_value := add(offset, 5) // We need to account for the size of this change, as well! [PUSH3, x_0, x_1, x_2, ADD]
-
-              // These are the two instructions we'll need to add: [PUSH3, offset, ADD]
-              let push_opcode := 0x62 // `PUSH3`
-              let add_opcode := 0x01 // `ADD`
-
-              store_byte_at(dst, add(i, offset), push_opcode)
-              offset := add(offset, 1)
-              store_byte_at(dst, add(i, offset), byte(29, offset))
-              offset := add(offset, 1)
-              store_byte_at(dst, add(i, offset), byte(30, offset))
-              offset := add(offset, 1)
-              store_byte_at(dst, add(i, offset), byte(31, offset))
-              offset := add(offset, 1)
-              store_byte_at(dst, add(i, offset), add_opcode)
-              offset := add(offset, 1)
-            }
-
-            // Note/todo: we probably can just have a big "copy width" thing instead of this copy opcode and then copy data
-
-            // Copy the opcode
-            store_byte_at(dst, add(i, offset), opcode)
-
-            // Skip over any data bytes, leaving them alone
-            let extra_bytes := opcode_ex_bytes(opcode)
-
-            // If we have extra bytes, just copy that, as well
-            if gt(extra_bytes, 0) {
-              let shift_amount := sub(256, mul(extra_bytes, 8))
-              let extra_bytes_data := shl(shift_amount, shr(shift_amount, mload(add(add(src, i), 1)))) // Zero out excess bytes
-              mstore(add(dst, add(add(i, offset), 1)), extra_bytes_data)
-            }
-
-            i := add(i, extra_bytes)
-          }
-
-          dst_sz := add(sz, offset)
+        function rewrite_push_3(op_idx, v) {
+          mstore8(add(op_idx, 1), byte(29, v))
+          mstore8(add(op_idx, 2), byte(30, v))
+          mstore8(add(op_idx, 3), byte(31, v))
         }
 
         function breakpoint(i) {
@@ -541,35 +364,44 @@ object "Quark" {
         }
 
         // Call back to the Relayer contract (who is the caller) to get the Quark code
-        // TODO: Check for reverts
-        pop(call(gas(), caller(), 0, 0, 0, 0, 0))
+        let succ := call(gas(), caller(), 0, 0, 0, 0, 0)
+
+        if iszero(succ) {
+          // This is an unexpected failure
+          revert(0, 0)
+        }
+
+        let appendix_size := datasize("Appendix")
 
         // Read the return data from the Relayer
         let quark_size := returndatasize()
-        let quark_offset := allocate(quark_size)
+        let total_size := add(quark_size, appendix_size)
+        let quark_offset := allocate(total_size)
         returndatacopy(quark_offset, 0, quark_size)
+
+        // TODO: Possibly check quark begins with magic incantation
 
         // Load the caller from construction parameters
         let account_idx := allocate(32)
         datacopy(account_idx, datasize("Virtual"), 32)
         let account := mload(account_idx)
 
-        let prependix_size := datasize("Prependix")
+        // This is overwriting the magic number!
+        datacopy(quark_offset, dataoffset("Prependix"), datasize("Prependix"))
 
-        // Next, we need to prepend our data and rewrite the script with the new offset
-        let quark_final := allocate(add(add(prependix_size, 2), mul(quark_size, 5))) // This is an overestimate to how large the new script could possibly be!
+        let appendix_jump_dst := add(quark_size, 1)
 
-        // Copy in our prependix
-        datacopy(quark_final, dataoffset("Prependix"), prependix_size)
-        mstore8(add(quark_final, prependix_size), 0xfe) // INVALID in case of failed jump
-        mstore8(add(add(quark_final, prependix_size), 1), 0x5b) // JUMPDEST for the user code
+        // Set the JUMP3 value, byte by byte
+        // Note: might want to check this fits in 3-bytes!
+        rewrite_push_3(quark_offset, appendix_jump_dst)
 
-        let prependix_total_size := add(prependix_size, 2) // account for INVALID and JUMPDEST
+        let appendix_offset := add(quark_offset, quark_size)
 
-        // Now copy in the rest of the code
-        let quark_final_sz := rewrite(quark_offset, quark_size, quark_final, prependix_total_size)
+        // Write the appendix
+        datacopy(appendix_offset, dataoffset("Appendix"), datasize("Appendix"))
 
-        // Boy howdy, need to see how this works. Let's write some storage and leave.
+        // Rewrite our one jump in the appendix
+        rewrite_push_3(add(appendix_offset, 0x5), add(quark_size, 0x12))
 
         // Storage: 0=account, 1=relayer, 2=called
         log1(0, 0, account)
@@ -577,36 +409,34 @@ object "Quark" {
         sstore(1, caller())
 
         // Return the Quark data
-        return(quark_final, quark_final_sz)
+        return(quark_offset, total_size)
       }
 
-      object "Prependix" {
-        code {
-          // Check if we've already been called
-          let account := sload(0)
-          let relayer := sload(1)
-          let called := sload(2)
+      /*
+       * 000: PUSH3 XXX // Appendix index
+       * 004: JUMP
+       * 005: JUMPDEST
+       */
+      data "Prependix" hex"62000000565B"
 
-          // Yes, then we're either going to self-destruct or revert
-          if gt(called, 0) {
-            if eq(caller(), relayer) { // This is the relayer giving us the kill signal
-              selfdestruct(account) // Send back any eth to associated account
-            }
-
-            // Otherwise, prevent any callbacks to our contract (note: we could soften this restraint)
-            invalid()
-          }
-
-          // This is the first run of our code, note that
-          sstore(2, add(called, 1))
-
-          // Okay, this is weird. We want to trick the compiler into jumping into the user-defined code
-          // after this point. The optimizer might decide to change the layout of this function, so
-          // we instead just encode a `PUSH {PrependixSize+1}; JUMP` at the end of this code path
-          // and then write out a `JUMPDEST` before the user's code.
-          verbatim_1i_0o(hex"56", add(datasize("Prependix"), 1))
-        }
-      }
+      /*
+       * 000: fe       [INVALID]
+       * 001: 5b       [JUMPDEST]
+       * 002: 6002     [PUSH1 2]
+       * 004: 54       [SLOAD]     // sload(2)
+       * 005: 62000000 [PUSH3 XXX]
+       * 009: 57       [JUMPI]
+       * 00a: 6001     [PUSH1 1]   // we haven't been called
+       * 00c: 6002     [PUSH1 2]
+       * 00e: 55       [SSTORE]    // sstore(2, 1)
+       * 00f: 6005     [PUSH1 5]
+       * 011: 56       [JUMP]      // return to user code
+       * 012: 5b       [JUMPDEST]  // we've been called before, blow up!
+       * 013: 6000     [PUSH1 0]
+       * 015: 54       [SLOAD]     // sload(0)
+       * 016: ff       [SELFDESTRUCT]
+       */
+      data "Appendix" hex"fe5b600254620000005760016002556005565b600054ff"
     }
   }
 }
