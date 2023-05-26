@@ -134,6 +134,10 @@ let input = {
     }
   },
   settings: {
+    "optimizer": {
+      "enabled": true,
+      "runs": 1
+    },
     outputSelection: {
       'q.yul': {
         '*': ['evm.bytecode.object']
