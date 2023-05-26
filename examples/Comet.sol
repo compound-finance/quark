@@ -10,10 +10,6 @@ interface IComet {
   function withdraw(address asset, uint amount) external;
 }
 
-interface IFauceteer {
-  function drip(address token) external;
-}
-
 contract Comet {
   IErc20 constant usdc = IErc20(0x07865c6E87B9F70255377e024ace6630C1Eaa37F);
   IErc20 constant comp = IErc20(0x3587b2F7E0E2D6166d6C14230e7Fe160252B0ba4);
@@ -22,9 +18,6 @@ contract Comet {
   IFauceteer constant fauceteer = IFauceteer(0x5B0156A396BdFc2eb814D945Ac99C40A0F8592B2);
 
   function supplyAndBorrow() external {
-    fauceteer.drip(address(comp));
-    fauceteer.drip(address(wbtc));
-
     comp.approve(address(comet), 100e18);
     wbtc.approve(address(comet), 100e6);
 

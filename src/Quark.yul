@@ -117,25 +117,6 @@ object "Quark" {
         sstore(0, 0)
       }
 
-      function breakpoint(i) {
-        /** YUL to call a Forge breakpoint.
-          *
-          * for a, use i = 0 
-          * for b, use i = 1, ...
-          */
-
-        // sig for `breakpoint(string)`
-        let sig := 0xf0259e92
-
-        let callbytes := allocate(0x64)
-        mstore(add(callbytes, 0x00), shl(mul(28, 8), sig))          // 0x00: sig
-        mstore(add(callbytes, 0x04), 0x20)                          // 0x04: offset
-        mstore(add(callbytes, 0x24), 1)                             // 0x24: len
-        mstore(add(callbytes, 0x44), shl(mul(31, 8), add(0x61, i))) // 0x44: 'a' + i
-
-        pop(call(gas(), 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D, 0, callbytes, 0x64, 0, 0))
-      }
-
       function selector() -> s {
         s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
       }
@@ -254,15 +235,11 @@ object "Quark" {
           // Add the caller to the init code [Note: we *want* this to be part of the create2 derivation path]
           mstore(add(virt_offset, virt_size), account)
 
-          log1(virt_offset, add(virt_size, 32), 0xdeadbeef)
-
           // Deploy the Virtual contract
           let virt := create2(0, virt_offset, add(virt_size, 32), 0)
 
           // Clear the quark code (to reclaim gas)
           clear_quark(quark_size)
-
-          breakpoint(0)
 
           // Ensure the contract was created, and if not, bail
           if iszero(extcodesize(virt)) {
@@ -344,25 +321,6 @@ object "Quark" {
           mstore8(add(op_idx, 3), byte(31, v))
         }
 
-        function breakpoint(i) {
-          /** YUL to call a Forge breakpoint.
-            *
-            * for a, use i = 0 
-            * for b, use i = 1, ...
-            */
-
-          // sig for `breakpoint(string)`
-          let sig := 0xf0259e92
-
-          let callbytes := allocate(0x64)
-          mstore(add(callbytes, 0x00), shl(mul(28, 8), sig))          // 0x00: sig
-          mstore(add(callbytes, 0x04), 0x20)                          // 0x04: offset
-          mstore(add(callbytes, 0x24), 1)                             // 0x24: len
-          mstore(add(callbytes, 0x44), shl(mul(31, 8), add(0x61, i))) // 0x44: 'a' + i
-
-          pop(call(gas(), 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D, 0, callbytes, 0x64, 0, 0))
-        }
-
         // Call back to the Relayer contract (who is the caller) to get the Quark code
         let succ := call(gas(), caller(), 0, 0, 0, 0, 0)
 
@@ -404,7 +362,6 @@ object "Quark" {
         rewrite_push_3(add(appendix_offset, 0x5), add(quark_size, 0x12))
 
         // Storage: 0=account, 1=relayer, 2=called
-        log1(0, 0, account)
         sstore(0, account)
         sstore(1, caller())
 
