@@ -91,13 +91,18 @@ if (!isYul) {
 
   let replaceRegex = /code {.*?function/s;
 
-  if (!innerObject.match(replaceRegex)) {
+  let codeStartMatch = innerObject.match(replaceRegex);
+
+  if (!codeStartMatch) {
     printError(`Cannot currently handle Yul produced from .sol file [cannot find function invocation to replace]`); 
   }
+
+  let memoryguardMatch = codeStartMatch[0].match(/^.*memoryguard.*$/m);
 
   let lines = [
     '',
     'verbatim_0i_0o(hex"303030505050")',
+    memoryguardMatch ? memoryguardMatch[0].trim() : '',
     `${fnFullName}()`,
     'return(0,0)',
     'function'
@@ -134,10 +139,11 @@ let input = {
     }
   },
   settings: {
-    "optimizer": {
-      "enabled": true,
-      "runs": 1
+    optimizer: {
+      enabled: true,
+      runs: 1
     },
+    evmVersion: "paris",
     outputSelection: {
       'q.yul': {
         '*': ['evm.bytecode.object']
@@ -155,11 +161,19 @@ if (!bytecode.startsWith('303030505050')) {
 }
 
 if (process.stdout.isTTY) {
+  let cast;
+  if (process.env.CALL_FROM) {
+    cast = `cast call --from ${process.env.CALL_FROM}`;
+  } else {
+    cast = "cast send --interactive";
+  }
+
   console.log(`Trx script: 0x${bytecode}`);
   console.log(``)
-  console.log(`\nGoerli cast:\n\tcast send --interactive --rpc-url https://goerli-eth.compound.finance "0x412e71DE37aaEBad89F1441a1d7435F2f8B07270" "0x${bytecode}"`);
-  console.log(`\nOptimism Goerli cast:\n\tcast send --interactive --rpc-url https://goerli.optimism.io "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x${bytecode}"`);
-  console.log(`\nArbitrum Goerli cast:\n\tcast send --interactive --rpc-url https://goerli-rollup.arbitrum.io/rpc "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x${bytecode}"`);
+  console.log(`\nGoerli cast:\n\t${cast} --rpc-url https://goerli-eth.compound.finance "0x412e71DE37aaEBad89F1441a1d7435F2f8B07270" "0x${bytecode}"`);
+  console.log(`\nOptimism Goerli cast:\n\t${cast} --rpc-url https://goerli.optimism.io "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x${bytecode}"`);
+  console.log(`\nArbitrum Goerli cast:\n\t${cast} --rpc-url https://goerli-rollup.arbitrum.io/rpc "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x${bytecode}"`);
+  console.log(`\nArbitrum Mainnet cast:\n\t${cast} --rpc-url https://arb1.arbitrum.io/rpc "0xC9c445CAAC98B23D1b7439cD75938e753307b2e6" "0x${bytecode}"`);
 } else {
   process.stdout.write(`0x${bytecode}`);
 }

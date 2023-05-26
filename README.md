@@ -26,6 +26,7 @@ There's nothing to do-- you can simply start sending Quark transactions today.
 | Goerli        | [0x412e71DE37aaEBad89F1441a1d7435F2f8B07270](https://goerli.etherscan.io/address/0x412e71DE37aaEBad89F1441a1d7435F2f8B07270) |
 | Optimism [Goerli] | [0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23](https://goerli-optimism.etherscan.io/address/0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23) |
 | Arbitrum [Goerli] | [0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23](https://goerli.arbiscan.io/address/0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23) |
+| Arbitrum [Mainnet] | [0xC9c445CAAC98B23D1b7439cD75938e753307b2e6](https://arbiscan.io/address/0xC9c445CAAC98B23D1b7439cD75938e753307b2e6) |
 
 You can send scripts through a dApp, but they are simply data, so you can even send this via MetaMask. Try sending these transaction scripts on Goerli:
 
