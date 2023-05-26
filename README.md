@@ -24,6 +24,8 @@ There's nothing to do-- you can simply start sending Quark transactions today.
 | Network       | Quark Relayer |
 | ------------- | ------------- |
 | Goerli        | [0x412e71DE37aaEBad89F1441a1d7435F2f8B07270](https://goerli.etherscan.io/address/0x412e71DE37aaEBad89F1441a1d7435F2f8B07270) |
+| Optimism [Goerli] | [0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23](https://goerli-optimism.etherscan.io/address/0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23) |
+| Arbitrum [Goerli] | [0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23](https://goerli.arbiscan.io/address/0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23) |
 
 You can send scripts through a dApp, but they are simply data, so you can even send this via MetaMask. Try sending these transaction scripts on Goerli:
 
@@ -33,6 +35,19 @@ This script will simply emit a log message which you can see in Etherscan.
 
 ```hex
 0x30303050505060376080527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206080a100
+```
+
+E.g.
+
+```hex
+Goerli cast:
+  cast send --interactive --rpc-url https://goerli-eth.compound.finance "0x412e71DE37aaEBad89F1441a1d7435F2f8B07270" "0x30303050505060376080527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206080a100"
+
+Optimism Goerli cast:
+  cast send --interactive --rpc-url https://goerli.optimism.io "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x30303050505060376080527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206080a100"
+
+Arbitrum Goerli cast:
+  cast send --interactive --rpc-url https://goerli-rollup.arbitrum.io/rpc "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x30303050505060376080527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206080a100"
 ```
 
 #### Atomic Buy and Sell on Uniswap

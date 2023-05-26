@@ -157,7 +157,9 @@ if (!bytecode.startsWith('303030505050')) {
 if (process.stdout.isTTY) {
   console.log(`Trx script: 0x${bytecode}`);
   console.log(``)
-  console.log(`Goerli cast:\n\tcast send --interactive --rpc-url https://goerli-eth.compound.finance "0x412e71DE37aaEBad89F1441a1d7435F2f8B07270" "0x${bytecode}"`);
+  console.log(`\nGoerli cast:\n\tcast send --interactive --rpc-url https://goerli-eth.compound.finance "0x412e71DE37aaEBad89F1441a1d7435F2f8B07270" "0x${bytecode}"`);
+  console.log(`\nOptimism Goerli cast:\n\tcast send --interactive --rpc-url https://goerli.optimism.io "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x${bytecode}"`);
+  console.log(`\nArbitrum Goerli cast:\n\tcast send --interactive --rpc-url https://goerli-rollup.arbitrum.io/rpc "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x${bytecode}"`);
 } else {
   process.stdout.write(`0x${bytecode}`);
 }
