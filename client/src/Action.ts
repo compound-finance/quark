@@ -73,3 +73,52 @@ export function pop<T extends ValueType>(action: Action<T>): Action<undefined> {
 export function __resetVarIndex() {
   varIndex = 0;
 }
+
+export type Input<T> = T | Variable<T> | Action<T>;
+
+// type Valuize<X extends Array<Input<ValueType>>> = {
+//   [Property in keyof X]: X[Property] extends Action<_> ? Variable : X[Property];
+// }
+
+type Inputize<X extends Array<ValueType>> = {
+ readonly [Property in keyof X]: X[Property] | Variable<X[Property]> | Action<X[Property]>;
+}
+
+type Valuize<X extends Array<ValueType>> = {
+ readonly [Property in keyof X]: X[Property] | Variable<X[Property]>;
+}
+
+function asArray<T>(x: T | T[]): T[] {
+  if (Array.isArray(x)) {
+    return x;
+  } else {
+    return [x];
+  }
+}
+
+export function buildAction<I extends Array<ValueType>, Output>(input: Inputize<I>, fn: (v: Valuize<I>) => { preamble: Yul | Yul[], statements: Yul | Yul[], description: string }): Action<Output> {
+  for (let index = 0; index < input.length; index++) {
+    let v = input[index]!;
+    if (v.hasOwnProperty('_')) {
+      // i is an Action, let's pipe it in
+      return pipe(v as Action<ValueType>, (x) => buildAction(
+        [...input.slice(0, index), x, ...input.slice(index + 1)] as I,
+        fn
+      ))
+    }
+  }
+
+  // We've gauranteed all inputs are actually values (possibly piped)
+  let {
+    preamble,
+    statements,
+    description
+  } = fn(input as Valuize<I>);
+
+  return {
+    preamble: asArray(preamble),
+    statements: asArray(statements),
+    description,
+    _: undefined
+  };
+}

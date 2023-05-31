@@ -11,9 +11,9 @@ import * as QuarkQL from '@compound-finance/quark';
 import * as Erc20 from '@compound-finance/quark/builtins/erc20/arbitrum';
 import * as cUSDCv3 from '@compound-finance/quark/builtins/comet/arbitrum';
 
-let action = QuarkQL.pipeline([
+let action = pipeline([
   Erc20.approve(cUSDCv3.underlying, cUSDCv3.address, QuarkQL.UINT256_MAX),
-  cUSDV3.supply(Erc20.balanceOf(cUSDCv3.underlying), cUSDCv3.underlying),
+  cUSDCv3.supply(cUSDCv3.underlying, Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address)),
 ]);
 
 let command = await QuarkQL.prepare(action);
@@ -37,7 +37,7 @@ let action = QuarkQL.pipeline([
   [
     pipe(Uniswap.singleSwap(cUSDCv3.underlying, Erc20.tokens.uni), (swapAmount) => [
       Erc20.approve(Erc20.tokens.uni, cUSDCv3.address, swapAmount)
-      cUSDV3.supply(Erc20.balanceOf(cUSDCv3.underlying), cUSDCv3.underlying),
+      cUSDCv3.supply(Erc20.balanceOf(cUSDCv3.underlying), cUSDCv3.underlying),
     ]),
   ]
 ]);

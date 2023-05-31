@@ -21,6 +21,12 @@ object "QuarkCommand" {
   code {
     verbatim_0i_0o(hex"303030505050")
 
+    function allocate(size) -> ptr {
+      ptr := mload(0x40)
+      if iszero(ptr) { ptr := 0x60 }
+      mstore(0x40, add(ptr, size))
+    }
+
 ${action.preamble.map(indent(4)).join('\n\n')}
 
 ${action.statements.map(indent(4)).join('\n\n')}
