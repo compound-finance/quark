@@ -10,12 +10,12 @@ describe('Building commands', () => {
     __resetVarIndex();
   });
 
-  test('Adds 3 and 4, minus 2', () => {
-    let res = prepare(pipeline([
+  test('Adds 3 and 4, minus 2', async () => {
+    let command = await prepare(pipeline([
       pop(pipe(add(new Uint256(3), new Uint256(4)), (sum) => sub(sum, new Uint256(2))))
     ]));
 
-    expect(res.yul).toEqual(`
+    expect(command.yul).toEqual(`
 object "QuarkCommand" {
   code {
     verbatim_0i_0o(hex"303030505050")
@@ -34,9 +34,9 @@ object "QuarkCommand" {
   }
 }`);
 
-    expect(res.bytecode).toEqual(`0x30303050505000`);
+    expect(command.bytecode).toEqual(`0x30303050505000`);
 
-    expect(res.description).toEqual(`Pipeline:
+    expect(command.description).toEqual(`Pipeline:
   * Add 0x3 and 0x4 |> Subtract 0x2 from __v__0`);
   });
 });
