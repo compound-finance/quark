@@ -81,12 +81,6 @@ export function buildYul(yul: string): Command {
       throw new Error(`Please include \`verbatim_0i_0o(hex"303030505050")\` at the start of your Yul object.`);
     }
   }
-  
-  if (process.env['VERBOSE']) {
-    console.error("Intermediate representation:\n\n");
-    console.error(yul);
-    console.error("\n\n");
-  }
 
   let input = {
     language: 'Yul',

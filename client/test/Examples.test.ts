@@ -5,7 +5,7 @@ import { pipeline } from '../src/Pipeline';
 import { prepare } from '../src/Command';
 import { cUSDCv3 } from '../src/builtins/comet/arbitrum';
 import * as Erc20 from '../src/builtins/tokens/core';
-import * as QuarkQL from '../src/QuarkQL';
+import * as Quark from '../src/Quark';
 
 describe('Example commands', () => {
   beforeEach(() => {
@@ -14,7 +14,7 @@ describe('Example commands', () => {
 
   test('Comet Supply [Arbitrum]', async () => {
     let action = pipeline([
-      Erc20.approve(cUSDCv3.underlying, cUSDCv3.address, QuarkQL.UINT256_MAX),
+      Erc20.approve(cUSDCv3.underlying, cUSDCv3.address, Quark.UINT256_MAX),
       cUSDCv3.supply(cUSDCv3.underlying, Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address)),
     ]);
 

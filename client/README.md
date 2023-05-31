@@ -3,6 +3,39 @@
 
 The Quark client is a JavaScript library to quicky and easily build and invoke actions from Quark wallets. The goal of this library is to cover a large subset of actions one might want to take when using a Quark wallet, from simply wrapping Ethers transactions, to building compositions of built-in DeFi functions, to even running Solidity code.
 
+## Getting Started
+
+Start by installing this library:
+
+```sh
+npm install --save @compound-finance/quark
+
+# yarn add @compound-finance/quark
+```
+
+Many commands will require a Web3 Provider, e.g. from Ethers. We will automatically detect the network and find the correct Quark Relayer. You can use this library to communicate with the Quark Relayer contract, e.g. to get your Quark wallet address:
+
+```js
+import * as Quark from '@compound-finance/quark';
+
+// Get the relayer (an Ethers contract)
+let relayer = await Quark.getRelayer(provider);
+
+// Note: Relayer function names end in nonce numbers to help differentiate function calls from transaction scripts
+
+// quarkAddress25(address) returns your Quark wallet address
+console.log(await relayer.quarkAddress25('0x...'))
+```
+
+You can also pass options when getting the relayer, which makes this synchronous e.g.
+
+```js
+import * as Quark from '@compound-finance/quark';
+
+// Get the relayer version 1 on arbitrum (note: only version 1 exists)
+let relayer = Quark.Relayer(provider, 'arbitrum', 1);
+```
+
 ## Examples
 
 ### Running Ethers function
@@ -29,7 +62,7 @@ console.log(`Command Bytecode: ${command.bytecode}`);
 let tx = await Quark.exec(provider, command);
 ```
 
-If you have raw data, you can easily send that, as well, e.g.:
+If you have raw data, you can easily send that, as well, or pass in a custom relayer, e.g.:
 
 ```js
 import * as Quark from '@compound-finance/quark';
@@ -41,7 +74,7 @@ console.log(`Command: ${command.description}`);
 console.log(`Command YUL: ${command.yul}`);
 console.log(`Command Bytecode: ${command.bytecode}`);
 
-let tx = await Quark.exec(provider, command);
+let tx = await Quark.exec(relayer, command);
 ```
 
 ### Pipelines and Built-ins
@@ -203,6 +236,8 @@ let tx = await Quark.exec(provider, command);
 ## Future Considerations
 
 We could probably improve the ability to pipe data into Ethers invocations, but that is starting to get a little dicey. Leaving it as a note for now to address later.
+
+We should make Solc/Yul compilation (optionally?) outside of the main thread.
 
 ## License
 
