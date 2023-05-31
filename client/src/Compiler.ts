@@ -66,10 +66,10 @@ export function buildSol(source: string, fnName: string): Command {
 
   let yul = innerObject.replace(replaceRegex, `code {${lines.join('\n            ')}`);
 
-  return buildYul(yul);
+  return buildYul(yul, `Solidity Source:\n\n${source}`);
 }
 
-export function buildYul(yul: string): Command {
+export function buildYul(yul: string, description?: string): Command {
   if (!yul.includes(`verbatim_0i_0o(hex"303030505050")`)) {
     // Let's try to insert verbatim for the user
     let insertVerbatimRegex = /^object\s*"\w+"\s*{\s*code\s*{/sm;
@@ -112,7 +112,7 @@ export function buildYul(yul: string): Command {
 
   return {
     yul,
-    description: `Native Yul code`,
+    description: description ?? `Yul source\n\n${yul}`,
     bytecode: `0x` + bytecode
   };
 }

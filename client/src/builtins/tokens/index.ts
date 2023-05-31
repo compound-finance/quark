@@ -2,6 +2,7 @@ import { Value, Bool, Address, Uint256 } from '../../Value';
 import { Action, buildAction } from '../../Action';
 import { yul } from '../../Yul';
 import { callSig } from '../../Util';
+export * as arbitrum from './arbitrum';
 
 export function approve(asset: Value<Address>, spender: Value<Address>, amount: Value<Uint256>): Action<undefined> {
   return buildAction<[Address, Address, Uint256], undefined>(

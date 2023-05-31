@@ -35,5 +35,5 @@ ${action.statements.map(indent(4)).join('\n\n')}
   }
 }`;
 
-  return buildYul(yul);
+  return buildYul(yul, action.description);
 }

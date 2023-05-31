@@ -1,5 +1,6 @@
 import { Yul, yul } from './Yul';
 import { Value, ValueType, Variable } from './Value';
+import { pipeline } from './Pipeline';
 
 /** A builtin action represents an atomic action that can be run itself or as
  *  part of a pipeline. These should be 1:1 with Yul functions. They have some
@@ -28,9 +29,15 @@ export interface Action<T> {
 // Just use a global var for unique ids
 let varIndex = 0;
 
-export function pipe<T, U>(action0: Action<T>, f: (r: Value<T>) => Action<U>): Action<U> {
+export function pipe<T, U>(action0: Action<T>, f: (r: Value<T>) => Action<U> | Action<undefined>[]): Action<U> {
   let variable = new Variable<T>(`__v__${varIndex++}`);
-  let action1 = f(variable); // Variable acts as type (todo: avoid as?)
+  let action1;
+  let actionRes = f(variable); // Variable acts as type (todo: avoid as?)
+  if (Array.isArray(actionRes)) {
+    action1 = pipeline(actionRes);
+  } else {
+    action1 = actionRes;
+  }
 
   let statements = [...action0.statements];
   let lastStatement = statements.pop();

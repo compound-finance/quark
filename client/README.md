@@ -110,12 +110,10 @@ import * as Erc20 from '@compound-finance/quark/builtins/erc20/arbitrum';
 import * as cUSDCv3 from '@compound-finance/quark/builtins/comet/arbitrum';
 
 let action = Quark.pipeline([
-  Quark.pipe(Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address), (bal) => {
-    [
-      Erc20.approve(cUSDCv3.underlying, cUSDCv3.address, bal),
-      cUSDCv3.supply(cUSDCv3.underlying, bal),
-    ]
-  }
+  pipe(Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address), (bal) => [
+    Erc20.approve(cUSDCv3.underlying, cUSDCv3.address, bal),
+    cUSDCv3.supply(cUSDCv3.underlying, bal),
+  ])
 ]);
 
 let command = await Quark.prepare(action);
@@ -131,17 +129,15 @@ You can also perform more complex actions, like combining Uniswap and Compound, 
 
 ```js
 import * as Quark from '@compound-finance/quark';
-import * as Erc20 from '@compound-finance/quark/builtins/erc20/arbitrum';
+import * as Erc20 from '@compound-finance/quark/builtins/tokens';
 import * as cUSDCv3 from '@compound-finance/quark/builtins/comet/arbitrum';
 import * as Uniswap from '@compound-finance/quark/builtins/uniswap/arbitrum';
 
 let action = Quark.pipeline([
-  [
-    Quark.pipe(Uniswap.singleSwap(cUSDCv3.underlying, Erc20.tokens.uni), (swapAmount) => [
-      Erc20.approve(Erc20.tokens.uni, cUSDCv3.address, swapAmount)
-      cUSDCv3.supply(swapAmount, cUSDCv3.underlying),
-    ]),
-  ]
+  Quark.pipe(Uniswap.singleSwap(cUSDCv3.underlying, Erc20.arbitrum.uni, new Quark.Uint256(1e18)), (swapAmount) => [
+    Erc20.approve(Erc20.arbitrum.uni, cUSDCv3.address, swapAmount),
+    cUSDCv3.supply(cUSDCv3.underlying, swapAmount),
+  ]),
 ]);
 ```
 
@@ -157,6 +153,7 @@ let usdc = new ethers.Contract("0x...", [
   "function decimals() view returns (uint8)",
   "function symbol() view returns (string)",
   "function transfer(address to, uint amount) returns (bool)",
+  "function approve(address spender, uint amount) returns (bool)",
 ], provider);
 
 let comet = new ethers.Contract("0x...", [
@@ -164,8 +161,8 @@ let comet = new ethers.Contract("0x...", [
 ], provider);
 
 let action = pipeline([
-  invoke(await usdc.populateTransaction.approve(cUSDCv3.underlying, cUSDCv3.address, Quark.UINT256_MAX)),
-  pipe(readUint256(usdc.balanceOf(cUSDCv3.underlying, cUSDCv3.address)), (bal) => [ // Read from Ethers call
+  invoke(await usdc.populateTransaction.approve(cUSDCv3.address.get(), Quark.UINT256_MAX.get())),
+  pipe(readUint256(usdc.balanceOf(cUSDCv3.address.get())), (bal) => [ // Read from Ethers call
     cUSDCv3.supply(cUSDCv3.underlying, bal) // Can pipe only to built-ins, not to Ethers calls
   ])
 ]);
