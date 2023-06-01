@@ -9,7 +9,19 @@ const networks: { [chainId: number]: string } = {
   42161: 'arbitrum'
 };
 
-const relayers: { [version: number]: { [network: string]: string } } = {
+export function getNetwork(chainIdOrNetwork: number | string) : string {
+  let network: string;
+  if (typeof(chainIdOrNetwork) === 'number') {
+    return networks[chainIdOrNetwork];
+    if (!network) {
+      throw new Error(`Unsupported Ethereum network: ${chainIdOrNetwork}`);
+    }
+  } else {
+    return chainIdOrNetwork;
+  }
+}
+
+export const relayers: { [version: number]: { [network: string]: string } } = {
   1: {
     'goerli': '0x412e71DE37aaEBad89F1441a1d7435F2f8B07270',
     'optimism-goerli': '0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23',
@@ -18,7 +30,7 @@ const relayers: { [version: number]: { [network: string]: string } } = {
   }
 }
 
-const abi: { [version: number]: string[] } = {
+export const abi: { [version: number]: string[] } = {
   1: [
     "function quarkAddress25(address) returns (address)",
     "function virtualCode81() returns (bytes)"
@@ -40,15 +52,7 @@ export async function getRelayer(signerOrProvider: Signer | Provider): Promise<C
 }
 
 export function Relayer(signerOrProvider: Signer | Provider, chainIdOrNetwork: number | string, version: number = 1): Contract {
-  let network: string;
-  if (typeof(chainIdOrNetwork) === 'number') {
-    network = networks[chainIdOrNetwork];
-    if (!network) {
-      throw new Error(`Unsupported Ethereum network: ${chainIdOrNetwork}`);
-    }
-  } else {
-    network = chainIdOrNetwork;
-  }
+  let network = getNetwork(chainIdOrNetwork);
 
   let relayerAbi = abi[version];
   if (!relayerAbi) {
