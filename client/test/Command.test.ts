@@ -4,6 +4,7 @@ import { Action, pipe, pop, __resetVarIndex } from '../src/Action';
 import { pipeline } from '../src/Pipeline';
 import { prepare } from '../src/Command';
 import { add, sub } from './__Builtins';
+import * as solc from 'solc';
 
 describe('Building commands', () => {
   beforeEach(() => {
@@ -13,7 +14,7 @@ describe('Building commands', () => {
   test('Adds 3 and 4, minus 2', async () => {
     let command = await prepare(pipeline([
       pop(pipe(add(new Uint256(3), new Uint256(4)), (sum) => sub(sum, new Uint256(2))))
-    ]));
+    ]), solc.compile);
 
     expect(command.yul).toEqual(`
 object "QuarkCommand" {

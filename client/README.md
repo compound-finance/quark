@@ -44,6 +44,7 @@ While an Ethereum transaction is usually just data sent to a smart contract, Qua
 
 ```js
 import * as Quark from '@compound-finance/quark';
+import * as solc from 'solc';
 
 let usdc = new ethers.Contract("0x...", [
   "function balanceOf(address owner) view returns (uint256)",
@@ -53,7 +54,7 @@ let usdc = new ethers.Contract("0x...", [
 ], provider);
 
 let command = await Quark.wrap(
-  usdc.populateTransaction.approve(...));
+  usdc.populateTransaction.approve(...), solc.compile);
 
 console.log(`Command: ${command.description}`);
 console.log(`Command YUL: ${command.yul}`);
@@ -66,9 +67,10 @@ If you have raw data, you can easily send that, as well, or pass in a custom rel
 
 ```js
 import * as Quark from '@compound-finance/quark';
+import * as solc from 'solc';
 
 let command = await Quark.wrap(
-  { to: '0x...', data: '0x...' });
+  { to: '0x...', data: '0x...' }, solc.compile);
 
 console.log(`Command: ${command.description}`);
 console.log(`Command YUL: ${command.yul}`);
@@ -87,13 +89,14 @@ For example, here's a simple pipeline to approve and supply using native built-i
 import * as Quark from '@compound-finance/quark';
 import * as Erc20 from '@compound-finance/quark/builtins/erc20/arbitrum';
 import * as cUSDCv3 from '@compound-finance/quark/builtins/comet/arbitrum';
+import * as solc from 'solc';
 
 let action = Quark.pipeline([
   Erc20.approve(cUSDCv3.underlying, cUSDCv3.address, Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address)),
   cUSDCv3.supply(cUSDCv3.underlying, Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address)),
 ]);
 
-let command = await Quark.prepare(action);
+let command = await Quark.prepare(action, solc.compile);
 
 console.log(`Command: ${command.description}`);
 console.log(`Command YUL: ${command.yul}`);
@@ -108,6 +111,7 @@ Note: you can also pipe using the `pipe` command explicitly to prevent double-re
 import * as Quark from '@compound-finance/quark';
 import * as Erc20 from '@compound-finance/quark/builtins/erc20/arbitrum';
 import * as cUSDCv3 from '@compound-finance/quark/builtins/comet/arbitrum';
+import * as solc from 'solc';
 
 let action = Quark.pipeline([
   pipe(Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address), (bal) => [
@@ -116,7 +120,7 @@ let action = Quark.pipeline([
   ])
 ]);
 
-let command = await Quark.prepare(action);
+let command = await Quark.prepare(action, solc.compile);
 
 console.log(`Command: ${command.description}`);
 console.log(`Command YUL: ${command.yul}`);
@@ -176,6 +180,7 @@ There is also experimental support for running Solidity code directly as a Quark
 
 ```js
 import * as Quark from '@compound-finance/quark';
+import * as solc from 'solc';
 
 let command = await Quark.buildSol(`
 // SPDX-License-Identifier: UNLICENSED
@@ -188,7 +193,7 @@ contract Fun {
     emit FunTimes(55);
   }
 }
-`);
+`, solc.compile); // Pass solc compilation command
 
 console.log(`Command: ${command.description}`);
 console.log(`Command YUL: ${command.yul}`);
@@ -205,6 +210,7 @@ You can also build a command directly from Yul.
 
 ```js
 import * as Quark from '@compound-finance/quark';
+import * as solc from 'solc';
 
 let command = await Quark.buildYul(`
 object "Ping" {
@@ -221,7 +227,7 @@ object "Ping" {
     return(0, 0)
   }
 }
-`);
+`, solc.compile); // Pass solc compilation command
 
 console.log(`Command: ${command.description}`);
 console.log(`Command YUL: ${command.yul}`);

@@ -9,6 +9,7 @@ import * as Uniswap from '../src/builtins/uniswap/arbitrum';
 import * as Erc20 from '../src/builtins/tokens';
 import * as Quark from '../src/Quark';
 import { invoke, readUint256 } from '../src/Quark';
+import * as solc from 'solc';
 
 describe('Example commands', () => {
   beforeEach(() => {
@@ -21,7 +22,7 @@ describe('Example commands', () => {
       cUSDCv3.supply(cUSDCv3.underlying, Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address)),
     ]);
 
-    let command = await prepare(action);
+    let command = await prepare(action, solc.compile);
 
     expect(command.yul).toMatch('function cUSDCv3Supply');
     expect(command.bytecode).toMatch(/^0x303030505050/);
@@ -38,7 +39,7 @@ describe('Example commands', () => {
       ])
     ]);
 
-    let command = await prepare(action);
+    let command = await prepare(action, solc.compile);
 
     expect(command.yul).toMatch('function cUSDCv3Supply');
     expect(command.bytecode).toMatch(/^0x303030505050/);
@@ -56,7 +57,7 @@ describe('Example commands', () => {
         ]),
     ]);
 
-    let command = await prepare(action);
+    let command = await prepare(action, solc.compile);
 
     expect(command.yul).toMatch('function cUSDCv3Supply');
     expect(command.bytecode).toMatch(/^0x303030505050/);
@@ -97,7 +98,7 @@ describe('Example commands', () => {
       ])
     ]);
 
-    let command = await prepare(action);
+    let command = await prepare(action, solc.compile);
 
     expect(command.yul).toMatch('function cUSDCv3Supply');
     expect(command.bytecode).toMatch(/^0x303030505050/);

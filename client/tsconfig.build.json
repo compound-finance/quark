@@ -5,5 +5,5 @@
     "outDir": "dist",
     "typeRoots": ["./typings"]
   },
-  "files": ["src/quark.ts", "typings/solc.d.ts"]
+  "files": ["src/quark.ts"]
 }

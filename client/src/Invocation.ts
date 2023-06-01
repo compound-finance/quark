@@ -6,6 +6,7 @@ import { Action, buildAction } from './Action';
 import { Uint256, Address } from './Value';
 import { yul } from './Yul';
 import { Command, prepare } from './Command';
+import { Compile } from './Compiler';
 
 let invocations = 0;
 
@@ -14,8 +15,8 @@ function rightPad(str: string, len: number, padding=' '): string {
   return str + [...new Array(padLen)].map(() => padding).join('');
 }
 
-export async function wrap(tx: Promise<UnsignedTransaction> | UnsignedTransaction): Promise<Command> {
-  return await prepare(invoke(await tx));
+export async function wrap(tx: Promise<UnsignedTransaction> | UnsignedTransaction, compile: Compile): Promise<Command> {
+  return await prepare(invoke(await tx), compile);
 }
 
 export function invoke(tx: UnsignedTransaction): Action<undefined> {

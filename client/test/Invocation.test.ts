@@ -7,6 +7,7 @@ import { Contract } from '@ethersproject/contracts';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
 import { invoke, readUint256 } from '../src/Invocation';
 import { add } from './__Builtins';
+import * as solc from 'solc';
 
 let from = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 let to = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -28,7 +29,7 @@ describe('Invocations', () => {
       invoke(await usdc.populateTransaction.transfer(to, 100e8))
     ]);
 
-    let command = await prepare(action);
+    let command = await prepare(action, solc.compile);
 
     console.log(`Command: ${command.description}`);
     console.log(`Command YUL: ${command.yul}`);
@@ -40,7 +41,7 @@ describe('Invocations', () => {
       pop(add(new Uint256(1), readUint256(await usdc.populateTransaction.balanceOf(to))))
     ]);
 
-    let command = await prepare(action);
+    let command = await prepare(action, solc.compile);
 
     console.log(`Command: ${command.description}`);
     console.log(`Command YUL: ${command.yul}`);

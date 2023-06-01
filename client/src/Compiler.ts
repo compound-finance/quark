@@ -1,7 +1,21 @@
-import { Output, compile } from 'solc';
 import type { Command } from './Command';
 
-export function buildSol(source: string, fnName: string): Command {
+export type Compile = (input: string) => string | Promise<string>;
+
+export interface ContractOutput {
+  ir: string,
+  evm: {
+    bytecode: {
+      object: string
+    }
+  }
+}
+
+export interface Output {
+  contracts: { [contract: string]: ContractOutput }
+}
+
+export async function buildSol(source: string, fnName: string, compile: Compile): Promise<Command> {
   if (source.includes('import')) {
     throw new Error('For experimental Solidity support, `import`s are not allowed');
   }
@@ -22,7 +36,7 @@ export function buildSol(source: string, fnName: string): Command {
     }
   };
 
-  let res = JSON.parse(compile(JSON.stringify(input))) as Output;
+  let res = JSON.parse(await compile(JSON.stringify(input))) as Output;
 
   let [ctxName, v] = Object.entries(res.contracts['q.sol'])[0];
   let irBase = v.ir;
@@ -66,10 +80,10 @@ export function buildSol(source: string, fnName: string): Command {
 
   let yul = innerObject.replace(replaceRegex, `code {${lines.join('\n            ')}`);
 
-  return buildYul(yul, `Solidity Source:\n\n${source}`);
+  return buildYul(yul, compile, `Solidity Source:\n\n${source}`);
 }
 
-export function buildYul(yul: string, description?: string): Command {
+export async function buildYul(yul: string, compile: Compile, description?: string): Promise<Command> {
   if (!yul.includes(`verbatim_0i_0o(hex"303030505050")`)) {
     // Let's try to insert verbatim for the user
     let insertVerbatimRegex = /^object\s*"\w+"\s*{\s*code\s*{/sm;
@@ -103,7 +117,7 @@ export function buildYul(yul: string, description?: string): Command {
     }
   };
 
-  let yulCompilationRes = JSON.parse(compile(JSON.stringify(input))) as Output;
+  let yulCompilationRes = JSON.parse(await compile(JSON.stringify(input))) as Output;
   let bytecode = Object.values(yulCompilationRes.contracts['q.yul'])[0].evm.bytecode.object as string;
 
   if (!bytecode.startsWith('303030505050')) {

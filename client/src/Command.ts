@@ -1,7 +1,6 @@
-import { Output, compile } from 'solc';
 import type { Action } from './Action';
 import { UnsignedTransaction } from '@ethersproject/transactions';
-import { buildYul } from './Compiler';
+import { Compile, buildYul } from './Compiler';
 
 export interface Command {
   yul: string,
@@ -17,7 +16,7 @@ function indent(n: number): (s: string) => string {
   }
 }
 
-export async function prepare(action: Action<undefined>): Promise<Command> {
+export async function prepare(action: Action<undefined>, compile: Compile): Promise<Command> {
   let yul = `
 object "QuarkCommand" {
   code {
@@ -35,5 +34,5 @@ ${action.statements.map(indent(4)).join('\n\n')}
   }
 }`;
 
-  return buildYul(yul, action.description);
+  return await buildYul(yul, compile, action.description);
 }
