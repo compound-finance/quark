@@ -1,7 +1,7 @@
 import { Contract } from '@ethersproject/contracts';
 import { UnsignedTransaction } from '@ethersproject/transactions';
 import { BigNumber } from '@ethersproject/bignumber';
-import { hexlify, hexDataLength, hexDataSlice } from '@ethersproject/bytes';
+import { hexlify, hexDataLength, hexDataSlice, hexConcat, hexZeroPad } from '@ethersproject/bytes';
 import { Action, buildAction } from './Action';
 import { Uint256, Address } from './Value';
 import { yul } from './Yul';
@@ -38,13 +38,15 @@ export function invokeInternal<T>(tx: UnsignedTransaction, returnSz: number): Ac
   let data = hexlify(tx.data ?? []);
   let dataSz = hexDataLength(data);
 
-  let chunks = Math.ceil(dataSz / 64);
+  let chunks = Math.ceil(dataSz / 32);
+  let fullSz = chunks * 32;
   let yuls = [...new Array(chunks)].map((_, i) => {
-    let start = 2 + i * 64;
-    let end = 2 + Math.min(( i + 1 ) * 64, dataSz);
-    let slice = data.slice(start, end);
-    let paddedSlice = rightPad(slice, 64, '0');
-    return `mstore(add(data, ${i * 32}), 0x${paddedSlice})`
+    let start = i * 32;
+    let end = Math.min(( i + 1 ) * 32, dataSz);
+    let slice = hexDataSlice(data, start, end);
+    let padding = hexZeroPad('0x', 32 - ( end - start ))
+    let paddedSlice = hexConcat([slice, padding]);
+    return `mstore(add(data, ${i * 32}), ${paddedSlice})`
   });
 
   return buildAction<[], T>(
@@ -52,13 +54,14 @@ export function invokeInternal<T>(tx: UnsignedTransaction, returnSz: number): Ac
     ([]) => ({
       preamble: [
         yul`
-          function ${functionName}() {
-            let data := allocate(${dataSz.toString()})
-            ${returnSz > 0 ? `let res := allocate(${dataSz.toString()})` : ``}
+          function ${functionName}()${ returnSz > 0 ? ' -> r' : '' } {
+            let data := allocate(${fullSz.toString()})
+            ${returnSz > 0 ? `let res := allocate(${returnSz.toString()})` : ``}
 
-            ${yuls.join('\n             ')}
+           ${yuls.join('\n            ')}
 
-            pop(call(gas(), ${tx.to!}, ${valueHex.toHexString()}, data, ${dataSz.toString()}, ${ returnSz > 0 ? 'res' : '0' }, ${ ( returnSz ?? 0 ).toString() }))
+           pop(call(gas(), ${tx.to!}, ${valueHex.toHexString()}, data, ${dataSz.toString()}, ${ returnSz > 0 ? 'res' : '0' }, ${ ( returnSz ?? 0 ).toString() }))
+            ${ returnSz > 0 ? 'r := mload(res)' : ''}
           }
         `],
       statements: [

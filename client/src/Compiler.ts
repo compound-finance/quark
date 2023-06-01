@@ -11,7 +11,17 @@ export interface ContractOutput {
   }
 }
 
+interface CompilationError {
+  component: string;
+  formattedMessage: string;
+  message:  string;
+  severity:  string;
+  sourceLocation: unknown,
+  type: string;
+}
+
 export interface Output {
+  errors?: CompilationError[],
   contracts: { [contract: string]: ContractOutput }
 }
 
@@ -118,6 +128,10 @@ export async function buildYul(yul: string, compile: Compile, description?: stri
   };
 
   let yulCompilationRes = JSON.parse(await compile(JSON.stringify(input))) as Output;
+  if (yulCompilationRes.errors && yulCompilationRes.errors.length > 0) {
+    throw new Error(`Yul compilation error: ${yulCompilationRes.errors.map((e) => e.formattedMessage).join('\n\n')}`);
+  }
+
   let bytecode = Object.values(yulCompilationRes.contracts['q.yul'])[0].evm.bytecode.object as string;
 
   if (!bytecode.startsWith('303030505050')) {

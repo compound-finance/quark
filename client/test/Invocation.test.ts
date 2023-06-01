@@ -36,7 +36,7 @@ describe('Invocations', () => {
     console.log(`Command Bytecode: ${command.bytecode}`);
   });
 
-  test.only('Erc20 Read Balance', async () => {
+  test('Erc20 Read Balance', async () => {
     let action = pipeline([
       pop(add(new Uint256(1), readUint256(await usdc.populateTransaction.balanceOf(to))))
     ]);
