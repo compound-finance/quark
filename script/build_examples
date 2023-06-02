@@ -1,0 +1,29 @@
+#!/bin/bash
+
+shopt -s nullglob
+
+set -eo pipefail
+
+filenames=(./examples/{*.yul,**/*.yul})
+
+cleanup() {
+  for filename in ${filenames[@]}; do
+    if [ -f "${filename/.yul/.yulz}" ]; then
+      mv "${filename/.yul/.yulz}" "$filename"
+    fi
+  done
+}
+
+trap "cleanup" EXIT
+
+# First, change all 
+for filename in ${filenames[@]}; do
+  mv "$filename" "${filename/.yul/.yulz}"
+done
+
+for filename in ${filenames[@]}; do
+  mv "${filename/.yul/.yulz}" "$filename"
+  echo "Building $filename"
+  forge build --contracts ./examples --skip ".sol"
+  mv "$filename" "${filename/.yul/.yulz}"
+done

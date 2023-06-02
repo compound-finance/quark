@@ -170,10 +170,16 @@ This is a valid transaction script and can be sent to the Quark Relayer.
 
 ## Testing
 
-You can run tests by running:
+You can run tests by first running `script/build_examples`, which builds the example scripts:
 
 ```sh
-forge test --ffi
+script/build_examples
+```
+
+Then running `forge test`:
+
+```sh
+forge test
 ```
 
 ## Technical Limitations

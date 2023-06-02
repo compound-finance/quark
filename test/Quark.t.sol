@@ -28,20 +28,34 @@ contract QuarkTest is Test {
         // nothing
     }
 
-    // function testPing() public {
-    //     bytes memory ping = new YulHelper().get("Ping.yul/Logger.json");
-    //     console.logBytes(ping);
+    function testPing() public {
+        bytes memory ping = new YulHelper().get("Ping.yul/Logger.json");
+        console.logBytes(ping);
 
-    //     // TODO: Check who emitted.
-    //     vm.expectEmit(false, false, false, true);
-    //     emit Ping(55);
+        // TODO: Check who emitted.
+        vm.expectEmit(false, false, false, true);
+        emit Ping(55);
 
-    //     (bool success, bytes memory data) = address(relayer).call(ping);
-    //     assertEq(success, true);
-    //     assertEq(data, abi.encode());
-    // }
+        bytes memory data = relayer.runQuark(ping);
+        assertEq(data, abi.encode());
+    }
 
     function testIncrementer() public {
+        bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
+        console.logBytes(incrementer);
+
+        // assertEq(incrementer, QuarkInterface(quark).virtualCode81());
+        // assertEq(address(0x6c022704D948c71930B35B6F6bb725bc8d687E7F), QuarkInterface(quark).quarkAddress25(address(1)));
+
+        assertEq(counter.number(), 0);
+
+        vm.prank(address(0xaa));
+        bytes memory data = relayer.runQuark(incrementer);
+        assertEq(data, abi.encode());
+        assertEq(counter.number(), 3);
+    }
+
+    function testIncrementerByDirectCall() public {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
         console.logBytes(incrementer);
 

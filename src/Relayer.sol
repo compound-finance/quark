@@ -33,7 +33,7 @@ contract Relayer {
   }
 
   function getQuarkInitCodeXX() public pure returns (bytes memory) {
-    return hex"5f6101118180a180806004610012610090565b60ec8153608960018201536027600282015360c0600382015382335af11561008d5760173d81810192610086610047856100ca565b938383863e600560126100586100ad565b6020610122823951956006610105893961007560018201896100e6565b8088019361010b85390191016100e6565b5533600155f35b80fd5b6040519081156100a4575b60048201604052565b6060915061009b565b6040519081156100c1575b60208201604052565b606091506100b8565b906040519182156100dd575b8201604052565b606092506100d6565b9060ff60039180601d1a600185015380601e1a60028501531691015356fe62000000565bfe5b600254620000005760016002556005565b600054ff";
+    return hex"6101115f80a15f806004610011610107565b60ec8153608960018201536027600282015360c0600382015382335af1156100fd573d6078810190603f199060b882820161004b85610141565b93816040863e65303030505050855160d01c036100f3576100ac9261006e610124565b60206103248239519460066101a6883961008c603e19820188610172565b8601916101ac908301396100a3603d19820161015d565b60391901610172565b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811155337f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f655f35b606061026461019e565b60606102c461019e565b60405190811561011b575b60048201604052565b60609150610112565b604051908115610138575b60208201604052565b6060915061012f565b90604051918215610154575b8201604052565b6060925061014d565b60036005915f60018201535f60028201530153565b9062ffffff811161019a5760ff81600392601d1a600185015380601e1a600285015316910153565b5f80fd5b81905f395ffdfe62000000565bfe5b62000000620000007c01000000000000000000000000000000000000000000000000000000006000350463fed416e5147f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f65433147fabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf81954600114826000148282171685578183168462000094015760006000fd5b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811154ff000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000127472782073637269707420696e76616c69640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000137472782073637269707420726576657274656400000000000000000000000000";
   }
 
   function wordSize(uint256 x) internal pure returns (uint256) {
@@ -47,7 +47,6 @@ contract Relayer {
 
   function readQuark() external view returns (bytes memory) {
     require(quarkRunning, "quark not running");
-    console.log(quarkSize);
     uint256 quarkSize_ = quarkSize;
     bytes memory quark = new bytes(quarkSize_);
     uint256 chunks = wordSize(quarkSize_);
@@ -59,8 +58,42 @@ contract Relayer {
         mstore(add(quark, add(32, mul(i, 32))), chunk)
       }
     }
-    console.logBytes(quark);
     return quark;
+  }
+
+  function runQuark(bytes memory quarkCode) public payable returns (bytes memory) {
+    require(!quarkRunning, "quark already running");
+    saveQuark(quarkCode);
+    quarkRunning = true;
+
+    bytes memory initCode = abi.encodePacked(
+      getQuarkInitCodeXX(),
+      abi.encode(msg.sender)
+    );
+    uint256 initCodeLen = initCode.length;
+
+    Quark quark;
+    assembly {
+      quark := create2(0, add(initCode, 32), initCodeLen, 0)
+    }
+    require(uint160(address(quark)) > 0, "quark init failed");
+
+    quarkRunning = false; // TODO: is this right spot?
+    clearQuark();
+
+    // TODO: Do we need this double check?
+    uint256 quarkCodeLen;
+    assembly {
+      quarkCodeLen := extcodesize(quark)
+    }
+    require(quarkCodeLen > 0, "quark init failed");
+
+    (bool callSuccess, bytes memory res) = address(quark).call{value: msg.value}(hex"");
+    require(callSuccess, "quark call failed");
+
+    quark.destruct145();
+
+    return res;
   }
 
   function saveQuark(bytes memory quark) internal {
@@ -72,7 +105,6 @@ contract Relayer {
         // TODO: Is there an easy way to do this in Solidity?
         chunk := mload(add(quark, add(32, mul(i, 32))))
       }
-      console.logBytes32(chunk);
       quarkChunks[i] = chunk;
     }
     quarkSize = quarkSize_;
@@ -87,45 +119,6 @@ contract Relayer {
   }
 
   fallback(bytes calldata quarkCode) external payable returns (bytes memory) {
-    require(!quarkRunning, "quark already running");
-    assembly { log1(0, 0, 0x50) }
-    saveQuark(quarkCode);
-    quarkRunning = true;
-
-    assembly { log1(0, 0, 0x51) }
-    bytes memory initCode = abi.encodePacked(
-      getQuarkInitCodeXX(),
-      abi.encode(msg.sender)
-    );
-    uint256 initCodeLen = initCode.length;
-    //console.logBytes(initCode);
-
-    assembly { log1(0, 0, initCodeLen) }
-    Quark quark;
-    Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D).breakpoint("a");
-    assembly {
-      quark := create2(0, add(initCode, 32), initCodeLen, 0)
-    }
-    assembly { log1(0, 0, 0x53) }
-    assembly { log1(0, 0, quark) }
-
-    quarkRunning = false; // TODO: is this right spot?
-    clearQuark();
-
-    assembly { log1(0, 0, 0x54) }
-
-    bool quarkCreated;
-    assembly {
-      quarkCreated := xor(iszero(extcodesize(quark)), 1)
-    }
-    assembly { log1(0, 0, quarkCreated) }
-    require(quarkCreated, "quark init failed");
-
-    (bool callSuccess, bytes memory res) = address(quark).call{value: msg.value}(hex"");
-    require(callSuccess, "quark call failed");
-
-    quark.destruct145();
-
-    return res;
+    return runQuark(quarkCode);
   }
 }
