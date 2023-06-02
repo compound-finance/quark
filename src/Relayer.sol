@@ -18,10 +18,13 @@ contract Relayer {
   error InvalidValueS();
   error InvalidValueV();
   error SignatureExpired();
+  error NonceReplay();
+  error NonceMissingReq(uint32 req);
 
   bool public quarkRunning;
   uint256 public quarkSize;
   mapping(uint256 => bytes32) quarkChunks;
+  mapping(address => mapping(uint256 => uint256)) nonces;
 
   /// @notice The major version of this contract
   string public constant version = "0";
@@ -32,16 +35,46 @@ contract Relayer {
   bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
   /// @dev The EIP-712 typehash for runTrxScript
-  bytes32 internal constant TRX_SCRIPT_TYPEHASH = keccak256("TrxScript(address account,uint32 nonce,uint32[] depends,bytes trxScript,uint256 expiry)");
+  bytes32 internal constant TRX_SCRIPT_TYPEHASH = keccak256("TrxScript(address account,uint32 nonce,uint32[] reqs,bytes trxScript,uint256 expiry)");
 
   ///  See https://ethereum.github.io/yellowpaper/paper.pdf #307)
   uint internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+
+  function trySetNonce(address account, uint32 nonce) internal {
+    uint32 nonceIndex = nonce / 256;
+    uint32 nonceOffset = nonce - ( nonceIndex * 256 );
+    uint256 nonceBit = (2 << nonceOffset);
+
+    uint256 nonceChunk = nonces[account][uint256(nonceIndex)];
+    if (nonceChunk & nonceBit > 0) {
+      revert NonceReplay();
+    }
+    nonces[account][nonceIndex] |= nonceBit;
+  }
+
+  // TODO: We could make this a lot more efficient if we bulk nonces together
+  function getNonce(address account, uint32 nonce) internal view returns (bool) {
+    uint32 nonceIndex = nonce / 256;
+    uint32 nonceOffset = nonce - ( nonceIndex * 256 );
+    uint256 nonceBit = (2 << nonceOffset);
+
+    uint256 nonceChunk = nonces[account][uint256(nonceIndex)];
+    return nonceChunk & nonceBit > 0;
+  }
+
+  function checkReqs(address account, uint32[] memory reqs) internal view {
+    for (uint256 i = 0; i < reqs.length; i++) {
+      if (!getNonce(account, reqs[i])) {
+        revert NonceMissingReq(reqs[i]);
+      }
+    }
+  }
 
   /**
      * @notice Runs a quark script
      * @param account The owner account (EOA, not quark address)
      * @param nonce The next expected nonce value for the signatory
-     * @param depends List of previous nonces that must first be incorporated
+     * @param reqs List of previous nonces that must first be incorporated
      * @param expiry The expiration time of this
      * @param trxScript The transaction scrip to run
      * @param v The recovery byte of the signature
@@ -49,32 +82,31 @@ contract Relayer {
      * @param s Half of the ECDSA signature pair
      */
   function runTrxScript(
-        address account,
-        uint32 nonce,
-        uint32[] calldata depends,
-        bytes calldata trxScript,
-        uint256 expiry,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
-        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        if (v != 27 && v != 28) revert InvalidValueV();
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Quark")), keccak256(bytes(version)), block.chainid, address(this)));
-        bytes32 structHash = keccak256(abi.encode(TRX_SCRIPT_TYPEHASH, account, nonce, depends, trxScript, expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-        address signatory = ecrecover(digest, v, r, s);
-        if (signatory == address(0)) revert BadSignatory();
-        if (account != signatory) revert BadSignatory();
-        // TODO: Check nonce
-        // if (nonce != userNonce[signatory]++) revert BadNonce();
+      address account,
+      uint32 nonce,
+      uint32[] calldata reqs,
+      bytes calldata trxScript,
+      uint256 expiry,
+      uint8 v,
+      bytes32 r,
+      bytes32 s
+  ) external {
+      if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
+      // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
+      if (v != 27 && v != 28) revert InvalidValueV();
+      bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Quark")), keccak256(bytes(version)), block.chainid, address(this)));
+      bytes32 structHash = keccak256(abi.encode(TRX_SCRIPT_TYPEHASH, account, nonce, reqs, trxScript, expiry));
+      bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+      address signatory = ecrecover(digest, v, r, s);
+      if (signatory == address(0)) revert BadSignatory();
+      if (account != signatory) revert BadSignatory();
+      if (block.timestamp >= expiry) revert SignatureExpired();
 
-        // TODO: Check depends
-        if (block.timestamp >= expiry) revert SignatureExpired();
+      checkReqs(account, reqs);
+      trySetNonce(account, nonce);
 
-        runQuark_(account, trxScript);
-    }
+      runQuark_(account, trxScript);
+  }
 
   function getQuarkAddress(address account) external view returns (address) {
     return address(uint160(uint(
@@ -172,7 +204,7 @@ contract Relayer {
 
     quark.destruct();
 
-    // TODO: We should triple check that ran correctly, since we *need* it to.
+    // TODO: We should triple check that `destruct` ran correctly, since we *need* it to.
 
     return res;
   }
