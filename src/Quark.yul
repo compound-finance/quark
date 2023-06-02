@@ -24,7 +24,7 @@ object "Quark" {
     * }
     *
     *
-    * function destruct145() external {
+    * function destruct() external {
     *   require(msg.sender == relayer);
     *   selfdestruct(owner);
     * }
@@ -116,7 +116,7 @@ object "Quark" {
 
     // Call back to the Relayer contract (who is the caller) to get the Quark code
     let read_quark_abi := allocate(0x04)
-    copy4(read_quark_abi, 0xec8927c0)
+    copy4(read_quark_abi, 0xec8927c0) // readQuark()
     let succ := call(gas(), caller(), 0, read_quark_abi, 0x04, 0, 0)
 
     if iszero(succ) {
@@ -185,7 +185,7 @@ object "Quark" {
     *   }
     *
     *   switch selector()
-    *     case 0xfed416e5 { // "destruct145()"
+    *     case 0x2b68b9c6 { // "destruct()"
     *       // require(msg.sender == relayer)
     *       if (iszero(eq(caller, sload(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6)))) {
     *         revert(0, 0)
@@ -208,7 +208,7 @@ object "Quark" {
     * Pseudocode [Limited jumps]
     *
     * code {
-    *   is_destruct := eq(0xfed416e5, div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000))
+    *   is_destruct := eq(0x2b68b9c6, div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000))
     *   is_relayer := eq(caller, sload(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6))
     *   is_callable := eq(sload(0xabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf819), 0x1);
     *   if and(eq(is_destruct, 0), or(is_relayer, is_callable)
@@ -229,7 +229,7 @@ object "Quark" {
     * 028: 6000        PUSH1 00      
     * 02a: 35          CALLDATALOAD
     * 02b: 04          DIV
-    * 02c: 63fed416e5  PUSH4 0xfed416e5
+    * 02c: 632b68b9c6  PUSH4 0x2b68b9c6
     * 031: 14          EQ                                      [ret, code_offset, is_destruct]
     * 032: 7f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6 PUSH32 `function is_relayer()`
     * 053: 54          SLOAD
@@ -273,7 +273,7 @@ object "Quark" {
     * QUARKEND
     */
 
-  data "Appendix" hex"fe5b62000000620000007c01000000000000000000000000000000000000000000000000000000006000350463fed416e5147f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f65433147fabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf81954600114826000148282171684620000990157818316846200009f015760006000fd5b50505050565b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811154ff"
+  data "Appendix" hex"fe5b62000000620000007c010000000000000000000000000000000000000000000000000000000060003504632b68b9c6147f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f65433147fabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf81954600114826000148282171684620000990157818316846200009f015760006000fd5b50505050565b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811154ff"
 
   // Errors
   data "trx script reverted" hex"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000137472782073637269707420726576657274656400000000000000000000000000"
