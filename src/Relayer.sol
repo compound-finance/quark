@@ -5,7 +5,7 @@ import "forge-std/Vm.sol";
 import "forge-std/console.sol";
 
 interface Quark {
-  function destructXX() external;
+  function destruct145() external;
   fallback() external;
 }
 
@@ -124,7 +124,7 @@ contract Relayer {
     (bool callSuccess, bytes memory res) = address(quark).call{value: msg.value}(hex"");
     require(callSuccess, "quark call failed");
 
-    quark.destructXX();
+    quark.destruct145();
 
     return res;
   }
