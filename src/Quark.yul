@@ -97,19 +97,26 @@ object "Quark" {
       mstore8(add(op_idx, 3), byte(31, v))
     }
 
+    function copy4(dst, v) {
+      if gt(v, 0xffffffff) {
+        // operand too large
+        revert(0, 0)
+      }
+
+      mstore8(add(dst, 0), byte(28, v))
+      mstore8(add(dst, 1), byte(29, v))
+      mstore8(add(dst, 2), byte(30, v))
+      mstore8(add(dst, 3), byte(31, v))
+    }
+
     function revert_err(offset, size) {
       datacopy(0, offset, size)
       revert(0, size)
     }
 
     // Call back to the Relayer contract (who is the caller) to get the Quark code
-    // TODO: Better way to setup this call data?
-    log1(0, 0, 0x111)
     let read_quark_abi := allocate(0x04)
-    mstore8(add(read_quark_abi, 0x00), 0xec)
-    mstore8(add(read_quark_abi, 0x01), 0x89)
-    mstore8(add(read_quark_abi, 0x02), 0x27)
-    mstore8(add(read_quark_abi, 0x03), 0xc0)
+    copy4(read_quark_abi, 0xec8927c0)
     let succ := call(gas(), caller(), 0, read_quark_abi, 0x04, 0, 0)
 
     if iszero(succ) {
@@ -155,7 +162,7 @@ object "Quark" {
     rewrite_push_3(add(appendix_offset, 0x006), quark_size)
 
     // Storage owner and relayer at respective locations
-    sstore(0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111, account) // owner
+    sstore(0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111, account)  // owner
     sstore(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6, caller()) // relayer
 
     // Return the Quark data
@@ -239,26 +246,34 @@ object "Quark" {
     * 080: 82          DUP3                                    [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct, is_relayer, is_callable]
     * 081: 17          OR                                      [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct, is_relayer || is_callable]
     * 082: 16          AND                                     [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct && ( is_relayer || is_callable )]
-    * 083: 85          DUP6                                    [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct && ( is_relayer || is_callable ), ret]
-    * 084: 57          JUMPI                                   [ret, code_offset, is_destruct, is_relayer, is_callable] // TODO: this leaves data on the stack, which we probably shouldn't have
-    * 085: 81          DUP2                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer]
-    * 086: 83          DUP4                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer, is_destruct]
-    * 087: 16          AND                                     [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct]
-    * 088: 84          DUP5                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct, code_offset]
-    * 089: 62000094    PUSH3 // pc destruct location
-    * 08d: 01          ADD
-    * 08e: 57          JUMPI
-    * 08f: 6000        PUSH1 0
-    * 091: 6000        PUSH1 0
-    * 093: fd          REVERT
-    * 094: 5b          JUMPDEST // destruct location
-    * 095: 7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111 PUSH32
-    * 0b6: 54          SLOAD
-    * 0b7: ff          SELFDESTRUCT
+    * 083: 84          DUP5                                    [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct && ( is_relayer || is_callable ), code_offset]
+    * 084: 62000099    PUSH3 // pc destruct location           [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct && ( is_relayer || is_callable ), code_offset, rel_jump]
+    * 088: 01          ADD                                     [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct && ( is_relayer || is_callable ), code_offset + rel_jump]
+    * 089: 57          JUMPI // user code jump location        [ret, code_offset, is_destruct, is_relayer, is_callable]
+    * 08a: 81          DUP2                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer]
+    * 08b: 83          DUP4                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer, is_destruct]
+    * 08c: 16          AND                                     [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct]
+    * 08d: 84          DUP5                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct, code_offset]
+    * 08e: 6200009f    PUSH3 // pc destruct location           [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct, code_offset, rel_jump]
+    * 092: 01          ADD                                     [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct, code_offset + rel_jump]
+    * 093: 57          JUMPI
+    * 094: 6000        PUSH1 0
+    * 096: 6000        PUSH1 0
+    * 098: fd          REVERT
+    * 099: 5b          JUMPDEST // user code jump location     [ret, code_offset, is_destruct, is_relayer, is_callable]
+    * 09a: 50          POP                                     [ret, code_offset, is_destruct, is_relayer]
+    * 09b: 50          POP                                     [ret, code_offset, is_destruct]
+    * 09c: 50          POP                                     [ret, code_offset]
+    * 09d: 50          POP                                     [ret]
+    * 09e: 56          JUMP
+    * 09f: 5b          JUMPDEST // destruct location
+    * 0a0: 7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111 PUSH32
+    * 0c1: 54          SLOAD
+    * 0c2: ff          SELFDESTRUCT
     * QUARKEND
     */
 
-  data "Appendix" hex"fe5b62000000620000007c01000000000000000000000000000000000000000000000000000000006000350463fed416e5147f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f65433147fabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf81954600114826000148282171685578183168462000094015760006000fd5b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811154ff"
+  data "Appendix" hex"fe5b62000000620000007c01000000000000000000000000000000000000000000000000000000006000350463fed416e5147f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f65433147fabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf81954600114826000148282171684620000990157818316846200009f015760006000fd5b50505050565b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811154ff"
 
   // Errors
   data "trx script reverted" hex"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000137472782073637269707420726576657274656400000000000000000000000000"
