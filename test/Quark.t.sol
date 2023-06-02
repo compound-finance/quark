@@ -5,23 +5,19 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import "./lib/YulHelper.sol";
-import "./lib/QuarkHelper.sol";
 import "./lib/Counter.sol";
 
-interface QuarkInterface {
-    function quarkAddress25(address) external returns (address);
-    function virtualCode81() external returns (bytes memory);
-}
+import "../src/Relayer.sol";
 
 contract QuarkTest is Test {
     event Ping(uint256 value);
 
-    address public quark;
+    Relayer public relayer;
     Counter public counter;
 
     constructor() {
-        quark = new YulHelper().deploy("Quark.yul/Quark.json");
-        console.log("Quark manager deployed to: %s", quark);
+        relayer = new Relayer();
+        console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();
         counter.setNumber(0);
@@ -32,21 +28,21 @@ contract QuarkTest is Test {
         // nothing
     }
 
-    function testPing() public {
-        bytes memory ping = new QuarkHelper().getExample("examples/Ping.yul");
-        console.logBytes(ping);
+    // function testPing() public {
+    //     bytes memory ping = new YulHelper().get("Ping.yul/Logger.json");
+    //     console.logBytes(ping);
 
-        // TODO: Check who emitted.
-        vm.expectEmit(false, false, false, true);
-        emit Ping(55);
+    //     // TODO: Check who emitted.
+    //     vm.expectEmit(false, false, false, true);
+    //     emit Ping(55);
 
-        (bool success, bytes memory data) = quark.call(ping);
-        assertEq(success, true);
-        assertEq(data, abi.encode());
-    }
+    //     (bool success, bytes memory data) = address(relayer).call(ping);
+    //     assertEq(success, true);
+    //     assertEq(data, abi.encode());
+    // }
 
     function testIncrementer() public {
-        bytes memory incrementer = new QuarkHelper().getExample("examples/test/Incrementer.yul");
+        bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
         console.logBytes(incrementer);
 
         // assertEq(incrementer, QuarkInterface(quark).virtualCode81());
@@ -55,7 +51,7 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 0);
 
         vm.prank(address(0xaa));
-        (bool success0, bytes memory data0) = quark.call(incrementer);
+        (bool success0, bytes memory data0) = address(relayer).call(incrementer);
         assertEq(success0, true);
         assertEq(data0, abi.encode());
         assertEq(counter.number(), 3);

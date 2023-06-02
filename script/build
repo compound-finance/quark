@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -exo pipefail
+
+forge build --contracts ./src/ --skip test
+code="$(cat out/Quark.yul/Quark.json | jq -r '.bytecode .object' | cut -c 3-)"
+sed -E -i '' "s/return hex\"[a-zA-Z0-9]*\"/return hex\"$code\"/g" ./src/Relayer.sol
+forge build --contracts ./src/ --skip test
