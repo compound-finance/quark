@@ -10,9 +10,71 @@ interface Quark {
 }
 
 contract Relayer {
+  error QuarkAlreadyRunning();
+  error QuarkNotRunning();
+  error QuarkInitFailed(bool create2Failed);
+  error QuarkCallFailed(bytes error);
+  error BadSignatory();
+  error InvalidValueS();
+  error InvalidValueV();
+  error SignatureExpired();
+
   bool public quarkRunning;
   uint256 public quarkSize;
   mapping(uint256 => bytes32) quarkChunks;
+
+  /// @notice The major version of this contract
+  string public constant version = "0";
+
+  /** Internal constants **/
+
+  /// @dev The EIP-712 typehash for the contract's domain
+  bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+  /// @dev The EIP-712 typehash for runTrxScript
+  bytes32 internal constant TRX_SCRIPT_TYPEHASH = keccak256("TrxScript(address account,uint32 nonce,uint32[] depends,bytes trxScript,uint256 expiry)");
+
+  ///  See https://ethereum.github.io/yellowpaper/paper.pdf #307)
+  uint internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+
+  /**
+     * @notice Runs a quark script
+     * @param account The owner account (EOA, not quark address)
+     * @param nonce The next expected nonce value for the signatory
+     * @param depends List of previous nonces that must first be incorporated
+     * @param expiry The expiration time of this
+     * @param trxScript The transaction scrip to run
+     * @param v The recovery byte of the signature
+     * @param r Half of the ECDSA signature pair
+     * @param s Half of the ECDSA signature pair
+     */
+    function runTrxScript(
+        address account,
+        uint32 nonce,
+        uint32[] calldata depends,
+        bytes calldata trxScript,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
+        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
+        if (v != 27 && v != 28) revert InvalidValueV();
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Quark")), keccak256(bytes(version)), block.chainid, address(this)));
+        bytes32 structHash = keccak256(abi.encode(TRX_SCRIPT_TYPEHASH, account, nonce, depends, trxScript, expiry));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        address signatory = ecrecover(digest, v, r, s);
+        if (signatory == address(0)) revert BadSignatory();
+        if (account != signatory) revert BadSignatory();
+        // TODO: Check nonce
+        // if (nonce != userNonce[signatory]++) revert BadNonce();
+
+        // TODO: Check depends
+        if (block.timestamp >= expiry) revert SignatureExpired();
+
+        runQuark_(account, trxScript);
+    }
 
   function getQuarkAddressXX(address account) external view returns (address) {
     return address(uint160(uint(
@@ -46,7 +108,9 @@ contract Relayer {
   }
 
   function readQuark() external view returns (bytes memory) {
-    require(quarkRunning, "quark not running");
+    if (!quarkRunning) {
+      revert QuarkNotRunning();
+    }
     uint256 quarkSize_ = quarkSize;
     bytes memory quark = new bytes(quarkSize_);
     uint256 chunks = wordSize(quarkSize_);
@@ -61,14 +125,21 @@ contract Relayer {
     return quark;
   }
 
-  function runQuark(bytes memory quarkCode) public payable returns (bytes memory) {
-    require(!quarkRunning, "quark already running");
+  function runQuark(bytes memory quarkCode) external payable returns (bytes memory) {
+    return runQuark_(msg.sender, quarkCode);
+  }
+
+  function runQuark_(address account, bytes memory quarkCode) internal returns (bytes memory) {
+    if (quarkRunning) {
+      revert QuarkAlreadyRunning();
+    }
+
     saveQuark(quarkCode);
     quarkRunning = true;
 
     bytes memory initCode = abi.encodePacked(
       getQuarkInitCodeXX(),
-      abi.encode(msg.sender)
+      abi.encode(account)
     );
     uint256 initCodeLen = initCode.length;
 
@@ -76,7 +147,9 @@ contract Relayer {
     assembly {
       quark := create2(0, add(initCode, 32), initCodeLen, 0)
     }
-    require(uint160(address(quark)) > 0, "quark init failed");
+    if (uint160(address(quark)) == 0) {
+      revert QuarkInitFailed(true);
+    }
 
     quarkRunning = false; // TODO: is this right spot to put this?
     clearQuark();
@@ -86,10 +159,14 @@ contract Relayer {
     assembly {
       quarkCodeLen := extcodesize(quark)
     }
-    require(quarkCodeLen > 0, "quark init failed");
+    if (quarkCodeLen == 0) {
+      revert QuarkInitFailed(false);
+    }
 
     (bool callSuccess, bytes memory res) = address(quark).call{value: msg.value}(hex"");
-    require(callSuccess, "quark call failed");
+    if (!callSuccess) {
+      revert QuarkCallFailed(res);
+    }
 
     quark.destruct145();
 
@@ -121,6 +198,6 @@ contract Relayer {
   }
 
   fallback(bytes calldata quarkCode) external payable returns (bytes memory) {
-    return runQuark(quarkCode);
+    return runQuark_(msg.sender, quarkCode);
   }
 }
