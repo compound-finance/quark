@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -14,6 +14,12 @@ contract QuarkTest is Test {
 
     Relayer public relayer;
     Counter public counter;
+
+    uint256 internal accountPrivateKey;
+    uint256 internal searcherPrivateKey;
+
+    address internal account;
+    address internal searcher;
 
     constructor() {
         relayer = new Relayer();

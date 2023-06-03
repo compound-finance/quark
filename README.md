@@ -91,7 +91,7 @@ There is _very experimental_ support for turning a Solidity contract into a tran
 
 ```rs
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.20;
 
 contract Fun {
   event FunTimes(uint256);
