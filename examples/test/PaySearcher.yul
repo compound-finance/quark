@@ -3,7 +3,7 @@ object "PaySearcher" {
     verbatim_0i_0o(hex"303030505050")
 
     // Pays the searcher 50e18 tokens for submitting
-    verbatim_0i_0o(hex"60a96080536005608153609c60825360bb608353326084527f000000000000000000000000000000000000000000000002b5e3af16b188000060a452600060006044608060007f000000000000000000000000F62849F9A0B5Bf2913b396098F7c7019b51A820a5af150")
+    verbatim_0i_0o(hex"60a96080536005608153609c60825360bb608353326084527f000000000000000000000000000000000000000000000002b5e3af16b188000060a452600060006044608060007f000000000000000000000000F62849F9A0B5Bf2913b396098F7c7019b51A820a337f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f65414025af150")
 
     /* Pay Searcher [VERBATIM]
      * 
@@ -24,14 +24,6 @@ object "PaySearcher" {
      *
      * Opcodes
      *
-     * 33   [CALLER]
-     * 7f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6 [PUSH32] keccak("org.quark.relayer")
-     * 54   [SLOAD]
-     * 14   [EQ]
-     * 6001 [PUSH1 0x01]
-     * 18   [XOR]
-     * 62000000 [PUSH3]
-     * 57   [JUMPI]
      * 60a9 [PUSH1 0xa9]
      * 6080 [PUSH1 0x80]
      * 53   [MSTORE8]
@@ -56,33 +48,50 @@ object "PaySearcher" {
      * 6080 [PUSH1 0x80]
      * 6000 [PUSH1 0x00]
      * 7f000000000000000000000000F62849F9A0B5Bf2913b396098F7c7019b51A820a [PUSH32]
-     * 5a   GAS
-     * f1   CALL
-     * 50   POP
-     * 5b   JUMPDEST
+     * 33   [CALLER]
+     * 7f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6 [PUSH32] keccak("org.quark.relayer")
+     * 54   [SLOAD]
+     * 14   [EQ] [..., token, 1] <-- when we should call | [..., token, 0] <-- when we should not
+     * 02   [MUL]
+     * 5a   [GAS]
+     * f1   [CALL]
+     * 50   [POP]
      */
-
-    let account := sload(0)
-    log1(0, 0, account)
-    switch account
-    case 0x88 {
-      log1(0, 0, 0x8888)
-    }
-    case 0x99 {
-      log1(0, 0, 0x9999)
-    }
 
     let counter := 0x2e234DAe75C793f67A35089C9d99245E1C58470b
 
-    // increment()
-    let sig := 0xd09de08a
+    function decode_as_uint(offset) -> v {
+      let pos := add(4, mul(offset, 0x20))
+      if lt(calldatasize(), add(pos, 0x20)) {
+          revert(0, 0)
+      }
+      v := calldataload(pos)
+    }
 
-    mstore(0x80, sig)
+    function selector() -> s {
+      s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
+    }
 
-    pop(call(gas(), counter, 0, 0x9c, 4, 0, 0))
-    pop(call(gas(), counter, 0, 0x9c, 4, 0, 0))
-    pop(call(gas(), counter, 0, 0x9c, 4, 0, 0))
+    switch selector()
+    case 0x4ccf4b30 /* "counterCallback(uint256)" */ {
+      let counter_value := decode_as_uint(0x00)
+      log1(0, 0, counter_value)
 
-    return (0, 0)
+      // increment(uint256)
+      let sig := 0x7cf5dab0
+      mstore(0x80, sig)
+      mstore(0xa0, mul(counter_value, 10))
+      pop(call(gas(), counter, 0, 0x9c, 0x24, 0, 0))
+      return (0, 0)
+    }
+    default {
+      sstore(0xabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf819, 0x1)
+
+      // incrementCallback()
+      let sig := 0x69eee7a9
+      mstore(0x80, sig)
+      pop(call(gas(), counter, 0, 0x9c, 4, 0, 0))
+      return (0, 0)
+    }
   }
 }

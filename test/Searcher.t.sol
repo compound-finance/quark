@@ -121,6 +121,6 @@ contract QuarkTest is Test {
         assertEq(token.balanceOf(searcher), 50e18);
 
         assertEq(data, abi.encode());
-        assertEq(counter.number(), 3);
+        assertEq(counter.number(), 11);
     }
 }
