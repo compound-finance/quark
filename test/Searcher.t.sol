@@ -78,4 +78,36 @@ contract QuarkTest is Test {
         assertEq(data, abi.encode());
         assertEq(counter.number(), 3);
     }
+
+    function testSearcher() public {
+        bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
+        assertEq(counter.number(), 0);
+
+        SigUtils.TrxScript memory trxScript = SigUtils.TrxScript({
+            account: account,
+            nonce: 0,
+            reqs: new uint32[](0),
+            trxScript: incrementer,
+            expiry: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(trxScript);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(accountPrivateKey, digest);
+
+        vm.prank(searcher);
+        bytes memory data = relayer.runTrxScript(
+            trxScript.account,
+            trxScript.nonce,
+            trxScript.reqs,
+            trxScript.trxScript,
+            trxScript.expiry,
+            v,
+            r,
+            s
+        );
+
+        assertEq(data, abi.encode());
+        assertEq(counter.number(), 3);
+    }
 }
