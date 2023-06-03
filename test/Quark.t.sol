@@ -53,6 +53,17 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 3);
     }
 
+    function testCallback() public {
+        bytes memory callback = new YulHelper().get("Callback.yul/Callback.json");
+
+        assertEq(counter.number(), 0);
+
+        vm.prank(address(0xaa));
+        bytes memory data = relayer.runQuark(callback);
+        assertEq(data, abi.encode());
+        assertEq(counter.number(), 11);
+    }
+
     function testDirectIncrementer() public {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
 
