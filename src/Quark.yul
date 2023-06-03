@@ -23,7 +23,6 @@ object "Quark" {
     *   // setCode(Relayer(relayer).readQuark())
     * }
     *
-    *
     * function destruct() external {
     *   require(msg.sender == relayer);
     *   selfdestruct(owner);
@@ -148,7 +147,6 @@ object "Quark" {
     let appendix_jump_dst := add(quark_size, 1)
 
     // Set the JUMP3 value, byte by byte
-    // Note: might want to check this fits in 3-bytes!
     rewrite_push_3(quark_offset, appendix_jump_dst)
 
     let appendix_offset := add(quark_offset, quark_size)
