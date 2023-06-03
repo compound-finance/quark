@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
+import { ERC20Mock } from "openzeppelin-contracts/contracts/mocks/ERC20Mock.sol";
+
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
@@ -15,6 +17,7 @@ contract QuarkTest is Test {
 
     Relayer public relayer;
     Counter public counter;
+    ERC20Mock public token;
     SigUtils public sigUtils;
 
     uint256 internal accountPrivateKey;
@@ -31,6 +34,9 @@ contract QuarkTest is Test {
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
+        token = new ERC20Mock();
+        console.log("Token deployed to: %s", address(token));
+
         sigUtils = new SigUtils(relayer.DOMAIN_SEPARATOR());
 
         accountPrivateKey = 0xA11CE;
@@ -41,6 +47,8 @@ contract QuarkTest is Test {
 
         console.log("Account: %s", address(account));
         console.log("Searcher: %s", address(searcher));
+
+        token.mint(relayer.getQuarkAddress(account), 100e18);
     }
 
     function setUp() public {
@@ -80,8 +88,10 @@ contract QuarkTest is Test {
     }
 
     function testSearcher() public {
-        bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
+        bytes memory incrementer = new YulHelper().get("PaySearcher.yul/PaySearcher.json");
         assertEq(counter.number(), 0);
+        assertEq(token.balanceOf(relayer.getQuarkAddress(account)), 100e18);
+        assertEq(token.balanceOf(searcher), 0);
 
         SigUtils.TrxScript memory trxScript = SigUtils.TrxScript({
             account: account,
@@ -95,7 +105,7 @@ contract QuarkTest is Test {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(accountPrivateKey, digest);
 
-        vm.prank(searcher);
+        vm.prank(searcher, searcher);
         bytes memory data = relayer.runTrxScript(
             trxScript.account,
             trxScript.nonce,
@@ -106,6 +116,9 @@ contract QuarkTest is Test {
             r,
             s
         );
+
+        assertEq(token.balanceOf(relayer.getQuarkAddress(account)), 50e18);
+        assertEq(token.balanceOf(searcher), 50e18);
 
         assertEq(data, abi.encode());
         assertEq(counter.number(), 3);
