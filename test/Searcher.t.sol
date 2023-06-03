@@ -16,12 +16,29 @@ interface SearcherScript {
     function submitSearch(Relayer relayer, bytes calldata relayerCalldata, address recipient, address payToken, uint256 expectedWindfall) external;
 }
 
+interface GasSearcherScript {
+    function submitSearch(Relayer relayer, bytes calldata relayerCalldata, address recipient, address payToken, address payTokenOracle, uint256 expectedWindfall, uint256 gasPrice) external;
+}
+
+contract OracleMock {
+    uint256 private answer;
+
+    constructor(uint256 answer_) {
+        answer = answer_;
+    }
+
+    function latestAnswer() external returns (uint256) {
+        return answer;
+    }
+}
+
 contract QuarkTest is Test {
     event Ping(uint256 value);
 
     Relayer public relayer;
     Counter public counter;
     ERC20Mock public token;
+    OracleMock public oracle;
     SigUtils public sigUtils;
 
     uint256 internal accountPrivateKey;
@@ -40,6 +57,9 @@ contract QuarkTest is Test {
 
         token = new ERC20Mock();
         console.log("Token deployed to: %s", address(token));
+
+        oracle = new OracleMock(18446744073709910265);
+        console.log("Oracle deployed to: %s", address(oracle));
 
         sigUtils = new SigUtils(relayer.DOMAIN_SEPARATOR());
 
@@ -272,4 +292,42 @@ contract QuarkTest is Test {
     }
 
     // TODO: Test no windfall or insufficient windfall or reverting
+
+    function testGasSearcherSubmitTrxScript() public {
+        bytes memory searcherScript = new YulHelper().get("GasSearcher.yul/Searcher.json");
+        bytes memory incrementer = new YulHelper().get("PaySearcher.yul/PaySearcher.json");
+        assertEq(counter.number(), 0);
+
+        SigUtils.TrxScript memory trxScript = SigUtils.TrxScript({
+            account: account,
+            nonce: 0,
+            reqs: new uint32[](0),
+            trxScript: incrementer,
+            expiry: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(trxScript);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(accountPrivateKey, digest);
+
+        bytes memory relayerCalldata = abi.encodeCall(relayer.runTrxScript, (
+            trxScript.account,
+            trxScript.nonce,
+            trxScript.reqs,
+            trxScript.trxScript,
+            trxScript.expiry,
+            v,
+            r,
+            s
+        ));
+
+        // Checks that we make at least 1e6 USDC
+        bytes memory submitSearch = abi.encodeCall(GasSearcherScript.submitSearch, (relayer, relayerCalldata, searcher, address(token), address(oracle), 1e6, 1 gwei));
+        
+        vm.prank(searcher, searcher);
+        bytes memory data = relayer.runQuark(searcherScript, submitSearch);
+
+        assertEq(data, abi.encode());
+        assertEq(counter.number(), 11);
+    }
 }

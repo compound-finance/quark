@@ -1,14 +1,22 @@
+import { Contract } from '@ethersproject/contracts';
+import { StaticJsonRpcProvider } from '@ethersproject/providers';
+import { abi } from '../../out/Relayer.sol/Relayer.json';
 
+
+let usdc = new Contract(
+  "0x112233445566778899aabbccddeeff0011223344",
+  [abi],
+  new StaticJsonRpcProvider(''));
 
 // TODO: Track fee token balances?
 
+// TODO: ABC
 interface Context {
-  priorityFee: number,
-  volatility: number,
-  baseTokenPrice: number,
-  accountNonce: number,
-  accountBaseToken: number,
-  tokenBalances: { [feeToken: string]: bigint }
+  baseFee: number,
+  prices: { [token]: number }, // in base token
+  relayers: {
+    []
+  }
 }
 
 interface TrxScript {
@@ -24,28 +32,10 @@ interface Candidate {
   // TODO: Can add reqs and other goodies
 }
 
-type Response
-  = { submitted: true, tx: TransactionResponse }
-  | { submitted: false, rejection: string }
-
 function buildContext(): Promise<Context> {
-
-}
-
-function buildTrxScript(bytes: string): TrxScript {
-
-}
-
-async function buildCandidate(trxScript: TrxScript): Promise<Candidate> {
-
-}
-
-function decideCandidate(ctx: Context, candidate: Candidate): null | string {
-
-}
-
-async function executeCandidate(candidate: Candidate): Promise<[Context, TransactionResponse]> {
-
+  return {
+    baseFee: 
+  }
 }
 
 async function receiveTrxScript(trxScript: string, ctx: Context): Promise<Response> {
