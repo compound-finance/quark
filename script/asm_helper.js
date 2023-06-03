@@ -1,5 +1,11 @@
 #!env node
 
+/**
+ * This is a helper script to help out with the handwritten asm code in `Quark.yul`, specifically
+ * the Appendix. That code needs to be able to be shifted in pc, so it's hard/impossible to
+ * write it even in Yul. But it's easy to get opcodes/offsets wrong, so this is a script to help
+ * fill in some minor gaps.
+ */
 const fs = require('fs');
 const path = require('path');
 

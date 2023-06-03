@@ -12,6 +12,10 @@ import "./lib/SigUtils.sol";
 
 import "../src/Relayer.sol";
 
+interface SearcherScript {
+    function submitSearch(Relayer relayer, bytes calldata relayerCalldata, address recipient, address payToken, uint256 expectedWindfall) external;
+}
+
 contract QuarkTest is Test {
     event Ping(uint256 value);
 
@@ -230,4 +234,42 @@ contract QuarkTest is Test {
         assertEq(data, abi.encode());
         assertEq(counter.number(), 11);
     }
+
+    function testSearcherSubmitTrxScript() public {
+        bytes memory searcherScript = new YulHelper().get("Searcher.yul/Searcher.json");
+        bytes memory incrementer = new YulHelper().get("PaySearcher.yul/PaySearcher.json");
+        assertEq(counter.number(), 0);
+
+        SigUtils.TrxScript memory trxScript = SigUtils.TrxScript({
+            account: account,
+            nonce: 0,
+            reqs: new uint32[](0),
+            trxScript: incrementer,
+            expiry: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(trxScript);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(accountPrivateKey, digest);
+
+        vm.prank(searcher, searcher);
+        bytes memory relayerCalldata = abi.encodeCall(relayer.runTrxScript, (
+            trxScript.account,
+            trxScript.nonce,
+            trxScript.reqs,
+            trxScript.trxScript,
+            trxScript.expiry,
+            v,
+            r,
+            s
+        ));
+
+        bytes memory submitSearch = abi.encodeCall(SearcherScript.submitSearch, (relayer, relayerCalldata, searcher, address(token), 50e18));
+        bytes memory data = relayer.runQuark(searcherScript, submitSearch);
+
+        assertEq(data, abi.encode());
+        assertEq(counter.number(), 11);
+    }
+
+    // TODO: Test no windfall or insufficient windfall or reverting
 }

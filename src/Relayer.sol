@@ -18,6 +18,7 @@ contract Relayer {
     error SignatureExpired();
     error NonceReplay();
     error NonceMissingReq(uint32 req);
+    error QuarkAddressMismatch(address expected, address created);
 
     mapping(address => uint256) public quarkSizes;
     mapping(address => mapping(uint256 => bytes32)) quarkChunks;
@@ -106,7 +107,7 @@ contract Relayer {
         checkReqs(account, reqs);
         trySetNonce(account, nonce);
 
-        return runQuark_(account, trxScript);
+        return _runQuark(account, trxScript, hex"");
     }
 
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
@@ -116,7 +117,7 @@ contract Relayer {
     /**
      * @notice Helper function to return a quark address for a given account.
      */
-    function getQuarkAddress(address account) external view returns (address) {
+    function getQuarkAddress(address account) public view returns (address) {
         return address(uint160(uint(
             keccak256(
                 abi.encodePacked(
@@ -151,16 +152,16 @@ contract Relayer {
      *      in the constructor phase to get its code.
      */
     function readQuark() external view returns (bytes memory) {
-        address account = msg.sender;
-        uint256 quarkSize = quarkSizes[account];
+        address quarkAddress = msg.sender;
+        uint256 quarkSize = quarkSizes[quarkAddress];
         if (quarkSize == 0) {
             revert QuarkNotActive();
         }
-        
+
         bytes memory quark = new bytes(quarkSize);
         uint256 chunks = wordSize(quarkSize);
         for (uint256 i = 0; i < chunks; i++) {
-            bytes32 chunk = quarkChunks[account][i];
+            bytes32 chunk = quarkChunks[quarkAddress][i];
             assembly {
                 // TODO: Is there an easy way to do this in Solidity?
                 // Note: the last one can overrun the size, should we prevent that?
@@ -175,32 +176,43 @@ contract Relayer {
      * an alias to this function.
      */
     function runQuark(bytes memory quarkCode) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode);
+        return _runQuark(msg.sender, quarkCode, hex"");
+    }
+
+    /**
+     * Run a quark script from a given account. Note: can also use fallback, which is
+     * an alias to this function. This variant allows you to pass in data that will
+     * be passed to the Quark script on its invocation.
+     */
+    function runQuark(bytes memory quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
+        return _runQuark(msg.sender, quarkCode, quarkCalldata);
     }
 
     // Internal function for running a quark. This handles the `create2`, invoking the script,
     // and then calling `destruct` to clean it up. We attempt to revert on any failed step.
-    function _runQuark(address account, bytes memory quarkCode) internal returns (bytes memory) {
+    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata) internal returns (bytes memory) {
+        address quarkAddress = getQuarkAddress(account);
+
         // Ensure a quark isn't already running
-        if (quarkSize[account] > 0) {
+        if (quarkSizes[quarkAddress] > 0) {
             revert QuarkAlreadyActive();
         }
 
-        // Check the magic incantation (0x303030606060).
+        // Check the magic incantation (0x303030505050).
         // This has the side-effect of making sure we don't accept 0-length quark code.
         if (quarkCode.length < 6
             || quarkCode[0] != 0x30
             || quarkCode[1] != 0x30
             || quarkCode[2] != 0x30
-            || quarkCode[3] != 0x60
-            || quarkCode[4] != 0x60
-            || quarkCode[5] != 0x60) {
+            || quarkCode[3] != 0x50
+            || quarkCode[4] != 0x50
+            || quarkCode[5] != 0x50) {
             revert QuarkInvalid();
         }
 
         // Stores the quark in storage so it can be loaded via `readQuark` in the `create2`
         // constructor code (see `./Quark.yul`).
-        saveQuark(account, quarkCode);
+        saveQuark(quarkAddress, quarkCode);
 
         // Appends the account to the init code (the argument). This is meant to be part
         // of the `create2` init code, so that we get a unique quark wallet per address.
@@ -220,6 +232,9 @@ contract Relayer {
         if (uint160(address(quark)) == 0) {
             revert QuarkInitFailed(true);
         }
+        if (quarkAddress != address(quark)) {
+            revert QuarkAddressMismatch(quarkAddress, address(quark));
+        }
 
         // Double ensure it was created by making sure it has code associated with it.
         // TODO: Do we need this double check there's code here?
@@ -231,8 +246,8 @@ contract Relayer {
             revert QuarkInitFailed(false);
         }
 
-        // Call into the new quark wallet with an empty message to hit the fallback function.
-        (bool callSuccess, bytes memory res) = address(quark).call{value: msg.value}(hex"");
+        // Call into the new quark wallet with a (potentially empty) message to hit the fallback function.
+        (bool callSuccess, bytes memory res) = address(quark).call{value: msg.value}(quarkCalldata);
         if (!callSuccess) {
             revert QuarkCallFailed(res);
         }
@@ -244,7 +259,7 @@ contract Relayer {
         quark.destruct();
 
         // Clear all of the quark data to recoup gas costs.
-        clearQuark(account);
+        clearQuark(quarkAddress);
 
         // We return the result from the first call, but it's not particularly important.
         return res;
@@ -254,13 +269,20 @@ contract Relayer {
      * @notice Runs a given quark script, if valid, from the current sender.
      */
     fallback(bytes calldata quarkCode) external payable returns (bytes memory) {
-        return runQuark_(msg.sender, quarkCode);
+        return _runQuark(msg.sender, quarkCode, hex"");
     }
 
-    // Saves quark code for an account into storage. This is required since
-    // we can't pass unique quark code in the `create2` constructor, since
-    // it would end up at a different wallet address.
-    function saveQuark(address account, bytes memory quark) internal {
+    /***
+     * @notice Revert given empty call.
+     */
+    receive() external payable {
+        revert();
+    }
+
+    // Saves quark code for an quark address into storage. This is required
+    // since we can't pass unique quark code in the `create2` constructor,
+    // since it would end up at a different wallet address.
+    function saveQuark(address quarkAddress, bytes memory quark) internal {
         uint256 quarkSize = quark.length;
         uint256 chunks = wordSize(quarkSize);
         for (uint256 i = 0; i < chunks; i++) {
@@ -269,19 +291,23 @@ contract Relayer {
                 // TODO: Is there an easy way to do this in Solidity?
                 chunk := mload(add(quark, add(32, mul(i, 32))))
             }
-            quarkChunks[account][i] = chunk;
+            quarkChunks[quarkAddress][i] = chunk;
         }
-        quarkSizes[account] = quarkSize;
+        quarkSizes[quarkAddress] = quarkSize;
     }
 
     // Clears quark data a) to save gas costs, and b) so another quark can
-    // be run for the same account in the future.
-    function clearQuark(address account) internal {
+    // be run for the same quarkAddress in the future.
+    function clearQuark(address quarkAddress) internal {
+        uint256 quarkSize = quarkSizes[quarkAddress];
+        if (quarkSize == 0) {
+            revert QuarkNotActive();
+        }
         uint256 chunks = wordSize(quarkSize);
         for (uint256 i = 0; i < chunks; i++) {
-            quarkChunks[account][i] = 0;
+            quarkChunks[quarkAddress][i] = 0;
         }
-        quarkSizes[account] = 0;
+        quarkSizes[quarkAddress] = 0;
     }
 
     // wordSize returns the number of 32-byte words required to store a given value.
