@@ -29,11 +29,11 @@ object "Callback" {
       return (0, 0)
     }
     default {
-      sstore(0xabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf819, 0x1)
-
       // incrementCallback()
       let sig := 0x69eee7a9
       mstore(0x80, sig)
+
+      // Note: this reverts but we pop it
       pop(call(gas(), counter, 0, 0x9c, 4, 0, 0))
       return (0, 0)
     }
