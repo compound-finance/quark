@@ -6,7 +6,9 @@ import { Provider } from '@ethersproject/abstract-provider';
 import { Signer } from '@ethersproject/abstract-signer';
 import { Wallet } from '@ethersproject/wallet';
 import { abi as relayerAbi } from '../../out/Relayer.sol/Relayer.json';
-import { bytecode as searcherScript } from '../../out/GasSearcher.yul/Searcher.json'
+// TODO: Get this script
+import { bytecode as searcherScript } from '../../out/PaySearcher.yul/PaySearcher.json'
+import { TrxRequest } from './searcher.ts';
 
 interface NetworkConfig {
   relayer: Contract,
@@ -30,22 +32,55 @@ const networkConfigs = {
 
 const networks: { [network: string]: NetworkConfig } = {};
 
-const gasSearcherInterface = new Interface([
-  "function submitSearch(address relayer, bytes calldata relayerCalldata, address recipient, address payToken, address payTokenOracle, uint256 expectedWindfall, uint256 gasPrice) external",
-]);
+const relayerInterface = new Interface(relayerAbi);
 
-interface TrxRequest {
-  network: string,
-  account: string,
-  nonce: number,
-  reqs: number[],
-  trxScript: string,
-  expiry: number,
-  v: string,
-  r: string,
-  s: string
+async function run() {
+  // All properties on a domain are optional
+  const domain = {
+    name: 'Ether Mail',
+    version: '1',
+    chainId: 1,
+    verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC'
+  };
+
+  // The named list of all type definitions
+  const types = {
+    Person: [
+        { name: 'name', type: 'string' },
+        { name: 'wallet', type: 'address' }
+    ],
+    Mail: [
+        { name: 'from', type: 'Person' },
+        { name: 'to', type: 'Person' },
+        { name: 'contents', type: 'string' }
+    ]
+  };
+
+  // The data to sign
+  const value = {
+    from: {
+        name: 'Cow',
+        wallet: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826'
+    },
+    to: {
+        name: 'Bob',
+        wallet: '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB'
+    },
+    contents: 'Hello, Bob!'
+  };
+
+  let signature = await signer._signTypedData(domain, types, value);
+
+  let res = fetch('http://localhost:3000', {
+    headers: {
+      'Content-Type': 'application/json',
+      body: JSON.stringify(trxRequest)
+    }
+  });
+  let json = await res.json();
+
+  console.log({json});
 }
-
 function getTrxRequest(req: object): TrxRequest {
   if (!('network' in req)) {
     throw new Error(`Missing required key \`network\``);
