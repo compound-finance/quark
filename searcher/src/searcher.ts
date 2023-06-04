@@ -34,7 +34,7 @@ const gasSearcherInterface = new Interface([
   "function submitSearch(address relayer, bytes calldata relayerCalldata, address recipient, address payToken, address payTokenOracle, uint256 expectedWindfall, uint256 gasPrice) external",
 ]);
 
-interface TrxRequest {
+export interface TrxRequest {
   network: string,
   account: string,
   nonce: number,
@@ -74,7 +74,7 @@ fastify.post('/', async (req, reply) => {
 
   console.log({network});
 
-  let encodedTrx = network.relayer.runTrxScript.populateTransaction(
+  let encodedTrx = await network.relayer.populateTransaction.runTrxScript(
     trxRequest.account,
     trxRequest.nonce,
     trxRequest.reqs,
@@ -103,7 +103,7 @@ fastify.post('/', async (req, reply) => {
 
   console.log({submitSearch});
 
-  let tx = await network.relayer.runQuark(searcherScript.object, submitSearch);
+  let tx = await network.relayer['runQuark(bytes,bytes)'](searcherScript.object, submitSearch);
 
   return {
     tx
@@ -119,8 +119,7 @@ async function start() {
       continue;
     }
 
-    let wallet = new Wallet(pk)
-    wallet.connect(provider);
+    let wallet = new Wallet(pk).connect(provider);
     let signer: Signer = wallet;
     let relayer = new Contract(
       config.relayer,

@@ -8,6 +8,8 @@ import "forge-std/console.sol";
 
 import "./lib/YulHelper.sol";
 import "./lib/Counter.sol";
+import "./lib/PayScript.sol";
+import "../examples/PayLog.sol";
 import "./lib/SigUtils.sol";
 
 import "../src/Relayer.sol";
@@ -27,13 +29,14 @@ contract OracleMock {
         answer = answer_;
     }
 
-    function latestAnswer() external returns (uint256) {
+    function latestAnswer() external view returns (uint256) {
         return answer;
     }
 }
 
 contract QuarkTest is Test {
     event Ping(uint256 value);
+    event Hello(uint256 n);
 
     Relayer public relayer;
     Counter public counter;
@@ -83,11 +86,12 @@ contract QuarkTest is Test {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
         assertEq(counter.number(), 0);
 
-        SigUtils.TrxScript memory trxScript = SigUtils.TrxScript({
+        TrxScript memory trxScript = TrxScript({
             account: account,
             nonce: 0,
             reqs: new uint32[](0),
             trxScript: incrementer,
+            trxCalldata: hex"",
             expiry: 1 days
         });
 
@@ -101,6 +105,7 @@ contract QuarkTest is Test {
             trxScript.nonce,
             trxScript.reqs,
             trxScript.trxScript,
+            trxScript.trxCalldata,
             trxScript.expiry,
             v,
             r,
@@ -115,11 +120,12 @@ contract QuarkTest is Test {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
         assertEq(counter.number(), 0);
 
-        SigUtils.TrxScript memory trxScript = SigUtils.TrxScript({
+        TrxScript memory trxScript = TrxScript({
             account: account,
             nonce: 0,
             reqs: new uint32[](0),
             trxScript: incrementer,
+            trxCalldata: hex"",
             expiry: 1 days
         });
 
@@ -133,6 +139,7 @@ contract QuarkTest is Test {
             trxScript.nonce,
             trxScript.reqs,
             trxScript.trxScript,
+            trxScript.trxCalldata,
             trxScript.expiry,
             v,
             r,
@@ -149,6 +156,7 @@ contract QuarkTest is Test {
             trxScript.nonce,
             trxScript.reqs,
             trxScript.trxScript,
+            trxScript.trxCalldata,
             trxScript.expiry,
             v,
             r,
@@ -163,11 +171,12 @@ contract QuarkTest is Test {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
         assertEq(counter.number(), 0);
 
-        SigUtils.TrxScript memory trxScript0 = SigUtils.TrxScript({
+        TrxScript memory trxScript0 = TrxScript({
             account: account,
             nonce: 5,
             reqs: new uint32[](0),
             trxScript: incrementer,
+            trxCalldata: hex"",
             expiry: 1 days
         });
 
@@ -181,6 +190,7 @@ contract QuarkTest is Test {
             trxScript0.nonce,
             trxScript0.reqs,
             trxScript0.trxScript,
+            trxScript0.trxCalldata,
             trxScript0.expiry,
             v,
             r,
@@ -193,11 +203,12 @@ contract QuarkTest is Test {
         uint32[] memory reqs = new uint32[](1);
         reqs[0] = 5;
 
-        SigUtils.TrxScript memory trxScript1 = SigUtils.TrxScript({
+        TrxScript memory trxScript1 = TrxScript({
             account: account,
             nonce: 10,
             reqs: reqs,
             trxScript: incrementer,
+            trxCalldata: hex"",
             expiry: 1 days
         });
 
@@ -208,6 +219,7 @@ contract QuarkTest is Test {
             trxScript1.nonce,
             trxScript1.reqs,
             trxScript1.trxScript,
+            trxScript1.trxCalldata,
             trxScript1.expiry,
             v,
             r,
@@ -224,11 +236,12 @@ contract QuarkTest is Test {
         assertEq(token.balanceOf(relayer.getQuarkAddress(account)), 100e18);
         assertEq(token.balanceOf(searcher), 0);
 
-        SigUtils.TrxScript memory trxScript = SigUtils.TrxScript({
+        TrxScript memory trxScript = TrxScript({
             account: account,
             nonce: 0,
             reqs: new uint32[](0),
             trxScript: incrementer,
+            trxCalldata: hex"",
             expiry: 1 days
         });
 
@@ -242,6 +255,7 @@ contract QuarkTest is Test {
             trxScript.nonce,
             trxScript.reqs,
             trxScript.trxScript,
+            trxScript.trxCalldata,
             trxScript.expiry,
             v,
             r,
@@ -260,11 +274,12 @@ contract QuarkTest is Test {
         bytes memory incrementer = new YulHelper().get("PaySearcher.yul/PaySearcher.json");
         assertEq(counter.number(), 0);
 
-        SigUtils.TrxScript memory trxScript = SigUtils.TrxScript({
+        TrxScript memory trxScript = TrxScript({
             account: account,
             nonce: 0,
             reqs: new uint32[](0),
             trxScript: incrementer,
+            trxCalldata: hex"",
             expiry: 1 days
         });
 
@@ -278,6 +293,7 @@ contract QuarkTest is Test {
             trxScript.nonce,
             trxScript.reqs,
             trxScript.trxScript,
+            trxScript.trxCalldata,
             trxScript.expiry,
             v,
             r,
@@ -298,11 +314,12 @@ contract QuarkTest is Test {
         bytes memory incrementer = new YulHelper().get("PaySearcher.yul/PaySearcher.json");
         assertEq(counter.number(), 0);
 
-        SigUtils.TrxScript memory trxScript = SigUtils.TrxScript({
+        TrxScript memory trxScript = TrxScript({
             account: account,
             nonce: 0,
             reqs: new uint32[](0),
             trxScript: incrementer,
+            trxCalldata: hex"",
             expiry: 1 days
         });
 
@@ -315,6 +332,7 @@ contract QuarkTest is Test {
             trxScript.nonce,
             trxScript.reqs,
             trxScript.trxScript,
+            trxScript.trxCalldata,
             trxScript.expiry,
             v,
             r,
@@ -329,5 +347,48 @@ contract QuarkTest is Test {
 
         assertEq(data, abi.encode());
         assertEq(counter.number(), 11);
+    }
+
+    function testGasSearcherSubmitPayLog() public {
+        bytes memory searcherScript = new YulHelper().get("GasSearcher.yul/Searcher.json");
+        bytes memory payLogCode = new YulHelper().getDeployed("PayLogScript.yul/PayLog_54.json");
+        assertEq(counter.number(), 0);
+
+        TrxScript memory trxScript = TrxScript({
+            account: account,
+            nonce: 0,
+            reqs: new uint32[](0),
+            trxScript: payLogCode,
+            trxCalldata: abi.encodeCall(PayLog.payLog, (IErc20(address(token)), 5e6, 55)),
+            expiry: 1 days
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(trxScript);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(accountPrivateKey, digest);
+
+        bytes memory relayerCalldata = abi.encodeCall(relayer.runTrxScript, (
+            trxScript.account,
+            trxScript.nonce,
+            trxScript.reqs,
+            trxScript.trxScript,
+            trxScript.trxCalldata,
+            trxScript.expiry,
+            v,
+            r,
+            s
+        ));
+
+        // Checks that we make at least 1e6 USDC
+        bytes memory submitSearch = abi.encodeCall(GasSearcherScript.submitSearch, (relayer, relayerCalldata, searcher, address(token), address(oracle), 1e6, 1 gwei));
+        
+        // TODO: Check who emitted.
+        vm.expectEmit(false, false, false, true);
+        emit Hello(55);
+
+        vm.prank(searcher, searcher);
+        bytes memory data = relayer.runQuark(searcherScript, submitSearch);
+
+        assertEq(data, abi.encode());
     }
 }

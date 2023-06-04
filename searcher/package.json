@@ -7,6 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "tsc -p tsconfig.build.json",
+    "submit": "ts-node src/client.ts",
     "dev": "ts-node src/searcher.ts"
   },
   "author": "",
@@ -27,6 +28,7 @@
     "@ethersproject/strings": "^5.7.0",
     "@ethersproject/transactions": "^5.7.0",
     "@ethersproject/wallet": "^5.7.0",
+    "arg": "^5.0.2",
     "fastify": "^4.17.0"
   }
 }

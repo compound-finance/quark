@@ -1,188 +1,138 @@
-import Fastify from 'fastify'
-import { Contract } from '@ethersproject/contracts';
 import { Interface } from '@ethersproject/abi';
-import { StaticJsonRpcProvider } from '@ethersproject/providers';
-import { Provider } from '@ethersproject/abstract-provider';
-import { Signer } from '@ethersproject/abstract-signer';
 import { Wallet } from '@ethersproject/wallet';
-import { abi as relayerAbi } from '../../out/Relayer.sol/Relayer.json';
-// TODO: Get this script
-import { bytecode as searcherScript } from '../../out/PaySearcher.yul/PaySearcher.json'
-import { TrxRequest } from './searcher.ts';
+import { hexDataSlice, hexlify } from '@ethersproject/bytes';
+import { TrxRequest } from './searcher';
+import arg from 'arg';
 
 interface NetworkConfig {
-  relayer: Contract,
-  signer: Signer,
-  provider: Provider,
-  recipient: string,
-  payToken: string,
-  payTokenOracle: string,
-  expectedWindfall: number,
+  chainId: number,
+  relayer: string
 }
 
-const networkConfigs = {
+const networks: { [network: string]: NetworkConfig } = {
   'quarknet': {
-    relayer: '0x687bB6c57915aa2529EfC7D2a26668855e022fAE',
-    rpcUrl: 'https://ethforks.io/@quark',
-    payToken: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-    payTokenOracle: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
-    expectedWindfall: 1e6, // $1.00
+    chainId: 1,
+    relayer: '0x687bB6c57915aa2529EfC7D2a26668855e022fAE'
   }
 };
 
-const networks: { [network: string]: NetworkConfig } = {};
+const trxScriptTypes = {
+  TrxScript: [
+    { name: 'account', type: 'address' },
+    { name: 'nonce', type: 'uint32' },
+    { name: 'reqs', type: 'uint32[]' },
+    { name: 'trxScript', type: 'bytes' },
+    { name: 'expiry', type: 'uint256' }
+  ]
+};
 
-const relayerInterface = new Interface(relayerAbi);
+async function buildTrxScript(
+  network: string,
+  signer: Wallet,
+  account: string,
+  nonce: number,
+  reqs: number[],
+  trxScript: string,
+  expiry: number): Promise<TrxRequest> {
+  let networkConfig = networks[network];
+  if (!networkConfig) {
+    throw new Error(`Unknown or invalid network: ${network}`);
+  }
 
-async function run() {
   // All properties on a domain are optional
   const domain = {
-    name: 'Ether Mail',
-    version: '1',
-    chainId: 1,
-    verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC'
-  };
-
-  // The named list of all type definitions
-  const types = {
-    Person: [
-        { name: 'name', type: 'string' },
-        { name: 'wallet', type: 'address' }
-    ],
-    Mail: [
-        { name: 'from', type: 'Person' },
-        { name: 'to', type: 'Person' },
-        { name: 'contents', type: 'string' }
-    ]
+    name: 'Quark',
+    version: '0',
+    chainId: networkConfig.chainId,
+    verifyingContract: networkConfig.relayer
   };
 
   // The data to sign
-  const value = {
-    from: {
-        name: 'Cow',
-        wallet: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826'
-    },
-    to: {
-        name: 'Bob',
-        wallet: '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB'
-    },
-    contents: 'Hello, Bob!'
+  const trxScriptStruct = {
+    account: account,
+    nonce: nonce,
+    reqs: reqs,
+    trxScript: trxScript,
+    expiry: expiry,
+  }
+
+  let signature = hexlify(await signer._signTypedData(domain, trxScriptTypes, trxScriptStruct));
+  let r = hexDataSlice(signature, 0, 32);
+  let s = hexDataSlice(signature, 32, 64);
+  let v = hexDataSlice(signature, 64, 65);
+
+  return {
+    network,
+    ...trxScriptStruct,
+    v,
+    r,
+    s,
   };
+}
 
-  let signature = await signer._signTypedData(domain, types, value);
-
-  let res = fetch('http://localhost:3000', {
+async function run(network: string, pk: string, nonce: number, reqs: number[], trxScript: string, expiry: number) {
+  let signer = new Wallet(pk);
+  let account = await signer.getAddress();
+  let trxRequest = await buildTrxScript(network, signer, account, nonce, reqs, trxScript, expiry);
+  console.log({trxRequest});
+  let res = await fetch('http://localhost:3000', {
     headers: {
-      'Content-Type': 'application/json',
-      body: JSON.stringify(trxRequest)
-    }
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(trxRequest),
+    method: 'POST'
   });
   let json = await res.json();
 
   console.log({json});
 }
-function getTrxRequest(req: object): TrxRequest {
-  if (!('network' in req)) {
-    throw new Error(`Missing required key \`network\``);
-  }
 
-  if (typeof(req.network) !== 'string' || !(req.network in networks)) {
-    throw new Error(`Unknown or invalid network: \`${req['network']}\`. Known networks: ${Object.keys(networkConfigs).join(',')}`);
-  }
 
-  // TODO: More validations
-  return req as TrxRequest;
-}
-
-const fastify = Fastify({
-  logger: true
+const args = arg({
+  // Types
+  '--network': String,
+  '--nonce': Number,
+  '--reqs': [Number],
+  '--trx-script': String,
+  '--expiry': Number,
+  '--private-key': String
 });
 
-fastify.post('/', async (req, reply) => {
-  reply.type('application/json').code(200);
+console.log({args});
+let network = args['--network'];
+let nonce = args['--nonce'];
+let reqs = args['--reqs'];
+let trxScript = args['--trx-script'];
+let expiry = args['--expiry'];
+let privateKey = args['--private-key'];
 
-  let trxRequest = getTrxRequest(req.body as object);
-
-  console.log({trxRequest});
-
-  let network = networks[trxRequest.network];
-
-  console.log({network});
-
-  let encodedTrx = network.relayer.runTrxScript.populateTransaction(
-    trxRequest.account,
-    trxRequest.nonce,
-    trxRequest.reqs,
-    trxRequest.trxScript,
-    trxRequest.expiry,
-    trxRequest.v,
-    trxRequest.r,
-    trxRequest.s
-  );
-
-  console.log({encodedTrx});
-
-  let submitSearchArgs = [
-    network.relayer.address,
-    encodedTrx.data,
-    network.recipient,
-    network.payToken,
-    network.payTokenOracle,
-    network.expectedWindfall,
-    0
-  ];
-
-  console.log({submitSearchArgs});
-
-  let submitSearch = gasSearcherInterface.encodeFunctionData('submitSearch', submitSearchArgs);
-
-  console.log({submitSearch});
-
-  let tx = await network.relayer.runQuark(searcherScript.object, submitSearch);
-
-  return {
-    tx
-  };
-});
-
-async function start() {
-  for (let [network, config] of Object.entries(networkConfigs)) {
-    let provider = new StaticJsonRpcProvider(config.rpcUrl);
-    let pk = process.env[`${network.toUpperCase()}_SEARCHER_PK`] ?? process.env['SEARCHER_PK'];
-    if (!pk) {
-      console.warn(`Cannot find ${network.toUpperCase()}_SEARCHER_PK or SEARCHER_PK, skipping network ${network}`);
-      continue;
-    }
-
-    let wallet = new Wallet(pk)
-    wallet.connect(provider);
-    let signer: Signer = wallet;
-    let relayer = new Contract(
-      config.relayer,
-      relayerAbi,
-      signer
-    );
-
-    networks[network] = {
-      relayer,
-      provider,
-      signer,
-      recipient: await signer.getAddress(),
-      payToken: config.payToken,
-      payTokenOracle: config.payTokenOracle,
-      expectedWindfall: config.expectedWindfall
-    };
-  }
-
-  fastify.listen({ port: 3000 }, async (err, address) => {
-    if (err) {
-      fastify.log.error(err);
-      process.exit(1);
-    }
-
-    console.error(`Searcher started on ${address}...`);
-    // Server is now listening on ${address}
-  });
+if (!network || !networks[network]) {
+  throw `Must include valid --network. Networks: ${Object.keys(networks).join(',')}`;
 }
 
-start();
+if (nonce === undefined) {
+  throw `Must include valid --nonce`;
+}
+
+if (reqs === undefined) {
+  reqs = [];
+}
+
+// TODO: Accept this via pipe?
+if (trxScript === undefined) {
+  throw `Must include valid --trx-script`;
+}
+
+if (privateKey === undefined) {
+  if (process.env['ETH_PRIVATE_KEY']) {
+    privateKey = process.env['ETH_PRIVATE_KEY'];
+  } else {
+    throw `Must include valid --private-key or ETH_PRIVATE_KEY`;
+  }
+}
+
+if (expiry === undefined) {
+  expiry = Date.now() + 86400; // 1 day from now by default
+}
+
+run(network, privateKey, nonce, reqs, trxScript, expiry);

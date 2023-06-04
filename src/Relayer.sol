@@ -1,9 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
+import "./QuarkScript.sol";
+
 interface Quark {
     function destruct() external;
     fallback() external;
+}
+
+struct TrxScript {
+    address account;
+    uint32 nonce;
+    uint32[] reqs;
+    bytes trxScript;
+    bytes trxCalldata;
+    uint256 expiry;
 }
 
 contract Relayer {
@@ -33,7 +44,7 @@ contract Relayer {
     bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     /// @dev The EIP-712 typehash for runTrxScript
-    bytes32 internal constant TRX_SCRIPT_TYPEHASH = keccak256("TrxScript(address account,uint32 nonce,uint32[] reqs,bytes trxScript,uint256 expiry)");
+    bytes32 internal constant TRX_SCRIPT_TYPEHASH = keccak256("TrxScript(address account,uint32 nonce,uint32[] reqs,bytes trxScript,bytes trxCalldata,uint256 expiry)");
 
     /// @dev See https://ethereum.github.io/yellowpaper/paper.pdf #307)
     uint internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
@@ -72,6 +83,27 @@ contract Relayer {
         }
     }
 
+    function checkSignature(
+        address account,
+        uint32 nonce,
+        uint32[] calldata reqs,
+        bytes calldata trxScript,
+        bytes calldata trxCalldata,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view {
+        if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
+        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
+        if (v != 27 && v != 28) revert InvalidValueV();
+        bytes32 structHash = keccak256(abi.encode(TRX_SCRIPT_TYPEHASH, account, nonce, keccak256(abi.encode(reqs)), keccak256(trxScript), keccak256(trxCalldata), expiry));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
+        address signatory = ecrecover(digest, v, r, s);
+        if (signatory == address(0)) revert BadSignatory();
+        if (account != signatory) revert BadSignatory();
+    }
+
     /**
      * @notice Runs a quark script
      * @param account The owner account (that is, EOA, not the quark address)
@@ -88,26 +120,19 @@ contract Relayer {
         uint32 nonce,
         uint32[] calldata reqs,
         bytes calldata trxScript,
+        bytes calldata trxCalldata,
         uint256 expiry,
         uint8 v,
         bytes32 r,
         bytes32 s
     ) external returns (bytes memory) {
-        if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
-        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        if (v != 27 && v != 28) revert InvalidValueV();
-        bytes32 domainSeparator = DOMAIN_SEPARATOR();
-        bytes32 structHash = keccak256(abi.encode(TRX_SCRIPT_TYPEHASH, account, nonce, keccak256(abi.encode(reqs)), keccak256(trxScript), expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-        address signatory = ecrecover(digest, v, r, s);
-        if (signatory == address(0)) revert BadSignatory();
-        if (account != signatory) revert BadSignatory();
+        checkSignature(account, nonce, reqs, trxScript, trxCalldata, expiry, v, r, s);
         if (block.timestamp >= expiry) revert SignatureExpired();
 
         checkReqs(account, reqs);
         trySetNonce(account, nonce);
 
-        return _runQuark(account, trxScript, hex"");
+        return _runQuark(account, trxScript, trxCalldata, false);
     }
 
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
@@ -143,7 +168,7 @@ contract Relayer {
      *      build that code, take the outputed bytecode and paste it in here.
      */
     function getQuarkInitCode() public pure returns (bytes memory) {
-        return hex"5f80600461000b6100f1565b61001481610188565b82335af1156100e7573d6083810190603f199060c38282016100358561012b565b93816040863e65303030505050855160d01c036100dd576100969261005861010e565b60206103348239519460066101ab8839610076603e1982018861015c565b8601916101b19083013961008d603d198201610147565b6039190161015c565b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811155337f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f655f35b60606102746101a3565b60606102d46101a3565b604051908115610105575b60048201604052565b606091506100fc565b604051908115610122575b60208201604052565b60609150610119565b9060405191821561013e575b8201604052565b60609250610137565b60036005915f60018201535f60028201530153565b9062ffffff81116101845760ff81600392601d1a600185015380601e1a600285015316910153565b5f80fd5b600360c09160ec815360896001820153602760028201530153565b81905f395ffdfe62000000565bfe5b62000000620000007c010000000000000000000000000000000000000000000000000000000060003504632b68b9c6147f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f65433147fabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf81954600114826000148282171684620000990157818316846200009f015760006000fd5b50505050565b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811154ff000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000127472782073637269707420696e76616c69640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000137472782073637269707420726576657274656400000000000000000000000000";
+        return hex"6100076100f7565b60206102df823951600080600461001c610114565b61002581610191565b82335af1156100ed573d608381019190603f198082019060c361004786610131565b94836040873e7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811155337f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f655845160d01c653030305050501480156100e9576001146100ae57005b6100e79360066101b687396100c7603e19820187610164565b8501916101bc908301396100de603d19820161014d565b60391901610164565bf35b8386f35b606061027f6101ac565b60405190811561010b575b60208201604052565b60609150610102565b604051908115610128575b60048201604052565b6060915061011f565b90604051918215610144575b8201604052565b6060925061013d565b600360059160006001820153600060028201530153565b9062ffffff811161018c5760ff81600392601d1a600185015380601e1a600285015316910153565b600080fd5b600360c09160ec815360896001820153602760028201530153565b81906000396000fdfe62000000565bfe5b62000000620000007c010000000000000000000000000000000000000000000000000000000060003504632b68b9c6147f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f65433147fabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf81954600114826000148282171684620000990157818316846200009f015760006000fd5b50505050565b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811154ff000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000137472782073637269707420726576657274656400000000000000000000000000";
     }
 
     /**
@@ -176,7 +201,7 @@ contract Relayer {
      * an alias to this function.
      */
     function runQuark(bytes memory quarkCode) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, hex"");
+        return _runQuark(msg.sender, quarkCode, hex"", false);
     }
 
     /**
@@ -185,12 +210,26 @@ contract Relayer {
      * be passed to the Quark script on its invocation.
      */
     function runQuark(bytes memory quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, quarkCalldata);
+        return _runQuark(msg.sender, quarkCode, quarkCalldata, false);
+    }
+
+    /**
+     * NOTES
+     */
+    function runQuarkScript(bytes memory quarkCode) external payable returns (bytes memory) {
+        return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, ("")), true);
+    }
+
+    /**
+     * NOTES
+     */
+    function runQuarkScript(bytes memory quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
+        return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, (quarkCalldata)), true);
     }
 
     // Internal function for running a quark. This handles the `create2`, invoking the script,
     // and then calling `destruct` to clean it up. We attempt to revert on any failed step.
-    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata) internal returns (bytes memory) {
+    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata, bool quarkScript) internal returns (bytes memory) {
         address quarkAddress = getQuarkAddress(account);
 
         // Ensure a quark isn't already running
@@ -200,13 +239,14 @@ contract Relayer {
 
         // Check the magic incantation (0x303030505050).
         // This has the side-effect of making sure we don't accept 0-length quark code.
-        if (quarkCode.length < 6
+        if (!quarkScript &&
+              (quarkCode.length < 6
             || quarkCode[0] != 0x30
             || quarkCode[1] != 0x30
             || quarkCode[2] != 0x30
             || quarkCode[3] != 0x50
             || quarkCode[4] != 0x50
-            || quarkCode[5] != 0x50) {
+            || quarkCode[5] != 0x50)) {
             revert QuarkInvalid();
         }
 
@@ -269,7 +309,7 @@ contract Relayer {
      * @notice Runs a given quark script, if valid, from the current sender.
      */
     fallback(bytes calldata quarkCode) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, hex"");
+        return _runQuark(msg.sender, quarkCode, hex"", false);
     }
 
     /***

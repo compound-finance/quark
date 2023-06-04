@@ -48,9 +48,6 @@ contract QuarkTest is Test {
     function testIncrementer() public {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
 
-        // assertEq(incrementer, QuarkInterface(quark).virtualCode81());
-        // assertEq(address(0x6c022704D948c71930B35B6F6bb725bc8d687E7F), QuarkInterface(quark).quarkAddress25(address(1)));
-
         assertEq(counter.number(), 0);
 
         vm.prank(address(0xaa));
@@ -77,6 +74,17 @@ contract QuarkTest is Test {
 
         vm.prank(address(0xaa));
         bytes memory data = relayer.runQuark(noCallback);
+        assertEq(data, abi.encode());
+        assertEq(counter.number(), 0);
+    }
+
+    function testCounterScript() public {
+        bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
+
+        assertEq(counter.number(), 0);
+
+        vm.prank(address(0xaa));
+        bytes memory data = relayer.runQuarkScript(counterScript, abi.encode(counter));
         assertEq(data, abi.encode());
         assertEq(counter.number(), 0);
     }

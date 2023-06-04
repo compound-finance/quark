@@ -113,6 +113,11 @@ object "Quark" {
       revert(0, size)
     }
 
+    // Load the caller from construction parameters
+    let account_idx := allocate(32)
+    datacopy(account_idx, datasize("Quark"), 32)
+    let account := mload(account_idx)
+
     // Call back to the Relayer contract (who is the caller) to get the Quark code
     let read_quark_abi := allocate(0x04)
     copy4(read_quark_abi, 0xec8927c0) // readQuark()
@@ -131,40 +136,43 @@ object "Quark" {
     let quark_offset := allocate(total_size)
     returndatacopy(quark_offset, 0x40, quark_size)
 
-    // Next, let's make sure the script starts with the magic incantation (0x303030505050)
-    if eq(eq(shr(208, mload(quark_offset)), 0x303030505050), 0) { // top 6 of 32 bytes is >> 26 bytes * 8 bits = 208
-      revert_err(dataoffset("trx script invalid"), datasize("trx script invalid"))
-    }
-
-    // Load the caller from construction parameters
-    let account_idx := allocate(32)
-    datacopy(account_idx, datasize("Quark"), 32)
-    let account := mload(account_idx)
-
-    // This is overwriting the magic number!
-    datacopy(quark_offset, dataoffset("Prependix"), datasize("Prependix"))
-
-    let appendix_jump_dst := add(quark_size, 1)
-
-    // Set the JUMP3 value, byte by byte
-    rewrite_push_3(quark_offset, appendix_jump_dst)
-
-    let appendix_offset := add(quark_offset, quark_size)
-
-    // Write the appendix
-    datacopy(appendix_offset, dataoffset("Appendix"), datasize("Appendix"))
-
-    // Rewrite `ret` in the appendix
-    rewrite_push_3(add(appendix_offset, 0x002), 0x5)
-    // Rewrite `offset` in the appendix
-    rewrite_push_3(add(appendix_offset, 0x006), quark_size)
-
     // Storage owner and relayer at respective locations
     sstore(0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111, account)  // owner
     sstore(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6, caller()) // relayer
 
-    // Return the Quark data
-    return(quark_offset, total_size)
+    // TODO: We could make this better, just testing
+
+    // Next, let's make sure the script starts with the magic incantation (0x303030505050)
+    switch eq(shr(208, mload(quark_offset)), 0x303030505050) // top 6 of 32 bytes is >> 26 bytes * 8 bits = 208
+    case false {
+      // revert_err(dataoffset("trx script invalid"), datasize("trx script invalid"))
+
+      // Buyer beware here!
+      // Return the Quark data
+      return(quark_offset, quark_size)
+    }
+    case true {
+      // This is overwriting the magic number!
+      datacopy(quark_offset, dataoffset("Prependix"), datasize("Prependix"))
+
+      let appendix_jump_dst := add(quark_size, 1)
+
+      // Set the JUMP3 value, byte by byte
+      rewrite_push_3(quark_offset, appendix_jump_dst)
+
+      let appendix_offset := add(quark_offset, quark_size)
+
+      // Write the appendix
+      datacopy(appendix_offset, dataoffset("Appendix"), datasize("Appendix"))
+
+      // Rewrite `ret` in the appendix
+      rewrite_push_3(add(appendix_offset, 0x002), 0x5)
+      // Rewrite `offset` in the appendix
+      rewrite_push_3(add(appendix_offset, 0x006), quark_size)
+
+      // Return the Quark data
+      return(quark_offset, total_size)
+    }
   }
 
   /*
