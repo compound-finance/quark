@@ -86,7 +86,7 @@ contract QuarkTest is Test {
         vm.prank(address(0xaa));
         bytes memory data = relayer.runQuarkScript(counterScript, abi.encode(counter));
         assertEq(data, abi.encode());
-        assertEq(counter.number(), 0);
+        assertEq(counter.number(), 2);
     }
 
     function testDirectIncrementer() public {

@@ -5,7 +5,6 @@ import "./QuarkScript.sol";
 
 interface Quark {
     function destruct() external;
-    fallback() external;
 }
 
 struct TrxScript {
@@ -18,16 +17,16 @@ struct TrxScript {
 }
 
 contract Relayer {
-    error QuarkAlreadyActive();
-    error QuarkNotActive();
-    error QuarkInvalid();
-    error QuarkInitFailed(bool create2Failed);
-    error QuarkCallFailed(bytes error);
+    error QuarkAlreadyActive(address quark);
+    error QuarkNotActive(address quark);
+    error QuarkInvalid(address quark, bytes32 isQuarkScriptHash);
+    error QuarkInitFailed(address quark, bool create2Failed);
+    error QuarkCallFailed(address quark, bytes error);
     error BadSignatory();
     error InvalidValueS();
     error InvalidValueV();
     error SignatureExpired();
-    error NonceReplay();
+    error NonceReplay(uint256 nonce);
     error NonceMissingReq(uint32 req);
     error QuarkAddressMismatch(address expected, address created);
 
@@ -57,7 +56,7 @@ contract Relayer {
 
         uint256 nonceChunk = nonces[account][uint256(nonceIndex)];
         if (nonceChunk & nonceBit > 0) {
-            revert NonceReplay();
+            revert NonceReplay(nonce);
         }
         nonces[account][nonceIndex] |= nonceBit;
     }
@@ -97,7 +96,7 @@ contract Relayer {
         if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         if (v != 27 && v != 28) revert InvalidValueV();
-        bytes32 structHash = keccak256(abi.encode(TRX_SCRIPT_TYPEHASH, account, nonce, keccak256(abi.encode(reqs)), keccak256(trxScript), keccak256(trxCalldata), expiry));
+        bytes32 structHash = keccak256(abi.encode(TRX_SCRIPT_TYPEHASH, account, nonce, keccak256(abi.encodePacked(reqs)), keccak256(trxScript), keccak256(trxCalldata), expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
         address signatory = ecrecover(digest, v, r, s);
         if (signatory == address(0)) revert BadSignatory();
@@ -132,11 +131,11 @@ contract Relayer {
         checkReqs(account, reqs);
         trySetNonce(account, nonce);
 
-        return _runQuark(account, trxScript, trxCalldata, false);
+        return _runQuark(account, trxScript, trxCalldata);
     }
 
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("Quark")), keccak256(bytes(version)), block.chainid, address(this)));
+        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Quark"), keccak256(bytes(version)), block.chainid, address(this)));
     }
 
     /**
@@ -180,7 +179,7 @@ contract Relayer {
         address quarkAddress = msg.sender;
         uint256 quarkSize = quarkSizes[quarkAddress];
         if (quarkSize == 0) {
-            revert QuarkNotActive();
+            revert QuarkNotActive(quarkAddress);
         }
 
         bytes memory quark = new bytes(quarkSize);
@@ -201,7 +200,7 @@ contract Relayer {
      * an alias to this function.
      */
     function runQuark(bytes memory quarkCode) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, hex"", false);
+        return _runQuark(msg.sender, quarkCode, hex"");
     }
 
     /**
@@ -210,44 +209,31 @@ contract Relayer {
      * be passed to the Quark script on its invocation.
      */
     function runQuark(bytes memory quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, quarkCalldata, false);
+        return _runQuark(msg.sender, quarkCode, quarkCalldata);
     }
 
     /**
      * NOTES
      */
     function runQuarkScript(bytes memory quarkCode) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, ("")), true);
+        return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, ("")));
     }
 
     /**
      * NOTES
      */
     function runQuarkScript(bytes memory quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, (quarkCalldata)), true);
+        return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, (quarkCalldata)));
     }
 
     // Internal function for running a quark. This handles the `create2`, invoking the script,
     // and then calling `destruct` to clean it up. We attempt to revert on any failed step.
-    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata, bool quarkScript) internal returns (bytes memory) {
+    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata) internal returns (bytes memory) {
         address quarkAddress = getQuarkAddress(account);
 
         // Ensure a quark isn't already running
         if (quarkSizes[quarkAddress] > 0) {
-            revert QuarkAlreadyActive();
-        }
-
-        // Check the magic incantation (0x303030505050).
-        // This has the side-effect of making sure we don't accept 0-length quark code.
-        if (!quarkScript &&
-              (quarkCode.length < 6
-            || quarkCode[0] != 0x30
-            || quarkCode[1] != 0x30
-            || quarkCode[2] != 0x30
-            || quarkCode[3] != 0x50
-            || quarkCode[4] != 0x50
-            || quarkCode[5] != 0x50)) {
-            revert QuarkInvalid();
+            revert QuarkAlreadyActive(quarkAddress);
         }
 
         // Stores the quark in storage so it can be loaded via `readQuark` in the `create2`
@@ -270,7 +256,7 @@ contract Relayer {
         }
         // Ensure that the wallet was created.
         if (uint160(address(quark)) == 0) {
-            revert QuarkInitFailed(true);
+            revert QuarkInitFailed(quarkAddress, true);
         }
         if (quarkAddress != address(quark)) {
             revert QuarkAddressMismatch(quarkAddress, address(quark));
@@ -283,19 +269,51 @@ contract Relayer {
             quarkCodeLen := extcodesize(quark)
         }
         if (quarkCodeLen == 0) {
-            revert QuarkInitFailed(false);
+            revert QuarkInitFailed(quarkAddress, false);
+        }
+
+        // Check either the magic incantation (0x303030505050) _or_ isQuarkScript()
+        // The goal here is to make sure that the the script is safe, since the worst case
+        // is that the script doesn't self destruct. The magic incantation informs the
+        // Quark constructor to build a self destruct function, and the `isQuarkScript`
+        // check tries its best to make sure the script was derived from `QuarkScript`.
+        //
+        // A script that doesn't self-destruct will permanently break an account,
+        // and a malicious dApp could do this on purpose. It's really hard to find
+        // a way to know if a contract has called `self destruct` so we could revert
+        // otherwise.
+        //
+        // Also, this has the side-effect of making sure we haven't accepted a 0-length
+        // quark code, which would upset the isQuarkActive checks.
+        if ((quarkCode.length < 6
+            || quarkCode[0] != 0x30
+            || quarkCode[1] != 0x30
+            || quarkCode[2] != 0x30
+            || quarkCode[3] != 0x50
+            || quarkCode[4] != 0x50
+            || quarkCode[5] != 0x50)) {
+            try QuarkScript(address(quark)).isQuarkScript() returns (bytes32 isQuarkScriptHash) {
+                if (isQuarkScriptHash != 0x390752087e6ef3cd5b0a0dede313512f6e47c12ea2c3b1972f19911725227c3e) { // keccak("org.quark.isQuarkScript")
+                    revert QuarkInvalid(quarkAddress, isQuarkScriptHash);
+                }
+            } catch {
+                revert QuarkInvalid(quarkAddress, 0x0); // Call failed
+            }
         }
 
         // Call into the new quark wallet with a (potentially empty) message to hit the fallback function.
         (bool callSuccess, bytes memory res) = address(quark).call{value: msg.value}(quarkCalldata);
         if (!callSuccess) {
-            revert QuarkCallFailed(res);
+            revert QuarkCallFailed(quarkAddress, res);
         }
 
         // Call into the quark wallet to hit the `destruct` function.
         // Note: while it looks like the wallet doesn't have a `destruct` function, it's
         //       surrupticiously added by the Quark constructor in its init code. See
         //       `./Quark.yul` for more information.
+
+        // TOOD: Curious what the return value here is, since it destructs but
+        //       returns "ok"
         quark.destruct();
 
         // Clear all of the quark data to recoup gas costs.
@@ -309,7 +327,7 @@ contract Relayer {
      * @notice Runs a given quark script, if valid, from the current sender.
      */
     fallback(bytes calldata quarkCode) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, hex"", false);
+        return _runQuark(msg.sender, quarkCode, hex"");
     }
 
     /***
@@ -341,7 +359,7 @@ contract Relayer {
     function clearQuark(address quarkAddress) internal {
         uint256 quarkSize = quarkSizes[quarkAddress];
         if (quarkSize == 0) {
-            revert QuarkNotActive();
+            revert QuarkNotActive(quarkAddress);
         }
         uint256 chunks = wordSize(quarkSize);
         for (uint256 i = 0; i < chunks; i++) {

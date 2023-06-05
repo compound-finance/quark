@@ -8,16 +8,16 @@ yul_filenames=(./examples/{*.yul,**/*.yul})
 all_yul_filenames=(./**/{*.yul,**/*.yul})
 all_sol_filenames=(./**/{*.sol,**/*.sol})
 
-# for filename in ${yul_filenames[@]}; do
-#   skip=()
-#   for inner_filename in ${all_yul_filenames[@]}; do
-#     if [ -f $inner_filename ] && [ $inner_filename != $filename ]; then
-#       skip+=" --skip $(basename $inner_filename)"
-#     fi
-#   done
-#   echo "Building $filename"
-#   forge build --contracts ./examples --skip ".sol" ${skip[@]}
-# done
+for filename in ${yul_filenames[@]}; do
+  skip=()
+  for inner_filename in ${all_yul_filenames[@]}; do
+    if [ -f $inner_filename ] && [ $inner_filename != $filename ]; then
+      skip+=" --skip $(basename $inner_filename)"
+    fi
+  done
+  echo "Building $filename"
+  forge build --contracts ./examples --skip ".sol" ${skip[@]}
+done
 
 # Next, build Solidity in two-step process
 sol_filenames=(./examples/{*.sol,**/*.sol})

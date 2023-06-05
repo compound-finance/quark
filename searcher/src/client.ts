@@ -1,50 +1,54 @@
+import fs from 'fs';
+import arg from 'arg';
+
 import { Interface } from '@ethersproject/abi';
 import { Wallet } from '@ethersproject/wallet';
 import { hexDataSlice, hexlify } from '@ethersproject/bytes';
-import { TrxRequest } from './searcher';
-import arg from 'arg';
+import { TrxRequest } from './trxRequest';
+import { abi as wrappedScriptAbi, deployedBytecode as wrappedCallScript } from '../../out/WrappedCall.sol/WrappedCall.json'
+import { NetworkConfig, getNetworks } from './network';
 
-interface NetworkConfig {
-  chainId: number,
-  relayer: string
-}
-
-const networks: { [network: string]: NetworkConfig } = {
-  'quarknet': {
-    chainId: 1,
-    relayer: '0x687bB6c57915aa2529EfC7D2a26668855e022fAE'
-  }
-};
-
+let quarkScript = new Interface(wrappedScriptAbi);
 const trxScriptTypes = {
   TrxScript: [
     { name: 'account', type: 'address' },
     { name: 'nonce', type: 'uint32' },
     { name: 'reqs', type: 'uint32[]' },
     { name: 'trxScript', type: 'bytes' },
+    { name: 'trxCalldata', type: 'bytes' },
     { name: 'expiry', type: 'uint256' }
   ]
 };
 
+const knownTrxScripts: { [name: string]: string } = {
+  'wrapped-call': wrappedCallScript.object
+};
+
+function getTrxScript(trxScript: string, trxCalldata: string): [string, string] {
+  if (trxScript.startsWith('0x')) {
+    return [trxScript, trxCalldata];
+  } else if (trxScript in knownTrxScripts) {
+    return [knownTrxScripts[trxScript], quarkScript.encodeFunctionData('_exec', [trxCalldata])];
+  } else {
+    throw new Error(`Unknown or invalid trx script: ${trxScript}`);
+  }
+}
+
 async function buildTrxScript(
-  network: string,
+  network: NetworkConfig,
   signer: Wallet,
   account: string,
   nonce: number,
   reqs: number[],
   trxScript: string,
+  trxCalldata: string,
   expiry: number): Promise<TrxRequest> {
-  let networkConfig = networks[network];
-  if (!networkConfig) {
-    throw new Error(`Unknown or invalid network: ${network}`);
-  }
-
   // All properties on a domain are optional
   const domain = {
     name: 'Quark',
     version: '0',
-    chainId: networkConfig.chainId,
-    verifyingContract: networkConfig.relayer
+    chainId: network.chainId.toString(),
+    verifyingContract: network.relayer.address
   };
 
   // The data to sign
@@ -53,6 +57,7 @@ async function buildTrxScript(
     nonce: nonce,
     reqs: reqs,
     trxScript: trxScript,
+    trxCalldata: trxCalldata,
     expiry: expiry,
   }
 
@@ -62,7 +67,7 @@ async function buildTrxScript(
   let v = hexDataSlice(signature, 64, 65);
 
   return {
-    network,
+    network: network.name,
     ...trxScriptStruct,
     v,
     r,
@@ -70,11 +75,32 @@ async function buildTrxScript(
   };
 }
 
-async function run(network: string, pk: string, nonce: number, reqs: number[], trxScript: string, expiry: number) {
+async function run(networkName: string, pk: string, nonce: number, reqs: number[], trxScript: string, trxCalldata: string, expiry: number) {
+  let networks = await getNetworks(pk);
+  let network = networks[networkName];
+  if (!network) {
+    throw new Error(`Unknown or invalid network: ${networkName}`);
+  }
+
   let signer = new Wallet(pk);
   let account = await signer.getAddress();
-  let trxRequest = await buildTrxScript(network, signer, account, nonce, reqs, trxScript, expiry);
+  let trxRequest = await buildTrxScript(network, signer, account, nonce, reqs, trxScript, trxCalldata, expiry);
   console.log({trxRequest});
+
+  let trxScriptRes = await network.relayer.callStatic.runTrxScript(
+    trxRequest.account,
+    trxRequest.nonce,
+    trxRequest.reqs,
+    trxRequest.trxScript,
+    trxRequest.trxCalldata,
+    trxRequest.expiry,
+    trxRequest.v,
+    trxRequest.r,
+    trxRequest.s
+  );
+  console.log({trxScriptRes});
+
+  // Test the trxRequest to make sure it works
   let res = await fetch('http://localhost:3000', {
     headers: {
       'Content-Type': 'application/json'
@@ -94,6 +120,7 @@ const args = arg({
   '--nonce': Number,
   '--reqs': [Number],
   '--trx-script': String,
+  '--trx-calldata': String,
   '--expiry': Number,
   '--private-key': String
 });
@@ -102,12 +129,15 @@ console.log({args});
 let network = args['--network'];
 let nonce = args['--nonce'];
 let reqs = args['--reqs'];
-let trxScript = args['--trx-script'];
+let trxScriptArg = args['--trx-script'];
+let trxCalldata = args['--trx-calldata'];
 let expiry = args['--expiry'];
 let privateKey = args['--private-key'];
+let trxScript;
 
-if (!network || !networks[network]) {
-  throw `Must include valid --network. Networks: ${Object.keys(networks).join(',')}`;
+if (!network) {
+  // TODO: Provide default?
+  throw `Must include --network`;
 }
 
 if (nonce === undefined) {
@@ -118,10 +148,15 @@ if (reqs === undefined) {
   reqs = [];
 }
 
-// TODO: Accept this via pipe?
-if (trxScript === undefined) {
+if (trxScriptArg === undefined) {
   throw `Must include valid --trx-script`;
 }
+
+if (trxCalldata === '-') {
+  trxCalldata = fs.readFileSync(0, 'utf-8').trim();
+}
+
+[trxScript, trxCalldata] = getTrxScript(trxScriptArg, trxCalldata ?? '');
 
 if (privateKey === undefined) {
   if (process.env['ETH_PRIVATE_KEY']) {
@@ -135,4 +170,4 @@ if (expiry === undefined) {
   expiry = Date.now() + 86400; // 1 day from now by default
 }
 
-run(network, privateKey, nonce, reqs, trxScript, expiry);
+run(network, privateKey, nonce, reqs, trxScript, trxCalldata ?? '', expiry);

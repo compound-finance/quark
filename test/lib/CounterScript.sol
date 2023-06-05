@@ -9,5 +9,6 @@ contract CounterScript is QuarkScript {
     (Counter c) = abi.decode(data, (Counter));
     c.increment();
     c.increment();
+    return hex"";
   }
 }

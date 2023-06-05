@@ -1,6 +1,34 @@
 import { describe, expect, test, beforeEach } from '@jest/globals';
 import { transform } from '../src/Transformer';
 
+/**
+ * 00: 6003 [PUSH1]
+ * 02: 56   [JMP]
+ * 03: 5b   [JMPDEST]
+ * 04: 5F   [PUSH0]
+ * 05: 50   [POP]
+ * 06: 5b   [JMPDEST]
+ * 07: 6006 [PUSH0]
+ * 09: 56   [JUMP]
+ * 0a: 5b   [JUMPDEST]
+ * 
+ * 
+ * 
+ *
+ *
+ *
+ * 00: 6003   [PUSH1]
+ * 02: 5f565b [PUSH0+JMP+JUMPDEST]
+ * 04: 56     [JMP]
+ * 05: 5b     [JMPDEST]
+ * 06: 5F     [PUSH0]
+ * 07: 50     [POP]
+ * 08: 5b     [JMPDEST]
+ * 09: 6006   [PUSH0]
+ * 0b: 5f565b [PUSH0+JMP+JUMPDEST]
+ * 0d: 56     [JUMP]
+ * 0e: 5b     [JUMPDEST]
+ */
 describe('Transformer', () => {
   test('Transforms script with no jumps', () => {
     expect(transform('0x600050')).toEqual(`0x303030505050600050`);

@@ -19,6 +19,11 @@ function isJmp(opcode: number): boolean {
 
 export function transform(script: string): string {
   let bytes = arrayify(script);
+  for (let i = 0; i < bytes.length; i++) {
+    let opcode = bytes[i];
+    let argWidth = opcodeArgWidth(opcode);
+  }
+
   let previousOpcode;
   let res: number[] = [];
   for (let i = 0; i < bytes.length; i++) {

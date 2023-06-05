@@ -14,5 +14,6 @@ contract PayScript is QuarkScript {
     (Erc20 payToken, uint256 amount, uint256 n) = abi.decode(data, (Erc20, uint256, uint256));
     payToken.transfer(tx.origin, amount);
     emit Hello(n);
+    return hex"";
   }
 }

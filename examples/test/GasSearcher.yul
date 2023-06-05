@@ -122,7 +122,10 @@ object "Searcher" {
 
       let res := call(gas(), relayer, 0, relayer_calldata, relayer_calldata_sz, 0, 0)
       if iszero(res) {
-        revert_err(dataoffset("searcher call failed"), datasize("searcher call failed"))
+        datacopy(0, dataoffset("searcher call failed"), datasize("searcher call failed"))
+        returndatacopy(datasize("searcher call failed"), 0, returndatasize())
+
+        revert(0, add(datasize("searcher call failed"), returndatasize()))
       }
 
       let balance_post := balance_of(recipient, pay_token)
@@ -162,10 +165,11 @@ object "Searcher" {
     }
   }
 
-  data "searcher call failed" hex"01"
+  data "searcher call failed" hex"0a"
   data "insufficient windfall" hex"02"
   data "balance check failed" hex"03"
   data "chainlink price failed" hex"04"
   data "no balance gain" hex"05"
   data "no windfall" hex"06"
 }
+

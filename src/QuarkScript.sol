@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-abstract contract QuarkScript {
+import "./Relayer.sol";
+
+abstract contract QuarkScript is Quark {
+    function isQuarkScript() external pure returns (bytes32) {
+        return 0x390752087e6ef3cd5b0a0dede313512f6e47c12ea2c3b1972f19911725227c3e; // keccak("org.quark.isQuarkScript")
+    }
+
     // Note: we really need to make sure this is here!
     function destruct() external {
         address relayer;
