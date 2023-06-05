@@ -17,12 +17,18 @@ case "$network" in
   arbitrum-goerli)
     [ -n "$ARBITRUM_GOERLI_DEPLOYER_KEY" ] && key_arg="--private-key $ARBITRUM_GOERLI_DEPLOYER_KEY"
     extra_args="--verify"
+    if [ -n "ARBISCAN_API_KEY" ]; then
+      export ETHERSCAN_API_KEY="$ARBISCAN_API_KEY"
+    fi
     rpc_url="https://goerli-rollup.arbitrum.io/rpc"
     network_name="Arbitrum [Goerli]"
     ;;
   arbitrum-mainnet)
     [ -n "$ARBITRUM_DEPLOYER_KEY" ] && key_arg="--private-key $ARBITRUM_DEPLOYER_KEY"
     extra_args="--verify"
+    if [ -n "ARBISCAN_API_KEY" ]; then
+      export ETHERSCAN_API_KEY="$ARBISCAN_API_KEY"
+    fi
     rpc_url=""https://arb1.arbitrum.io/rpc""
     network_name="Arbitrum [Mainnet]"
     ;;

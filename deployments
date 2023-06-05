@@ -1,34 +1,18 @@
 --- 
-Deploying Quark to Goerli
-Compiling 34 files with 0.8.20
-Solc 0.8.20 finished in 2.10s
-Compiling 1 files with 0.8.20
-Solc 0.8.20 finished in 22.13ms
-Compiler run [33msuccessful with warnings:[0m
-[1;33mWarning (5159)[0m[1;37m: "selfdestruct" has been deprecated. The underlying opcode will eventually undergo breaking changes, and its use is not recommended.[0m
-  [34m-->[0m src/QuarkScript.sol:20:9:
-[34m   |[0m
-[34m20 |[0m         [33mselfdestruct[0m(owner);
-[34m   |[0m         [1;33m^^^^^^^^^^^^[0m
-
+Deploying Quark to Arbitrum [Goerli]
+No files changed, compilation skipped
 Deployer: 0xE4a892476d366A1AE55bf53463a367892E885cEE
-Deployed to: 0xC6d5aC65f84a7df3B33ec0F95b679C787d6f9983
-Transaction hash: 0x1cab93898d65b1eaaf0d18d8fdaaeb0e76416b31deadc97046d0e339f3ad2323
+Deployed to: 0xdDe0bf030f2FfcEAE76817F2Da0A14b1e9a87041
+Transaction hash: 0x1d5a9c4e4fe103c22f148f678311857d82d14111d7aa4a4d336812904d9b3130
 Starting contract verification...
 Waiting for etherscan to detect contract deployment...
-Start verifying contract `0xc6d5ac65f84a7df3b33ec0f95b679c787d6f9983` deployed on goerli
+Start verifying contract `0xdde0bf030f2ffceae76817f2da0a14b1e9a87041` deployed on arbitrum-goerli
 
-Submitting verification for [src/Relayer.sol:Relayer] "0xC6d5aC65f84a7df3B33ec0F95b679C787d6f9983".
-
-Submitting verification for [src/Relayer.sol:Relayer] "0xC6d5aC65f84a7df3B33ec0F95b679C787d6f9983".
-
-Submitting verification for [src/Relayer.sol:Relayer] "0xC6d5aC65f84a7df3B33ec0F95b679C787d6f9983".
-
-Submitting verification for [src/Relayer.sol:Relayer] "0xC6d5aC65f84a7df3B33ec0F95b679C787d6f9983".
+Submitting verification for [src/Relayer.sol:Relayer] "0xdDe0bf030f2FfcEAE76817F2Da0A14b1e9a87041".
 Submitted contract for verification:
 	Response: `OK`
-	GUID: `ckbpzqb8ip84vpkvannu5t8ydeqwj7hmet98igp7durmk9pxyr`
+	GUID: `tpnzidndgiwi639s1agt7jlbj61kyvpxdiptn25eg24ntkdkbu`
 	URL:
-        https://goerli.etherscan.io/address/0xc6d5ac65f84a7df3b33ec0f95b679c787d6f9983
+        https://goerli.arbiscan.io/address/0xdde0bf030f2ffceae76817f2da0a14b1e9a87041
 Contract successfully verified
 
