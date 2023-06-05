@@ -16,3 +16,25 @@ Submitted contract for verification:
         https://goerli.arbiscan.io/address/0xdde0bf030f2ffceae76817f2da0a14b1e9a87041
 Contract successfully verified
 
+--- 
+Deploying Quark to Goerli
+No files changed, compilation skipped
+Deployer: 0xE4a892476d366A1AE55bf53463a367892E885cEE
+Deployed to: 0xC4f0049a828cd0AF222FDbe5AdeDA9AAf72b7f30
+Transaction hash: 0x197f0797c6247982f4275793b0dbaf1309ac5cf55beef8d302e93e74123a26aa
+Starting contract verification...
+Waiting for etherscan to detect contract deployment...
+Start verifying contract `0xc4f0049a828cd0af222fdbe5adeda9aaf72b7f30` deployed on goerli
+
+Submitting verification for [src/Relayer.sol:Relayer] "0xC4f0049a828cd0AF222FDbe5AdeDA9AAf72b7f30".
+
+Submitting verification for [src/Relayer.sol:Relayer] "0xC4f0049a828cd0AF222FDbe5AdeDA9AAf72b7f30".
+
+Submitting verification for [src/Relayer.sol:Relayer] "0xC4f0049a828cd0AF222FDbe5AdeDA9AAf72b7f30".
+Submitted contract for verification:
+	Response: `OK`
+	GUID: `ci2nr6aguv93xkgfwqefdwlnrw4j1cj9saej9ch8xtc8xbms1u`
+	URL:
+        https://goerli.etherscan.io/address/0xc4f0049a828cd0af222fdbe5adeda9aaf72b7f30
+Contract successfully verified
+
