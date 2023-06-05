@@ -40,6 +40,9 @@ case "$network" in
     ;;
   optimism-goerli)
     [ -n "$OPTIMISM_GOERLI_DEPLOYER_KEY" ] && key_arg="--private-key $OPTIMISM_GOERLI_DEPLOYER_KEY"
+    if [ -n "OPTIMISM_API_KEY" ]; then
+      export ETHERSCAN_API_KEY="$OPTIMISM_API_KEY"
+    fi
     extra_args="--verify"
     rpc_url="https://goerli.optimism.io"
     network_name="Optimism [Goerli]"

@@ -38,3 +38,21 @@ Submitted contract for verification:
         https://goerli.etherscan.io/address/0xc4f0049a828cd0af222fdbe5adeda9aaf72b7f30
 Contract successfully verified
 
+--- 
+Deploying Quark to Optimism [Goerli]
+No files changed, compilation skipped
+Deployer: 0xE4a892476d366A1AE55bf53463a367892E885cEE
+Deployed to: 0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da
+Transaction hash: 0xa904dd11032435b346430f83bbfa1fbea047ff72b59095181bed74569af3bede
+Starting contract verification...
+Waiting for etherscan to detect contract deployment...
+Start verifying contract `0x66ca95f4ed181c126acbd5aad21767b20d6ad7da` deployed on optimism-goerli
+
+Submitting verification for [src/Relayer.sol:Relayer] "0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da".
+Submitted contract for verification:
+	Response: `OK`
+	GUID: `dpwntp5rz89pwqa3uy5twynpkk8zfrk9idevvmbn9wxfsdauk5`
+	URL:
+        https://goerli-optimism.etherscan.io/address/0x66ca95f4ed181c126acbd5aad21767b20d6ad7da
+Contract successfully verified
+
