@@ -1,0 +1,78 @@
+--- 
+Deploying Quark to Arbitrum [Goerli]
+No files changed, compilation skipped
+Deployer: 0xE4a892476d366A1AE55bf53463a367892E885cEE
+Deployed to: 0xdDe0bf030f2FfcEAE76817F2Da0A14b1e9a87041
+Transaction hash: 0x1d5a9c4e4fe103c22f148f678311857d82d14111d7aa4a4d336812904d9b3130
+Starting contract verification...
+Waiting for etherscan to detect contract deployment...
+Start verifying contract `0xdde0bf030f2ffceae76817f2da0a14b1e9a87041` deployed on arbitrum-goerli
+
+Submitting verification for [src/Relayer.sol:Relayer] "0xdDe0bf030f2FfcEAE76817F2Da0A14b1e9a87041".
+Submitted contract for verification:
+	Response: `OK`
+	GUID: `tpnzidndgiwi639s1agt7jlbj61kyvpxdiptn25eg24ntkdkbu`
+	URL:
+        https://goerli.arbiscan.io/address/0xdde0bf030f2ffceae76817f2da0a14b1e9a87041
+Contract successfully verified
+
+--- 
+Deploying Quark to Goerli
+No files changed, compilation skipped
+Deployer: 0xE4a892476d366A1AE55bf53463a367892E885cEE
+Deployed to: 0xC4f0049a828cd0AF222FDbe5AdeDA9AAf72b7f30
+Transaction hash: 0x197f0797c6247982f4275793b0dbaf1309ac5cf55beef8d302e93e74123a26aa
+Starting contract verification...
+Waiting for etherscan to detect contract deployment...
+Start verifying contract `0xc4f0049a828cd0af222fdbe5adeda9aaf72b7f30` deployed on goerli
+
+Submitting verification for [src/Relayer.sol:Relayer] "0xC4f0049a828cd0AF222FDbe5AdeDA9AAf72b7f30".
+
+Submitting verification for [src/Relayer.sol:Relayer] "0xC4f0049a828cd0AF222FDbe5AdeDA9AAf72b7f30".
+
+Submitting verification for [src/Relayer.sol:Relayer] "0xC4f0049a828cd0AF222FDbe5AdeDA9AAf72b7f30".
+Submitted contract for verification:
+	Response: `OK`
+	GUID: `ci2nr6aguv93xkgfwqefdwlnrw4j1cj9saej9ch8xtc8xbms1u`
+	URL:
+        https://goerli.etherscan.io/address/0xc4f0049a828cd0af222fdbe5adeda9aaf72b7f30
+Contract successfully verified
+
+--- 
+Deploying Quark to Optimism [Goerli]
+No files changed, compilation skipped
+Deployer: 0xE4a892476d366A1AE55bf53463a367892E885cEE
+Deployed to: 0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da
+Transaction hash: 0xa904dd11032435b346430f83bbfa1fbea047ff72b59095181bed74569af3bede
+Starting contract verification...
+Waiting for etherscan to detect contract deployment...
+Start verifying contract `0x66ca95f4ed181c126acbd5aad21767b20d6ad7da` deployed on optimism-goerli
+
+Submitting verification for [src/Relayer.sol:Relayer] "0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da".
+Submitted contract for verification:
+	Response: `OK`
+	GUID: `dpwntp5rz89pwqa3uy5twynpkk8zfrk9idevvmbn9wxfsdauk5`
+	URL:
+        https://goerli-optimism.etherscan.io/address/0x66ca95f4ed181c126acbd5aad21767b20d6ad7da
+Contract successfully verified
+
+invalid network 'arbitrum'. valid networks: arbitrum-goerli, arbitrum-mainnet, goerli, optimism-goerli, quarknet
+script/deploy.sh {network}
+--- 
+Deploying Quark to Arbitrum [Mainnet]
+No files changed, compilation skipped
+Deployer: 0xE4a892476d366A1AE55bf53463a367892E885cEE
+Deployed to: 0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da
+Transaction hash: 0x610f4bb5c8face4da7b49f802a01b087e3fb7b3ce69c1f78f861bbf586417dbe
+Starting contract verification...
+Waiting for etherscan to detect contract deployment...
+Start verifying contract `0x66ca95f4ed181c126acbd5aad21767b20d6ad7da` deployed on arbitrum
+
+Submitting verification for [src/Relayer.sol:Relayer] "0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da".
+Submitted contract for verification:
+	Response: `OK`
+	GUID: `5iq9hyywkyji6ntryqpjezxcfrcdyyumtz5sngwqu8jknynneh`
+	URL:
+        https://arbiscan.io/address/0x66ca95f4ed181c126acbd5aad21767b20d6ad7da
+Contract successfully verified
+

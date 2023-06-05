@@ -1,399 +1,287 @@
 object "Quark" {
+  /** This is the contract that is deployed (and then destructed)
+    * where your Quark code will run.
+    *
+    * The constructor is below (there is no contract code-- that's
+    * the user-spplied Quark code), so the constructor is simply
+    * responsible for loading and then returning the Quark code.
+    *
+    * Since this is based on create2, we can't accept the Quark
+    * code as input. Instead, we call back to the Relayer contract,
+    * which has stored the Quark code. We simply then return that value.
+    *
+    * A Quark contract should effectively look like this:
+    *
+    * contract Quark {
+    *   address relayer; // storage location 0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6 from keccak("org.quark.relayer")
+    *   address owner;   // storage location 0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111 from keccak("org.quark.owner")
+    *   bool callable;   // storage location 0xabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf819 from keccak("org.quark.callable")
+    *
+    * Quark(owner_ address) {
+    *   relayer = msg.sender;
+    *   owner = owner;
+    *   // setCode(Relayer(relayer).readQuark())
+    * }
+    *
+    * function destruct() external {
+    *   require(msg.sender == relayer);
+    *   selfdestruct(owner);
+    * }
+    *
+    * fallback() external {
+    *   require(callable || msg.sender == relayer);
+    *    // START YOUR SCRIPT, E.G.
+    *    Erc20.approve(Uni, 100);
+    *    // END YOUR SCRIPT
+    * }
+    *
+    * Effectively, the Relayer constructs a new contract that
+    * loads its inner code by calling back to the Relayer's `readQuark()`
+    * function.
+    *
+    * Next, once the contract is deployed, the Relayer calls the new
+    * contract, triggering the fallback and initiating the user code.
+    *
+    * Finally, the Relayer calls the `destruct` function to self-destruct
+    * the contract (so it can be replaced later).
+    *
+    * Note: the contract code is may, at its discretion, set `callable = true`
+    *       in storage. This indicates that the contract is willing to accept
+    *       calls from other contracts (not just the relayer). Effectively,
+    *       this means the user script needs to read calldata and/or direct
+    *       actions based on the caller. This is not complex, but it seems
+    *       fair that scripts should decide to opt into this behavior.
+  }
+}
+    */
   code {
-    /** This is the init code (constructor) for
-      * the Quark Relayer contract.
-      *
-      * This simply returns the Relayer code below.
+    function allocate(size) -> ptr {
+      /** Allocates memory in a safe way. Returns a pointer to it.
       */
-    datacopy(0, dataoffset("Relayer"), datasize("Relayer"))
-    return(0, datasize("Relayer"))
-  }
-
-  object "Relayer" {
-    /** This is the core Quark Relayer contract, which
-      * is what users call into (the "to" address).
-      *
-      * The calldata pass in calls to this function will
-      * be executed as Solidity code from a pre-determined
-      * address (based on create2, but not on the contract
-      * code itself).
-      *
-      * You can call this function as many times as you like,
-      * and you will execute different code *from the same address*.
-      *
-      * Note: do not wrap your code in any Solidity contract or ABI
-      *       encoding-- it should be the raw evm code to execute.
-      *
-      * Note: you currently need your code to self-destruct at the end
-      *       in order to clean up. We hope to remove this constraint.
-      *
-      * Note: self-destruct is required for this trick to work, and
-      *       may later be removed according to EIP-4758.
-      */
-
-    code {
-      /**
-        * First, we'll check if we're inside a Quark,
-        *  - If yes, we'll return the current Quark code
-        *  - If no, we'll run a new Quark execution
-        *
-        * This has the added benefit of preventing re-entry, though
-        * we could soften this req. in the future.
-        */
-
-      // TODO: We should consider making this specific to a caller, but
-      //       alternatively, we could enforce that caller must be an EOA to
-      //       prevent having to think too hard about this.
-
-      function running_quark() -> running {
-        /** Returns if we're inside a quark,
-          * which is defined as having the
-          * quark size stored at storage slot 0.
-          */
-        running := gt(sload(0), 0)
-      }
-
-      function allocate(size) -> ptr {
-        /** Allocates memory in a safe way. Returns a pointer to it.
-          */
-          ptr := mload(0x40)
-          if iszero(ptr) { ptr := 0x60 }
-          mstore(0x40, add(ptr, size))
-      }
-
-      function word_count(sz) -> words {
-        /** This is 32-byte word count [rounding up]. For example,
-          * word_count(5) == 1
-          * word_count(32) == 1
-          * word_count(33) == 2
-          */
-        words := div(sz, 32)
-        if lt(mul(words, 32), sz) {
-          words := add(words, 1)
-        }
-      }
-
-      function load_quark() -> offset, quark_size {
-        /** Loads the current quark from storage.
-          * We store the quark size (in words) at
-          * storage slot 0, and then the quark code
-          * at storage slot 1+. This reassembles that
-          * code into memory.
-          */
-
-        quark_size := sload(0)
-        offset := allocate(quark_size)
-        let quark_words := word_count(quark_size)
-        for { let i := 0 } lt(i, quark_words) { i := add(i, 1) }
-        {
-          mstore(add(offset, mul(i, 32)), sload(add(i, 1)))
-        }
-      }
-
-      function store_quark(offset, quark_size) {
-        /** Stores a quark from memory into storage.
-          * See `load_quark` for more information.
-          */
-
-        sstore(0, quark_size)
-        let quark_words := word_count(quark_size)
-        for { let i := 0 } lt(i, quark_words) { i := add(i, 1) }
-        {
-          let word := mload(add(offset, mul(i, 32)))
-          sstore(add(i, 1), word)
-        }
-      }
-
-      function clear_quark(quark_size) {
-        /** Clear quark from storage, reclaiming
-          * gas since we zero out data in same trx.
-          */
-
-        let quark_words := word_count(quark_size)
-        for { let i := 0 } lt(i, quark_words) { i := add(i, 1) }
-        {
-          sstore(add(i, 1), 0)
-        }
-        sstore(0, 0)
-      }
-
-      function selector() -> s {
-        s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
-      }
-
-      function decode_as_address(offset) -> v {
-        v := decode_as_uint(offset)
-        if iszero(iszero(and(v, not(0xffffffffffffffffffffffffffffffffffffffff)))) {
-          revert(0, 0)
-        }
-      }
-      
-      function decode_as_uint(offset) -> v {
-        let pos := add(4, mul(offset, 0x20))
-        if lt(calldatasize(), add(pos, 0x20)) {
-            revert(0, 0)
-        }
-        v := calldataload(pos)
-      }
-
-      function revert_err(offset, size) {
-        datacopy(0, offset, size)
-        revert(0, size)
-      }
-
-      switch running_quark()
-      case true {
-        /** If we're in a running quark, simply return
-          * the code for the quark.
-
-          * Note: this is used by the Virtual contract
-          *       below to get the quark data since we
-          *       can't pass it to Virtual since it would
-          *       change the data passed to `create2` and
-          *       thus change the created contract address
-          *       each time.
-          */
-        let offset, size := load_quark()
-        return(offset, size)
-      }
-      case false {
-        /** First check for some helpful function calls. These are guaranteed to be invalid bytecode
-          * as they all must start with 0xfe which is the "invalid" code.
-          */
-
-        switch selector()
-        case 0xfe5a936a /* "quarkAddress25(address)(address)" */ {
-          // Note: we can share this code if we want, but I'd rather copy it
-
-          // Track the caller (TODO: Take this as an arg?)
-          let account := decode_as_address(0)
-
-          // Load the Virtual contract data
-          let virt_size := datasize("Virtual")
-          let virt_offset := allocate(add(virt_size, 32))
-          datacopy(virt_offset, dataoffset("Virtual"), virt_size)
-
-          // Add the caller to the init code [Note: we *want* this to be part of the create2 derivation path]
-          mstore(add(virt_offset, virt_size), account)
-
-          let code_hash := keccak256(virt_offset, add(virt_size, 32))
-
-          // keccak256( 0xff ++ address ++ salt ++ keccak256(init_code))[12:]
-
-          // 0x01 + 0x14 + 0x20 + 0x20 = 0x55
-          let derivation := allocate(0x55)
-          mstore8(derivation, 0xFF)                           // 00-01: 0xFF
-          mstore(add(derivation, 0x01), shl(96, address()))   // 01-15: {address}
-          mstore(add(derivation, 0x15), 0)                    // 15-35: {salt}
-          mstore(add(derivation, 0x35), code_hash)            // 35-55: {sha3(init)}
-
-          let addr := and(keccak256(derivation, 0x55), 0xffffffffffffffffffffffffffffffffffffffff)
-
-          let res := allocate(32)
-          mstore(res, addr)
-
-          return(res, 32)
-        }
-        case 0xfee6f038 /* "virtualCode81()(bytes)" */ {
-          // Load the Virtual contract data
-          let virt_size := datasize("Virtual")
-          let virt_offset := allocate(add(virt_size, 64))
-
-          mstore(virt_offset, 0x20)
-          mstore(add(virt_offset, 32), virt_size)
-          datacopy(add(virt_offset, 64), dataoffset("Virtual"), virt_size)
-
-          return(virt_offset, add(virt_size, 64))
-        }
-        default {
-          /** Start a new quark environment.
-            * First, we'll store the quark data in storage (to make
-            * it available for the Virtual contract's init code).
-            *
-            * Next, we'll deploy (via create2) the Virtual contract,
-            * which will call back into this contract to get the init
-            * code for that contract (and return it directly).
-            *
-            * Finally, we'll clean up storage and get the Virtual
-            * contract to self destruct.
-            */
-
-          // Track the caller
-          let account := caller()
-
-          // Store the quark code
-          let quark_size := calldatasize()
-          let quark_offset := allocate(quark_size)
-          calldatacopy(quark_offset, 0, quark_size)
-          store_quark(quark_offset, quark_size)
-
-          // Load the Virtual contract data
-          let virt_size := datasize("Virtual")
-          let virt_offset := allocate(add(virt_size, 32))
-          datacopy(virt_offset, dataoffset("Virtual"), virt_size)
-
-          // Add the caller to the init code [Note: we *want* this to be part of the create2 derivation path]
-          mstore(add(virt_offset, virt_size), account)
-
-          // Deploy the Virtual contract
-          let virt := create2(0, virt_offset, add(virt_size, 32), 0)
-
-          // Clear the quark code (to reclaim gas)
-          clear_quark(quark_size)
-
-          // Ensure the contract was created, and if not, bail
-          if iszero(extcodesize(virt)) {
-            revert_err(dataoffset("Create2Failed"), datasize("Create2Failed"))
-          }
-
-          // Invoke the newly deployed virtual contract (i.e. run the user-supplied code)
-          let succ := call(gas(), virt, 0, 0, 0, 0, 0)
-
-          if iszero(succ) {
-            revert_err(dataoffset("InvocationFailure"), datasize("InvocationFailure"))
-          }
-
-          // Self-destruct the Virtual contract by calling it again
-          succ := call(gas(), virt, 0, 0, 0, 0, 0)
-
-          if iszero(succ) {
-            revert_err(dataoffset("CleanupFailure"), datasize("CleanupFailure"))
-          }
-
-          // We don't return any meaningful value,
-          // though we could pass back the result
-          // of the function call.
-          return(0, 0)
-        }
-      }
+      ptr := mload(0x40)
+      if iszero(ptr) { ptr := 0x60 }
+      mstore(0x40, add(ptr, size))
     }
 
-    data "Create2Failed" hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000e43726561746532206661696c6564000000000000000000000000000000000000"
-    data "InvocationFailure" hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001b436f6e747261637420496e766f636174696f6e204661696c7572650000000000"
-    data "CleanupFailure" hex"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000018436f6e747261637420436c65616e7570204661696c7572650000000000000000"
-
-    object "Virtual" {
-      /** This is the contract that is deployed (and then destructed)
-        * where your Quark code will run.
-        *
-        * The constructor is below (there is no contract code-- that's
-        * the user-spplied Quark code), so the constructor is simply
-        * responsible for loading and then returning the Quark code.
-        *
-        * Since this is based on create2, we can't accept the Quark
-        * code as input. Instead, we call back to the Relayer contract,
-        * which has stored the Quark code. We simply then return that value.
+    function load_byte_at(ptr, i) -> b {
+      /** We don't have granularity in the EVM to read at
+        * specific bytes, only at 32-byte words. Thus, if we have something
+        * like 0x1122334455... and we want to load the second byte, we
+        * must mload the entire word, shift right to get the correct byte
+        * to the right-most position and then mask it out with 0x000000...FF.
+        * This is what this function purports to do.
         */
-      code {
-        function allocate(size) -> ptr {
-          /** Allocates memory in a safe way. Returns a pointer to it.
-          */
-          ptr := mload(0x40)
-          if iszero(ptr) { ptr := 0x60 }
-          mstore(0x40, add(ptr, size))
-        }
+      b := byte(0, mload(add(ptr, i)))
+    }
 
-        function load_byte_at(ptr, i) -> b {
-          /** We don't have granularity in the EVM to read at
-            * specific bytes, only at 32-byte words. Thus, if we have something
-            * like 0x1122334455... and we want to load the second byte, we
-            * must mload the entire word, shift right to get the correct byte
-            * to the right-most position and then mask it out with 0x000000...FF.
-            * This is what this function purports to do.
-            */
-          b := byte(0, mload(add(ptr, i)))
-        }
+    function store_byte_at(ptr, i, v) {
+      /** We don't have granularity in the EVM to read and write at
+        * specific bytes, only at 32-byte words. Thus, if we have something
+        * like 0x1122334455... and we want to change the second byte, we
+        * must mload the entire word, bitmask out the second-highest byte and
+        * `or` in the new byte and then mstore the new value. That's what this
+        * function purports to do.
+        */
+      mstore8(add(ptr, i), v)
+    }
 
-        function store_byte_at(ptr, i, v) {
-          /** We don't have granularity in the EVM to read and write at
-            * specific bytes, only at 32-byte words. Thus, if we have something
-            * like 0x1122334455... and we want to change the second byte, we
-            * must mload the entire word, bitmask out the second-highest byte and
-            * `or` in the new byte and then mstore the new value. That's what this
-            * function purports to do.
-            */
-          mstore8(add(ptr, i), v)
-        }
-
-        function rewrite_push_3(op_idx, v) {
-          mstore8(add(op_idx, 1), byte(29, v))
-          mstore8(add(op_idx, 2), byte(30, v))
-          mstore8(add(op_idx, 3), byte(31, v))
-        }
-
-        // Call back to the Relayer contract (who is the caller) to get the Quark code
-        let succ := call(gas(), caller(), 0, 0, 0, 0, 0)
-
-        if iszero(succ) {
-          // This is an unexpected failure
-          revert(0, 0)
-        }
-
-        let appendix_size := datasize("Appendix")
-
-        // Read the return data from the Relayer
-        let quark_size := returndatasize()
-        let total_size := add(quark_size, appendix_size)
-        let quark_offset := allocate(total_size)
-        returndatacopy(quark_offset, 0, quark_size)
-
-        // TODO: Possibly check quark begins with magic incantation
-
-        // Load the caller from construction parameters
-        let account_idx := allocate(32)
-        datacopy(account_idx, datasize("Virtual"), 32)
-        let account := mload(account_idx)
-
-        // This is overwriting the magic number!
-        datacopy(quark_offset, dataoffset("Prependix"), datasize("Prependix"))
-
-        let appendix_jump_dst := add(quark_size, 1)
-
-        // Set the JUMP3 value, byte by byte
-        // Note: might want to check this fits in 3-bytes!
-        rewrite_push_3(quark_offset, appendix_jump_dst)
-
-        let appendix_offset := add(quark_offset, quark_size)
-
-        // Write the appendix
-        datacopy(appendix_offset, dataoffset("Appendix"), datasize("Appendix"))
-
-        // Rewrite our one jump in the appendix
-        rewrite_push_3(add(appendix_offset, 0x5), add(quark_size, 0x12))
-
-        // Storage: 0=account, 1=relayer, 2=called
-        sstore(0, account)
-        sstore(1, caller())
-
-        // Return the Quark data
-        return(quark_offset, total_size)
+    function rewrite_push_3(op_idx, v) {
+      if gt(v, 0xffffff) {
+        // operand too large
+        revert(0, 0)
       }
 
-      /*
-       * 000: PUSH3 XXX // Appendix index
-       * 004: JUMP
-       * 005: JUMPDEST
-       */
-      data "Prependix" hex"62000000565B"
+      mstore8(add(op_idx, 1), byte(29, v))
+      mstore8(add(op_idx, 2), byte(30, v))
+      mstore8(add(op_idx, 3), byte(31, v))
+    }
 
-      /*
-       * 000: fe       [INVALID]
-       * 001: 5b       [JUMPDEST]
-       * 002: 6002     [PUSH1 2]
-       * 004: 54       [SLOAD]     // sload(2)
-       * 005: 62000000 [PUSH3 XXX]
-       * 009: 57       [JUMPI]
-       * 00a: 6001     [PUSH1 1]   // we haven't been called
-       * 00c: 6002     [PUSH1 2]
-       * 00e: 55       [SSTORE]    // sstore(2, 1)
-       * 00f: 6005     [PUSH1 5]
-       * 011: 56       [JUMP]      // return to user code
-       * 012: 5b       [JUMPDEST]  // we've been called before, blow up!
-       * 013: 6000     [PUSH1 0]
-       * 015: 54       [SLOAD]     // sload(0)
-       * 016: ff       [SELFDESTRUCT]
-       */
-      data "Appendix" hex"fe5b600254620000005760016002556005565b600054ff"
+    function copy4(dst, v) {
+      if gt(v, 0xffffffff) {
+        // operand too large
+        revert(0, 0)
+      }
+
+      mstore8(add(dst, 0), byte(28, v))
+      mstore8(add(dst, 1), byte(29, v))
+      mstore8(add(dst, 2), byte(30, v))
+      mstore8(add(dst, 3), byte(31, v))
+    }
+
+    function revert_err(offset, size) {
+      datacopy(0, offset, size)
+      revert(0, size)
+    }
+
+    // Load the caller from construction parameters
+    let account_idx := allocate(32)
+    datacopy(account_idx, datasize("Quark"), 32)
+    let account := mload(account_idx)
+
+    // Call back to the Relayer contract (who is the caller) to get the Quark code
+    let read_quark_abi := allocate(0x04)
+    copy4(read_quark_abi, 0xec8927c0) // readQuark()
+    let succ := call(gas(), caller(), 0, read_quark_abi, 0x04, 0, 0)
+
+    if iszero(succ) {
+      // This is an unexpected failure
+      revert_err(dataoffset("trx script reverted"), datasize("trx script reverted"))
+    }
+
+    let appendix_size := datasize("Appendix")
+
+    // Read the return data from the Relayer
+    let quark_size := sub(returndatasize(), 0x40) // 0x00-20: header, 0x20-40: "size"
+    let total_size := add(quark_size, appendix_size)
+    let quark_offset := allocate(total_size)
+    returndatacopy(quark_offset, 0x40, quark_size)
+
+    // Storage owner and relayer at respective locations
+    sstore(0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111, account)  // owner
+    sstore(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6, caller()) // relayer
+
+    // TODO: We could make this better, just testing
+
+    // Next, let's make sure the script starts with the magic incantation (0x303030505050)
+    switch eq(shr(208, mload(quark_offset)), 0x303030505050) // top 6 of 32 bytes is >> 26 bytes * 8 bits = 208
+    case false {
+      // revert_err(dataoffset("trx script invalid"), datasize("trx script invalid"))
+
+      // Buyer beware here!
+      // Return the Quark data
+      return(quark_offset, quark_size)
+    }
+    case true {
+      // This is overwriting the magic number!
+      datacopy(quark_offset, dataoffset("Prependix"), datasize("Prependix"))
+
+      let appendix_jump_dst := add(quark_size, 1)
+
+      // Set the JUMP3 value, byte by byte
+      rewrite_push_3(quark_offset, appendix_jump_dst)
+
+      let appendix_offset := add(quark_offset, quark_size)
+
+      // Write the appendix
+      datacopy(appendix_offset, dataoffset("Appendix"), datasize("Appendix"))
+
+      // Rewrite `ret` in the appendix
+      rewrite_push_3(add(appendix_offset, 0x002), 0x5)
+      // Rewrite `offset` in the appendix
+      rewrite_push_3(add(appendix_offset, 0x006), quark_size)
+
+      // Return the Quark data
+      return(quark_offset, total_size)
     }
   }
+
+  /*
+   * 000: PUSH3 XXX // Appendix index
+   * 004: JUMP
+   * 005: JUMPDEST
+   */
+  data "Prependix" hex"62000000565B"
+
+  /**
+    * Pseudocode
+    *
+    * code {
+    *   function selector() -> s {
+    *     s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
+    *   }
+    *
+    *   switch selector()
+    *     case 0x2b68b9c6 { // "destruct()"
+    *       // require(msg.sender == relayer)
+    *       if (iszero(eq(caller, sload(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6)))) {
+    *         revert(0, 0)
+    *       }
+    *       // selfdestruct(owner)
+    *       selfdestruct(sload(0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111));
+    *     }
+    *
+    *     // require(callable || msg.sender == relayer);
+    *     let callable := and(sload(0xabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf819), 1);
+    *     let from_relayer := eq(caller, sload(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6))
+    *     if (and(iszero(callable), iszero(from_relayer))) {
+    *       revert(0, 0);
+    *     }
+    *
+    *     // JUMP TO USER CODE
+    *   }
+    * }
+    *
+    * Pseudocode [Limited jumps]
+    *
+    * code {
+    *   is_destruct := eq(0x2b68b9c6, div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000))
+    *   is_relayer := eq(caller, sload(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6))
+    *   is_callable := eq(sload(0xabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf819), 0x1);
+    *   if and(eq(is_destruct, 0), or(is_relayer, is_callable)
+    *     // JUMP TO USER CODE
+    *   if (and(is_destruct, is_relayer))
+    *     selfdestruct(owner)
+    *   revert(0, 0)
+    * }
+    *
+    * Opcodes
+    *
+    * QUARKSTART
+    * 000: fe          INVALID
+    * 001: 5b          JUMPDEST
+    * 002: 62000000    PUSH3 xxxxxx                            [ret]
+    * 006: 62000000    PUSH3 xxxxxx                            [ret, code_offset]
+    * 00a: 7c0100000000000000000000000000000000000000000000000000000000 PUSH29 `function is_destruct()`
+    * 028: 6000        PUSH1 00      
+    * 02a: 35          CALLDATALOAD
+    * 02b: 04          DIV
+    * 02c: 632b68b9c6  PUSH4 0x2b68b9c6
+    * 031: 14          EQ                                      [ret, code_offset, is_destruct]
+    * 032: 7f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6 PUSH32 `function is_relayer()`
+    * 053: 54          SLOAD
+    * 054: 33          CALLER
+    * 055: 14          EQ                                      [ret, code_offset, is_destruct, is_relayer]
+    * 056: 7fabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf819 PUSH32 `function is_callable()`
+    * 077: 54          SLOAD
+    * 078: 6001        PUSH1 0x1
+    * 07a: 14          EQ                                      [ret, code_offset, is_destruct, is_relayer, is_callable]
+    * 07b: 82          DUP3                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_destruct]
+    * 07c: 6000        PUSH1 0
+    * 07e: 14          EQ                                      [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct]
+    * 07f: 82          DUP3                                    [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct, is_relayer]
+    * 080: 82          DUP3                                    [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct, is_relayer, is_callable]
+    * 081: 17          OR                                      [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct, is_relayer || is_callable]
+    * 082: 16          AND                                     [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct && ( is_relayer || is_callable )]
+    * 083: 84          DUP5                                    [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct && ( is_relayer || is_callable ), code_offset]
+    * 084: 62000099    PUSH3 // pc destruct location           [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct && ( is_relayer || is_callable ), code_offset, rel_jump]
+    * 088: 01          ADD                                     [ret, code_offset, is_destruct, is_relayer, is_callable, !is_destruct && ( is_relayer || is_callable ), code_offset + rel_jump]
+    * 089: 57          JUMPI // user code jump location        [ret, code_offset, is_destruct, is_relayer, is_callable]
+    * 08a: 81          DUP2                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer]
+    * 08b: 83          DUP4                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer, is_destruct]
+    * 08c: 16          AND                                     [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct]
+    * 08d: 84          DUP5                                    [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct, code_offset]
+    * 08e: 6200009f    PUSH3 // pc destruct location           [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct, code_offset, rel_jump]
+    * 092: 01          ADD                                     [ret, code_offset, is_destruct, is_relayer, is_callable, is_relayer && is_destruct, code_offset + rel_jump]
+    * 093: 57          JUMPI
+    * 094: 6000        PUSH1 0
+    * 096: 6000        PUSH1 0
+    * 098: fd          REVERT
+    * 099: 5b          JUMPDEST // user code jump location     [ret, code_offset, is_destruct, is_relayer, is_callable]
+    * 09a: 50          POP                                     [ret, code_offset, is_destruct, is_relayer]
+    * 09b: 50          POP                                     [ret, code_offset, is_destruct]
+    * 09c: 50          POP                                     [ret, code_offset]
+    * 09d: 50          POP                                     [ret]
+    * 09e: 56          JUMP
+    * 09f: 5b          JUMPDEST // destruct location
+    * 0a0: 7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111 PUSH32
+    * 0c1: 54          SLOAD
+    * 0c2: ff          SELFDESTRUCT
+    * QUARKEND
+    */
+
+  data "Appendix" hex"fe5b62000000620000007c010000000000000000000000000000000000000000000000000000000060003504632b68b9c6147f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f65433147fabc5a6e5e5382747a356658e4038b20ca3422a2b81ab44fd6e725e9f1e4cf81954600114826000148282171684620000990157818316846200009f015760006000fd5b50505050565b7f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811154ff"
+
+  // Errors
+  data "trx script reverted" hex"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000137472782073637269707420726576657274656400000000000000000000000000"
+  data "trx script invalid" hex"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000127472782073637269707420696e76616c69640000000000000000000000000000"
 }

@@ -1,0 +1,56 @@
+#!/bin/bash
+
+shopt -s nullglob
+
+set -eo pipefail
+
+yul_filenames=(./examples/{*.yul,**/*.yul})
+all_yul_filenames=(./**/{*.yul,**/*.yul})
+all_sol_filenames=(./**/{*.sol,**/*.sol})
+
+for filename in ${yul_filenames[@]}; do
+  skip=()
+  for inner_filename in ${all_yul_filenames[@]}; do
+    if [ -f $inner_filename ] && [ $inner_filename != $filename ]; then
+      skip+=" --skip $(basename $inner_filename)"
+    fi
+  done
+  echo "Building $filename"
+  forge build --contracts ./examples --skip ".sol" ${skip[@]}
+done
+
+# Next, build Solidity in two-step process
+sol_filenames=(./examples/{*.sol,**/*.sol})
+
+echo "$sol_filenames"
+
+for sol_filename in ${sol_filenames[@]}; do
+  skip=()
+  for inner_filename in ${all_sol_filenames[@]}; do
+    if [ -f $inner_filename ] && [ $inner_filename != $sol_filename ]; then
+      skip+=" --skip $(basename $inner_filename)"
+    fi
+  done
+  echo "Building $sol_filename"
+  forge build --contracts ./examples --skip "yul" ${skip} --extra-output ir
+
+  newline="
+"
+  base="$(basename -- $sol_filename)"
+  out="./out/$base/${base%.*}.json"
+  tmp_filename="${sol_filename%.*}Script.yul"
+  if [ -f "$out" ]; then
+    ir=$(cat "$out" | jq -r ".ir")
+    echo "${ir//mstore(64, memoryguard/verbatim_0i_0o(hex\"303030505050\")$newline        mstore(64, memoryguard}" > "$tmp_filename"
+
+    skip=()
+    for inner_filename in ${all_yul_filenames[@]}; do
+      if [ -f $inner_filename ]; then
+        skip+=" --skip $(basename $inner_filename)"
+      fi
+    done
+    echo "Building $tmp_filename"
+    forge build --contracts ./examples --skip "sol" ${skip} --extra-output ir
+    rm "$tmp_filename"
+  fi
+done

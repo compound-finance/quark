@@ -1,5 +1,7 @@
-object "Ping" {
+object "Logger" {
   code {
+    verbatim_0i_0o(hex"303030505050")
+
     // Store a value (55) in memory
     mstore(0x80, 55)
 

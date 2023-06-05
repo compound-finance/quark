@@ -1,0 +1,1 @@
+cast abi-encode "run(address,uint256,address,bytes)" "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" "5000000" "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" "$(cast calldata "balanceOf(address)" "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")" | npm run submit -- --network quarknet --nonce 0 --trx-script wrapped-call --trx-calldata - --private-key "$QUARKNET_PRIVATE_KEY"

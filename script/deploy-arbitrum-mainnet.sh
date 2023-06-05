@@ -1,6 +1,14 @@
 #!/bin/bash
 
-set -ex
+set -e
 
-echo "Deploying Quark to Arbitrum Mainnet"
-cast send --interactive --chain 42161 --rpc-url https://arb1.arbitrum.io/rpc --create "$(cat out/Quark.yul/Quark.json | jq -r .bytecode.object)"
+if [ -z "$ARBITRUM_PRIVATE_KEY" ]; then
+  echo "Please set ARBITRUM_PRIVATE_KEY"
+  exit 1
+fi
+
+RPC_URL="https://arb1.arbitrum.io/rpc"
+PRIVATE_KEY="$ARBITRUM_PRIVATE_KEY"
+
+echo "Deploying Quark to Quark net"
+forge create src/Relayer.sol:Relayer --private-key "$PRIVATE_KEY" --rpc-url "$RPC_URL"
