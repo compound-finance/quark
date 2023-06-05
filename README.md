@@ -23,10 +23,10 @@ There's nothing to do-- you can simply start sending Quark transactions today.
 
 | Network       | Quark Relayer |
 | ------------- | ------------- |
-| Goerli        | [0x412e71DE37aaEBad89F1441a1d7435F2f8B07270](https://goerli.etherscan.io/address/0x412e71DE37aaEBad89F1441a1d7435F2f8B07270) |
-| Optimism [Goerli] | [0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23](https://goerli-optimism.etherscan.io/address/0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23) |
-| Arbitrum [Goerli] | [0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23](https://goerli.arbiscan.io/address/0x12d356e5c3b05afb0d0dbf0999990a6ec3694e23) |
-| Arbitrum [Mainnet] | [0xC9c445CAAC98B23D1b7439cD75938e753307b2e6](https://arbiscan.io/address/0xC9c445CAAC98B23D1b7439cD75938e753307b2e6) |
+| Goerli        | [0xc4f0049a828cd0af222fdbe5adeda9aaf72b7f30](https://goerli.etherscan.io/address/0xc4f0049a828cd0af222fdbe5adeda9aaf72b7f30) |
+| Optimism [Goerli] | [0x66ca95f4ed181c126acbd5aad21767b20d6ad7da](https://goerli-optimism.etherscan.io/address/0x66ca95f4ed181c126acbd5aad21767b20d6ad7da) |
+| Arbitrum [Goerli] | [0xdde0bf030f2ffceae76817f2da0a14b1e9a87041](https://goerli.arbiscan.io/address/0xdde0bf030f2ffceae76817f2da0a14b1e9a87041) |
+| Arbitrum [Mainnet] | [0x66ca95f4ed181c126acbd5aad21767b20d6ad7da](https://arbiscan.io/address/0x66ca95f4ed181c126acbd5aad21767b20d6ad7da) |
 
 You can send scripts through a dApp, but they are simply data, so you can even send this via MetaMask. Try sending these transaction scripts on Goerli:
 
