@@ -1,6 +1,13 @@
 #!/bin/bash
 
-set -ex
+set -e
 
-echo "Deploying Quark to Optimism Goerli"
-cast send --interactive --chain 420 --rpc-url https://goerli.optimism.io --create "$(cat out/Quark.yul/Quark.json | jq -r .bytecode.object)"
+args=--interactive
+if [ -n "$OPTIMISM_GOERLI_DEPLOYER_KEY" ]; then
+  args=--private-key "$OPTIMISM_GOERLI_DEPLOYER_KEY"
+fi
+
+RPC_URL="https://goerli.optimism.io"
+
+echo "Deploying Quark to Quark net"
+forge create src/Relayer.sol:Relayer --rpc-url "$RPC_URL" $args $@
