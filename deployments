@@ -56,3 +56,23 @@ Submitted contract for verification:
         https://goerli-optimism.etherscan.io/address/0x66ca95f4ed181c126acbd5aad21767b20d6ad7da
 Contract successfully verified
 
+invalid network 'arbitrum'. valid networks: arbitrum-goerli, arbitrum-mainnet, goerli, optimism-goerli, quarknet
+script/deploy.sh {network}
+--- 
+Deploying Quark to Arbitrum [Mainnet]
+No files changed, compilation skipped
+Deployer: 0xE4a892476d366A1AE55bf53463a367892E885cEE
+Deployed to: 0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da
+Transaction hash: 0x610f4bb5c8face4da7b49f802a01b087e3fb7b3ce69c1f78f861bbf586417dbe
+Starting contract verification...
+Waiting for etherscan to detect contract deployment...
+Start verifying contract `0x66ca95f4ed181c126acbd5aad21767b20d6ad7da` deployed on arbitrum
+
+Submitting verification for [src/Relayer.sol:Relayer] "0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da".
+Submitted contract for verification:
+	Response: `OK`
+	GUID: `5iq9hyywkyji6ntryqpjezxcfrcdyyumtz5sngwqu8jknynneh`
+	URL:
+        https://arbiscan.io/address/0x66ca95f4ed181c126acbd5aad21767b20d6ad7da
+Contract successfully verified
+
