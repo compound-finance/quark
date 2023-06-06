@@ -8,12 +8,12 @@ contract Multicall is QuarkScript {
   error CallError(uint256 n, address wrappedContract, bytes wrappedCalldata, bytes err);
 
   struct MulticallInput {
-    address[] wrappedContracts,
-    bytes[] wrappedCalldatas,
+    address[] wrappedContracts;
+    bytes[] wrappedCalldatas;
   }
 
   function run(bytes calldata data) internal override returns (bytes memory) {
-    MulticallInput memory input = abi.decode(data, MulticallInput);
+    MulticallInput memory input = abi.decode(data, (MulticallInput));
     if (input.wrappedContracts.length != input.wrappedCalldatas.length) {
       revert InvalidInput();
     }

@@ -1,7 +1,7 @@
 import { AbiCoder, Interface } from '@ethersproject/abi';
 import { hexDataSlice, hexlify } from '@ethersproject/bytes';
 import { abi as multicallAbi, deployedBytecode as multicallBytecode } from '../../out/Multicall.sol/Multicall.json'
-import { abi as ethcallAbi, deployedBytecode as ethcallBytecode } from '../../out/Multicall.sol/Multicall.json'
+import { abi as ethcallAbi, deployedBytecode as ethcallBytecode } from '../../out/Ethcall.sol/Ethcall.json'
 import { Contract } from '@ethersproject/contracts';
 import { Provider, TransactionRequest } from '@ethersproject/abstract-provider';
 import { getRelayer } from './Relayer';
@@ -20,6 +20,13 @@ export type CallArgs
   = ContractCall
   | [TrxRequest]
   | [SingleCall[]];
+
+function encodeTuple(args: string[], values: any[]): string {
+  return '0x' + new AbiCoder().encode(
+    [`tuple(${args.join(',')})`],
+    [values]
+  ).slice(66);
+}
 
 async function encodeCall(call: SingleCall): Promise<[string, string]> {
   let txReq: TransactionRequest;
@@ -45,11 +52,11 @@ export async function runQuarkScript(providerOrRelayer: Provider | Contract, scr
   } else {
     relayer = await getRelayer(providerOrRelayer);
   }
-  console.log("relayer", relayer);
+  console.log("relayer", relayer, script, calldata);
   return relayer['runQuarkScript(bytes,bytes)'](script, calldata);
 }
 
-export async function call(providerOrRelayer: Provider | Contract, ...callArgs: CallArgs): Promise<any> {
+export async function multicall(providerOrRelayer: Provider | Contract, ...callArgs: CallArgs): Promise<any> {
   console.log("callArgs", callArgs, callArgs.length, Array.isArray(callArgs[0]));
   if (callArgs.length > 0 && Array.isArray(callArgs[0]) && callArgs[0].length !== 1) {
     // Multicall
@@ -62,15 +69,7 @@ export async function call(providerOrRelayer: Provider | Contract, ...callArgs: 
     let inAddresses = callsEncoded.map((c) => c[0]);
     let inCalldatas = callsEncoded.map((c) => c[1]);
 
-    let multicallInput = new AbiCoder().encode(
-      ["tuple(address[], bytes[])"],
-      [
-        [
-          inAddresses,
-          inCalldatas
-        ]
-      ]
-    );
+    let multicallInput = encodeTuple(["address[]", "bytes[]"], [inAddresses, inCalldatas]);
 
     return runQuarkScript(providerOrRelayer, multicallBytecode.object, multicallInput);
   } else {
@@ -84,12 +83,12 @@ export async function call(providerOrRelayer: Provider | Contract, ...callArgs: 
       single = callArgs[0] as TrxRequest;
     }
 
+    console.log("single", single);
     let encoded = await encodeCall(single);
+    console.log("encoded", encoded);
 
-    let ethcallInput = new AbiCoder().encode(
-      ["tuple(address, bytes)"],
-      [encoded]
-    );
+    let ethcallInput = encodeTuple(["address", "bytes"], encoded);
+    console.log("ethCallInput", ethcallInput);
 
     return runQuarkScript(providerOrRelayer, ethcallBytecode.object, ethcallInput);
   }
