@@ -55,6 +55,7 @@ contract FlashMulticall is QuarkScript {
         // later check it's the correct caller for the flash callback. Otherwise we'll
         // need to track the router or something to check tha the caller for the callback
         // is legit.
+        require(flashPool == address(0));
         flashPool = input.pool;
 
         FlashMulticallUniswapPool(input.pool).flash(
