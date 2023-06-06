@@ -39,7 +39,8 @@ export const abi: { [version: number]: ReadonlyArray<Fragment | JsonFragment | s
 
 export async function getRelayer(signerOrProvider: Signer | Provider): Promise<Contract> {
   let chainId;
-  if ('__isProvider' in signerOrProvider && signerOrProvider.__isProvider) {
+  if ( ( '__isProvider' in signerOrProvider && signerOrProvider.__isProvider )
+       || ( '_isProvider' in signerOrProvider && signerOrProvider._isProvider ) ) {
     chainId = (await (signerOrProvider as unknown as Provider).getNetwork()).chainId;
   } else if ('_isSigner' in signerOrProvider && signerOrProvider._isSigner) {
     chainId = (await (signerOrProvider as unknown as Signer).getChainId());
