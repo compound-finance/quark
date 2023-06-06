@@ -1,5 +1,6 @@
 import { AbiCoder, Interface } from '@ethersproject/abi';
 import { hexDataSlice, hexlify } from '@ethersproject/bytes';
+import { abi as flashMulticallAbi, deployedBytecode as flashMulticallBytecode } from '../../out/Multicall.sol/Multicall.json'
 import { abi as multicallAbi, deployedBytecode as multicallBytecode } from '../../out/Multicall.sol/Multicall.json'
 import { abi as ethcallAbi, deployedBytecode as ethcallBytecode } from '../../out/Ethcall.sol/Ethcall.json'
 import { Contract } from '@ethersproject/contracts';
@@ -92,4 +93,15 @@ export async function multicall(providerOrRelayer: Provider | Contract, ...callA
 
     return runQuarkScript(providerOrRelayer, ethcallBytecode.object, ethcallInput);
   }
+}
+
+export async function flashMulticall(providerOrRelayer: Provider | Contract, pool: string, amount0: bigint, amount1: bigint, calls: SingleCall[]): Promise<any> {
+  console.log("calls", calls);
+  let callsEncoded = await Promise.all(calls.map(encodeCall));
+  let inAddresses = callsEncoded.map((c) => c[0]);
+  let inCalldatas = callsEncoded.map((c) => c[1]);
+
+  let flashMulticallInput = encodeTuple(["address", "uint256", "uint256", "address[]", "bytes[]"], [pool, amount0, amount1, inAddresses, inCalldatas]);
+
+  return runQuarkScript(providerOrRelayer, flashMulticallBytecode.object, flashMulticallInput);
 }
