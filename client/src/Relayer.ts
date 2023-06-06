@@ -1,6 +1,8 @@
 import { Contract } from '@ethersproject/contracts';
 import { Signer } from '@ethersproject/abstract-signer';
 import { Provider } from '@ethersproject/abstract-provider';
+import { abi as relayerAbi } from '../../out/Relayer.sol/Relayer.json'
+import { Fragment, JsonFragment } from '@ethersproject/abi';
 
 const networks: { [chainId: number]: string } = {
   5: 'goerli',
@@ -12,10 +14,11 @@ const networks: { [chainId: number]: string } = {
 export function getNetwork(chainIdOrNetwork: number | string) : string {
   let network: string;
   if (typeof(chainIdOrNetwork) === 'number') {
-    return networks[chainIdOrNetwork];
+    let network = networks[chainIdOrNetwork];
     if (!network) {
       throw new Error(`Unsupported Ethereum network: ${chainIdOrNetwork}`);
     }
+    return network;
   } else {
     return chainIdOrNetwork;
   }
@@ -23,18 +26,15 @@ export function getNetwork(chainIdOrNetwork: number | string) : string {
 
 export const relayers: { [version: number]: { [network: string]: string } } = {
   1: {
-    'goerli': '0x412e71DE37aaEBad89F1441a1d7435F2f8B07270',
-    'optimism-goerli': '0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23',
-    'arbitrum-goerli': '0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23',
-    'arbitrum': '0xC9c445CAAC98B23D1b7439cD75938e753307b2e6',
+    'goerli': '0xc4f0049a828cd0af222fdbe5adeda9aaf72b7f30',
+    'optimism-goerli': '0x66ca95f4ed181c126acbd5aad21767b20d6ad7da',
+    'arbitrum-goerli': '0xdde0bf030f2ffceae76817f2da0a14b1e9a87041',
+    'arbitrum': '0x66ca95f4ed181c126acbd5aad21767b20d6ad7da',
   }
 }
 
-export const abi: { [version: number]: string[] } = {
-  1: [
-    "function quarkAddress25(address) returns (address)",
-    "function virtualCode81() returns (bytes)"
-  ]
+export const abi: { [version: number]: ReadonlyArray<Fragment | JsonFragment | string> } = {
+  1: relayerAbi
 };
 
 export async function getRelayer(signerOrProvider: Signer | Provider): Promise<Contract> {

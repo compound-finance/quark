@@ -1,7 +1,7 @@
 
 ## Quark Client
 
-The Quark client is a JavaScript library to quicky and easily build and invoke actions from Quark wallets. The goal of this library is to cover a large subset of actions one might want to take when using a Quark wallet, from simply wrapping Ethers transactions, to building compositions of built-in DeFi functions, to even running Solidity code.
+The Quark client is a JavaScript library to quicky and easily build and invoke actions from Quark wallets. The goal of this library is to cover a large subset of actions one might want to take when using a Quark wallet, from simply wrapping Ethers transactions, to building compositions of built-in DeFi functions, to running Solidity code.
 
 ## Getting Started
 
@@ -36,7 +36,49 @@ import * as Quark from '@compound-finance/quark';
 let relayer = Quark.Relayer(provider, 'arbitrum', 1);
 ```
 
-## Examples
+## Quark Scripts
+
+The easiest way to get running is to simply run Quark Scripts, which are compiled Solidity scripts that ship with Quark. For instance, you can use `send` to wrap a standard Ethereum call. You can access these contracts directly, but usually you'll use a helper function for common actions.
+
+Scripts come precompiled and do not require solc to run.
+
+```ts
+import * as Quark from '@compound-finance/quark';
+
+let usdc = new ethers.Contract("0x...", [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)",
+  "function transfer(address to, uint amount) returns (bool)",
+  "function transferFrom(address spender, address recipient, uint amount) returns (bool)",
+], provider);
+
+let tx = await Quark.Scripts.send(provider, usdc, 'transfer', ['0x...', 100e6]);
+```
+
+You can also run multiple calls and you can use `populateTransaction` to pass in calls, e.g.
+
+```ts
+import * as Quark from '@compound-finance/quark';
+
+let usdc = new ethers.Contract("0x...", [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)",
+  "function transfer(address to, uint amount) returns (bool)",
+  "function transferFrom(address spender, address recipient, uint amount) returns (bool)",
+], provider);
+
+let tx = await Quark.Scripts.send(provider, [
+  usdc.populateTransaction.transfer('0x...', 100e6),
+  [usdc, 'transferFrom', ['0x...', 50e6],
+]);
+```
+
+TODO: Think about searcher script
+TODO: Think about other good scripts
+
+## Quark Commands
 
 ### Running Ethers function
 
