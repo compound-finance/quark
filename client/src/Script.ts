@@ -57,6 +57,7 @@ export async function call(providerOrRelayer: Provider | Contract, ...callArgs: 
     if (calls.length === 0) {
       throw new Error('Empty call list given');
     }
+    console.log("calls", calls);
     let callsEncoded = await Promise.all(calls.map(encodeCall));
     let inAddresses = callsEncoded.map((c) => c[0]);
     let inCalldatas = callsEncoded.map((c) => c[1]);
@@ -75,7 +76,9 @@ export async function call(providerOrRelayer: Provider | Contract, ...callArgs: 
   } else {
     // Single call
     let single: SingleCall;
-    if (callArgs[0] instanceof Contract) {
+    if (Array.isArray(callArgs[0]) && callArgs[0].length === 1) {
+      single = callArgs[0][0];
+    } else if (callArgs[0] instanceof Contract) {
       single = callArgs as ContractCall;
     } else {
       single = callArgs[0] as TrxRequest;

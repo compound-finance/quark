@@ -47,6 +47,12 @@ describe('Script', () => {
     expect(tx.to).toEqual('0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da');
   });
 
+  test('single call via populate as array', async () => {
+    await call(provider, [usdc.populateTransaction.transfer(from, 100e6)]);
+    expect(tx.data).toMatch(/^0xa3bebbf/);
+    expect(tx.to).toEqual('0x66ca95f4ed181c126acbD5aaD21767b20D6ad7da');
+  });
+
   test('multicall', async () => {
     await call(provider, [
       [usdc, 'transfer', [from, 100e6]],

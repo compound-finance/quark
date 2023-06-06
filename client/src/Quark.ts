@@ -10,11 +10,11 @@ export { buildSol, buildYul } from './Compiler';
 import { getNetwork, relayers } from './Relayer';
 import { keccak256 } from '@ethersproject/keccak256';
 export * as Script from './Script';
-import { deployedBytecode as relayerBytecode } from '../../out/Relayer.sol/Relayer.json'
+import { bytecode as quarkBytecode } from '../../out/Quark.yul/Quark.json'
 
 export const UINT256_MAX = new Uint256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
-const bytecodeV1 = relayerBytecode.object;
+const bytecodeV1 = quarkBytecode.object;
 
 const initCodes: { [version: number]: { [network: string]: string } } = {
   1: {
