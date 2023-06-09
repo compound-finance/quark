@@ -1,6 +1,6 @@
 import { AbiCoder, Interface } from '@ethersproject/abi';
 import { hexDataSlice, hexlify } from '@ethersproject/bytes';
-import { abi as flashMulticallAbi, deployedBytecode as flashMulticallBytecode } from '../../out/Multicall.sol/Multicall.json'
+import { abi as flashMulticallAbi, deployedBytecode as flashMulticallBytecode } from '../../out/FlashMulticall.sol/FlashMulticall.json'
 import { abi as multicallAbi, deployedBytecode as multicallBytecode } from '../../out/Multicall.sol/Multicall.json'
 import { abi as ethcallAbi, deployedBytecode as ethcallBytecode } from '../../out/Ethcall.sol/Ethcall.json'
 import { Contract } from '@ethersproject/contracts';
