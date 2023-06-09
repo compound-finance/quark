@@ -9,13 +9,14 @@ import "../lib/Counter.sol";
 
 import "../../src/scripts/Multicall.sol";
 import "../../src/Relayer.sol";
+import "../../src/RelayerMetamorphic.sol";
 
 contract MulticallTest is Test {
     Relayer public relayer;
     Counter public counter;
 
     constructor() {
-        relayer = new Relayer();
+        relayer = new RelayerMetamorphic();
         console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();

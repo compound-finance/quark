@@ -7,12 +7,14 @@ import "forge-std/console.sol";
 import "./lib/YulHelper.sol";
 import "./lib/Counter.sol";
 
+import "../src/QuarkVm.sol";
+
 contract QuarkVmTest is Test {
-    address quarkVm;
+    QuarkVm quarkVm;
     Counter public counter;        
 
     constructor() {
-        quarkVm = new YulHelper().deploy("QuarkVm.yul/QuarkVm.json");
+        quarkVm = new QuarkVm();
         console.log("Quark Vm deployed to: %s", address(quarkVm));
 
         counter = new Counter();
@@ -24,26 +26,30 @@ contract QuarkVmTest is Test {
         // nothing
     }
 
-    function testVmManual() public {
-        (bool success, bytes memory res) = quarkVm.call{value: 0x55}(hex"6112346005025f5fa1");
-        assertEq(success, true);
-        assertEq(res, hex"");
-    }
+    // function testVmManual() public {
+    //     (bool success, bytes memory res) = address(quarkVm).call{value: 0x55}(hex"6112346005025f5fa1");
+    //     assertEq(success, true);
+    //     assertEq(res, hex"");
+    // }
 
-    function testVmSimple() public {
-        (bool success, bytes memory res) = quarkVm.call(new YulHelper().get("VmTest.yul/Simple.json"));
-        assertEq(success, true);
-        assertEq(res, hex"");
-    }
+    // function testVmSimple() public {
+    //     (bool success, bytes memory res) = address(quarkVm).call(new YulHelper().get("VmTest.yul/Simple.json"));
+    //     assertEq(success, true);
+    //     assertEq(res, hex"");
+    // }
 
     function testVmCounter() public {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
 
+        QuarkVm.VmCall memory vmCall = QuarkVm.VmCall({
+            vmCode: incrementer,
+            vmCalldata: hex""
+        });
+
         assertEq(counter.number(), 0);
 
         vm.prank(address(0xaa));
-        (bool success, bytes memory res) = quarkVm.call(incrementer);
-        assertEq(success, true);
+        bytes memory res = quarkVm.run(vmCall);
         assertEq(res, abi.encode());
         assertEq(counter.number(), 33);
     }

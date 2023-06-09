@@ -17,23 +17,29 @@ object "QuarkVm" {
             /**
               *
               * Memory:
-              *   0x00 : Scratch
-              *   0x20 : Scratch
-              *   0x40 : Scratch
-              *   0x60 : Scratch
-              *   0x80 : Reserved
-              *   0xa0 : Reserved
-              *   0xc0 : Reserved
-              *   0xe0 : Reserved
-              *  0x100-: calldata
-              // TODO: I need to cap the total program size or pass around an offset
-              * 0x2000 : stk[0]
-              * 0x4000 : mem0 // TODO: This is wrong and sucks
-              * 
+              *   0x00 -100 : Scratch
+              *   0x100-    : stk[0]
+              *   0x2100-   : stk[255]
+              *      ...    :  [codestart]
+              *      ...    :  [calldatastart]
+              *      ...    :  [memorystart]
               */
 
-            function get_op(vpc) -> op {
-                op := shr(248, mload(add(0x100, vpc)))
+            function codestart() -> m {
+                m := mload(0x40)
+            }
+
+            function calldatastart() -> m {
+                m := mload(0x60)
+            }
+
+            function memstart() -> m {
+                m := mload(0x80)
+            }
+
+            function get_op(vpc, vcodestart, vcodesize) -> op {
+                // TODO: Make sure we don't overrun
+                op := shr(248, mload(codeptr(vpc, vcodestart)))
                 log1(0, 0, add(shl(16, vpc), op))
             }
 
@@ -75,22 +81,87 @@ object "QuarkVm" {
                 r := iszero(eq(a, b))
             }
 
-            function map_offset(offset) -> offset_ {
-                offset_ := add(offset, 0x4000)
+            function codeptr(offset, vcodestart) -> offset_ {
+                offset_ := add(offset, vcodestart)
+            }
+
+            function calldataptr(offset, vcalldatastart) -> offset_ {
+                offset_ := add(offset, vcalldatastart)
+            }
+
+            function memptr(offset, vmemstart) -> offset_ {
+                offset_ := add(offset, vmemstart)
+            }
+
+            function memcpy(dst, src, size) {
+                for {} gt(size, 0) {}
+                {
+                    // Copy word
+                    if gt(size, 31) { // ≥32
+                        mstore(dst, mload(src))
+                        dst := add(dst, 32)
+                        src := add(src, 32)
+                        size := sub(size, 32)
+                        continue
+                    }
+
+                    // Copy byte
+                    //
+                    // Note: we can't use `mstore` here to store a full word since we could
+                    // truncate past the end of the dst ptr.
+                    mstore8(dst, and(mload(src), 0xff))
+                    dst := add(dst, 1)
+                    src := add(src, 1)
+                    size := sub(size, 1)
+                }
             }
 
             // Initialize stack pointer
             let stk := 0x2000
 
-            let prog_sz := calldatasize()
+            let total_calldatasize := calldatasize()
 
-            // Copy in calldata to 0x100
-            calldatacopy(0x100, 0, calldatasize())
+            // Copy in calldata to 0x2000
+            calldatacopy(0x2000, 0, calldatasize())
 
-            for { let vpc := 0 } lt(vpc, prog_sz) { vpc := add(vpc, 1) }
+            if lt(total_calldatasize, 0x60) {
+                // Missing code and calldata pointers
+                revert(0, 0)
+            }
+
+            if neq(mload(0x2000), 0x20) {
+                // Missing starting 0x20 word
+                revert(0, 0)
+            }
+
+            let enc_codeptr := mload(0x2020)
+            if gt(enc_codeptr, total_calldatasize) {
+                // Points beyond calldata
+                revert(0, 0)
+            }
+            let enc_calldataptr := mload(0x2040)
+            if gt(enc_calldataptr, total_calldatasize) {
+                // Points beyond calldata
+                revert(0, 0)
+            }
+            let vcodesize := add(0x20, mload(add(0x2000, enc_codeptr)))
+            if gt(add(add(enc_codeptr, 0x20), vcodesize), enc_calldataptr) {
+                // Runs into calldata
+                revert(0, 0)
+            }
+            let vcalldatasize := add(0x20, mload(add(0x2000, enc_calldataptr)))
+            if gt(add(add(enc_calldataptr, 0x20), vcalldatasize), total_calldatasize) {
+                // Runs beyond calldata
+                revert(0, 0)
+            }
+
+            let vcodestart := add(enc_codeptr, 0x20)
+            let vcalldatastart := add(enc_calldataptr, 0x20)
+            let vmemstart := add(vcalldatastart, vcalldatasize)
+
+            for { let vpc := 0 } lt(vpc, vcodesize) { vpc := add(vpc, 1) }
             {
-                // TODO: I wonder if there's better ways to loopsies
-                let op := get_op(vpc)
+                let op := get_op(vpc, vcodesize, vcodestart)
 
                 // Special-case PUSH0-PUSH32
                 if and(gte(op, 0x5f), lte(op, 0x7f)) {
@@ -280,7 +351,7 @@ object "QuarkVm" {
                     let offset, size
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
-                    let hash := keccak256(map_offset(offset), size)
+                    let hash := keccak256(memptr(offset, vmemstart), size)
                     stk := vpush(stk, hash)
                 }
                 case 0x30 { // ADDRESS
@@ -301,30 +372,48 @@ object "QuarkVm" {
                     stk := vpush(stk, callvalue())
                 }
                 case 0x35 { // CALLDATALOAD
-                    // TODO: Consider calldata here
-                    let i
+                    let i, i_end
                     stk, i := vpop(stk)
-                    stk := vpush(stk, calldataload(i))
+                    i_end := add(i, 32)
+                    let v := mload(add(i, vcalldatastart))
+                    if gt(i_end, vcalldatasize) {
+                        // e.g. i_end = 55, vcalldataended at 50, so we want to make out the last 5 bytes or
+                        // 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000
+                        let mask_len := sub(i_end, vcalldatasize)
+
+                        // We'll shift right and then shift left to clear out the low bits
+                        let mask := shl(mask_len, shr(mask_len, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff))
+                        v := and(v, mask)
+                    }
+                    stk := vpush(stk, v)
                 }
                 case 0x36 { // CALLDATASIZE
-                    stk := vpush(stk, calldatasize())
+                    stk := vpush(stk, vcalldatasize)
                 }
                 case 0x37 { // CALLDATACOPY
                     let dst_offset, offset, size
                     stk, dst_offset := vpop(stk)
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
-                    calldatacopy(dst_offset, map_offset(offset), size)
+
+                    if gt(add(offset, size), vcalldatasize) {
+                        revert(0, 0) // out of bounds
+                    }
+                    memcpy(memptr(dst_offset, vmemstart), calldataptr(offset, vcalldatastart), size)
                 }
                 case 0x38 { // CODESIZE
-                    stk := vpush(stk, codesize())
+                    stk := vpush(stk, vcodesize)
                 }
                 case 0x39 { // CODECOPY
                     let dst_offset, offset, size
                     stk, dst_offset := vpop(stk)
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
-                    codecopy(dst_offset, map_offset(offset), size)
+
+                    if gt(add(offset, size), vcodesize) {
+                        revert(0, 0) // out of bounds
+                    }
+                    memcpy(memptr(dst_offset, vmemstart), calldataptr(offset, vcodesize), size)
                 }
                 case 0x3a { // GASPRICE
                     stk := vpush(stk, gasprice())
@@ -340,7 +429,7 @@ object "QuarkVm" {
                     stk, dst_offset := vpop(stk)
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
-                    extcodecopy(addr, dst_offset, map_offset(offset), size)
+                    extcodecopy(addr, dst_offset, memptr(offset, vmemstart), size)
                 }
                 case 0x3d { // RETURNDATASIZE
                     stk := vpush(stk, returndatasize())
@@ -350,7 +439,7 @@ object "QuarkVm" {
                     stk, dst_offset := vpop(stk)
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
-                    returndatacopy(dst_offset, map_offset(offset), size)
+                    returndatacopy(dst_offset, memptr(offset, vmemstart), size)
                 }
                 case 0x3f { // EXTCODEHASH
                     let addr
@@ -365,7 +454,7 @@ object "QuarkVm" {
                 case 0x41 { // COINBASE
                     stk := vpush(stk, coinbase())
                 }
-                case 0x42 { // TIMESTMAP
+                case 0x42 { // TIMESTAMP
                     stk := vpush(stk, timestamp())
                 }
                 case 0x43 { // NUMBER
@@ -394,20 +483,20 @@ object "QuarkVm" {
                 case 0x51 { // MLOAD
                     let offset
                     stk, offset := vpop(stk)
-                    let v := mload(map_offset(offset))
+                    let v := mload(memptr(offset, vmemstart))
                     stk := vpush(stk, v)
                 }
                 case 0x52 { // MSTORE
                     let offset, v
                     stk, offset := vpop(stk)
                     stk, v := vpop(stk)
-                    mstore(map_offset(offset), v)
+                    mstore(memptr(offset, vmemstart), v)
                 }
                 case 0x53 { // MSTORE8
                     let offset, v
                     stk, offset := vpop(stk)
                     stk, v := vpop(stk)
-                    mstore8(map_offset(offset), and(v, 0xff))
+                    mstore8(memptr(offset, vmemstart), and(v, 0xff))
                 }
                 case 0x54 { // SLOAD
                     let key
@@ -423,7 +512,7 @@ object "QuarkVm" {
                 case 0x56 { // JUMP
                     let dst
                     stk, dst := vpop(stk)
-                    if neq(get_op(dst), 0x5B) { // JUMPDEST
+                    if neq(get_op(dst, vcodesize, vcodestart), 0x5B) { // JUMPDEST
                         // Provide a better way to sim a jump failure
                         revert(0, 0)
                     }
@@ -434,7 +523,7 @@ object "QuarkVm" {
                     stk, dst := vpop(stk)
                     stk, cond := vpop(stk)
                     log2(0, 0, cond, dst)
-                    if neq(get_op(dst), 0x5B) { // JUMPDEST
+                    if neq(get_op(dst, vcodesize, vcodestart), 0x5B) { // JUMPDEST
                         // Provide a better way to sim a jump failure
                         revert(0, 0)
                     }
@@ -466,14 +555,14 @@ object "QuarkVm" {
                     let offset, size
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
-                    log0(map_offset(offset), size) // TODO: Double check this
+                    log0(memptr(offset, vmemstart), size) // TODO: Double check this
                 }
                 case 0xa1 { // LOG1
                     let offset, size, topic0
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
                     stk, topic0 := vpop(stk)
-                    log1(map_offset(offset), size, topic0)
+                    log1(memptr(offset, vmemstart), size, topic0)
                 }
                 case 0xa2 { // LOG2
                     let offset, size, topic0, topic1
@@ -481,7 +570,7 @@ object "QuarkVm" {
                     stk, size := vpop(stk)
                     stk, topic0 := vpop(stk)
                     stk, topic1 := vpop(stk)
-                    log2(map_offset(offset), size, topic0, topic1)
+                    log2(memptr(offset, vmemstart), size, topic0, topic1)
                 }
                 case 0xa3 { // LOG3
                     let offset, size, topic0, topic1, topic2
@@ -490,7 +579,7 @@ object "QuarkVm" {
                     stk, topic0 := vpop(stk)
                     stk, topic1 := vpop(stk)
                     stk, topic2 := vpop(stk)
-                    log3(map_offset(offset), size, topic0, topic1, topic2)
+                    log3(memptr(offset, vmemstart), size, topic0, topic1, topic2)
                 }
                 case 0xa4 { // LOG4
                     let offset, size, topic0, topic1, topic2, topic3
@@ -500,14 +589,14 @@ object "QuarkVm" {
                     stk, topic1 := vpop(stk)
                     stk, topic2 := vpop(stk)
                     stk, topic3 := vpop(stk)
-                    log4(map_offset(offset), size, topic0, topic1, topic2, topic3)
+                    log4(memptr(offset, vmemstart), size, topic0, topic1, topic2, topic3)
                 }
                 case 0xf0 { // CREATE
                     let value, offset, size
                     stk, value := vpop(stk)
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
-                    let r := create(value, map_offset(offset), size)
+                    let r := create(value, memptr(offset, vmemstart), size)
                     stk := vpush(stk, r)
                 }
                 case 0xf1 { // CALL
@@ -522,7 +611,7 @@ object "QuarkVm" {
                     stk, ret_size := vpop(stk)
                     log3(0, 0, gas_, addr, value)
                     log2(
-                        map_offset(args_offset),
+                        memptr(args_offset, vmemstart),
                         args_size,
                         args_offset,
                         args_size
@@ -532,9 +621,9 @@ object "QuarkVm" {
                         gas_,
                         addr,
                         value,
-                        map_offset(args_offset),
+                        memptr(args_offset, vmemstart),
                         args_size,
-                        map_offset(ret_offset),
+                        memptr(ret_offset, vmemstart),
                         ret_size
                     )
                     stk := vpush(stk, success)
@@ -553,9 +642,9 @@ object "QuarkVm" {
                         gas_,
                         addr,
                         value,
-                        map_offset(args_offset),
+                        memptr(args_offset, vmemstart),
                         args_size,
-                        map_offset(ret_offset),
+                        memptr(ret_offset, vmemstart),
                         ret_size
                     )
                     stk := vpush(stk, success)
@@ -564,7 +653,7 @@ object "QuarkVm" {
                     let offset, size
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
-                    return(map_offset(offset), size)
+                    return(memptr(offset, vmemstart), size)
                 }
                 case 0xf4 { // DELEGATECALL
                     let gas_, addr, args_offset, args_size, ret_offset, ret_size
@@ -578,9 +667,9 @@ object "QuarkVm" {
                     let success := delegatecall(
                         gas_,
                         addr,
-                        map_offset(args_offset),
+                        memptr(args_offset, vmemstart),
                         args_size,
-                        map_offset(ret_offset),
+                        memptr(ret_offset, vmemstart),
                         ret_size
                     )
                     stk := vpush(stk, success)
@@ -591,7 +680,7 @@ object "QuarkVm" {
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
                     stk, salt := vpop(stk)
-                    let r := create2(value, map_offset(offset), size, salt)
+                    let r := create2(value, memptr(offset, vmemstart), size, salt)
                     stk := vpush(stk, r)
                 }
                 case 0xfa { // STATICCALL
@@ -606,9 +695,9 @@ object "QuarkVm" {
                     let success := staticcall(
                         gas_,
                         addr,
-                        map_offset(args_offset),
+                        memptr(args_offset, vmemstart),
                         args_size,
-                        map_offset(ret_offset),
+                        memptr(ret_offset, vmemstart),
                         ret_size
                     )
                     stk := vpush(stk, success)
@@ -617,7 +706,7 @@ object "QuarkVm" {
                     let offset, size
                     stk, offset := vpop(stk)
                     stk, size := vpop(stk)
-                    revert(map_offset(offset), size)
+                    revert(memptr(offset, vmemstart), size)
                 }
                 case 0xfe { // REVERT
                     // verbatim_0i_0o("fe") // Do we want to invalid ourselves for real?
@@ -630,13 +719,13 @@ object "QuarkVm" {
                     // selfdestruct(recipient)
                 }
                 default {
-                    // TODO: better
+                    // Unknown opcode
                     revert(0, 0)
                 }
             }
 
-            // TODO: Find a better way to stop
-            return (0x2000, 0x60) // Just return some of the stack
+            // Program ended without returning
+            revert(0, 0)
         }
     }
 }

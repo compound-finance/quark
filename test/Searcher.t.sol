@@ -13,6 +13,7 @@ import "../examples/PayLog.sol";
 import "./lib/SigUtils.sol";
 
 import "../src/Relayer.sol";
+import "../src/RelayerMetamorphic.sol";
 
 interface SearcherScript {
     function submitSearch(Relayer relayer, bytes calldata relayerCalldata, address recipient, address payToken, uint256 expectedWindfall) external;
@@ -51,7 +52,7 @@ contract QuarkTest is Test {
     address internal searcher;
 
     constructor() {
-        relayer = new Relayer();
+        relayer = new RelayerMetamorphic();
         console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();

@@ -12,6 +12,7 @@ import "../lib/MockPool.sol";
 
 import "../../src/scripts/FlashMulticall.sol";
 import "../../src/Relayer.sol";
+import "../../src/RelayerMetamorphic.sol";
 
 contract FlashMulticallTest is Test {
     Relayer public relayer;
@@ -21,7 +22,7 @@ contract FlashMulticallTest is Test {
     MockPool public pool;
 
     constructor() {
-        relayer = new Relayer();
+        relayer = new RelayerMetamorphic();
         console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();

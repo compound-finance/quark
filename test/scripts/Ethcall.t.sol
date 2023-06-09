@@ -9,13 +9,14 @@ import "../lib/Counter.sol";
 
 import "../../src/scripts/Ethcall.sol";
 import "../../src/Relayer.sol";
+import "../../src/RelayerMetamorphic.sol";
 
 contract EthcallTest is Test {
     Relayer public relayer;
     Counter public counter;
 
     constructor() {
-        relayer = new Relayer();
+        relayer = new RelayerMetamorphic();
         console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();

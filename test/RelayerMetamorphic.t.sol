@@ -8,6 +8,7 @@ import "./lib/YulHelper.sol";
 import "./lib/Counter.sol";
 
 import "../src/Relayer.sol";
+import "../src/RelayerMetamorphic.sol";
 
 contract QuarkTest is Test {
     event Ping(uint256 value);
@@ -22,7 +23,7 @@ contract QuarkTest is Test {
     address internal searcher;
 
     constructor() {
-        relayer = new Relayer();
+        relayer = new RelayerMetamorphic();
         console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();

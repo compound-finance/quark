@@ -3,6 +3,9 @@
 set -eo pipefail
 forge build --contracts ./src/ --skip ".sol" --skip "QuarkVm.yul"
 forge build --contracts ./src/ --skip ".sol" --skip "Quark.yul"
-code="$(cat out/Quark.yul/Quark.json | jq -r '.bytecode .object' | cut -c 3-)"
-sed -E -i '' "s/return hex\"[a-zA-Z0-9]*\"/return hex\"$code\"/g" ./src/Relayer.sol
+quarkYul="$(cat out/Quark.yul/Quark.json | jq -r '.bytecode .object' | cut -c 3-)"
+sed -E -i '' "s/return hex\"[a-zA-Z0-9]*\"/return hex\"$quarkYul\"/g" ./src/RelayerMetamorphic.sol
+quarkVm="$(cat out/QuarkVm.yul/QuarkVm.json | jq -r '.bytecode .object' | cut -c 3-)"
+sed -E -i '' "s/quarkVmBytecode = hex\"[a-zA-Z0-9]*\"/quarkVmBytecode = hex\"$quarkVm\"/g" ./src/RelayerVm.sol
+
 forge build --contracts ./src/ --skip ".yul"
