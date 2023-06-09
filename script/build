@@ -1,7 +1,8 @@
 #!/bin/bash
 
 set -eo pipefail
-forge build --contracts ./src/ --skip ".sol"
+forge build --contracts ./src/ --skip ".sol" --skip "QuarkVm.yul"
+forge build --contracts ./src/ --skip ".sol" --skip "Quark.yul"
 code="$(cat out/Quark.yul/Quark.json | jq -r '.bytecode .object' | cut -c 3-)"
 sed -E -i '' "s/return hex\"[a-zA-Z0-9]*\"/return hex\"$code\"/g" ./src/Relayer.sol
 forge build --contracts ./src/ --skip ".yul"
