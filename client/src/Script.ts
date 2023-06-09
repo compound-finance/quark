@@ -23,10 +23,10 @@ export type CallArgs
   | [SingleCall[]];
 
 function encodeTuple(args: string[], values: any[]): string {
-  return '0x' + new AbiCoder().encode(
+  return new AbiCoder().encode(
     [`tuple(${args.join(',')})`],
     [values]
-  ).slice(66);
+  );
 }
 
 async function encodeCall(call: SingleCall): Promise<[string, string]> {

@@ -63,6 +63,7 @@ contract FlashMulticallTest is Test {
             wrappedContracts: wrappedContracts,
             wrappedCalldatas: wrappedCalldatas
         });
+        assertEq(abi.encode(input), hex"");
 
         assertEq(counter.number(), 0);
 
