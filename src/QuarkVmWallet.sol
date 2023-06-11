@@ -24,66 +24,9 @@ contract QuarkVmWallet {
         }
     }
 
-    function readQuark() internal view returns (bytes memory) {
-        bytes memory quark = new bytes(quarkSize);
-        uint256 chunks = wordSize(quarkSize);
-        for (uint256 i = 0; i < chunks; i++) {
-            bytes32 chunk = quarkChunks[i];
-            assembly {
-                // TODO: Is there an easy way to do this in Solidity?
-                // Note: the last one can overrun the size, should we prevent that?
-                mstore(add(quark, add(32, mul(i, 32))), chunk)
-            }
-        }
-        return quark;
-    }
-
-    // TODO: Can we make this calldata
-    function setQuark(bytes memory quark) external {
-        if (msg.sender != relayer && msg.sender != owner) {
-            revert Unauthorized();
-        }
-
-        quarkSize = quark.length;
-        uint256 chunks = wordSize(quarkSize);
-        for (uint256 i = 0; i < chunks; i++) {
-            bytes32 chunk;
-            assembly {
-                // TODO: Is there an easy way to do this in Solidity?
-                chunk := mload(add(quark, add(32, mul(i, 32))))
-            }
-            quarkChunks[i] = chunk;
-        }
-    }
-
-    // Clears quark data a) to save gas costs, and b) so another quark can
-    // be run for the same quarkAddress in the future.
-    function clearQuark() external {
-        if (msg.sender != relayer && msg.sender != owner) {
-            revert Unauthorized();
-        }
-
-        uint256 chunks = wordSize(quarkSize);
-        for (uint256 i = 0; i < chunks; i++) {
-            quarkChunks[i] = 0;
-        }
-        quarkSize = 0;
-    }
-
-    // wordSize returns the number of 32-byte words required to store a given value.
-    // E.g. wordSize(0) = 0, wordSize(10) = 1, wordSize(32) = 1, wordSize(33) = 2
-    function wordSize(uint256 x) internal pure returns (uint256) {
-        uint256 r = x / 32;
-        if (r * 32 < x) {
-            return r + 1;
-        } else {
-            return r;
-        }
-    }
-
-    function run(bytes memory quarkCalldata) public payable returns (bytes memory) {
+    function run(bytes memory quarkCode, bytes memory quarkCalldata) public payable returns (bytes memory) {
         QuarkVm.VmCall memory vmCall = QuarkVm.VmCall({
-            vmCode: readQuark(),
+            vmCode: quarkCode,
             vmCalldata: quarkCalldata
         });
         bytes memory encCall = abi.encodeCall(quarkVm.run, (vmCall));
@@ -96,16 +39,5 @@ contract QuarkVmWallet {
             }
         }
         return res;
-    }
-
-    fallback(bytes calldata quarkCalldata) external payable returns (bytes memory) {
-        return run(quarkCalldata);
-    }
-
-    /***
-     * @notice Revert given empty call.
-     */
-    receive() external payable {
-        run(hex"");
     }
 }

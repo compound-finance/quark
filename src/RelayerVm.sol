@@ -86,11 +86,7 @@ contract RelayerVm is Relayer {
 
         QuarkVmWallet quarkVmWallet = QuarkVmWallet(payable(quarkAddress));
 
-        quarkVmWallet.setQuark(quarkCode);
-
-        try quarkVmWallet.run{value: msg.value}(quarkCalldata) returns (bytes memory res) {
-            quarkVmWallet.clearQuark();
-
+        try quarkVmWallet.run{value: msg.value}(quarkCode, quarkCalldata) returns (bytes memory res) {
             // We return the result from the call, but it's not particularly important.
             return res;
         } catch (bytes memory err) {
