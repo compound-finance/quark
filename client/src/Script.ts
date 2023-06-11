@@ -13,14 +13,9 @@ let ethcallInterface = new Interface(ethcallAbi);
 export type ContractCall = [Contract, string, any[]];
 export type TrxRequest = TransactionRequest | Promise<TransactionRequest>;
 
-export type SingleCall
+export type Call
   = ContractCall
   | TrxRequest;
-
-export type CallArgs
-  = ContractCall
-  | [TrxRequest]
-  | [SingleCall[]];
 
 function encodeTuple(args: string[], values: any[]): string {
   return new AbiCoder().encode(
@@ -29,7 +24,7 @@ function encodeTuple(args: string[], values: any[]): string {
   );
 }
 
-async function encodeCall(call: SingleCall): Promise<[string, string]> {
+async function encodeCall(call: Call): Promise<[string, string]> {
   let txReq: TransactionRequest;
 
   if (Array.isArray(call)) {
@@ -46,22 +41,21 @@ async function encodeCall(call: SingleCall): Promise<[string, string]> {
   return [txReq.to!, hexlify(txReq.data!)];
 }
 
-export async function runQuarkScript(providerOrRelayer: Provider | Contract, script: string, calldata: string): Promise<any> {
+export async function runQuarkScript(providerOrRelayer: Provider | Contract, script: string, calldata: string, sendArgs?: object): Promise<any> {
   let relayer: Contract;
   if (providerOrRelayer instanceof Contract) {
     relayer = providerOrRelayer;
   } else {
     relayer = await getRelayer(providerOrRelayer);
   }
-  console.log("relayer", relayer, script, calldata);
-  return relayer['runQuarkScript(bytes,bytes)'](script, calldata);
+  console.log("relayer", relayer, script, calldata, sendArgs);
+  return relayer['runQuarkScript(bytes,bytes)'](script, calldata, sendArgs ?? {});
 }
 
-export async function multicall(providerOrRelayer: Provider | Contract, ...callArgs: CallArgs): Promise<any> {
-  console.log("callArgs", callArgs, callArgs.length, Array.isArray(callArgs[0]));
-  if (callArgs.length > 0 && Array.isArray(callArgs[0]) && callArgs[0].length !== 1) {
+export async function multicall(providerOrRelayer: Provider | Contract, calls: Call[], sendArgs?: object): Promise<any> {
+  console.log("calls", calls);
+  if (calls.length !== 1) {
     // Multicall
-    let calls = callArgs[0] as SingleCall[];
     if (calls.length === 0) {
       throw new Error('Empty call list given');
     }
@@ -72,30 +66,23 @@ export async function multicall(providerOrRelayer: Provider | Contract, ...callA
 
     let multicallInput = encodeTuple(["address[]", "bytes[]"], [inAddresses, inCalldatas]);
 
-    return runQuarkScript(providerOrRelayer, multicallBytecode.object, multicallInput);
+    return runQuarkScript(providerOrRelayer, multicallBytecode.object, multicallInput, sendArgs);
   } else {
     // Single call
-    let single: SingleCall;
-    if (Array.isArray(callArgs[0]) && callArgs[0].length === 1) {
-      single = callArgs[0][0];
-    } else if (callArgs[0] instanceof Contract) {
-      single = callArgs as ContractCall;
-    } else {
-      single = callArgs[0] as TrxRequest;
-    }
+    let [call] = calls;
 
-    console.log("single", single);
-    let encoded = await encodeCall(single);
+    console.log("single", call);
+    let encoded = await encodeCall(call);
     console.log("encoded", encoded);
 
     let ethcallInput = encodeTuple(["address", "bytes"], encoded);
     console.log("ethCallInput", ethcallInput);
 
-    return runQuarkScript(providerOrRelayer, ethcallBytecode.object, ethcallInput);
+    return runQuarkScript(providerOrRelayer, ethcallBytecode.object, ethcallInput, sendArgs);
   }
 }
 
-export async function flashMulticall(providerOrRelayer: Provider | Contract, pool: string, amount0: bigint, amount1: bigint, calls: SingleCall[]): Promise<any> {
+export async function flashMulticall(providerOrRelayer: Provider | Contract, pool: string, amount0: bigint, amount1: bigint, calls: Call[], sendArgs?: object): Promise<any> {
   console.log("calls", calls);
   let callsEncoded = await Promise.all(calls.map(encodeCall));
   let inAddresses = callsEncoded.map((c) => c[0]);
@@ -103,5 +90,5 @@ export async function flashMulticall(providerOrRelayer: Provider | Contract, poo
 
   let flashMulticallInput = encodeTuple(["address", "uint256", "uint256", "address[]", "bytes[]"], [pool, amount0, amount1, inAddresses, inCalldatas]);
 
-  return runQuarkScript(providerOrRelayer, flashMulticallBytecode.object, flashMulticallInput);
+  return runQuarkScript(providerOrRelayer, flashMulticallBytecode.object, flashMulticallInput, sendArgs);
 }

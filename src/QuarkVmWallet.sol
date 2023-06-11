@@ -81,37 +81,31 @@ contract QuarkVmWallet {
         }
     }
 
-    function run_(bytes memory quarkCalldata) internal returns (bytes memory) {
+    function run(bytes memory quarkCalldata) public payable returns (bytes memory) {
         QuarkVm.VmCall memory vmCall = QuarkVm.VmCall({
             vmCode: readQuark(),
             vmCalldata: quarkCalldata
         });
         bytes memory encCall = abi.encodeCall(quarkVm.run, (vmCall));
         QuarkVm quarkVm_ = quarkVm;
-        bool res;
-        uint256 retSize;
-        assembly {
-            res := delegatecall(gas(), quarkVm_, add(encCall, 0x20), mload(encCall), 0, 0)
-            retSize := returndatasize()
-        }
-        bytes memory returnData = new bytes(retSize);
-        assembly {
-            returndatacopy(add(returnData, 0x20), 0, retSize)
-            if iszero(res) {
-                revert(add(returnData, 0x20), retSize)
+
+        (bool callSuccess, bytes memory res) = address(quarkVm_).delegatecall(encCall);
+        if (!callSuccess) {
+            assembly {
+                revert(add(res, 32), mload(res))
             }
         }
-        return returnData;
+        return res;
     }
 
     fallback(bytes calldata quarkCalldata) external payable returns (bytes memory) {
-        run_(quarkCalldata);
+        return run(quarkCalldata);
     }
 
     /***
      * @notice Revert given empty call.
      */
     receive() external payable {
-        run_(hex"");
+        run(hex"");
     }
 }

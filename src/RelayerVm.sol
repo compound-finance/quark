@@ -11,7 +11,7 @@ contract RelayerVm is Relayer {
     error QuarkAddressMismatch(address expected, address created);
     error FailedToDeployQuarkVm();
 
-    QuarkVm immutable quarkVm;
+    QuarkVm immutable public quarkVm;
 
     constructor() {
         quarkVm = new QuarkVm();
@@ -88,15 +88,13 @@ contract RelayerVm is Relayer {
 
         quarkVmWallet.setQuark(quarkCode);
 
-        // Call into the new quark wallet with a (potentially empty) message to hit the fallback function.
-        (bool callSuccess, bytes memory res) = address(quarkVmWallet).call{value: msg.value}(quarkCalldata);
-        if (!callSuccess) {
-            revert QuarkCallFailed(quarkAddress, res);
+        try quarkVmWallet.run{value: msg.value}(quarkCalldata) returns (bytes memory res) {
+            quarkVmWallet.clearQuark();
+
+            // We return the result from the call, but it's not particularly important.
+            return res;
+        } catch (bytes memory err) {
+            revert QuarkCallFailed(quarkAddress, err);
         }
-
-        quarkVmWallet.clearQuark();
-
-        // We return the result from the first call, but it's not particularly important.
-        return res;
     }
 }

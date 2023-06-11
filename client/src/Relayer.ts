@@ -5,6 +5,7 @@ import { abi as relayerAbi } from '../../out/Relayer.sol/Relayer.json'
 import { Fragment, JsonFragment } from '@ethersproject/abi';
 
 const networks: { [chainId: number]: string } = {
+  1: 'mainnet',
   5: 'goerli',
   420: 'optimism-goerli',
   421613: 'arbitrum-goerli',
@@ -26,10 +27,19 @@ export function getNetwork(chainIdOrNetwork: number | string) : string {
 
 export const relayers: { [version: number]: { [network: string]: string } } = {
   1: {
-    'goerli': '0xc4f0049a828cd0af222fdbe5adeda9aaf72b7f30',
+    'goerli': '0x09b4319aa0393460F789C1d8e8622cd744DFabCA', // vm one
     'optimism-goerli': '0x66ca95f4ed181c126acbd5aad21767b20d6ad7da',
     'arbitrum-goerli': '0xdde0bf030f2ffceae76817f2da0a14b1e9a87041',
-    'arbitrum': '0x66ca95f4ed181c126acbd5aad21767b20d6ad7da',
+    'arbitrum': '0xcc3b9A2510f828c952e67C024C3dE60839Aca842', // local change
+    'mainnet': '0x687bB6c57915aa2529EfC7D2a26668855e022fAE' // local change
+  }
+}
+
+export const vms: { [version: number]: { [network: string]: string } } = {
+  1: {
+    'goerli': '0x61a74B89a13d6d1350Fe24a767507400fc4F1522',
+    'arbitrum': '0x3A5e5bF04d05aca69eEFC63CD832eBec49A6314a', // local change
+    'mainnet': '0x13E0Ece0Fa1Ff3795947FaB553dA5DaB6c9eF470', // local change
   }
 }
 

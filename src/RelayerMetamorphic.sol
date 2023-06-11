@@ -169,7 +169,7 @@ contract RelayerMetamorphic is Relayer {
         // Clear all of the quark data to recoup gas costs.
         clearQuark(quarkAddress);
 
-        // We return the result from the first call, but it's not particularly important.
+        // We return the result from the call, but it's not particularly important.
         return res;
     }
 
