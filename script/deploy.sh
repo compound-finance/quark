@@ -85,5 +85,5 @@ shift
 shift
 echo "--- ${date}"
 echo "Deploying Quark to $network_name"
-forge create "$contract" --via-ir --optimize --optimizer-runs 200 $key_arg --rpc-url "$rpc_url" $extra_args $@
+forge create "$contract" --optimize --optimizer-runs 200 $key_arg --rpc-url "$rpc_url" $extra_args $@
 echo ""

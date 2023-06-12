@@ -20,7 +20,7 @@ const vmBytecodeV1 = quarkVmBytecode.object;
 
 const initCodes: { [version: number]: { [network: string]: string } } = {
   1: {
-    'goerli': vmBytecodeV1,
+    'goerli': metamorphicBytecodeV1,
     'optimism-goerli': metamorphicBytecodeV1,
     'arbitrum-goerli': metamorphicBytecodeV1,
     'arbitrum': vmBytecodeV1,

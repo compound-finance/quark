@@ -35,7 +35,7 @@ contract QuarkTest is Test {
         // nothing
     }
 
-    function testPing() public {
+    function testMetamorphicPing() public {
         bytes memory ping = new YulHelper().get("Ping.yul/Logger.json");
 
         // TODO: Check who emitted.
@@ -46,7 +46,7 @@ contract QuarkTest is Test {
         assertEq(data, abi.encode());
     }
 
-    function testIncrementer() public {
+    function testMetamorphicIncrementer() public {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
 
         assertEq(counter.number(), 0);
@@ -57,7 +57,7 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 3);
     }
 
-    function testCallback() public {
+    function testMetamorphicCallback() public {
         bytes memory callback = new YulHelper().get("Callback.yul/Callback.json");
 
         assertEq(counter.number(), 0);
@@ -68,7 +68,7 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 11);
     }
 
-    function testNoCallbacks() public {
+    function testMetamorphicNoCallbacks() public {
         bytes memory noCallback = new YulHelper().get("NoCallback.yul/Callback.json");
 
         assertEq(counter.number(), 0);
@@ -79,7 +79,7 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 0);
     }
 
-    function testCounterScript() public {
+    function testMetamorphicCounterScript() public {
         bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
 
         assertEq(counter.number(), 0);
@@ -90,7 +90,7 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 2);
     }
 
-    function testDirectIncrementer() public {
+    function testMetamorphicDirectIncrementer() public {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
 
         // assertEq(incrementer, QuarkInterface(quark).virtualCode81());
