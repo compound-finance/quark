@@ -11,8 +11,7 @@ abstract contract QuarkScript is Quark {
     function relayer() internal view returns (Relayer) {
         Relayer relayer_;
         assembly {
-            codecopy(0, sub(codesize(), 0x40), 0x40)
-            let owner := mload(0x20)
+          relayer_ := sload(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6) // keccak("org.quark.relayer")  
         }
         return relayer_;
     }

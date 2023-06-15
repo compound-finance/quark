@@ -4,8 +4,14 @@ object "QuarkKafka" {
   code {
     let sz := datasize("QuarkKafka_deployed")
     datacopy(0, dataoffset("QuarkKafka_deployed"), sz)
+    let relayer := caller()
     mstore(sz, caller()) // relayer
     codecopy(add(sz, 0x20), sub(codesize(), 0x20), 0x20) // owner
+    let owner := mload(add(sz, 0x20))
+
+    sstore(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6, relayer) // keccak("org.quark.relayer")
+    sstore(0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111, owner)  // keccak("org.quark.owner")
+
     return(0, add(sz, 0x40))
   }
   
@@ -16,6 +22,9 @@ object "QuarkKafka" {
       let owner := mload(0x20)
 
       if and(eq(caller(), relayer), eq(shr(224, calldataload(0)), 0x2b68b9c6)) { // destruct()
+        sstore(0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6, 0) // keccak("org.quark.relayer")
+        sstore(0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111, 0)  // keccak("org.quark.owner")
+
         verbatim_1i_0o(hex"ff", owner) // TODO: This "stops", right?
       }
 
