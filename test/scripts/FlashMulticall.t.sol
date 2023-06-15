@@ -10,20 +10,25 @@ import "../lib/YulHelper.sol";
 import "../lib/Counter.sol";
 import "../lib/MockPool.sol";
 
-import "../../src/scripts/FlashMulticall.sol";
+import "../../core_scripts/FlashMulticall.sol";
 import "../../src/Relayer.sol";
 import "../../src/RelayerMetamorphic.sol";
+import "../../src/RelayerKafka.sol";
 
 contract FlashMulticallTest is Test {
-    Relayer public relayer;
+    Relayer public relayerMetamorphic;
+    Relayer public relayerKafka;
     Counter public counter;
     ERC20Mock public token0;
     ERC20Mock public token1;
     MockPool public pool;
 
     constructor() {
-        relayer = new RelayerMetamorphic();
-        console.log("Relayer deployed to: %s", address(relayer));
+        relayerMetamorphic = new RelayerMetamorphic();
+        console.log("Relayer metamorphic deployed to: %s", address(relayerMetamorphic));
+
+        relayerKafka = new RelayerKafka();
+        console.log("Relayer kafka deployed to: %s", address(relayerKafka));
 
         counter = new Counter();
         counter.setNumber(0);
@@ -46,23 +51,28 @@ contract FlashMulticallTest is Test {
         // nothing
     }
 
-    function testFlashMulticallCounter() public {
+    function testMetamorphicFlashMulticallCounter() public {
         bytes memory flashMulticallScript = new YulHelper().getDeployed("FlashMulticall.sol/FlashMulticall.json");
-        address[] memory wrappedContracts = new address[](3);
-        bytes[] memory wrappedCalldatas = new bytes[](3);
-        address quarkAddress = relayer.getQuarkAddress(address(0xaa));
-        wrappedContracts[0] = address(counter);
-        wrappedContracts[1] = address(counter);
-        wrappedContracts[2] = address(token0);
-        wrappedCalldatas[0] = abi.encodeCall(Counter.incrementBy, (20));
-        wrappedCalldatas[1] = abi.encodeCall(Counter.decrementBy, (5));
-        wrappedCalldatas[2] = abi.encodeCall(ERC20Mock.mint, (quarkAddress, 0.005e18));
+        address[] memory callContracts = new address[](3);
+        bytes[] memory callDatas = new bytes[](3);
+        uint256[] memory callValues = new uint256[](3);
+        address quarkAddress = relayerMetamorphic.getQuarkAddress(address(0xaa));
+        callContracts[0] = address(counter);
+        callDatas[0] = abi.encodeCall(Counter.incrementBy, (20));
+        callValues[0] = 0 wei;
+        callContracts[1] = address(counter);
+        callDatas[1] = abi.encodeCall(Counter.decrementBy, (5));
+        callValues[1] = 0 wei;
+        callContracts[2] = address(token0);
+        callDatas[2] = abi.encodeCall(ERC20Mock.mint, (quarkAddress, 0.005e18));
+        callValues[2] = 0 wei;
         FlashMulticall.FlashMulticallInput memory input = FlashMulticall.FlashMulticallInput({
             pool: address(pool),
             amount0: 1e18, // take one token of token1
             amount1: 0e18,
-            wrappedContracts: wrappedContracts,
-            wrappedCalldatas: wrappedCalldatas
+            callContracts: callContracts,
+            callDatas: callDatas,
+            callValues: callValues
         });
         assertEq(abi.encode(input), hex"");
 
@@ -70,8 +80,44 @@ contract FlashMulticallTest is Test {
 
         // TODO: This should fail since we don't / can't repay the flash loan yet
         vm.prank(address(0xaa));
-        bytes memory data = relayer.runQuarkScript(flashMulticallScript, abi.encode(input));
+        bytes memory data = relayerMetamorphic.runQuarkScript(flashMulticallScript, abi.encode(input));
         assertEq(data, hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000");
+
+        assertEq(counter.number(), 15);
+        assertEq(token0.balanceOf(quarkAddress), 0.002e18);
+    }
+
+    function testKafkaFlashMulticallCounter() public {
+        bytes memory flashMulticallScript = new YulHelper().getDeployed("FlashMulticall.sol/FlashMulticall.json");
+        address[] memory callContracts = new address[](3);
+        bytes[] memory callDatas = new bytes[](3);
+        uint256[] memory callValues = new uint256[](2);
+        address quarkAddress = relayerKafka.getQuarkAddress(address(0xaa));
+        callContracts[0] = address(counter);
+        callDatas[0] = abi.encodeCall(Counter.incrementBy, (20));
+        callValues[0] = 0 wei;
+        callContracts[1] = address(counter);
+        callDatas[1] = abi.encodeCall(Counter.decrementBy, (5));
+        callValues[1] = 0 wei;
+        callContracts[2] = address(token0);
+        callDatas[2] = abi.encodeCall(ERC20Mock.mint, (quarkAddress, 0.005e18));
+        callValues[2] = 0 wei;
+        FlashMulticall.FlashMulticallInput memory input = FlashMulticall.FlashMulticallInput({
+            pool: address(pool),
+            amount0: 1e18, // take one token of token1
+            amount1: 0e18,
+            callContracts: callContracts,
+            callDatas: callDatas,
+            callValues: callValues
+        });
+        //assertEq(abi.encode(input), hex"");
+
+        assertEq(counter.number(), 0);
+
+        // TODO: This should fail since we don't / can't repay the flash loan yet
+        vm.prank(address(0xaa));
+        bytes memory data = relayerKafka.runQuarkScript(flashMulticallScript, abi.encode(input));
+        // assertEq(data, hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000");
 
         assertEq(counter.number(), 15);
         assertEq(token0.balanceOf(quarkAddress), 0.002e18);

@@ -148,7 +148,7 @@ abstract contract Relayer {
      * Run a quark script from a given account. Note: can also use fallback, which is
      * an alias to this function.
      */
-    function runQuark(bytes memory quarkCode) external payable returns (bytes memory) {
+    function runQuark(bytes calldata quarkCode) external payable returns (bytes memory) {
         return _runQuark(msg.sender, quarkCode, hex"");
     }
 
@@ -157,21 +157,21 @@ abstract contract Relayer {
      * an alias to this function. This variant allows you to pass in data that will
      * be passed to the Quark script on its invocation.
      */
-    function runQuark(bytes memory quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
+    function runQuark(bytes calldata quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
         return _runQuark(msg.sender, quarkCode, quarkCalldata);
     }
 
     /**
      * NOTES
      */
-    function runQuarkScript(bytes memory quarkCode) external payable returns (bytes memory) {
+    function runQuarkScript(bytes calldata quarkCode) external payable returns (bytes memory) {
         return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, ("")));
     }
 
     /**
      * NOTES
      */
-    function runQuarkScript(bytes memory quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
+    function runQuarkScript(bytes calldata quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
         return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, (quarkCalldata)));
     }
 

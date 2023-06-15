@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "../../src/scripts/FlashMulticall.sol";
+import "../../core_scripts/FlashMulticall.sol";
 
 interface MockPoolCallback {
     function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external;

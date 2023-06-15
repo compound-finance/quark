@@ -5,63 +5,38 @@ script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$script_dir/.."
 
 network=$1
-relayer_type=$2
+relayer=$2
+script=$3
 
 function print_usage() {
-  echo "script/deploy.sh {network} {metamorphic,vm,kafka}"
+  echo "script/create_core_scripts.sh {network} {relayer_address} [{script}]"
   exit 1
 }
 
 key_arg="--interactive"
-extra_args=""
 
-case "$relayer_type" in
-  metamorphic)
-    contract="src/RelayerMetamorphic.sol:RelayerMetamorphic"
-    ;;
-  vm)
-    contract="src/RelayerVm.sol:RelayerVm"
-    ;;
-  kafka)
-    contract="src/RelayerKafka.sol:RelayerKafka"
-    ;;
-  *)
-    echo "invalid relayer type '$relayer_type'. valid relayer types: metamorphic, vm, kafka"
-    print_usage
-    ;;
-esac
+if [ -z "$relayer" ]; then
+  print_usage
+fi
 
 case "$network" in
   arbitrum-goerli)
     [ -n "$ARBITRUM_GOERLI_DEPLOYER_KEY" ] && key_arg="--private-key $ARBITRUM_GOERLI_DEPLOYER_KEY"
-    extra_args="--verify"
-    if [ -n "ARBISCAN_API_KEY" ]; then
-      export ETHERSCAN_API_KEY="$ARBISCAN_API_KEY"
-    fi
     rpc_url="https://goerli-rollup.arbitrum.io/rpc"
     network_name="Arbitrum [Goerli]"
     ;;
   arbitrum-mainnet)
     [ -n "$ARBITRUM_DEPLOYER_KEY" ] && key_arg="--private-key $ARBITRUM_DEPLOYER_KEY"
-    extra_args="--verify"
-    if [ -n "ARBISCAN_API_KEY" ]; then
-      export ETHERSCAN_API_KEY="$ARBISCAN_API_KEY"
-    fi
     rpc_url=""https://arb1.arbitrum.io/rpc""
     network_name="Arbitrum [Mainnet]"
     ;;
   goerli)
     [ -n "$GOERLI_DEPLOYER_KEY" ] && key_arg="--private-key $GOERLI_DEPLOYER_KEY"
-    extra_args="--verify"
     rpc_url="https://goerli-eth.compound.finance"
     network_name="Goerli"
     ;;
   optimism-goerli)
     [ -n "$OPTIMISM_GOERLI_DEPLOYER_KEY" ] && key_arg="--private-key $OPTIMISM_GOERLI_DEPLOYER_KEY"
-    if [ -n "OPTIMISM_API_KEY" ]; then
-      export ETHERSCAN_API_KEY="$OPTIMISM_API_KEY"
-    fi
-    extra_args="--verify"
     rpc_url="https://goerli.optimism.io"
     network_name="Optimism [Goerli]"
     ;;
@@ -84,9 +59,15 @@ case "$network" in
     ;;
 esac
 
-shift
-shift
 echo "--- ${date}"
-echo "Deploying Quark to $network_name"
-forge create "$contract" --optimize --optimizer-runs 200 $key_arg --rpc-url "$rpc_url" $extra_args $@
-echo ""
+echo "Creating core scripts on $network_name"
+
+for full_script_file in ${script:-core_scripts/*.sol}; do
+  script_file="${full_script_file##*/}"
+  contract_name="${script_file%.*}"
+  bytes=$(cat out/$script_file/$contract_name.json | jq -r .deployedBytecode.object)
+
+  echo "Creating core scripts $contract_name"
+
+  cast send $key_arg --rpc-url "$rpc_url" "$relayer" "saveQuarkCode(bytes)(address)" "$bytes"
+done

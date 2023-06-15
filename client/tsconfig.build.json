@@ -3,7 +3,8 @@
   "compilerOptions": {
     "declaration": true,
     "outDir": "dist",
-    "typeRoots": ["./typings"]
+    "typeRoots": ["./typings"],
+    "module": "esnext"
   },
   "files": ["src/quark.ts"]
 }

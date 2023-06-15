@@ -12,15 +12,17 @@ import { keccak256 } from '@ethersproject/keccak256';
 export * as Script from './Script';
 import { bytecode as quarkYulBytecode } from '../../out/Quark.yul/Quark.json'
 import { bytecode as quarkVmBytecode } from '../../out/QuarkVmWallet.sol/QuarkVmWallet.json'
+import { bytecode as quarkKafkaBytecode } from '../../out/QuarkKafka.yul/QuarkKafka.json'
 
 export const UINT256_MAX = new Uint256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
 const metamorphicBytecodeV1 = quarkYulBytecode.object;
 const vmBytecodeV1 = quarkVmBytecode.object;
+const kafkaBytecodeV1 = quarkKafkaBytecode.object;
 
 const initCodes: { [version: number]: { [network: string]: string } } = {
   1: {
-    'goerli': metamorphicBytecodeV1,
+    'goerli': kafkaBytecodeV1,
     'optimism-goerli': metamorphicBytecodeV1,
     'arbitrum-goerli': metamorphicBytecodeV1,
     'arbitrum': vmBytecodeV1,

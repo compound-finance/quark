@@ -27,7 +27,7 @@ export function getNetwork(chainIdOrNetwork: number | string) : string {
 
 export const relayers: { [version: number]: { [network: string]: string } } = {
   1: {
-    'goerli': '0x9d520b42de4c9b49700834eeb82a7c73ce679baf',
+    'goerli': '0x4d48359c2c80cd79f55334e932d0bf2db29f1562',
     'optimism-goerli': '0x66ca95f4ed181c126acbd5aad21767b20d6ad7da',
     'arbitrum-goerli': '0xdde0bf030f2ffceae76817f2da0a14b1e9a87041',
     'arbitrum': '0xcc3b9A2510f828c952e67C024C3dE60839Aca842', // local change
@@ -59,6 +59,12 @@ export async function getRelayer(signerOrProvider: Signer | Provider): Promise<C
   let version = 1;
 
   return Relayer(signerOrProvider, chainId, version);
+}
+
+export function getRelayerBySigner(signer: Signer, chainId: number): Contract {
+  let version = 1;
+
+  return Relayer(signer, chainId, version);
 }
 
 export function Relayer(signerOrProvider: Signer | Provider, chainIdOrNetwork: number | string, version: number = 1): Contract {

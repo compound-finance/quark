@@ -10,11 +10,10 @@ import { bytecode as searcherScript } from '../../out/GasSearcher.yul/Searcher.j
 import { Networks, NetworkConfig, getNetworks } from './network';
 import { TrxRequest, getTrxRequest } from './trxRequest';
 
-let networks: Networks = {};
+import type { SignedTrxScript } from '../../client/src/Script';
+import * as Quark from '../../client/src/Quark';
 
-const gasSearcherInterface = new Interface([
-  "function submitSearch(address relayer, bytes calldata relayerCalldata, address recipient, address payToken, address payTokenOracle, uint256 expectedWindfall, uint256 gasPrice) external",
-]);
+let networks: Networks = {};
 
 const fastify = Fastify({
   logger: true
@@ -31,37 +30,16 @@ fastify.post('/', async (req, reply) => {
 
   console.log({network});
 
-  let encodedTrx = await network.relayer.populateTransaction.runTrxScript(
-    trxRequest.account,
-    trxRequest.nonce,
-    trxRequest.reqs,
-    trxRequest.trxScript,
-    trxRequest.trxCalldata,
-    trxRequest.expiry,
-    trxRequest.v,
-    trxRequest.r,
-    trxRequest.s
+  let tx = await Quark.Script.submitSearch(
+    network.signer as any,
+    trxRequest,
+    network.beneficiary,
+    network.baseFee
   );
 
-  console.log({encodedTrx});
+  console.log({tx});
 
-  let submitSearchArgs = [
-    network.relayer.address,
-    encodedTrx.data,
-    network.recipient,
-    network.payToken,
-    network.payTokenOracle,
-    network.expectedWindfall,
-    0
-  ];
-
-  console.log({submitSearchArgs});
-
-  let submitSearch = gasSearcherInterface.encodeFunctionData('submitSearch', submitSearchArgs);
-
-  console.log({submitSearch});
-
-  let tx = await network.relayer['runQuark(bytes,bytes)'](searcherScript.object, submitSearch);
+  // TODO: Ensure this fails if it doesn't work
 
   return {
     tx

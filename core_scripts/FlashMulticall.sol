@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "../QuarkScript.sol";
+import "../src/QuarkScript.sol";
 
 interface IFlashMulticalErc20 {
   function transfer(address to, uint256 amount) external returns (bool);
@@ -34,7 +34,7 @@ interface FlashMulticallUniswapPool {
 
 contract FlashMulticall is QuarkScript {
     error InvalidInput();
-    error CallError(uint256 n, address wrappedContract, bytes wrappedCalldata, bytes err);
+    error CallError(uint256 n, address callContract, bytes callData, uint256 callValue, bytes err);
     error InvalidCaller();
     error FailedFlashRepay(address token);
 
@@ -44,8 +44,9 @@ contract FlashMulticall is QuarkScript {
         address pool;
         uint256 amount0;
         uint256 amount1;
-        address[] wrappedContracts;
-        bytes[] wrappedCalldatas;
+        address[] callContracts;
+        bytes[] callDatas;
+        uint256[] callValues;
     }
 
     function run(bytes calldata data) internal override returns (bytes memory) {
@@ -72,7 +73,7 @@ contract FlashMulticall is QuarkScript {
         FlashMulticallInput memory input = abi.decode(data, (FlashMulticallInput));
 
         FlashMulticallUniswapPool pool = FlashMulticallUniswapPool(input.pool);
-        if (input.wrappedContracts.length != input.wrappedCalldatas.length) {
+        if (input.callContracts.length != input.callDatas.length) {
             revert InvalidInput();
         }
 
@@ -80,12 +81,16 @@ contract FlashMulticall is QuarkScript {
             revert InvalidCaller();
         }
 
-        for (uint256 i = 0; i < input.wrappedContracts.length; i++) {
-            address wrappedContract = input.wrappedContracts[i];
-            bytes memory wrappedCalldata = input.wrappedCalldatas[i];
-            (bool success, bytes memory returnData) = wrappedContract.call(wrappedCalldata);
+        for (uint256 i = 0; i < input.callContracts.length; i++) {
+            address callContract = input.callContracts[i];
+            if (callContract == 0x906f4bD1940737091f18247eAa870D928A85b9Ce) { // keccak("tx.origin")[0:20]
+                callContract = tx.origin;
+            }
+            bytes memory callData = input.callDatas[i];
+            uint256 callValue = input.callValues[i];
+            (bool success, bytes memory returnData) = callContract.call{value: callValue}(callData);
             if (!success) {
-                revert CallError(i, wrappedContract, wrappedCalldata, returnData);
+                revert CallError(i, callContract, callData, callValue, returnData);
             }
         }
 
@@ -112,4 +117,8 @@ contract FlashMulticall is QuarkScript {
 
         flashPool = address(0);
     }
+
+    // Allow unwrapping Ether
+    fallback() external payable {}
+    receive() external payable {}
 }
