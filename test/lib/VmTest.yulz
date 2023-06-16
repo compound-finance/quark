@@ -1,0 +1,61 @@
+
+// Constants
+// - hex"0000000000000000000000000000000000000000000000000000000000000000"
+// - hex"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+
+// TODO: Make sure that optimizations are turned off for this build
+object "VmTest" {
+  code {}
+
+  object "CALLDATALOAD_Simple" {
+    code {
+      let x := calldataload(0x0)
+      mstore(0x100, x)
+      return(0x100, 0x120)
+    }
+
+    object "CALLDATA" {
+      code {
+          datacopy(0, dataoffset("calldata"), datasize("calldata"))
+          return(0, datasize("calldata"))
+      }
+
+      data "calldata" hex"0000000000000000000000000000000000000000000000000000000000000022"
+    }
+
+    object "EXP" {
+      code {
+          datacopy(0, dataoffset("exp"), datasize("exp"))
+          return(0, datasize("exp"))
+      }
+
+      data "exp" hex"0000000000000000000000000000000000000000000000000000000000000022"
+    }
+  }
+
+  object "CALLDATALOAD_Simple_2" {
+    code {
+      let x := calldataload(0x0)
+      mstore(0x100, x)
+      return(0x100, 0x120)
+    }
+
+    object "CALLDATA" {
+      code {
+          datacopy(0, dataoffset("calldata"), datasize("calldata"))
+          return(0, datasize("calldata"))
+      }
+
+      data "calldata" hex"0000000000000000000000000000000000000000000000000000000000000022"
+    }
+
+    object "EXP" {
+      code {
+          datacopy(0, dataoffset("exp"), datasize("exp"))
+          return(0, datasize("exp"))
+      }
+
+      data "exp" hex"0000000000000000000000000000000000000000000000000000000000000022"
+    }
+  }
+}

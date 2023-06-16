@@ -8,6 +8,7 @@ import "./lib/YulHelper.sol";
 import "./lib/Counter.sol";
 
 import "../src/Relayer.sol";
+import "../src/RelayerKafka.sol";
 
 contract QuarkTest is Test {
     event Ping(uint256 value);
@@ -22,7 +23,7 @@ contract QuarkTest is Test {
     address internal searcher;
 
     constructor() {
-        relayer = new Relayer();
+        relayer = new RelayerKafka();
         console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();
@@ -34,7 +35,7 @@ contract QuarkTest is Test {
         // nothing
     }
 
-    function testPing() public {
+    function testKafkaPing() public {
         bytes memory ping = new YulHelper().get("Ping.yul/Logger.json");
 
         // TODO: Check who emitted.
@@ -45,7 +46,7 @@ contract QuarkTest is Test {
         assertEq(data, abi.encode());
     }
 
-    function testIncrementer() public {
+    function testKafkaIncrementer() public {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
 
         assertEq(counter.number(), 0);
@@ -56,7 +57,15 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 3);
     }
 
-    function testCallback() public {
+    function testKafkaGetOwner() public {
+        bytes memory getOwner = new YulHelper().get("GetOwner.yul/GetOwner.json");
+
+        vm.prank(address(0xaa));
+        bytes memory data = relayer.runQuark(getOwner);
+        assertEq(data, abi.encode(55));
+    }
+
+    function testKafkaCallback() public {
         bytes memory callback = new YulHelper().get("Callback.yul/Callback.json");
 
         assertEq(counter.number(), 0);
@@ -67,7 +76,7 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 11);
     }
 
-    function testNoCallbacks() public {
+    function testKafkaNoCallbacks() public {
         bytes memory noCallback = new YulHelper().get("NoCallback.yul/Callback.json");
 
         assertEq(counter.number(), 0);
@@ -78,7 +87,7 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 0);
     }
 
-    function testCounterScript() public {
+    function testKafkaCounterScript() public {
         bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
 
         assertEq(counter.number(), 0);
@@ -89,7 +98,7 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 2);
     }
 
-    function testDirectIncrementer() public {
+    function testKafkaDirectIncrementer() public {
         bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
 
         // assertEq(incrementer, QuarkInterface(quark).virtualCode81());

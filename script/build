@@ -1,7 +1,16 @@
 #!/bin/bash
 
 set -eo pipefail
-forge build --contracts ./src/ --skip ".sol"
-code="$(cat out/Quark.yul/Quark.json | jq -r '.bytecode .object' | cut -c 3-)"
-sed -E -i '' "s/return hex\"[a-zA-Z0-9]*\"/return hex\"$code\"/g" ./src/Relayer.sol
-forge build --contracts ./src/ --skip ".yul"
+
+echo "Building Quark.yul"
+FOUNDRY_PROFILE=yul forge build --contracts ./yul/ --skip ".sol" --skip "QuarkKafka.yul" --optimize --optimizer-runs 1
+quarkYul="$(cat out/Quark.yul/Quark.json | jq -r '.bytecode .object' | cut -c 3-)"
+sed -E -i '' "s/return hex\"[a-zA-Z0-9]*\"/return hex\"$quarkYul\"/g" ./src/RelayerMetamorphic.sol
+
+echo "Building QuarkKafka.yul"
+FOUNDRY_PROFILE=yul forge build --contracts ./yul/ --skip ".sol" --skip "Quark.yul" --optimize --optimizer-runs 1
+quarkKafkaYul="$(cat out/QuarkKafka.yul/QuarkKafka.json | jq -r '.bytecode .object' | cut -c 3-)"
+sed -E -i '' "s/return hex\"[a-zA-Z0-9]*\"/return hex\"$quarkKafkaYul\"/g" ./src/RelayerKafka.sol
+
+echo "Building src/"
+forge build --contracts ./src/ --skip ".yul" --optimize --optimizer-runs 200

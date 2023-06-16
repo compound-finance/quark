@@ -1,1 +1,4 @@
-cast abi-encode "run(address,uint256,address,bytes)" "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" "5000000" "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" "$(cast calldata "balanceOf(address)" "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")" | npm run submit -- --network quarknet --nonce 0 --trx-script wrapped-call --trx-calldata - --private-key "$QUARKNET_PRIVATE_KEY"
+echo "[{\"to\": \"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48\", \"data\": \"$(cast calldata "balanceOf(address)" "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")\"}]" | npm run submit -- --network goerli --nonce 0 --trx-script ethcall --trx-calldata - --private-key "$GOERLI_DEPLOYER_KEY"
+
+
+echo "[{\"to\": \"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48\", \"data\": \"$(cast calldata "balanceOf(address)" "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")\"}, {\"to\": \"0x906f4bD1940737091f18247eAa870D928A85b9Ce\", \"data\": \"0x\", \"value\": \"0x470de4df820000\"}]" | npm run submit -- --network goerli --nonce 0 --trx-script ethcall --trx-calldata - --private-key "$GOERLI_DEPLOYER_KEY"

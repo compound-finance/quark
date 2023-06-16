@@ -1,6 +1,6 @@
 {
   "name": "@compound-finance/quark",
-  "version": "0.0.6-alpha11",
+  "version": "0.0.6-alpha38",
   "description": "The Quark client is a JavaScript library to quicky and easily build and invoke actions from Quark wallets.",
   "main": "dist/client/src/quark.js",
   "types": "dist/client/src/quark.d.ts",
