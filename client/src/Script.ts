@@ -150,15 +150,33 @@ export async function multicallSign(signer: Signer, chainId: number, calls: Call
   return signTrxScript(signer, chainId, await signer.getAddress(), nonce, reqs, trxScript, trxCalldata, expiry);
 }
 
-export async function flashMulticall(providerOrRelayer: Provider | Contract, pool: string, amount0: bigint, amount1: bigint, calls: Call[], sendArgs?: object): Promise<any> {
-  console.log("calls", calls);
+export async function flashMulticallTrxScriptCall(pool: string, amount0: bigint, amount1: bigint, calls: Call[], wrap = false): Promise<TrxScriptCall> {
+  console.log("pool", pool, amount0, amount1, "calls", calls);
   let callsEncoded = await Promise.all(calls.map(encodeCall));
   let inAddresses = callsEncoded.map((c) => c[0]);
   let inCalldatas = callsEncoded.map((c) => c[1]);
+  let inCallvalues = callsEncoded.map((c) => c[2]);
 
-  let flashMulticallInput = encodeTuple(["address", "uint256", "uint256", "address[]", "bytes[]"], [pool, amount0, amount1, inAddresses, inCalldatas]);
+  let flashMulticallInput = encodeTuple(["address", "uint256", "uint256", "address[]", "bytes[]", "uint256[]"], [pool, amount0, amount1, inAddresses, inCalldatas, inCallvalues]);
 
-  return runQuarkScript(providerOrRelayer, flashMulticallBytecode.object, flashMulticallInput, sendArgs);
+  let trxCalldata = flashMulticallInput;
+  if (wrap) {
+    trxCalldata = quarkScriptInterface.encodeFunctionData('_exec', [flashMulticallInput])
+  }
+
+  return {
+    trxScript: flashMulticallBytecode.object,
+    trxCalldata
+  }
+}
+export async function flashMulticall(providerOrRelayer: Provider | Contract, pool: string, amount0: bigint, amount1: bigint, calls: Call[], sendArgs?: object): Promise<any> {
+  let { trxScript, trxCalldata } = await flashMulticallTrxScriptCall(pool, amount0, amount1, calls);
+  return runQuarkScript(providerOrRelayer, trxScript, trxCalldata, sendArgs);
+}
+
+export async function flashMulticallSign(signer: Signer, chainId: number, pool: string, amount0: bigint, amount1: bigint, calls: Call[], nonce: number, reqs: number[], expiry: number): Promise<SignedTrxScript> {
+  let { trxScript, trxCalldata } = await flashMulticallTrxScriptCall(pool, amount0, amount1, calls, true);
+  return signTrxScript(signer, chainId, await signer.getAddress(), nonce, reqs, trxScript, trxCalldata, expiry);
 }
 
 export async function submitSearch(providerOrRelayer: Provider | Contract, trxScript: SignedTrxScript, beneficiary: string, baseFee: BigInt, sendArgs?: object): Promise<any> {

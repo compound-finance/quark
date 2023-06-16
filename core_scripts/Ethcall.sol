@@ -28,6 +28,5 @@ contract Ethcall is QuarkScript {
   }
 
   // Allow unwrapping Ether
-  fallback() external payable {}
   receive() external payable {}
 }

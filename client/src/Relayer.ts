@@ -27,7 +27,7 @@ export function getNetwork(chainIdOrNetwork: number | string) : string {
 
 export const relayers: { [version: number]: { [network: string]: string } } = {
   1: {
-    'goerli': '0x4d48359c2c80cd79f55334e932d0bf2db29f1562',
+    'goerli': '0x304Ff25957ccD661637199Aa6C7f2B2fE78ac7Cd',
     'optimism-goerli': '0x66ca95f4ed181c126acbd5aad21767b20d6ad7da',
     'arbitrum-goerli': '0xdde0bf030f2ffceae76817f2da0a14b1e9a87041',
     'arbitrum': '0xcc3b9A2510f828c952e67C024C3dE60839Aca842', // local change
