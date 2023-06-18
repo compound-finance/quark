@@ -3,10 +3,6 @@ pragma solidity ^0.8.19;
 
 import "./QuarkScript.sol";
 
-interface Quark {
-    function destruct() external;
-}
-
 struct TrxScript {
     address account;
     uint32 nonce;
@@ -159,20 +155,6 @@ abstract contract Relayer {
      */
     function runQuark(bytes calldata quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
         return _runQuark(msg.sender, quarkCode, quarkCalldata);
-    }
-
-    /**
-     * NOTES
-     */
-    function runQuarkScript(bytes calldata quarkCode) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, ("")));
-    }
-
-    /**
-     * NOTES
-     */
-    function runQuarkScript(bytes calldata quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, abi.encodeCall(QuarkScript._exec, (quarkCalldata)));
     }
 
     // Internal function for running a quark. This handles the `create2`, invoking the script,

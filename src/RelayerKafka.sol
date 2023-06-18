@@ -3,23 +3,32 @@ pragma solidity ^0.8.19;
 
 import "./Relayer.sol";
 import "./QuarkScript.sol";
+import "./CodeJar.sol";
 
 interface KafkaDestructableQuark {
     function destruct() external;
 }
 
 contract RelayerKafka is Relayer {
+    CodeJar public immutable codeJar;
+
     error QuarkAlreadyActive(address quark);
     error QuarkNotActive(address quark);
     error QuarkInvalid(address quark, bytes32 isQuarkScriptHash);
     error QuarkInitFailed(address quark, bool create2Failed);
     error QuarkCallFailed(address quark, bytes error);
     error QuarkAddressMismatch(address expected, address created);
-    error QuarkCodeSaveFailed(bytes initCode);
-    error QuarkCodeSaveMismatch(bytes initCode, bytes quarkCode, address expected, address created);
-    error QuarkTooLarge(uint256 sz);
 
     mapping(address => address) public quarkCodes;
+
+    constructor(CodeJar codeJar_) {
+        // Allow to be passed in by constructor, otherwise create a new one
+        if (codeJar_ == CodeJar(address(0))) {
+            codeJar_ = new CodeJar();
+        }
+
+        codeJar = codeJar_;
+    }
 
     /**
      * @notice Helper function to return a quark address for a given account.
@@ -53,124 +62,11 @@ contract RelayerKafka is Relayer {
         return hex"604060b180610066600039338152602081016020601f193801823951337f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6557f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811155016000f3fe6000604038603f190182396020816004818080518551632b68b9c6833560e01c14823314166065575b5063665f107960e01b82525af11560565780808051368280378136915af43d82803e156052573d90f35b3d90fd5b633c5bb1a760e21b8152600490fd5b827f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f655827f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811155ff38602856";
     }
 
-    function saveQuarkCode(bytes memory quarkCode) public returns (address) {
-        /**
-         * 0000    63XXXXXXXX  PUSH4 XXXXXXXX // code size
-         * 0005    80          DUP1
-         * 0006    600e        PUSH1 0x0e // this size
-         * 0008    6000        PUSH1 0x00
-         * 000a    39          CODECOPY
-         * 000b    6000        PUSH1 0x00
-         * 000d    F3          *RETURN
-         */
-
-        uint32 initCodeBaseSz = uint32(0x0e); // 0x630000000080600e6000396000f3
-        if (quarkCode.length > type(uint32).max) {
-            revert QuarkTooLarge(quarkCode.length);
-        }
-        uint32 quarkCodeSz = uint32(quarkCode.length);
-        uint256 initCodeLen = initCodeBaseSz + quarkCodeSz;
-        bytes memory initCode = new bytes(initCodeLen);
-
-        assembly {
-            function memcpy(dst, src, size) {
-                for {} gt(size, 0) {}
-                {
-                    // Copy word
-                    if gt(size, 31) { // ≥32
-                        mstore(dst, mload(src))
-                        dst := add(dst, 32)
-                        src := add(src, 32)
-                        size := sub(size, 32)
-                        continue
-                    }
-
-                    // Copy byte
-                    //
-                    // Note: we can't use `mstore` here to store a full word since we could
-                    // truncate past the end of the dst ptr.
-                    mstore8(dst, and(mload(src), 0xff))
-                    dst := add(dst, 1)
-                    src := add(src, 1)
-                    size := sub(size, 1)
-                }
-            }
-
-            function copy4(dst, v) {
-              if gt(v, 0xffffffff) {
-                // operand too large
-                revert(0, 0)
-              }
-
-              mstore8(add(dst, 0), byte(28, v))
-              mstore8(add(dst, 1), byte(29, v))
-              mstore8(add(dst, 2), byte(30, v))
-              mstore8(add(dst, 3), byte(31, v))
-            }
-
-            let initCodeOffset := add(initCode, 0x20)
-            mstore(initCodeOffset, 0x630000000080600e6000396000f3000000000000000000000000000000000000)
-            memcpy(add(initCodeOffset, initCodeBaseSz), add(quarkCode, 0x20), quarkCodeSz)
-            copy4(add(initCodeOffset, 1), quarkCodeSz)
-        }
-
-        address quarkCodeAddress = address(uint160(uint(
-            keccak256(
-                abi.encodePacked(
-                    bytes1(0xff),
-                    address(this),
-                    uint256(0),
-                    keccak256(initCode)
-                )
-            )))
-        );
-
-        uint256 quarkCodeAddressLen;
-        assembly {
-            quarkCodeAddressLen := extcodesize(quarkCodeAddress)
-        }
-
-        if (quarkCodeAddressLen == 0) {
-            address quarkCodeCreateAddress;
-            assembly {
-                quarkCodeCreateAddress := create2(0, add(initCode, 32), initCodeLen, 0)
-            }
-            // Ensure that the wallet was created.
-            if (uint160(address(quarkCodeCreateAddress)) == 0) {
-                revert QuarkCodeSaveFailed(initCode);
-            }
-            if (quarkCodeCreateAddress != quarkCodeAddress) {
-                revert QuarkCodeSaveMismatch(initCode, quarkCode, quarkCodeAddress, quarkCodeCreateAddress);
-            }
-        }
-
-        return quarkCodeAddress;
-    }
-
-    /**
-     * @notice Returns the code associated with a running quark for `msg.sender`
-     * @dev This is generally expected to be used only by the Quark wallet itself
-     *      in the constructor phase to get its code.
-     */
-    function readQuarkCode(address quarkCodeAddress) external view returns (bytes memory) {
-        uint256 quarkCodeLen;
-        assembly {
-            quarkCodeLen := extcodesize(quarkCodeAddress)
-        }
-
-        bytes memory quarkCode = new bytes(quarkCodeLen);
-        assembly {
-            extcodecopy(quarkCodeAddress, add(quarkCode, 0x20), 0, quarkCodeLen)
-        }
-
-        return quarkCode;
-    }
-
     // Saves quark code for an quark address into storage. This is required
     // since we can't pass unique quark code in the `create2` constructor,
     // since it would end up at a different wallet address.
     function saveQuark(address quarkAddress, bytes memory quarkCode) internal {
-        quarkCodes[quarkAddress] = saveQuarkCode(quarkCode);
+        quarkCodes[quarkAddress] = codeJar.saveCode(quarkCode);
     }
 
     /**

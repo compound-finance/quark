@@ -5,17 +5,17 @@ script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$script_dir/.."
 
 network=$1
-relayer=$2
+code_jar=$2
 script=$3
 
 function print_usage() {
-  echo "script/create_core_scripts.sh {network} {relayer_address} [{script}]"
+  echo "script/create_core_scripts.sh {network} {code_jar_address} [{script}]"
   exit 1
 }
 
 key_arg="--interactive"
 
-if [ -z "$relayer" ]; then
+if [ -z "$code_jar" ]; then
   print_usage
 fi
 
@@ -62,12 +62,12 @@ esac
 echo "--- ${date}"
 echo "Creating core scripts on $network_name"
 
-for full_script_file in ${script:-core_scripts/*.sol}; do
+for full_script_file in ${script:-./src/core_scripts/*.sol}; do
   script_file="${full_script_file##*/}"
   contract_name="${script_file%.*}"
   bytes=$(cat out/$script_file/$contract_name.json | jq -r .deployedBytecode.object)
 
   echo "Creating core scripts $contract_name"
 
-  cast send $key_arg --rpc-url "$rpc_url" "$relayer" "saveQuarkCode(bytes)(address)" "$bytes"
+  cast send $key_arg --rpc-url "$rpc_url" "$code_jar" "saveCode(bytes)(address)" "$bytes"
 done

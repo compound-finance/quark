@@ -35,13 +35,6 @@ export const relayers: { [version: number]: { [network: string]: string } } = {
   }
 }
 
-export const vms: { [version: number]: { [network: string]: string } } = {
-  1: {
-    'arbitrum': '0x3A5e5bF04d05aca69eEFC63CD832eBec49A6314a', // local change
-    'mainnet': '0x13E0Ece0Fa1Ff3795947FaB553dA5DaB6c9eF470', // local change
-  }
-}
-
 export const abi: { [version: number]: ReadonlyArray<Fragment | JsonFragment | string> } = {
   1: relayerAbi
 };

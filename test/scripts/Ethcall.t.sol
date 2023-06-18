@@ -7,26 +7,16 @@ import "forge-std/console.sol";
 import "../lib/YulHelper.sol";
 import "../lib/Counter.sol";
 
-import "../../core_scripts/Ethcall.sol";
+import "../../src/core_scripts/Ethcall.sol";
 import "../../src/Relayer.sol";
-import "../../src/RelayerMetamorphic.sol";
-import "../../src/RelayerVm.sol";
 import "../../src/RelayerKafka.sol";
 
 contract EthcallTest is Test {
-    Relayer public relayerMetamorphic;
-    Relayer public relayerVm;
     Relayer public relayerKafka;
     Counter public counter;
 
     constructor() {
-        relayerMetamorphic = new RelayerMetamorphic();
-        console.log("Relayer metamorphic deployed to: %s", address(relayerMetamorphic));
-
-        relayerVm = new RelayerVm();
-        console.log("Relayer vm deployed to: %s", address(relayerVm));
-
-        relayerKafka = new RelayerKafka();
+        relayerKafka = new RelayerKafka(CodeJar(address(0)));
         console.log("Relayer kafka deployed to: %s", address(relayerKafka));
 
         counter = new Counter();
@@ -38,49 +28,17 @@ contract EthcallTest is Test {
         // nothing
     }
 
-    function testMetamorphicEthcallCounter() public {
-        bytes memory ethcallScript = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
-        Ethcall.EthcallInput memory input = Ethcall.EthcallInput({
-            callContract: address(counter),
-            callData: abi.encodeCall(Counter.incrementBy, (20)),
-            callValue: 0
-        });
-
-        assertEq(counter.number(), 0);
-
-        bytes memory data = relayerMetamorphic.runQuarkScript(ethcallScript, abi.encode(input));
-        assertEq(data, hex"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000014");
-
-        assertEq(counter.number(), 20);
-    }
-
-    function testVmEthcallCounter() public {
-        bytes memory ethcallScript = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
-        Ethcall.EthcallInput memory input = Ethcall.EthcallInput({
-            callContract: address(counter),
-            callData: abi.encodeCall(Counter.incrementBy, (0xEE)),
-            callValue: 0
-        });
-
-        assertEq(counter.number(), 0);
-
-        bytes memory data = relayerVm.runQuarkScript(ethcallScript, abi.encode(input));
-        assertEq(data, hex"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000014");
-
-        assertEq(counter.number(), 0xEE);
-    }
-
     function testKafkaEthcallCounter() public {
         bytes memory ethcallScript = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
-        Ethcall.EthcallInput memory input = Ethcall.EthcallInput({
-            callContract: address(counter),
-            callData: abi.encodeCall(Counter.incrementBy, (20)),
-            callValue: 0
-        });
+        bytes memory ethcallInvocation = abi.encodeCall(Ethcall.run, (
+            address(counter),
+            abi.encodeCall(Counter.incrementBy, (20)),
+            0
+        ));
 
         assertEq(counter.number(), 0);
 
-        bytes memory data = relayerKafka.runQuarkScript(ethcallScript, abi.encode(input));
+        bytes memory data = relayerKafka.runQuark(ethcallScript, ethcallInvocation);
         assertEq(data, hex"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000014");
 
         assertEq(counter.number(), 20);

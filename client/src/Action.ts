@@ -115,7 +115,7 @@ export function buildAction<I extends Array<ValueType>, Output>(input: Inputize<
     }
   }
 
-  // We've gauranteed all inputs are actually values (possibly piped)
+  // We've guaranteed all inputs are actually values (possibly piped)
   let {
     preamble,
     statements,

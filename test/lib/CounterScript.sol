@@ -5,8 +5,7 @@ import "../../src/QuarkScript.sol";
 import "./Counter.sol";
 
 contract CounterScript is QuarkScript {
-  function run(bytes calldata data) internal override returns (bytes memory) {
-    (Counter c) = abi.decode(data, (Counter));
+  function run(Counter c) external onlyRelayer returns (bytes memory) {
     c.increment();
     c.increment();
     return hex"";

@@ -7,21 +7,16 @@ import "forge-std/console.sol";
 import "../lib/YulHelper.sol";
 import "../lib/Counter.sol";
 
-import "../../core_scripts/Multicall.sol";
+import "../../src/core_scripts/Multicall.sol";
 import "../../src/Relayer.sol";
-import "../../src/RelayerMetamorphic.sol";
 import "../../src/RelayerKafka.sol";
 
 contract MulticallTest is Test {
-    Relayer public relayerMetamorphic;
     Relayer public relayerKafka;
     Counter public counter;
 
     constructor() {
-        relayerMetamorphic = new RelayerMetamorphic();
-        console.log("Relayer metamorphic deployed to: %s", address(relayerMetamorphic));
-
-        relayerKafka = new RelayerKafka();
+        relayerKafka = new RelayerKafka(CodeJar(address(0)));
         console.log("Relayer kafka deployed to: %s", address(relayerKafka));
 
         counter = new Counter();
@@ -31,31 +26,6 @@ contract MulticallTest is Test {
 
     function setUp() public {
         // nothing
-    }
-
-    function testMetamorphicMulticallCounter() public {
-        bytes memory multicallScript = new YulHelper().getDeployed("Multicall.sol/Multicall.json");
-        address[] memory callContracts = new address[](2);
-        bytes[] memory callDatas = new bytes[](2);
-        uint256[] memory callValues = new uint256[](2);
-        callContracts[0] = address(counter);
-        callDatas[0] = abi.encodeCall(Counter.incrementBy, (20));
-        callValues[0] = 0 wei;
-        callContracts[1] = address(counter);
-        callDatas[1] = abi.encodeCall(Counter.decrementBy, (5));
-        callValues[1] = 0 wei;
-        Multicall.MulticallInput memory input = Multicall.MulticallInput({
-            callContracts: callContracts,
-            callDatas: callDatas,
-            callValues: callValues
-        });
-
-        assertEq(counter.number(), 0);
-
-        bytes memory data = relayerMetamorphic.runQuarkScript(multicallScript, abi.encode(input));
-        assertEq(data, hex"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000014");
-
-        assertEq(counter.number(), 15);
     }
 
     function testKafkaMulticallCounter() public {
@@ -69,15 +39,15 @@ contract MulticallTest is Test {
         callDatas[1] = abi.encodeCall(Counter.decrementBy, (5));
         callContracts[1] = address(counter);
         callValues[1] = 0 wei;
-        Multicall.MulticallInput memory input = Multicall.MulticallInput({
-            callContracts: callContracts,
-            callDatas: callDatas,
-            callValues: callValues
-        });
+        bytes memory multicallInvocation = abi.encodeCall(Multicall.run, (
+            callContracts,
+            callDatas,
+            callValues
+        ));
 
         assertEq(counter.number(), 0);
 
-        bytes memory data = relayerKafka.runQuarkScript(multicallScript, abi.encode(input));
+        bytes memory data = relayerKafka.runQuark(multicallScript, multicallInvocation);
 
         assertEq(counter.number(), 15);
     }

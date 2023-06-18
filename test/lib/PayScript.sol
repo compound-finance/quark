@@ -10,7 +10,7 @@ interface Erc20 {
 contract PayScript is QuarkScript {
   event Hello(uint256 n);
 
-  function run(bytes calldata data) internal override returns (bytes memory) {
+  function run(bytes calldata data) external onlyRelayer returns (bytes memory) {
     (Erc20 payToken, uint256 amount, uint256 n) = abi.decode(data, (Erc20, uint256, uint256));
     payToken.transfer(tx.origin, amount);
     emit Hello(n);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "../src/QuarkScript.sol";
+import "../QuarkScript.sol";
 
 interface IFlashMulticalErc20 {
   function transfer(address to, uint256 amount) external returns (bool);
@@ -49,20 +49,26 @@ contract FlashMulticall is QuarkScript {
         uint256[] callValues;
     }
 
-    function run(bytes calldata data) internal override returns (bytes memory) {
-        FlashMulticallInput memory input = abi.decode(data, (FlashMulticallInput));
-
+    function run(address pool, uint256 amount0, uint256 amount1, address[] calldata callContracts, bytes[] calldata callDatas, uint256[] calldata callValues) external onlyRelayer returns (bytes memory) {
         // We could probably improve this, but we store the flash pool in storage so we can 
         // later check it's the correct caller for the flash callback. Otherwise we'll
         // need to track the router or something to check tha the caller for the callback
         // is legit.
         require(flashPool == address(0));
-        flashPool = input.pool;
+        flashPool = pool;
+        bytes memory data = abi.encode(FlashMulticallInput({
+            pool: pool,
+            amount0: amount0,
+            amount1: amount1,
+            callContracts: callContracts,
+            callDatas: callDatas,
+            callValues: callValues
+        }));
 
-        FlashMulticallUniswapPool(input.pool).flash(
+        FlashMulticallUniswapPool(pool).flash(
             address(this),
-            input.amount0,
-            input.amount1,
+            amount0,
+            amount1,
             data
         );
 
@@ -70,15 +76,15 @@ contract FlashMulticall is QuarkScript {
     }
 
     function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {
+        if (msg.sender != flashPool) {
+            revert InvalidCaller();
+        }
+
         FlashMulticallInput memory input = abi.decode(data, (FlashMulticallInput));
 
         FlashMulticallUniswapPool pool = FlashMulticallUniswapPool(input.pool);
         if (input.callContracts.length != input.callDatas.length) {
             revert InvalidInput();
-        }
-
-        if (msg.sender != flashPool) {
-            revert InvalidCaller();
         }
 
         for (uint256 i = 0; i < input.callContracts.length; i++) {
@@ -119,6 +125,5 @@ contract FlashMulticall is QuarkScript {
     }
 
     // Allow unwrapping Ether
-    fallback() external payable {}
     receive() external payable {}
 }

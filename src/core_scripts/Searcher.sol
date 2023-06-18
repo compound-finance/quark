@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "../src/QuarkScript.sol";
+import "../QuarkScript.sol";
 
 contract Searcher is QuarkScript {
   error NoBalanceGain(uint256 balancePre, uint256 balancePost);
@@ -21,7 +21,7 @@ contract Searcher is QuarkScript {
     uint256 baseFee;
   }
 
-  function run(bytes calldata data) internal override returns (bytes memory) {
+  function run(bytes calldata data) external onlyRelayer returns (bytes memory) {
     SearcherInput memory input = abi.decode(data, (SearcherInput));
 
     uint256 balancePre = input.beneficiary.balance;
