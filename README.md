@@ -15,7 +15,7 @@ To send a Quark transaction, you simply send the EVM code that you want to run t
 { "to": "0xQuarkRelayer", "data": "{evm bytecode}" }
 ```
 
-That code will run as a transaction script in your quark address, performing whatever operations you've specified (e.g. trading on Uniswap, etc). There is no trust being granted to Quark (aside of code bugs), and the Quark Relayer itself is not upgradable.
+That code will run as a transaction script in your quark address, performing whatever operations you've specified (e.g. trading on Uniswap, etc). There is no trust being granted to Quark, and the Quark Relayer itself is not upgradable.
 
 ## Using Quark
 
@@ -30,34 +30,104 @@ There's nothing to do-- you can simply start sending Quark transactions today.
 
 You can send scripts through a dApp, but they are simply data, so you can even send this via MetaMask. Try sending these transaction scripts on Goerli:
 
-#### Log a Message
+### Quark Scripts
 
-This script will simply emit a log message which you can see in Etherscan.
+The easiest way to use Quark is to through Quark Scripts.
 
-```hex
-0x30303050505060376080527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206080a100
+```ts
+import * as Quark from '@compound-finance/quark';
+
+let tx = await Quark.Script.multicall(provider, [
+  usdc.populateTransaction.transfer(100, '0x...')
+]);
 ```
 
-E.g.
+The [Multicall](#) Quark script wraps one or more Ethereum calls into a single transaction sent from your Quark address that run atomically. You can easily send these from a dApp like you're using today.
 
-```hex
-Goerli cast:
-  cast send --interactive --rpc-url https://goerli-eth.compound.finance "0x412e71DE37aaEBad89F1441a1d7435F2f8B07270" "0x30303050505060376080527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206080a100"
+The following core scripts ship with Quark:
 
-Optimism Goerli cast:
-  cast send --interactive --rpc-url https://goerli.optimism.io "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x30303050505060376080527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206080a100"
+  * [Ethcall]() - Wraps a single Ethereum call [via [Quark.Script.multicall](#) with a single call]
+  * [Multicall](#) - Wraps multiple Ethereum calls into a single script [via [Quark.Script.multicall](#)]
+  * [FlashMulticall](#) - Performs a flash loan from Uniswap and then wraps a set of Ethereum calls [[Quark.Script.flashMulticall](#)]
+  * [Searcher](#) - Account abstraction to submit a signed Quark transaction if and only if it nets the sender positive ether. [[Quark.Script.submitSearch](#)]
 
-Arbitrum Goerli cast:
-  cast send --interactive --rpc-url https://goerli-rollup.arbitrum.io/rpc "0x12D356e5C3b05aFB0d0Dbf0999990A6Ec3694e23" "0x30303050505060376080527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206080a100"
+See the [Quark Client](#) for more details on the JavaScript client.
+
+### Creating your own Scripts
+
+You can make your own scripts to send from a Quark Wallet. For instance:
+
+```js
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.19;
+
+import "./QuarkScript.sol";
+
+contract SayHello is QuarkScript {
+  event Hello(string message);
+
+  function run(string calldata message) external onlyRelayer {
+    emit Hello(message);
+  }
+}
 ```
 
-#### Atomic Buy and Sell on Uniswap
+This script will simply emit a log message. Note: you do not need to derive from `QuarkScript`, but it will make it easier if you want to prevent other Ethereum contracts from calling into your script with the `onlyRelayer` modifier.
 
-This script will...
+To run your script, make sure it's compiled and you have the `deployedBytecode` from the artifact, then run:
 
-```hex
-0x303030505050...
+
+```js
+import * as Quark from '@compound-finance/quark';
+import { deployedBytecode as sayHelloCode } from '../out/SayHello.sol/SayHello.json';
+
+let tx = await Quark.runQuarkScript(provider, sayHelloCode, "run(bytes calldata message)", ["world"]);
 ```
+
+This will run your script as a transaction via Quark.
+
+## Signed Transaction Scripts
+
+You can also sign Quark transcription scripts, which can then be submitted by anyone on your behalf (e.g. from a gasser wallet you control or a searcher). For instance, to sign a mulitcall script:
+
+```js
+import * as Quark from '@compound-finance/quark';
+
+let signedTrxScript = await multicallSign({
+  signer,
+  chainId,
+  calls: [
+    usdc.populateTransaction.transfer(100, '0x...')
+  ],
+  nonce: 0,
+  reqs: [],
+  expiry: Date.now() + 1000
+});
+
+let tx = await Quark.runTrxScript(provider, signedTrxScript);
+```
+
+### Searchers
+
+You can easily run a searcher, which accepts signed transaction scripts and submits them to the blockchain if and only if you make a profit from the transaction. Specifically, the transaction script you submit must send you (`tx.origin` at least the gas cost in Ether of the transaction plus some base fee you charge). This is easily accomplished from Quark scripts as they can run any EVM code. The `Multicall` Quark Script has a special address which is replaced by `tx.origin`, thus you may submit a script such as:
+
+```
+let signedTrxScript = await multicallSign({
+  signer,
+  chainId,
+  calls: [
+    // ...
+    { to: '0x906f4bD1940737091f18247eAa870D928A85b9Ce', value: 0.01e18 }
+  ],
+  nonce: 0,
+  reqs: [],
+  expiry: Date.now() + 1000
+});
+```
+
+Then you can send this to a searcher, which will submit your transaction script if and only if 0.01 eth is more than the cost of submitting your transaction (e.g. due to gas used at the current gas price).
+
+See [Searcher](#/searcher) for more information.
 
 ## Getting Started
 
@@ -68,125 +138,32 @@ forge build
 ```
 
 ```sh
-npm install
+cd client && npm install
 ```
 
-## Writing Transaction Scripts
+### Details
 
-For Quark to be exciting, you need to be able to write your own transaction scripts. There are two ways of doing this: 1) write a script directly in YUL, which is Solidity's intermediate representation, or 2) experimentally, write a script in Solidity and convert a given function into a transactoin script.
+Quark runs on a few concepts:
 
-### Transaction Scripts
+* `CodeJar` - An Ethereum contract that stores contract code using `create2` and is easy to load data from.
+* `Manifest` - An Ethereum contract to deploy contracts to preknown addresses.
+* `Relayer` - The core of Quark- a contract which accepts raw EVM bytecode and executes it from the user's Quark address.
 
-Transaction scripts are simply EVM bytecode. E.g. `60006000A0` is the bytecode `PUSH 0; PUSH 0; LOG0`. When run, this will be executed in the context of your quark address.
+For the most part, you should only be interested in interacting with the Relayer.
 
-Transaction scripts **should not** be full Solidity contracts-- this will likely revert or have no effect. Instead, they should be a fine-tuned set of instructions to run directly (think of it as a function, not a contract).
+When the Relayer receives an Ethereum request it:
 
-Transaction scripts _must start with the magic header 0x303030505050_ (`ADDRESS; ADDRESS; ADDRESS; POP; POP; POP;`), and this magic header must be valid as part of your transaction script. This is a technical limitation as we need to ensure your quark address self destructs after its run, or you account would become locked.
+ * Checks that the code is in the the Code Jar. If not, it adds it.
+ * Next, it takes the address of the code from the Code Jar and associates it with the sender (reverting if data is already set).
+ * Next, we deploy a script at the user's Quark address which simply `delegatecall`s to the script in the code jar.
+ * We invoke that script with the given calldata.
+ * We invoke a special invocation to the Quark address to force it to destruct.
 
-Note: storage(0) is reserved for the user's true EOA account, storage(1) is for the relayer and storage(2) is also reserved. Aside of that, you can use any storage or memory you'd lile.
+The transaction script sent to the Relayer should effectively be raw EVM opcodes, e.g. `PUSH0; PUSH0; PUSH1 0x55; LOG1`. This will be the script that is invoked during the call from the relayer.
 
-### Solidity
+Note: since that script is just a normal script, it can accept callbacks from other contracts, etc. As such, it's important that it's guarded by `relayerOnly` or other protections from inbound calls. The script can rely on the fact that storage at `keccak("org.quark.owner")` (`0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111`) is the owner (underlying wallet) and `keccak("org.quark.relayer")` (`0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6`) is the relayer which created this contract.
 
-There is _very experimental_ support for turning a Solidity contract into a transaction script. Currently, you should build a Solidity contract as so:
-
-```rs
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
-
-contract Fun {
-  event FunTimes(uint256);
-
-  function hello() external {
-    emit FunTimes(55);
-  }
-}
-```
-
-Run the quark-trx tool, specifying the name of the contract and name of the function you can to run:
-
-```sh
-npm run quark-trx examples/Fun.sol hello
-```
-
-This should (may?) return bytecode that should (might?) work as a transaction script. There is a lot of work to be done on how to create minimal scripts as its not previously been a common use-case of Solidity. That said, any language that could compile to Yul, for instance, could be used and it would be cool to see a simple Transaction Script language built.
-
-### YUL
-
-You can use the `quark-trx` tool for this, and if so, you can skip the verbatim line, as the tool will insert this for you:
-
-```as
-object "Logger" {
-  code {
-    // Store a value (55) in memory
-    mstore(0x80, 55)
-
-    // ABI topic for `Ping(uint256)`
-    let topic := 0x48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f
-
-    // emit Ping(55)
-    log1(0x80, 0x20, topic)
-
-    return(0, 0)
-  }
-}
-```
-
-Then run:
-
-```
-npm run quark-trx examples/Ping.yul
-```
-
-### Raw YUL
-
-Here's an example script in YUL:
-
-```as
-object "Logger" {
-  code {
-    verbatim_0i_0o(hex"303030505050")
-
-    // Store a value (55) in memory
-    mstore(0x80, 55)
-
-    // ABI topic for `Ping(uint256)`
-    let topic := 0x48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f
-
-    // emit Ping(55)
-    log1(0x80, 0x20, topic)
-
-    return(0, 0)
-  }
-}
-```
-
-In that code, we emit a simple Ethereum log. The compiled bytecode looks like this:
-
-```
-0x30303050505060376080527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206080a100
-```
-
-This is a valid transaction script and can be sent to the Quark Relayer.
-
-## Testing
-
-You can run tests by first running `script/build_examples`, which builds the example scripts:
-
-```sh
-script/build_examples
-```
-
-Then running `forge test`:
-
-```sh
-forge test
-```
-
-## Technical Limitations
-
-The magic incantation (0x303030505050) works well, but is a bit of a hassle. Specifically, we want to modify the user's transaction script to begin with "if second invokation, self destruct." But if you insert an opcode before the user's own script, everything gets shifted in the pc. That would be okay, except JUMPs in the EVM are absolute and thus we need to update the user's transaction script to know the shift. But doing so would shift downstream JUMPs and so the only way to accomplish this is with a very complex jump table that lives in the updated runtime. This is on the list of things to do, but as we don't have a good way to create transaction scripts currently anyway, got pushed back.
-
-Also, [SELFDESTRUCT is going away] and thus transaction scripts might not live on forever :(
+Note: this currently relies on metamorphic scripts, but it's really not that crucial to the design at this point and may be replaced with a simpler mechanism.
 
 ## Copyright
 
