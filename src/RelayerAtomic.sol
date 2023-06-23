@@ -17,16 +17,11 @@ contract RelayerAtomic is Relayer {
 
     mapping(address => address) public quarkCodes;
 
-    constructor() {
-        address codeJar_;
-        if (msg.data.length > 0) {
-            codeJar_ = abi.decode(msg.data, (address));
+    constructor(CodeJar codeJar_) {
+        if (codeJar_ == CodeJar(address(0))) {
+            codeJar_ = new CodeJar();
         }
-
-        if (codeJar_ == address(0)) {
-            codeJar_ = address(new CodeJar());
-        }
-        codeJar = CodeJar(codeJar_);
+        codeJar = codeJar_;
     }
 
     /**
@@ -148,4 +143,8 @@ contract RelayerAtomic is Relayer {
         // We return the result from the call, but it's not particularly important.
         return res;
     }
+}
+
+contract RelayerAtomicManifest is RelayerAtomic {
+    constructor() RelayerAtomic(abi.decode(msg.data, (CodeJar))) {}
 }

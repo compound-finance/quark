@@ -24,7 +24,7 @@ contract QuarkTest is Test {
     address internal searcher;
 
     constructor() {
-        relayer = new RelayerAtomic();
+        relayer = new RelayerAtomic(CodeJar(address(0)));
         console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();
