@@ -18,6 +18,11 @@ contract Manifest {
         codeJar = codeJar_;
     }
 
+    /**
+     * Builds salt based on input factors. This effectively
+     * is a function to determine which inputs affect the output
+     * address.
+     */
     function getSalt(address account, string memory name, bytes32 version) internal pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(
             account,
@@ -54,7 +59,11 @@ contract Manifest {
         return deploy_(msg.sender, initCode, name, version);
     }
 
-    function deploy_(address account, bytes calldata initCode, string memory name, bytes32 version) internal returns (address) {
+    function deploy(bytes memory initCode, bytes memory constructorArgs, string calldata name, bytes32 version) external returns (address) {
+        return deploy_(msg.sender, abi.encodePacked(initCode, constructorArgs), name, version);
+    }
+
+    function deploy_(address account, bytes memory initCode, string memory name, bytes32 version) internal returns (address) {
         uint256 salt = getSalt(account, name, version);
         address manifestAddress = getManifestAddress(salt);
 

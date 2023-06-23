@@ -7,6 +7,7 @@ import "forge-std/console.sol";
 import "../src/CodeJar.sol";
 import "../src/Manifest.sol";
 import "./lib/Counter.sol";
+import "./lib/CounterStart.sol";
 
 contract ManifestTest is Test {
     CodeJar public codeJar;
@@ -28,5 +29,12 @@ contract ManifestTest is Test {
         Counter c = Counter(manifest.deploy(type(Counter).creationCode, "test", bytes32(uint256(0x112233))));
 
         c.setNumber(5);
+    }
+
+    // TODO: Think more about constructors, they are grrr
+    function testManifestDeployCounterStart() public {
+        Counter c = Counter(manifest.deploy(type(CounterStart).creationCode, abi.encode(uint256(55)), "test", bytes32(uint256(0x112233))));
+
+        assertEq(61, c.incrementBy(5));
     }
 }
