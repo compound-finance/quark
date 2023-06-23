@@ -21,13 +21,12 @@ contract RelayerKafka is Relayer {
 
     mapping(address => address) public quarkCodes;
 
-    constructor(CodeJar codeJar_) {
-        // Allow to be passed in by constructor, otherwise create a new one
-        if (codeJar_ == CodeJar(address(0))) {
-            codeJar_ = new CodeJar();
+    constructor() {
+        address codeJar_ = abi.decode(msg.data, (address));
+        if (codeJar_ == address(0)) {
+            codeJar_ = address(new CodeJar());
         }
-
-        codeJar = codeJar_;
+        codeJar = CodeJar(codeJar_);
     }
 
     /**

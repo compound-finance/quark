@@ -13,6 +13,7 @@ contract Manifest {
     CodeJar public immutable codeJar;
 
     mapping(address => address) manifests;
+    mapping(address => address) constructorArgs;
 
     constructor(CodeJar codeJar_) {
         codeJar = codeJar_;
@@ -32,7 +33,7 @@ contract Manifest {
     }
 
     function getManifestInitCode() public pure returns (bytes memory) {
-        return hex"600030610eeb8280a2630ec2a8bb60e41b815260208160048180335af115604f578051803b156040578180918136915af43d82803e15603c573d90f35b3d90fd5b6317b1af2760e11b8252600482fd5b633d0b7ced60e21b8152600490fd";
+        return hex"600030610eeb8280a2630ec2a8bb60e41b815260408160048180335af115606957805160205190803b15605a578291828092819280604b575b505af43d82803e156047573d90f35b3d90fd5b82809450813b9485923c386038565b6317b1af2760e11b8352600483fd5b633d0b7ced60e21b8152600490fd";
     }
 
     /**
@@ -56,14 +57,14 @@ contract Manifest {
     }
 
     function deploy(bytes calldata initCode, string calldata name, bytes32 version) external returns (address) {
-        return deploy_(msg.sender, initCode, name, version);
+        return deploy_(msg.sender, initCode, hex"", name, version);
     }
 
-    function deploy(bytes memory initCode, bytes memory constructorArgs, string calldata name, bytes32 version) external returns (address) {
-        return deploy_(msg.sender, abi.encodePacked(initCode, constructorArgs), name, version);
+    function deploy(bytes calldata initCode, bytes calldata constructorArg, string calldata name, bytes32 version) external returns (address) {
+        return deploy_(msg.sender, initCode, constructorArg, name, version);
     }
 
-    function deploy_(address account, bytes memory initCode, string memory name, bytes32 version) internal returns (address) {
+    function deploy_(address account, bytes memory initCode, bytes memory constructorArg, string memory name, bytes32 version) internal returns (address) {
         uint256 salt = getSalt(account, name, version);
         address manifestAddress = getManifestAddress(salt);
 
@@ -75,6 +76,11 @@ contract Manifest {
         // Stores the manifest in storage so it can be loaded via `readManifest` in the `create2`
         // constructor code (see `yul/Manifest.yul`).
         manifests[manifestAddress] = codeJar.saveCode(initCode);
+        if (constructorArg.length > 0) {
+            constructorArgs[manifestAddress] = codeJar.saveCode(constructorArg);
+        } else {
+            constructorArgs[manifestAddress] = address(0);
+        }
 
         bytes memory manifestInitCode = getManifestInitCode();
         uint256 manifestInitCodeLen = manifestInitCode.length;
@@ -105,11 +111,12 @@ contract Manifest {
         }
 
         manifests[manifestAddress] = address(0);
+        constructorArgs[manifestAddress] = address(0);
 
         return manifest;
     }
 
-    function readManifest() external view returns (address) {
-        return manifests[msg.sender];
+    function readManifest() external view returns (address, address) {
+        return (manifests[msg.sender], constructorArgs[msg.sender]);
     }
 }

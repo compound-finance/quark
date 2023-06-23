@@ -16,7 +16,7 @@ contract MulticallTest is Test {
     Counter public counter;
 
     constructor() {
-        relayerKafka = new RelayerKafka(CodeJar(address(0)));
+        relayerKafka = new RelayerKafka();
         console.log("Relayer kafka deployed to: %s", address(relayerKafka));
 
         counter = new Counter();

@@ -145,7 +145,8 @@ contract DeployScript is Script {
         // Always deploy new Relayer
         Relayer relayer = Relayer(
             payable(manifest.deploy(
-                abi.encodePacked(type(RelayerKafka).creationCode, abi.encode(codeJar)),
+                type(RelayerKafka).creationCode,
+                abi.encode(codeJar),
                 "quark-alpha", // TODO: Get from env
                 bytes32(uint256(0x1))))); // TODO: Get from env
 
