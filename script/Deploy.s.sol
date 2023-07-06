@@ -5,7 +5,8 @@ import "forge-std/StdJson.sol";
 import "../src/CodeJar.sol";
 import "../src/Manifest.sol";
 import "../src/Relayer.sol";
-import "../src/RelayerKafka.sol";
+import "../src/RelayerAtomic.sol";
+import "../src/core_scripts/Ethcall.sol";
 
 contract DeployUtils is Script {
     using stdJson for string;
@@ -15,8 +16,10 @@ contract DeployUtils is Script {
     }
 
     function getDeploymentsFile() internal returns (string memory) {
+        console.log("Chain id: %n", block.chainid);
         Chain memory chain = getChain(block.chainid);
-        if (stringEq(chain.name, "Anvil")) {
+        console.log("Chain id: %n, chain name %s, chain alias: %s", block.chainid, chain.name, chain.chainAlias);
+        if (stringEq(chain.chainAlias, "anvil")) {
             return "./deployments.local.json";
         } else {
             return "./deployments.json";
@@ -25,7 +28,8 @@ contract DeployUtils is Script {
 
     function networkName() internal returns (string memory) {
         Chain memory chain = getChain(block.chainid);
-        return chain.name;
+        console.log("Chain_id: %n, chain name %s, chain alias: %s", block.chainid, chain.name, chain.chainAlias);
+        return chain.chainAlias;
     }
 
     function contractKey(string memory name) internal returns (string memory) {
@@ -42,6 +46,7 @@ contract DeployUtils is Script {
             nameLen := mload(name)
             extLen := mload(ext)
         }
+        console.log("Network: %s, len: %n", network, networkLen);
         string memory res = new string(2 + networkLen + nameLen + extLen);
 
         assembly {
@@ -69,11 +74,11 @@ contract DeployUtils is Script {
             }
 
             let offset := 32
-            mstore8(add(res, offset), 46)
+            mstore8(add(res, offset), 46) // '.'
             offset := add(offset, 1)
-            memcpy(add(res, offset), add(network, 32), 8)
+            memcpy(add(res, offset), add(network, 32), networkLen)
             offset := add(offset, networkLen)
-            mstore8(add(res, offset), 46)
+            mstore8(add(res, offset), 46) // '.'
             offset := add(offset, 1)
             memcpy(add(res, offset), add(name, 32), nameLen)
             offset := add(offset, nameLen)
@@ -119,7 +124,7 @@ contract DeployScript is Script {
 
     function run() public {
         vm.startBroadcast();
-        
+
         // Get existing CodeJar, if it exists
         CodeJar codeJar = CodeJar(deployUtils.findExisting("CodeJar"));
         if (codeJar == CodeJar(address(0))) {
@@ -131,29 +136,42 @@ contract DeployScript is Script {
             console.log("CodeJar at %s", address(codeJar));
         }
 
-        // Get existing Manifest, if it exists
-        Manifest manifest = Manifest(deployUtils.findExisting("Manifest"));
-        if (manifest == Manifest(address(0))) {
-            console.log("Deploying new Manifest...");
-            manifest = new Manifest(codeJar);
-            console.log("Manifest deployed to %s", address(manifest));
-            deployUtils.save("Manifest", address(manifest), type(Manifest).creationCode);
-        } else {
-            console.log("Manifest at %s", address(manifest));
-        }
-
         // Always deploy new Relayer
-        Relayer relayer = Relayer(
-            payable(manifest.deploy(
-                type(RelayerKafka).creationCode,
-                abi.encode(codeJar),
-                "quark-alpha", // TODO: Get from env
-                bytes32(uint256(0x1))))); // TODO: Get from env
-
-        deployUtils.save("Relayer", address(relayer), type(RelayerKafka).creationCode);
+        Relayer relayer = new RelayerAtomic(codeJar);
+        deployUtils.save("Relayer", address(relayer), type(RelayerAtomicManifest).creationCode);
 
         console.log("Deployed Relayer to %s", address(relayer));
 
         vm.stopBroadcast();
+    }
+}
+
+contract CreateCoreScripts is Script {
+    error NoCodeJar();
+
+    DeployUtils deployUtils;
+
+    function setUp() public {
+        deployUtils = new DeployUtils();
+    }
+
+    function createScript(CodeJar codeJar, string memory name, bytes memory quarkCode) internal {
+        if (codeJar.codeExists(quarkCode)) {
+            console.log("Script %s already exists.", name);
+        } else {
+            console.log("Creating core script %s...", name);
+        }
+    }
+
+    function run() public {
+        vm.startBroadcast();
+
+        // Get existing CodeJar, if it exists
+        CodeJar codeJar = CodeJar(deployUtils.findExisting("CodeJar"));
+        if (codeJar == CodeJar(address(0))) {
+            revert NoCodeJar();
+        }
+
+        createScript(codeJar, "Ethcall", type(Ethcall).runtimeCode);
     }
 }

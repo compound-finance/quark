@@ -10,8 +10,6 @@ interface KafkaDestructableQuark {
 }
 
 contract RelayerKafka is Relayer {
-    CodeJar public immutable codeJar;
-
     error QuarkAlreadyActive(address quark);
     error QuarkNotActive(address quark);
     error QuarkInvalid(address quark, bytes32 isQuarkScriptHash);
@@ -21,13 +19,7 @@ contract RelayerKafka is Relayer {
 
     mapping(address => address) public quarkCodes;
 
-    constructor() {
-        address codeJar_ = abi.decode(msg.data, (address));
-        if (codeJar_ == address(0)) {
-            codeJar_ = address(new CodeJar());
-        }
-        codeJar = CodeJar(codeJar_);
-    }
+    constructor(CodeJar codeJar_) Relayer(codeJar_) {}
 
     /**
      * @notice Helper function to return a quark address for a given account.
@@ -152,4 +144,8 @@ contract RelayerKafka is Relayer {
         // We return the result from the call, but it's not particularly important.
         return res;
     }
+}
+
+contract RelayerKafkaManifest is RelayerKafka {
+    constructor() RelayerKafka(abi.decode(msg.data, (CodeJar))) {}
 }

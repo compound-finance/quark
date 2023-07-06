@@ -7,7 +7,9 @@ import "forge-std/console.sol";
 import "./lib/YulHelper.sol";
 import "./lib/Counter.sol";
 import "./lib/CounterScript.sol";
+import "./lib/Invariant.sol";
 
+import "../src/CodeJar.sol";
 import "../src/Relayer.sol";
 import "../src/RelayerAtomic.sol";
 
@@ -16,6 +18,7 @@ contract QuarkTest is Test {
 
     Relayer public relayer;
     Counter public counter;
+    CodeJar public codeJar;
 
     uint256 internal accountPrivateKey;
     uint256 internal searcherPrivateKey;
@@ -24,7 +27,10 @@ contract QuarkTest is Test {
     address internal searcher;
 
     constructor() {
-        relayer = new RelayerAtomic(CodeJar(address(0)));
+        codeJar = new CodeJar();
+        console.log("CodeJar deployed to: %s", address(codeJar));
+
+        relayer = new RelayerAtomic(codeJar);
         console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();
@@ -103,6 +109,37 @@ contract QuarkTest is Test {
         bytes memory data = relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
         assertEq(data, abi.encode());
         assertEq(counter.number(), 2);
+    }
+
+    function testAtomicCounterScriptWithInvariant() public {
+        bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
+
+        assertEq(counter.number(), 0);
+
+        vm.prank(address(0xaa));
+        relayer.setInvariant(type(CounterInvariant).runtimeCode, abi.encode(address(counter), 5), 0, address(0));
+
+        vm.prank(address(0xaa));
+        bytes memory data = relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
+        assertEq(data, abi.encode(hex""));
+        assertEq(counter.number(), 2);
+
+        vm.prank(address(0xaa));
+        relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
+        assertEq(counter.number(), 4);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Relayer.InvariantFailed.selector,
+                address(0xaa),
+                relayer.invariants(address(0xaa)),
+                abi.encode(address(counter), 5),
+                abi.encodeWithSelector(CounterInvariant.CounterTooHigh.selector, 6, 5)
+        ));
+
+        vm.prank(address(0xaa));
+        relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
+        assertEq(counter.number(), 4);
     }
 
     function testAtomicDirectIncrementer() public {

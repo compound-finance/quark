@@ -2,12 +2,50 @@
 pragma solidity ^0.8.19;
 
 contract CodeJar {
-  error CodeSaveFailed(bytes initCode);
-  error CodeSaveMismatch(bytes initCode, bytes code, address expected, address created);
-  error CodeTooLarge(uint256 sz);
-  error CodeNotFound(address codeAddress);
+    error CodeSaveFailed(bytes initCode);
+    error CodeSaveMismatch(bytes initCode, bytes code, address expected, address created);
+    error CodeTooLarge(uint256 sz);
+    error CodeNotFound(address codeAddress);
 
-  function saveCode(bytes memory code) external returns (address) {
+    /**
+     * @notice Saves the code to the code jar, if it doesn't already exist
+     * @dev This calls it meant to be idemponent and fairly inexpensive on a second call.
+     * @return The address of the contract that matches the inputted code.
+     */
+    function saveCode(bytes calldata code) external returns (address) {
+        (address codeAddress, uint256 codeAddressLen, bytes memory initCode, uint256 initCodeLen) = getInitCode(code);
+
+        if (codeAddressLen == 0) {
+            address codeCreateAddress;
+            assembly {
+                codeCreateAddress := create2(0, add(initCode, 32), initCodeLen, 0)
+            }
+
+            // Ensure that the wallet was created.
+            if (uint160(address(codeCreateAddress)) == 0) {
+                revert CodeSaveFailed(initCode);
+            }
+
+            if (codeCreateAddress != codeAddress) {
+                revert CodeSaveMismatch(initCode, code, codeAddress, codeCreateAddress);
+            }
+        }
+
+        return codeAddress;
+    }
+
+    /**
+     * @notice Checks if code already exists in the code jar
+     * @return True if code already exists in code jar
+     */
+    function codeExists(bytes calldata code) external returns (bool) {
+        (address codeAddress, uint256 codeAddressLen, bytes memory initCode, uint256 initCodeLen) = getInitCode(code);
+
+        return codeAddressLen > 0;
+    }
+
+    // Helper to get the init code and check if the code exists already.
+    function getInitCode(bytes memory code) internal returns (address, uint256, bytes memory, uint256) {
         /**
          * 0000    63XXXXXXXX  PUSH4 XXXXXXXX // code size
          * 0005    80          DUP1
@@ -19,7 +57,7 @@ contract CodeJar {
          */
         uint32 initCodeBaseSz = uint32(0x0e); // 0x630000000080600e6000396000f3
         if (code.length > type(uint32).max) {
-            revert CodeTooLarge(code.length);
+                revert CodeTooLarge(code.length);
         }
         uint32 codeSz = uint32(code.length);
         uint256 initCodeLen = initCodeBaseSz + codeSz;
@@ -50,15 +88,15 @@ contract CodeJar {
             }
 
             function copy4(dst, v) {
-              if gt(v, 0xffffffff) {
-                // operand too large
-                revert(0, 0)
-              }
+                if gt(v, 0xffffffff) {
+                    // operand too large
+                    revert(0, 0)
+                }
 
-              mstore8(add(dst, 0), byte(28, v))
-              mstore8(add(dst, 1), byte(29, v))
-              mstore8(add(dst, 2), byte(30, v))
-              mstore8(add(dst, 3), byte(31, v))
+                mstore8(add(dst, 0), byte(28, v))
+                mstore8(add(dst, 1), byte(29, v))
+                mstore8(add(dst, 2), byte(30, v))
+                mstore8(add(dst, 3), byte(31, v))
             }
 
             let initCodeOffset := add(initCode, 0x20)
@@ -83,27 +121,14 @@ contract CodeJar {
             codeAddressLen := extcodesize(codeAddress)
         }
 
-        if (codeAddressLen == 0) {
-            address codeCreateAddress;
-            assembly {
-                codeCreateAddress := create2(0, add(initCode, 32), initCodeLen, 0)
-            }
-            // Ensure that the wallet was created.
-            if (uint160(address(codeCreateAddress)) == 0) {
-                revert CodeSaveFailed(initCode);
-            }
-            if (codeCreateAddress != codeAddress) {
-                revert CodeSaveMismatch(initCode, code, codeAddress, codeCreateAddress);
-            }
-        }
-
-        return codeAddress;
+        return (codeAddress, codeAddressLen, initCode, initCodeLen);
     }
 
     /**
-     * @notice Returns the code associated with a running quark for `msg.sender`
-     * @dev This is generally expected to be used only by the Quark wallet itself
-     *      in the constructor phase to get its code.
+     * @notice Reads the given code from the code jar
+     * @dev This simply is an extcodecopy from the address. Reverts if code doesn't exist.
+     * @dev This does not check that the address was created by this contract, and thus
+     *      will read any contract.
      */
     function readCode(address codeAddress) external view returns (bytes memory) {
         uint256 codeLen;
@@ -112,13 +137,15 @@ contract CodeJar {
         }
 
         if (codeLen == 0) {
-          revert CodeNotFound(codeAddress);
+            revert CodeNotFound(codeAddress);
         }
 
         bytes memory code = new bytes(codeLen);
         assembly {
             extcodecopy(codeAddress, add(code, 0x20), 0, codeLen)
         }
+
+        // TODO: Check that the code was created by this code jar?
 
         return code;
     }

@@ -7,7 +7,9 @@ import "forge-std/console.sol";
 import "./lib/YulHelper.sol";
 import "./lib/Counter.sol";
 import "./lib/CounterScript.sol";
+import "./lib/Invariant.sol";
 
+import "../src/CodeJar.sol";
 import "../src/Relayer.sol";
 import "../src/RelayerKafka.sol";
 
@@ -16,6 +18,7 @@ contract QuarkTest is Test {
 
     Relayer public relayer;
     Counter public counter;
+    CodeJar public codeJar;
 
     uint256 internal accountPrivateKey;
     uint256 internal searcherPrivateKey;
@@ -24,7 +27,10 @@ contract QuarkTest is Test {
     address internal searcher;
 
     constructor() {
-        relayer = new RelayerKafka();
+        codeJar = new CodeJar();
+        console.log("CodeJar deployed to: %s", address(codeJar));
+
+        relayer = new RelayerKafka(codeJar);
         console.log("Relayer deployed to: %s", address(relayer));
 
         counter = new Counter();
@@ -95,7 +101,7 @@ contract QuarkTest is Test {
 
         vm.prank(address(0xaa));
         bytes memory data = relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
-        assertEq(data, abi.encode());
+        assertEq(data, abi.encode(hex""));
         assertEq(counter.number(), 2);
     }
 

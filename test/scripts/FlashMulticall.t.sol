@@ -11,6 +11,7 @@ import "../lib/Counter.sol";
 import "../lib/MockPool.sol";
 
 import "../../src/core_scripts/FlashMulticall.sol";
+import "../../src/CodeJar.sol";
 import "../../src/Relayer.sol";
 import "../../src/RelayerKafka.sol";
 
@@ -20,9 +21,13 @@ contract FlashMulticallTest is Test {
     ERC20Mock public token0;
     ERC20Mock public token1;
     MockPool public pool;
+    CodeJar public codeJar;
 
     constructor() {
-        relayerKafka = new RelayerKafka();
+        codeJar = new CodeJar();
+        console.log("CodeJar deployed to: %s", address(codeJar));
+
+        relayerKafka = new RelayerKafka(codeJar);
         console.log("Relayer kafka deployed to: %s", address(relayerKafka));
 
         counter = new Counter();

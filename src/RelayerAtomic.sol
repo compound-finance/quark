@@ -3,11 +3,8 @@ pragma solidity ^0.8.19;
 
 import "./Relayer.sol";
 import "./QuarkScript.sol";
-import "./CodeJar.sol";
 
 contract RelayerAtomic is Relayer {
-    CodeJar public immutable codeJar;
-
     error QuarkAlreadyActive(address quark);
     error QuarkNotActive(address quark);
     error QuarkInvalid(address quark, bytes32 isQuarkScriptHash);
@@ -17,12 +14,7 @@ contract RelayerAtomic is Relayer {
 
     mapping(address => address) public quarkCodes;
 
-    constructor(CodeJar codeJar_) {
-        if (codeJar_ == CodeJar(address(0))) {
-            codeJar_ = new CodeJar();
-        }
-        codeJar = codeJar_;
-    }
+    constructor(CodeJar codeJar_) Relayer(codeJar_) {}
 
     /**
      * @notice Helper function to return a quark address for a given account.

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "./QuarkScript.sol";
+import "./CodeJar.sol";
 
 struct TrxScript {
     address account;
@@ -12,6 +13,10 @@ struct TrxScript {
     uint256 expiry;
 }
 
+interface Invariant {
+    function check(address account, bytes calldata data) external view;
+}
+
 abstract contract Relayer {
     error BadSignatory();
     error InvalidValueS();
@@ -19,8 +24,21 @@ abstract contract Relayer {
     error SignatureExpired();
     error NonceReplay(uint256 nonce);
     error NonceMissingReq(uint32 req);
+    error InvariantFailed(address account, address invariant, bytes invariantData, bytes error);
+    error InvariantUnauthorized(address account, address sender, address controller);
+    error InvariantTimelocked(address account, uint256 expiry);
 
-    mapping(address => mapping(uint256 => uint256)) nonces;
+    CodeJar public immutable codeJar;
+
+    mapping(address => mapping(uint256 => uint256)) public nonces;
+    mapping(address => Invariant) public invariants;
+    mapping(address => address) public invariantDataAddresses;
+    mapping(address => uint256) public invariantTimelockExpiries;
+    mapping(address => address) public invariantControllers;
+
+    constructor(CodeJar codeJar_) {
+        codeJar = codeJar_;
+    }
 
     /// @notice The major version of this contract
     string public constant version = "0";
@@ -119,7 +137,7 @@ abstract contract Relayer {
         checkReqs(account, reqs);
         trySetNonce(account, nonce);
 
-        return _runQuark(account, trxScript, trxCalldata);
+        return _doRunQuark(account, trxScript, trxCalldata);
     }
 
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
@@ -145,7 +163,7 @@ abstract contract Relayer {
      * an alias to this function.
      */
     function runQuark(bytes calldata quarkCode) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, hex"");
+        return _doRunQuark(msg.sender, quarkCode, hex"");
     }
 
     /**
@@ -154,19 +172,78 @@ abstract contract Relayer {
      * be passed to the Quark script on its invocation.
      */
     function runQuark(bytes calldata quarkCode, bytes calldata quarkCalldata) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, quarkCalldata);
+        return _doRunQuark(msg.sender, quarkCode, quarkCalldata);
     }
-
-    // Internal function for running a quark. This handles the `create2`, invoking the script,
-    // and then calling `destruct` to clean it up. We attempt to revert on any failed step.
-    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata) internal virtual returns (bytes memory);
 
     /***
      * @notice Runs a given quark script, if valid, from the current sender.
      */
     fallback(bytes calldata quarkCode) external payable returns (bytes memory) {
-        return _runQuark(msg.sender, quarkCode, hex"");
+        return _doRunQuark(msg.sender, quarkCode, hex"");
     }
+
+    /**
+     * @notice Set an invariant for your account.
+     */
+    function setInvariant(bytes calldata invariantCode, bytes memory invariantData, uint256 invariantTimelockExpiry, address invariantController) external {
+        address account = msg.sender;
+        uint256 invariantTimelockExpiryCurrent = invariantTimelockExpiries[account];
+        if (invariantTimelockExpiryCurrent != 0 && block.timestamp <= invariantTimelockExpiryCurrent) {
+            revert InvariantTimelocked(account, invariantTimelockExpiryCurrent);
+        }
+
+        // TODO: Limit expiry?
+
+        invariants[account] = Invariant(codeJar.saveCode(invariantCode));
+        invariantDataAddresses[account] = codeJar.saveCode(invariantData);
+        invariantTimelockExpiries[account] = invariantTimelockExpiry;
+        invariantControllers[account] = invariantController;
+
+        // Make sure invariant holds initially
+        checkInvariant(account);
+    }
+
+    /**
+     * @notice Set an invariant for an account as the invariant controller.
+     */
+    function setInvariantByController(address account, bytes calldata invariantCode, bytes memory invariantData) external {
+        if (invariantControllers[account] != msg.sender) {
+            revert InvariantUnauthorized(account, msg.sender, invariantControllers[account]);
+        }
+
+        invariants[account] = Invariant(codeJar.saveCode(invariantCode));
+        invariantDataAddresses[account] = codeJar.saveCode(invariantData);
+
+        // Make sure invariant holds initially
+        checkInvariant(account);
+    }
+
+    // Internal function for running a quark. This handles the `create2`, invoking the script,
+    // and then calling `destruct` to clean it up. We attempt to revert on any failed step.
+    function _doRunQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata) internal returns (bytes memory) {
+        bytes memory resData = _runQuark(account, quarkCode, quarkCalldata);
+        checkInvariant(account);
+        assembly {
+            log1(0, 0, 0xDEADBEEF)
+        }
+        return resData;
+    }
+
+    function checkInvariant(address account) public view {
+        if (address(invariants[account]) != address(0)) {
+            bytes memory invariantData = codeJar.readCode(invariantDataAddresses[account]);
+            bytes memory checkCall = abi.encodeCall(Invariant.check, (account, invariantData));
+            (bool success, bytes memory returnData) = address(invariants[account]).staticcall(checkCall);
+            if (!success) {
+                revert InvariantFailed(account, address(invariants[account]), invariantData, returnData);
+            }
+            // Note: if success, we don't check the return value at all
+        }
+    }
+
+    // Internal function for running a quark. This handles the `create2`, invoking the script,
+    // and then calling `destruct` to clean it up. We attempt to revert on any failed step.
+    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata) internal virtual returns (bytes memory);
 
     /***
      * @notice Revert given empty call.

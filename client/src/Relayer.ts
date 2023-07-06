@@ -3,6 +3,16 @@ import { Signer } from '@ethersproject/abstract-signer';
 import { Provider } from '@ethersproject/abstract-provider';
 import { abi as relayerAbi } from '../../out/Relayer.sol/Relayer.json'
 import { Fragment, JsonFragment } from '@ethersproject/abi';
+import * as deployments from '../../deployments.json';
+
+let deploymentsLocal;
+try {
+  deploymentsLocal = import('../../deployments.local.json');
+  // Override with any local settings
+  for (let [n, v] of Object.entries(deploymentsLocal)) {
+    (deployments as any)[n] = v;
+  }
+} catch (e) {}
 
 const networks: { [chainId: number]: string } = {
   1: 'mainnet',
@@ -26,17 +36,26 @@ export function getNetwork(chainIdOrNetwork: number | string) : string {
 }
 
 export const relayers: { [version: number]: { [network: string]: string } } = {
-  1: {
-    'goerli': '0x304Ff25957ccD661637199Aa6C7f2B2fE78ac7Cd',
-    'optimism-goerli': '0x66ca95f4ed181c126acbd5aad21767b20d6ad7da',
-    'arbitrum-goerli': '0xdde0bf030f2ffceae76817f2da0a14b1e9a87041',
-    'arbitrum': '0xcc3b9A2510f828c952e67C024C3dE60839Aca842', // local change
-    'mainnet': '0x687bB6c57915aa2529EfC7D2a26668855e022fAE' // local change
-  }
-}
+  1:
+    Object.fromEntries(
+      Object
+        .entries(deployments)
+        .filter(([n, v]) => 'Relayer' in v && v['Relayer'] !== null)
+        .map(([n, v]) => [n, v['Relayer']])
+    )
+};
 
 export const abi: { [version: number]: ReadonlyArray<Fragment | JsonFragment | string> } = {
   1: relayerAbi
+};
+
+export const initCodes: { [version: number]: { [network: string]: string } } = {
+  1: Object.fromEntries(
+      Object
+        .entries(deployments)
+        .filter(([n, v]) => 'RelayerBytecode' in v && v['RelayerBytecode'] !== null)
+        .map(([n, v]) => [n, v['RelayerBytecode']])
+    )
 };
 
 export async function getRelayer(signerOrProvider: Signer | Provider): Promise<Contract> {
