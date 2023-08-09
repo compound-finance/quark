@@ -7,6 +7,7 @@ import "forge-std/console.sol";
 import "./lib/YulHelper.sol";
 import "./lib/Counter.sol";
 import "./lib/CounterScript.sol";
+import "./lib/MaxCounterScript.sol";
 import "./lib/Invariant.sol";
 
 import "../src/CodeJar.sol";
@@ -109,6 +110,35 @@ contract QuarkTest is Test {
         bytes memory data = relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
         assertEq(data, abi.encode());
         assertEq(counter.number(), 2);
+    }
+
+    function testAtomicMaxCounterScript() public {
+        bytes memory counterScript = new YulHelper().getDeployed("MaxCounterScript.sol/MaxCounterScript.json");
+
+        assertEq(counter.number(), 0);
+
+        vm.prank(address(0xaa));
+        bytes memory data = relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
+        assertEq(counter.number(), 1);
+
+        vm.prank(address(0xaa));
+        relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
+        assertEq(counter.number(), 2);
+
+        vm.prank(address(0xaa));
+        relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
+        assertEq(counter.number(), 3);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                RelayerAtomic.QuarkCallFailed.selector,
+                relayer.getQuarkAddress(address(0xaa)),
+                abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector)
+        ));
+
+        vm.prank(address(0xaa));
+        relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
+        assertEq(counter.number(), 3);
     }
 
     function testAtomicCounterScriptWithInvariant() public {
