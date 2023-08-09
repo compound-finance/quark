@@ -55,7 +55,7 @@ abstract contract Relayer {
     uint internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
 
     // Sets a nonce if it's unset, otherwise reverts with `NonceReplay`.
-    function trySetNonce(address account, uint32 nonce) internal {
+    function trySetNonce(address account, uint32 nonce, bool replayable) internal {
         uint32 nonceIndex = nonce / 256;
         uint32 nonceOffset = nonce - ( nonceIndex * 256 );
         uint256 nonceBit = (2 << nonceOffset);
@@ -64,7 +64,9 @@ abstract contract Relayer {
         if (nonceChunk & nonceBit > 0) {
             revert NonceReplay(nonce);
         }
-        nonces[account][nonceIndex] |= nonceBit;
+        if (!replayable) {
+            nonces[account][nonceIndex] |= nonceBit;
+        }
     }
 
     // Returns whether a given nonce has been committed already.
@@ -135,7 +137,7 @@ abstract contract Relayer {
         if (block.timestamp >= expiry) revert SignatureExpired();
 
         checkReqs(account, reqs);
-        trySetNonce(account, nonce);
+        trySetNonce(account, nonce, expiry == type(uint256).max);
 
         return _doRunQuark(account, trxScript, trxCalldata);
     }
