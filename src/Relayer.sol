@@ -13,6 +13,12 @@ struct TrxScript {
     uint256 expiry;
 }
 
+struct Signature {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+}
+
 interface Invariant {
     function check(address account, bytes calldata data) external view;
 }
@@ -21,6 +27,7 @@ abstract contract Relayer {
     error BadSignatory();
     error InvalidValueS();
     error InvalidValueV();
+    error InvalidSignature();
     error SignatureExpired();
     error NonceReplay(uint256 nonce);
     error NonceMissingReq(uint32 req);
@@ -90,7 +97,7 @@ abstract contract Relayer {
         }
     }
 
-    function checkSignature(
+    function getSignatory(
         address account,
         uint32 nonce,
         uint32[] calldata reqs,
@@ -100,7 +107,7 @@ abstract contract Relayer {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) internal view {
+    ) internal view returns (address) {
         if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         if (v != 27 && v != 28) revert InvalidValueV();
@@ -108,7 +115,58 @@ abstract contract Relayer {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
         address signatory = ecrecover(digest, v, r, s);
         if (signatory == address(0)) revert BadSignatory();
-        if (account != signatory) revert BadSignatory();
+        return signatory;
+    }
+
+    function verifySignatureSet(
+        address account,
+        uint32 nonce,
+        uint32[] calldata reqs,
+        bytes calldata trxScript,
+        bytes calldata trxCalldata,
+        uint256 expiry,
+        Signature[] memory signatures
+    ) internal {
+        if (signatures.length == 0) {
+            revert InvalidSignature();
+        }
+        uint160 derived = uint160(0);
+        for (uint i = 0; i < signatures.length; i++) {
+            address signatory = getSignatory(account, nonce, reqs, trxScript, trxCalldata, expiry, signatures[i].v, signatures[i].r, signatures[i].s);
+            unchecked {
+                derived += uint160(signatory);
+            }
+        }
+        if (address(derived) != account) {
+            revert BadSignatory();
+        }
+    }
+
+    /**
+     * @notice Runs a quark script
+     * @param account The owner account (that is, EOA, not the quark address)
+     * @param nonce The next expected nonce value for the signatory
+     * @param reqs List of previous nonces that must first be incorporated
+     * @param expiry The expiration time of this
+     * @param trxScript The transaction script to run
+     * @param signatures The set of signatures representing the account owner
+     */
+    function runTrxScriptSet(
+        address account,
+        uint32 nonce,
+        uint32[] calldata reqs,
+        bytes calldata trxScript,
+        bytes calldata trxCalldata,
+        uint256 expiry,
+        Signature[] memory signatures
+    ) public returns (bytes memory) {
+        verifySignatureSet(account, nonce, reqs, trxScript, trxCalldata, expiry, signatures);
+        if (block.timestamp >= expiry) revert SignatureExpired();
+
+        checkReqs(account, reqs);
+        trySetNonce(account, nonce, expiry == type(uint256).max);
+
+        return _doRunQuark(account, trxScript, trxCalldata);
     }
 
     /**
@@ -133,13 +191,13 @@ abstract contract Relayer {
         bytes32 r,
         bytes32 s
     ) external returns (bytes memory) {
-        checkSignature(account, nonce, reqs, trxScript, trxCalldata, expiry, v, r, s);
-        if (block.timestamp >= expiry) revert SignatureExpired();
-
-        checkReqs(account, reqs);
-        trySetNonce(account, nonce, expiry == type(uint256).max);
-
-        return _doRunQuark(account, trxScript, trxCalldata);
+        Signature[] memory signatures = new Signature[](1);
+        signatures[0] = Signature({
+            v: v,
+            r: r,
+            s: s
+        });
+        return runTrxScriptSet(account, nonce, reqs, trxScript, trxCalldata, expiry, signatures);
     }
 
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
