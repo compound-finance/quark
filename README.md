@@ -1,7 +1,9 @@
 
 ## Quark
 
-Turn every Ethereum EOA into a smart contract wallet. Quark uses [metamorphic contracts](https://0age.medium.com/the-promise-and-the-peril-of-metamorphic-contracts-9eb8b8413c5e) to create a virtual account associated with your EOA which can send arbitrary logic with each transaction. Say you want to buy and sell two assets on Uniswap atomically: you can send that in a quark transaction without deploying a smart contract. You can then turn around and send another transaction from the same account that supplies atomically to two DeFi protocols. Quark brings the idea of "transaction scripts" to Ethereum and removes the need of using "smart contract wallets" to manage positions.
+Turn every Ethereum EOA into a smart contract wallet. Quark uses Ethereum smart contracts to create a virtual account associated with your EOA which can send arbitrary logic with each transaction. Say you want to buy and sell two assets on Uniswap atomically: you can send that in a quark transaction without deploying a smart contract. You can then turn around and send another transaction from the same account that supplies atomically to two DeFi protocols. Quark brings the idea of "transaction scripts" to Ethereum and removes the need of using "smart contract wallets" to manage positions.
+
+Quark brings additional safety by adding Invariants to your Quark account. You can set an invariant, such as: my sum of asset positions between Compound, Uniswap and Curve must be at least $X based on the current Chainlink price. After each Quark script runs, Quark will check your invariant and fail if the conditions aren't met (e.g. your balance has decreased below the threshold you set). You can update your Invariants either with a 2FA secondary wallet (think: cold storage) or with a custom timelock (i.e. the invariant is immutable for some chosen period). Invariants let you safely interact with DeFi knowing each transaction will always end with your guarantees in place.
 
 ## How it works
 
@@ -158,12 +160,31 @@ When the Relayer receives an Ethereum request it:
  * Next, we deploy a script at the user's Quark address which simply `delegatecall`s to the script in the code jar.
  * We invoke that script with the given calldata.
  * We invoke a special invocation to the Quark address to force it to destruct.
+ * Finally, if you've attached Invariants to your account, they are checked to ensure invariants still hold.
 
 The transaction script sent to the Relayer should effectively be raw EVM opcodes, e.g. `PUSH0; PUSH0; PUSH1 0x55; LOG1`. This will be the script that is invoked during the call from the relayer.
 
 Note: since that script is just a normal script, it can accept callbacks from other contracts, etc. As such, it's important that it's guarded by `relayerOnly` or other protections from inbound calls. The script can rely on the fact that storage at `keccak("org.quark.owner")` (`0x3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db8111`) is the owner (underlying wallet) and `keccak("org.quark.relayer")` (`0x46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6`) is the relayer which created this contract.
 
-Note: this currently relies on metamorphic scripts, but it's really not that crucial to the design at this point and may be replaced with a simpler mechanism.
+Note: there are two versions of Quark going by "Kafka" and "Atomic" in the alpha phase. Kafka is the self-destruct flow as described above, but Atomic is similar without self destructing. In Atomic, we simply keep the code associated with your account and merely update the pointer on each invocation. There should be very little observable difference between using one approach or the other, and they are both being evaluated.
+
+### Deploying
+
+To deploy Quark to a network, use the `DeployScript` forge script, e.g.
+
+```sh
+forge script script/Deploy.s.sol:DeployScript --rpc-url http://localhost:8545 --broadcast --interactive
+```
+
+This will deploy Quark to your chosen network, including `CodeJar` and `Manifest`. The output will be written to `deployments.json` (or `deployments.local.json` if you are using a local Anvil server).
+
+You may also wish to create the core scripts, to help save gas for first-time usage of these scripts via:
+
+```sh
+forge script script/Deploy.s.sol:CreateCoreScripts --rpc-url http://localhost:8545 --broadcast --interactive
+```
+
+You can also use `./script/deploy.sh {network} --broadcast`.
 
 ## Copyright
 

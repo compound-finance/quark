@@ -1,9 +1,0 @@
-
-Manifest:
-  - deploy(bytes callata initCode, string name, bytes32 version)
-  - deploy(bytes callata initCode, string name, bytes32 version, address account)
-  - deployBySig(bytes callata initCode, bytes32 version, account, v, r, s)
-
-Deploy (et al) require that you own or have access to "name" in ENS. E.g. `comet.compound-labs.eth` would be allowed IFF the sender has access to `comet.compound-labs.eth` in ENS.
-
-However, a key concept is that (`comet.compound-labs.eth`, "1") will always resolve to a predetermined address. This is crucial

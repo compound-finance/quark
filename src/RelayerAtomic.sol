@@ -3,13 +3,8 @@ pragma solidity ^0.8.19;
 
 import "./Relayer.sol";
 import "./QuarkScript.sol";
-import "./CodeJar.sol";
 
-interface KafkaDestructableQuark {
-    function destruct() external;
-}
-
-contract RelayerKafka is Relayer {
+contract RelayerAtomic is Relayer {
     error QuarkAlreadyActive(address quark);
     error QuarkNotActive(address quark);
     error QuarkInvalid(address quark, bytes32 isQuarkScriptHash);
@@ -50,7 +45,7 @@ contract RelayerKafka is Relayer {
      *      build that code, take the outputed bytecode and paste it in here.
      */
     function getQuarkInitCode() public override pure returns (bytes memory) {
-        return hex"604060b180610066600039338152602081016020601f193801823951337f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6557f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811155016000f3fe6000604038603f190182396020816004818080518551632b68b9c6833560e01c14823314166065575b5063665f107960e01b82525af11560565780808051368280378136915af43d82803e156052573d90f35b3d90fd5b633c5bb1a760e21b8152600490fd5b827f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f655827f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811155ff38602856";
+        return hex"6040604f806065600039338152602081016020601f193801823951337f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6557f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811155016000f3fe6000604038603f1901823960208160048180805163665f107960e01b82525af11560405780808051368280378136915af43d82803e15603c573d90f35b3d90fd5b633c5bb1a760e21b8152600490fd";
     }
 
     // Saves quark code for an quark address into storage. This is required
@@ -103,30 +98,30 @@ contract RelayerKafka is Relayer {
 
         uint256 initCodeLen = initCode.length;
 
-        // The call to `create2` that creates the (temporary) quark wallet.
-        KafkaDestructableQuark quark;
+        uint256 existingQuarkSize;
 
         assembly {
-            quark := create2(0, add(initCode, 32), initCodeLen, 0)
+            existingQuarkSize := extcodesize(quarkAddress)
         }
 
-        // Ensure that the wallet was created.
-        if (uint160(address(quark)) == 0) {
-            revert QuarkInitFailed(quarkAddress, true);
-        }
+        address quark;
+        if (existingQuarkSize > 0) {
+            quark = quarkAddress;
+        } else {
+            // The call to `create2` that creates the (temporary) quark wallet.
 
-        if (quarkAddress != address(quark)) {
-            revert QuarkAddressMismatch(quarkAddress, address(quark));
-        }
+            assembly {
+                quark := create2(0, add(initCode, 32), initCodeLen, 0)
+            }
 
-        // Double ensure it was created by making sure it has code associated with it.
-        // TODO: Do we need this double check there's code here?
-        uint256 quarkCodeLen;
-        assembly {
-            quarkCodeLen := extcodesize(quark)
-        }
-        if (quarkCodeLen == 0) {
-            revert QuarkInitFailed(quarkAddress, false);
+            // Ensure that the wallet was created.
+            if (uint160(address(quark)) == 0) {
+                revert QuarkInitFailed(quarkAddress, true);
+            }
+
+            if (quarkAddress != address(quark)) {
+                revert QuarkAddressMismatch(quarkAddress, address(quark));
+            }
         }
 
         // Call into the new quark wallet with a (potentially empty) message to hit the fallback function.
@@ -135,10 +130,6 @@ contract RelayerKafka is Relayer {
             revert QuarkCallFailed(quarkAddress, res);
         }
 
-        // TOOD: Curious what the return value here is, since it destructs but
-        //       returns "ok"
-        quark.destruct();
-
         clearQuark(quarkAddress);
 
         // We return the result from the call, but it's not particularly important.
@@ -146,6 +137,6 @@ contract RelayerKafka is Relayer {
     }
 }
 
-contract RelayerKafkaManifest is RelayerKafka {
-    constructor() RelayerKafka(abi.decode(msg.data, (CodeJar))) {}
+contract RelayerAtomicManifest is RelayerAtomic {
+    constructor() RelayerAtomic(abi.decode(msg.data, (CodeJar))) {}
 }

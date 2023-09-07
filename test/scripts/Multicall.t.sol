@@ -8,15 +8,20 @@ import "../lib/YulHelper.sol";
 import "../lib/Counter.sol";
 
 import "../../src/core_scripts/Multicall.sol";
+import "../../src/CodeJar.sol";
 import "../../src/Relayer.sol";
 import "../../src/RelayerKafka.sol";
 
 contract MulticallTest is Test {
     Relayer public relayerKafka;
     Counter public counter;
+    CodeJar public codeJar;
 
     constructor() {
-        relayerKafka = new RelayerKafka(CodeJar(address(0)));
+        codeJar = new CodeJar();
+        console.log("CodeJar deployed to: %s", address(codeJar));
+
+        relayerKafka = new RelayerKafka(codeJar);
         console.log("Relayer kafka deployed to: %s", address(relayerKafka));
 
         counter = new Counter();
