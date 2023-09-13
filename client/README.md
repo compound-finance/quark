@@ -156,7 +156,7 @@ import * as cUSDCv3 from '@compound-finance/quark/builtins/comet/arbitrum';
 import * as solc from 'solc';
 
 let action = Quark.pipeline([
-  pipe(Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address), (bal) => [
+  Quark.pipe(Erc20.balanceOf(cUSDCv3.underlying, cUSDCv3.address), (bal) => [
     Erc20.approve(cUSDCv3.underlying, cUSDCv3.address, bal),
     cUSDCv3.supply(cUSDCv3.underlying, bal),
   ])
@@ -191,7 +191,7 @@ You can also wrap Ethers calls as a pipeline action via `invoke`. Note: you cann
 
 ```js
 import * as Quark from '@compound-finance/quark';
-import { invoke, readUint256 } from '@compound-finance/quark';
+import { pipe, invoke, readUint256 } from '@compound-finance/quark';
 import * as cUSDCv3 from '@compound-finance/quark/builtins/comet/arbitrum';
 
 let usdc = new ethers.Contract("0x...", [

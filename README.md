@@ -113,7 +113,7 @@ let tx = await Quark.runTrxScript(provider, signedTrxScript);
 
 You can easily run a searcher, which accepts signed transaction scripts and submits them to the blockchain if and only if you make a profit from the transaction. Specifically, the transaction script you submit must send you (`tx.origin` at least the gas cost in Ether of the transaction plus some base fee you charge). This is easily accomplished from Quark scripts as they can run any EVM code. The `Multicall` Quark Script has a special address which is replaced by `tx.origin`, thus you may submit a script such as:
 
-```
+```js
 let signedTrxScript = await multicallSign({
   signer,
   chainId,
