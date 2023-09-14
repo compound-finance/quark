@@ -159,6 +159,13 @@ abstract contract Relayer {
     function getQuarkInitCode() public virtual pure returns (bytes memory);
 
     /**
+     * @notice Returns the code associated with a running quark for `msg.sender`
+     * @dev This is generally expected to be used only by the Quark wallet itself
+     *      in the constructor phase to get its code.
+     */
+    function readQuarkCodeAddress() external virtual view returns (address);
+
+    /**
      * Run a quark script from a given account. Note: can also use fallback, which is
      * an alias to this function.
      */

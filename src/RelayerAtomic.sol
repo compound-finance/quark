@@ -60,7 +60,7 @@ contract RelayerAtomic is Relayer {
      * @dev This is generally expected to be used only by the Quark wallet itself
      *      in the constructor phase to get its code.
      */
-    function readQuarkCodeAddress() external view returns (address) {
+    function readQuarkCodeAddress() override external view returns (address) {
         address quarkAddress = msg.sender;
         address quarkCodeAddress = quarkCodes[quarkAddress];
         if (quarkCodeAddress == address(0)) {
