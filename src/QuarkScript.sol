@@ -20,9 +20,32 @@ contract QuarkScript {
         return relayer_;
     }
 
+    function sloadU256(string memory key) internal view returns (uint256) {
+        return uint256(sload(key));
+    }
+
+    function sload(string memory key) internal view returns (bytes32) {
+        return sload(keccak256(bytes(key)));
+    }
+
+    function sload(bytes32 key) internal view returns (bytes32 res) {
+        assembly {
+            res := sload(key)
+        }
+    }
+
+    function sstoreU256(string memory key, uint256 value) internal {
+        return sstore(keccak256(bytes(key)), bytes32(value));
+    }
+
+    function sstore(bytes32 key, bytes32 value) internal {
+        assembly {
+            sstore(key, value)
+        }
+    }
+
     modifier onlyRelayer() {
         require(msg.sender == address(relayer()));
         _;
     }
-
 }
