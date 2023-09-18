@@ -152,15 +152,6 @@ abstract contract Relayer {
     function getQuarkAddress(address account) public virtual view returns (address);
 
     /**
-     * @notice The init code for a Quark wallet.
-     * @dev The actual init code for a Quark wallet, passed to `create2`. This is
-     *      the yul output from `./Quark.yul`, but it's impossible to reference
-     *      a yul object in Solidity, so we do a two phase compile where we
-     *      build that code, take the outputed bytecode and paste it in here.
-     */
-    function getQuarkInitCode() public virtual pure returns (bytes memory);
-
-    /**
      * Run a quark script from a given account. Note: can also use fallback, which is
      * an alias to this function.
      */

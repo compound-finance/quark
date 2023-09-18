@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import "./Relayer.sol";
 import "./QuarkScript.sol";
+import "./QuarkWallet.sol";
 
 contract RelayerAtomic is Relayer {
     error QuarkAlreadyActive(address quark);
@@ -28,24 +29,13 @@ contract RelayerAtomic is Relayer {
                     uint256(0),
                     keccak256(
                         abi.encodePacked(
-                            getQuarkInitCode(),
+                            type(QuarkWallet).creationCode,
                             abi.encode(account)
                         )
                     )
                 )
             )))
         );
-    }
-
-    /**
-     * @notice The init code for a Quark wallet.
-     * @dev The actual init code for a Quark wallet, passed to `create2`. This is
-     *      the yul output from `./Quark.yul`, but it's impossible to reference
-     *      a yul object in Solidity, so we do a two phase compile where we
-     *      build that code, take the outputed bytecode and paste it in here.
-     */
-    function getQuarkInitCode() public override pure returns (bytes memory) {
-        return hex"6040604f806065600039338152602081016020601f193801823951337f46ce4d9fc828e2af4f167362c7c43e310c76adc313cd8fe11e785726f972b4f6557f3bb5ebf00f3b539fbe3d28370e5631dd2bb9520dffcea6daf564f94582db811155016000f3fe6000604038603f1901823960208160048180805163665f107960e01b82525af11560405780808051368280378136915af43d82803e15603c573d90f35b3d90fd5b633c5bb1a760e21b8152600490fd";
     }
 
     // Saves quark code for an quark address into storage. This is required
@@ -89,15 +79,6 @@ contract RelayerAtomic is Relayer {
         // constructor code (see `./Quark.yul`).
         saveQuark(quarkAddress, quarkCode);
 
-        // Appends the account to the init code (the argument). This is meant to be part
-        // of the `create2` init code, so that we get a unique quark wallet per address.
-        bytes memory initCode = abi.encodePacked(
-            getQuarkInitCode(),
-            abi.encode(account)
-        );
-
-        uint256 initCodeLen = initCode.length;
-
         uint256 existingQuarkSize;
 
         assembly {
@@ -109,10 +90,7 @@ contract RelayerAtomic is Relayer {
             quark = quarkAddress;
         } else {
             // The call to `create2` that creates the (temporary) quark wallet.
-
-            assembly {
-                quark := create2(0, add(initCode, 32), initCodeLen, 0)
-            }
+            quark = address(new QuarkWallet{salt: 0}(account));
 
             // Ensure that the wallet was created.
             if (uint160(address(quark)) == 0) {
@@ -135,8 +113,4 @@ contract RelayerAtomic is Relayer {
         // We return the result from the call, but it's not particularly important.
         return res;
     }
-}
-
-contract RelayerAtomicManifest is RelayerAtomic {
-    constructor() RelayerAtomic(abi.decode(msg.data, (CodeJar))) {}
 }

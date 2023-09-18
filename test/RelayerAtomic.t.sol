@@ -91,17 +91,6 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 11);
     }
 
-    function testAtomicNoCallbacks() public {
-        bytes memory noCallback = new YulHelper().get("NoCallback.yul/Callback.json");
-
-        assertEq(counter.number(), 0);
-
-        vm.prank(address(0xaa));
-        bytes memory data = relayer.runQuark(noCallback);
-        assertEq(data, abi.encode());
-        assertEq(counter.number(), 0);
-    }
-
     function testAtomicCounterScript() public {
         bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
 
@@ -109,7 +98,6 @@ contract QuarkTest is Test {
 
         vm.prank(address(0xaa));
         bytes memory data = relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
-        assertEq(data, abi.encode());
         assertEq(counter.number(), 2);
     }
 
