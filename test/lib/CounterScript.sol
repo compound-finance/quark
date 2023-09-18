@@ -11,3 +11,4 @@ contract CounterScript is QuarkScript {
     return hex"";
   }
 }
+

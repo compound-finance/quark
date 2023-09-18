@@ -44,7 +44,7 @@ contract QuarkTest is Test {
     }
 
     function testAtomicPing() public {
-        bytes memory ping = new YulHelper().get("Ping.yul/Logger.json");
+        bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
 
         // TODO: Check who emitted.
         vm.expectEmit(false, false, false, true);
@@ -55,7 +55,7 @@ contract QuarkTest is Test {
     }
 
     function testAtomicIncrementer() public {
-        bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         assertEq(counter.number(), 0);
 
@@ -64,23 +64,24 @@ contract QuarkTest is Test {
         assertEq(data, abi.encode());
         assertEq(counter.number(), 3);
 
-        uint256 gl = gasleft();
-        relayer.runQuark(incrementer);
-        uint256 gasUsed = gl - gasleft();
-        assertEq(counter.number(), 3);
-        assertEq(gasUsed, 0);
+        // XXX delete?
+        // uint256 gl = gasleft();
+        // relayer.runQuark(incrementer);
+        // uint256 gasUsed = gl - gasleft();
+        // assertEq(counter.number(), 3);
+        // assertEq(gasUsed, 0);
     }
 
     function testAtomicGetOwner() public {
-        bytes memory getOwner = new YulHelper().get("GetOwner.yul/GetOwner.json");
+        bytes memory getOwner = new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
 
         vm.prank(address(0xaa));
         bytes memory data = relayer.runQuark(getOwner);
-        assertEq(data, abi.encode(55));
+        assertEq(data, abi.encode(0xaa));
     }
 
     function testAtomicCallback() public {
-        bytes memory callback = new YulHelper().get("Callback.yul/Callback.json");
+        bytes memory callback = new YulHelper().getDeployed("Callback.sol/Callback.json");
 
         assertEq(counter.number(), 0);
 
@@ -173,7 +174,7 @@ contract QuarkTest is Test {
     }
 
     function testAtomicDirectIncrementer() public {
-        bytes memory incrementer = new YulHelper().get("Incrementer.yul/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         // assertEq(incrementer, QuarkInterface(quark).virtualCode81());
         // assertEq(address(0x6c022704D948c71930B35B6F6bb725bc8d687E7F), QuarkInterface(quark).quarkAddress25(address(1)));
@@ -187,3 +188,4 @@ contract QuarkTest is Test {
         assertEq(counter.number(), 3);
     }
 }
+

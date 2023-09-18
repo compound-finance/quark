@@ -20,3 +20,4 @@ contract MaxCounterScript is QuarkScript {
     return hex"";
   }
 }
+

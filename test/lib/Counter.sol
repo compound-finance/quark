@@ -35,3 +35,4 @@ contract Counter {
         (CallbackInterface(address(msg.sender))).counterCallback(number);
     }
 }
+

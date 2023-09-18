@@ -12,9 +12,3 @@ docs/
 
 # Dotenv file
 .env
-
-# node_modules
-node_modules
-
-# local deployment info
-deployments.local.json
