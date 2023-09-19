@@ -12,7 +12,7 @@ contract QuarkWallet {
 
     error QuarkReadError();
     error QuarkCallError();
-    error QuarkBadCode();
+    error QuarkCodeNotFound();
 
     CodeJar public codeJar;
 
@@ -58,7 +58,7 @@ contract QuarkWallet {
             codeLen := extcodesize(deployedCode)
         }
         if (codeLen == 0) {
-            revert QuarkBadCode();
+            revert QuarkCodeNotFound();
         }
 
         (bool success, bytes memory result) = deployedCode.delegatecall(

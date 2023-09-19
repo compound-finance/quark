@@ -32,9 +32,9 @@ contract QuarkWalletTest is Test {
         assertEq(result, abi.encode(0xaa));
     }
 
-    function testQuarkOperationRevertsWithBadCode() public {
+    function testQuarkOperationRevertsIfCodeNotFound() public {
         address account = address(0xaa);
-        bytes memory code = abi.encode(hex"deadbeef");
+        bytes memory code = abi.encode();
 
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         QuarkWallet.QuarkOperation memory operation = QuarkWallet.QuarkOperation({
@@ -43,7 +43,7 @@ contract QuarkWalletTest is Test {
         });
 
         vm.expectRevert(abi.encodeWithSelector(
-            QuarkWallet.QuarkCallError.selector
+            QuarkWallet.QuarkCodeNotFound.selector
         ));
         bytes memory result = wallet.executeQuarkOperation(operation);
         console.logBytes(result);
