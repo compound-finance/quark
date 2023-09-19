@@ -11,7 +11,7 @@ contract QuarkWallet {
     bytes32 public constant RELAYER_SLOT = bytes32(keccak256("org.quark.relayer"));
 
     error QuarkReadError();
-    error QuarkCallError();
+    error QuarkCallError(bytes);
     error QuarkCodeNotFound();
 
     CodeJar public codeJar;
@@ -65,7 +65,7 @@ contract QuarkWallet {
             op.encodedCalldata
         );
         if (!success) {
-            revert QuarkCallError();
+            revert QuarkCallError(result);
         }
         return result;
     }
