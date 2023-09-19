@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+import "forge-std/console.sol";
+
+import "./CodeJar.sol";
+
 contract QuarkWallet {
     address public immutable owner;
     address public immutable relayer;
@@ -10,9 +14,21 @@ contract QuarkWallet {
 
     error QuarkReadError();
     error QuarkCallError();
+    error QuarkBadCode();
 
-    constructor(address _owner) {
-        owner = _owner;
+    CodeJar public codeJar;
+
+    struct QuarkOperation {
+        // TODO: optimization: allow passing in the address of the script
+        // o run, instead of the calldata for defining the script.
+        // address codeAddress;
+        bytes code;
+        bytes encodedCalldata; // selector + arguments encoded as calldata
+    }
+
+    constructor(address owner_, CodeJar codeJar_) {
+        owner = owner_;
+        codeJar = codeJar_;
         /*
          * translation note: caller() is msg.sender because origin() is
          * tx.origin, and semantically msg.sender makes more sense as
@@ -27,9 +43,34 @@ contract QuarkWallet {
          * impunity.
          */
         bytes32 slot = OWNER_SLOT;
-        assembly { sstore(slot, _owner) }
+        assembly { sstore(slot, owner_) }
         slot = RELAYER_SLOT;
         assembly { sstore(slot, caller()) }
+    }
+
+    /**
+     * @notice store or lookup the operation script and invoke it with the
+     * given encoded calldata
+     */
+    function executeQuarkOperation(QuarkOperation calldata op) public payable returns (bytes memory) {
+        address deployedCode = codeJar.saveCode(op.code);
+        uint256 codeLen;
+        assembly {
+            codeLen := extcodesize(deployedCode)
+        }
+        if (codeLen == 0) {
+            revert QuarkBadCode();
+        }
+
+        (bool success, bytes memory result) = deployedCode.delegatecall(
+            op.encodedCalldata
+        );
+        console.log(success);
+        console.logBytes(result);
+        if (!success) {
+            revert QuarkCallError();
+        }
+        return result;
     }
 
     /**

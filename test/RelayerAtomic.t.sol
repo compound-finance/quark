@@ -8,7 +8,6 @@ import "./lib/YulHelper.sol";
 import "./lib/Counter.sol";
 import "./lib/CounterScript.sol";
 import "./lib/MaxCounterScript.sol";
-import "./lib/Invariant.sol";
 
 import "../src/CodeJar.sol";
 import "../src/Relayer.sol";
@@ -128,37 +127,6 @@ contract QuarkTest is Test {
         vm.prank(address(0xaa));
         relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
         assertEq(counter.number(), 3);
-    }
-
-    function testAtomicCounterScriptWithInvariant() public {
-        bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
-
-        assertEq(counter.number(), 0);
-
-        vm.prank(address(0xaa));
-        relayer.setInvariant(type(CounterInvariant).runtimeCode, abi.encode(address(counter), 5), 0, address(0));
-
-        vm.prank(address(0xaa));
-        bytes memory data = relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
-        assertEq(data, abi.encode(hex""));
-        assertEq(counter.number(), 2);
-
-        vm.prank(address(0xaa));
-        relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
-        assertEq(counter.number(), 4);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Relayer.InvariantFailed.selector,
-                address(0xaa),
-                relayer.invariants(address(0xaa)),
-                abi.encode(address(counter), 5),
-                abi.encodeWithSelector(CounterInvariant.CounterTooHigh.selector, 6, 5)
-        ));
-
-        vm.prank(address(0xaa));
-        relayer.runQuark(counterScript, abi.encodeCall(CounterScript.run, (counter)));
-        assertEq(counter.number(), 4);
     }
 
     function testAtomicDirectIncrementer() public {

@@ -30,7 +30,8 @@ contract RelayerAtomic is Relayer {
                     keccak256(
                         abi.encodePacked(
                             type(QuarkWallet).creationCode,
-                            abi.encode(account)
+                            abi.encode(account),
+                            abi.encode(address(codeJar))
                         )
                     )
                 )
@@ -90,7 +91,7 @@ contract RelayerAtomic is Relayer {
             quark = quarkAddress;
         } else {
             // The call to `create2` that creates the (temporary) quark wallet.
-            quark = address(new QuarkWallet{salt: 0}(account));
+            quark = address(new QuarkWallet{salt: 0}(account, codeJar));
 
             // Ensure that the wallet was created.
             if (uint160(address(quark)) == 0) {
