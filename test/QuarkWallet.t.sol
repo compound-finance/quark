@@ -12,6 +12,8 @@ import "./lib/YulHelper.sol";
 import "./lib/Reverts.sol";
 
 contract QuarkWalletTest is Test {
+    event Ping(uint256);
+
     CodeJar public codeJar;
     Counter public counter;
 
@@ -68,6 +70,21 @@ contract QuarkWalletTest is Test {
             code: revertsCode,
             encodedCalldata: abi.encode()
         }));
+    }
+
+    function testAtomicPing() public {
+        bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
+        // TODO: Check who emitted.
+        address account = address(0xb0b);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        vm.expectEmit(false, false, false, true);
+        emit Ping(55);
+        wallet.executeQuarkOperation(
+          QuarkWallet.QuarkOperation({
+            code: ping,
+            encodedCalldata: abi.encode()
+          })
+        );
     }
 
     function testAtomicIncrementer() public {
