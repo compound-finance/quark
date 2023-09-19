@@ -17,9 +17,10 @@ contract QuarkWallet {
     CodeJar public codeJar;
 
     struct QuarkOperation {
-        // TODO: optimization: allow passing in the address of the script
-        // o run, instead of the calldata for defining the script.
-        // address codeAddress;
+        /* TODO: optimization: allow passing in the address of the script
+         * o run, instead of the calldata for defining the script.
+         * address codeAddress;
+         */
         bytes code;
         bytes encodedCalldata; // selector + arguments encoded as calldata
     }
