@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "forge-std/console.sol";
-
 contract CodeJar {
     error CodeSaveFailed(bytes initCode);
     error CodeSaveMismatch(bytes initCode, bytes code, address expected, address created);
@@ -16,9 +14,6 @@ contract CodeJar {
      */
     function saveCode(bytes calldata code) external returns (address) {
         (address codeAddress, uint256 codeAddressLen, bytes memory initCode, uint256 initCodeLen) = getInitCode(code);
-
-        console.log("init code");
-        console.logBytes(initCode);
 
         if (codeAddressLen == 0) {
             address codeCreateAddress;

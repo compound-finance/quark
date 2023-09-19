@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "forge-std/console.sol";
-
 import "./CodeJar.sol";
 
 contract QuarkWallet {
@@ -65,8 +63,6 @@ contract QuarkWallet {
         (bool success, bytes memory result) = deployedCode.delegatecall(
             op.encodedCalldata
         );
-        console.log(success);
-        console.logBytes(result);
         if (!success) {
             revert QuarkCallError();
         }
