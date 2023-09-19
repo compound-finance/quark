@@ -34,8 +34,7 @@ contract QuarkWalletTest is Test {
 
     function testQuarkOperationRevertsWithBadCode() public {
         address account = address(0xaa);
-        bytes memory code = abi.encode(hex"deadbeef")[:36];
-        console.logBytes(code);
+        bytes memory code = abi.encode(hex"deadbeef");
 
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         QuarkWallet.QuarkOperation memory operation = QuarkWallet.QuarkOperation({
