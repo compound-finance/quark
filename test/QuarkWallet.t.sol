@@ -7,15 +7,21 @@ import "forge-std/console.sol";
 import "../src/CodeJar.sol";
 import "../src/QuarkWallet.sol";
 
+import "./lib/Counter.sol";
 import "./lib/YulHelper.sol";
 import "./lib/Reverts.sol";
 
 contract QuarkWalletTest is Test {
     CodeJar public codeJar;
+    Counter public counter;
 
     constructor() {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
+
+        counter = new Counter();
+        counter.setNumber(0);
+        console.log("Counter deployed to: %s", address(counter));
     }
 
     function setUp() public {
@@ -62,5 +68,20 @@ contract QuarkWalletTest is Test {
             code: revertsCode,
             encodedCalldata: abi.encode()
         }));
+    }
+
+    function testAtomicIncrementer() public {
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+
+        assertEq(counter.number(), 0);
+        address account = address(0xb0b);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        wallet.executeQuarkOperation(
+          QuarkWallet.QuarkOperation({
+            code: incrementer,
+            encodedCalldata: abi.encodeWithSignature("incrementCounter(address)", counter)
+          })
+        );
+        assertEq(counter.number(), 3);
     }
 }
