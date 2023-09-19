@@ -8,6 +8,7 @@ import "../src/CodeJar.sol";
 import "../src/QuarkWallet.sol";
 
 import "./lib/Counter.sol";
+import "./lib/MaxCounterScript.sol";
 import "./lib/YulHelper.sol";
 import "./lib/Reverts.sol";
 
@@ -100,5 +101,57 @@ contract QuarkWalletTest is Test {
           })
         );
         assertEq(counter.number(), 3);
+    }
+
+    function testAtomicMaxCounterScript() public {
+        bytes memory maxCounterScript = new YulHelper().getDeployed("MaxCounterScript.sol/MaxCounterScript.json");
+
+        assertEq(counter.number(), 0);
+
+        vm.startPrank(address(0xaa));
+
+        address account = address(0xb0b);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        // call once
+        wallet.executeQuarkOperation(
+          QuarkWallet.QuarkOperation({
+            code: maxCounterScript,
+            encodedCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+          })
+        );
+        assertEq(counter.number(), 1);
+        // call twice
+        wallet.executeQuarkOperation(
+          QuarkWallet.QuarkOperation({
+            code: maxCounterScript,
+            encodedCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+          })
+        );
+        // call thrice
+        assertEq(counter.number(), 2);
+        wallet.executeQuarkOperation(
+          QuarkWallet.QuarkOperation({
+            code: maxCounterScript,
+            encodedCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+          })
+        );
+        assertEq(counter.number(), 3);
+
+        // revert because max has been hit
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector)
+          )
+        );
+        wallet.executeQuarkOperation(
+          QuarkWallet.QuarkOperation({
+            code: maxCounterScript,
+            encodedCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+          })
+        );
+        assertEq(counter.number(), 3);
+
+        vm.stopPrank();
     }
 }

@@ -5,10 +5,8 @@ import "./CodeJar.sol";
 
 contract QuarkWallet {
     address public immutable owner;
-    address public immutable relayer;
 
-    bytes32 public constant OWNER_SLOT   = bytes32(keccak256("org.quark.owner"));
-    bytes32 public constant RELAYER_SLOT = bytes32(keccak256("org.quark.relayer"));
+    bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
 
     error QuarkReadError();
     error QuarkCallError(bytes);
@@ -29,12 +27,6 @@ contract QuarkWallet {
         owner = owner_;
         codeJar = codeJar_;
         /*
-         * translation note: caller() is msg.sender because origin() is
-         * tx.origin, and semantically msg.sender makes more sense as
-         * caller since that's the caller in the current context.
-         */
-        relayer = msg.sender;
-        /*
          * translation note: we cannot directly access OWNER_SLOT or
          * RELAYER_SLOT within an inline assembly block, for arbitrary and
          * stupid reasons; therefore, we copy the immutable slot addresses
@@ -43,8 +35,6 @@ contract QuarkWallet {
          */
         bytes32 slot = OWNER_SLOT;
         assembly { sstore(slot, owner_) }
-        slot = RELAYER_SLOT;
-        assembly { sstore(slot, caller()) }
     }
 
     /**
@@ -66,30 +56,6 @@ contract QuarkWallet {
         );
         if (!success) {
             revert QuarkCallError(result);
-        }
-        return result;
-    }
-
-    /**
-     * @notice read the quark code address from the relayer and
-     * delegatecall the code pointed thereto passing the given calldata.
-     */
-    fallback(bytes calldata quarkCalldata) external payable returns (bytes memory) {
-        (bool success0, bytes memory rawCode) = relayer.call(
-            abi.encodeWithSignature("readQuarkCodeAddress()")
-        );
-        if (!success0) {
-            revert QuarkReadError();
-        }
-        (address code) = abi.decode(rawCode, (address));
-        (bool success1, bytes memory result) = code.delegatecall(
-            quarkCalldata
-        );
-        if (!success1) {
-            assembly {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
         }
         return result;
     }
