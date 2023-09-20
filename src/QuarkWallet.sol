@@ -4,13 +4,13 @@ pragma solidity ^0.8.19;
 import "./CodeJar.sol";
 
 contract QuarkWallet {
-    address public immutable owner;
-
-    bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
-
     error QuarkReadError();
     error QuarkCallError(bytes);
     error QuarkCodeNotFound();
+
+    address public immutable owner;
+
+    bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
 
     CodeJar public codeJar;
 
