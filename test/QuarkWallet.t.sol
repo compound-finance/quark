@@ -35,8 +35,8 @@ contract QuarkWalletTest is Test {
         address account = address(0xaa);
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         QuarkWallet.QuarkOperation memory operation = QuarkWallet.QuarkOperation({
-            code: new YulHelper().getDeployed("GetOwner.sol/GetOwner.json"),
-            encodedCalldata: abi.encode()
+            scriptSource: new YulHelper().getDeployed("GetOwner.sol/GetOwner.json"),
+            scriptCalldata: abi.encode()
         });
         bytes memory result = wallet.executeQuarkOperation(operation);
         assertEq(result, abi.encode(0xaa));
@@ -48,8 +48,8 @@ contract QuarkWalletTest is Test {
 
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         QuarkWallet.QuarkOperation memory operation = QuarkWallet.QuarkOperation({
-            code: code,
-            encodedCalldata: abi.encodeWithSignature("x()")
+            scriptSource: code,
+            scriptCalldata: abi.encodeWithSignature("x()")
         });
 
         vm.expectRevert(abi.encodeWithSelector(
@@ -68,8 +68,8 @@ contract QuarkWalletTest is Test {
             abi.encodeWithSelector(Reverts.Whoops.selector)
         ));
         wallet.executeQuarkOperation(QuarkWallet.QuarkOperation({
-            code: revertsCode,
-            encodedCalldata: abi.encode()
+            scriptSource: revertsCode,
+            scriptCalldata: abi.encode()
         }));
     }
 
@@ -82,8 +82,8 @@ contract QuarkWalletTest is Test {
         emit Ping(55);
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
-            code: ping,
-            encodedCalldata: abi.encode()
+            scriptSource: ping,
+            scriptCalldata: abi.encode()
           })
         );
     }
@@ -96,8 +96,8 @@ contract QuarkWalletTest is Test {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
-            code: incrementer,
-            encodedCalldata: abi.encodeWithSignature("incrementCounter(address)", counter)
+            scriptSource: incrementer,
+            scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter)
           })
         );
         assertEq(counter.number(), 3);
@@ -115,24 +115,24 @@ contract QuarkWalletTest is Test {
         // call once
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
-            code: maxCounterScript,
-            encodedCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+            scriptSource: maxCounterScript,
+            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
           })
         );
         assertEq(counter.number(), 1);
         // call twice
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
-            code: maxCounterScript,
-            encodedCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+            scriptSource: maxCounterScript,
+            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
           })
         );
         // call thrice
         assertEq(counter.number(), 2);
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
-            code: maxCounterScript,
-            encodedCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+            scriptSource: maxCounterScript,
+            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
           })
         );
         assertEq(counter.number(), 3);
@@ -146,8 +146,8 @@ contract QuarkWalletTest is Test {
         );
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
-            code: maxCounterScript,
-            encodedCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+            scriptSource: maxCounterScript,
+            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
           })
         );
         assertEq(counter.number(), 3);
