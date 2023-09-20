@@ -16,7 +16,7 @@ contract QuarkWallet {
 
     struct QuarkOperation {
         /* TODO: optimization: allow passing in the address of the script
-         * o run, instead of the calldata for defining the script.
+         * to run, instead of the calldata for defining the script.
          */
         // address scriptAddress;
         bytes scriptSource;
