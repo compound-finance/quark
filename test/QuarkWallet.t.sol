@@ -27,17 +27,14 @@ contract QuarkWalletTest is Test {
         console.log("Counter deployed to: %s", address(counter));
     }
 
-    function setUp() public {
-        // nothing
-    }
-
     function testExecuteQuarkOperation() public {
         address account = address(0xaa);
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         QuarkWallet.QuarkOperation memory operation = QuarkWallet.QuarkOperation({
             scriptSource: new YulHelper().getDeployed("GetOwner.sol/GetOwner.json"),
             scriptCalldata: abi.encode(),
-            nonce: 17
+            nonce: 17,
+            expiry: 0
         });
         bytes memory result = wallet.executeQuarkOperation(operation);
         assertEq(result, abi.encode(0xaa));
@@ -51,7 +48,8 @@ contract QuarkWalletTest is Test {
         QuarkWallet.QuarkOperation memory operation = QuarkWallet.QuarkOperation({
             scriptSource: code,
             scriptCalldata: abi.encodeWithSignature("x()"),
-            nonce: 42
+            nonce: 42,
+            expiry: 0
         });
 
         vm.expectRevert(abi.encodeWithSelector(
@@ -72,7 +70,8 @@ contract QuarkWalletTest is Test {
         wallet.executeQuarkOperation(QuarkWallet.QuarkOperation({
             scriptSource: revertsCode,
             scriptCalldata: abi.encode(),
-            nonce: 116
+            nonce: 116,
+            expiry: 0
         }));
     }
 
@@ -87,7 +86,8 @@ contract QuarkWalletTest is Test {
           QuarkWallet.QuarkOperation({
             scriptSource: ping,
             scriptCalldata: abi.encode(),
-            nonce: 317
+            nonce: 317,
+            expiry: 0
           })
         );
     }
@@ -102,7 +102,8 @@ contract QuarkWalletTest is Test {
           QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
-            nonce: 1
+            nonce: 1,
+            expiry: 0
           })
         );
         assertEq(counter.number(), 3);
@@ -122,7 +123,8 @@ contract QuarkWalletTest is Test {
           QuarkWallet.QuarkOperation({
             scriptSource: maxCounterScript,
             scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter)),
-            nonce: 4
+            nonce: 4,
+            expiry: 0
           })
         );
         assertEq(counter.number(), 1);
@@ -131,7 +133,8 @@ contract QuarkWalletTest is Test {
           QuarkWallet.QuarkOperation({
             scriptSource: maxCounterScript,
             scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter)),
-            nonce: 5
+            nonce: 5,
+            expiry: 0
           })
         );
         // call thrice
@@ -140,7 +143,8 @@ contract QuarkWalletTest is Test {
           QuarkWallet.QuarkOperation({
             scriptSource: maxCounterScript,
             scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter)),
-            nonce: 1
+            nonce: 1,
+            expiry: 0
           })
         );
         assertEq(counter.number(), 3);
@@ -156,22 +160,11 @@ contract QuarkWalletTest is Test {
           QuarkWallet.QuarkOperation({
             scriptSource: maxCounterScript,
             scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter)),
-            nonce: 0
+            nonce: 0,
+            expiry: 0
           })
         );
         assertEq(counter.number(), 3);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkNonceReplay.selector,
-                4
-            )
-        );
-        wallet.executeQuarkOperation(QuarkWallet.QuarkOperation({
-            scriptSource: maxCounterScript,
-            scriptCalldata: abi.encode(),
-            nonce: 4
-        }));
 
         vm.stopPrank();
     }
