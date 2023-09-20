@@ -14,3 +14,4 @@ contract CounterInvariant is Invariant {
         }
     }
 }
+

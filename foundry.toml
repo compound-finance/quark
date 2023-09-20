@@ -1,25 +1,6 @@
 [profile.default]
-src = 'src'
-out = 'out'
-libs = ['lib']
-solc = "0.8.19"
-evm_version = "london"
-fs_permissions = [
-  { access = "read-write", path = "./deployments.json"},
-  { access = "read-write", path = "./deployments.local.json"}
-]
+src = "src"
+out = "out"
+libs = ["lib"]
 
-[profile.yul]
-src = 'src'
-out = 'out'
-libs = ['lib']
-solc = "0.8.19"
-evm_version = "london"
-bytecode_hash = "none"
-
-[profile.test]
-src = 'test'
-fs_permissions = [
-  { access = "read", path = "./out"}
-]
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
