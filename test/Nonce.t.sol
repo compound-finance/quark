@@ -8,8 +8,7 @@ import { CodeJar } from "../src/CodeJar.sol";
 import { QuarkWallet } from "../src/QuarkWallet.sol";
 
 contract QuarkWalletHarness is QuarkWallet {
-    constructor(address owner, CodeJar codeJar) QuarkWallet(owner, codeJar) {
-    }
+    constructor(address owner, CodeJar codeJar) QuarkWallet(owner, codeJar) { }
 
     function setNonceExternal(uint256 index, bool value) external {
         setNonce(index, value);
@@ -42,9 +41,9 @@ contract NonceTest is Test {
         assertEq(walletHarness.isSet(0), false);
     }
 
-
     function testNonLinearNonce() public {
-        // nonce values are not incremental; you can grab a random number and use it as a nonce
+        // nonce values are not incremental; you can use a random number and
+        // use it as a nonce
         uint256 nonce = 1234567890;
 
         assertEq(walletHarness.isSet(nonce), false);
@@ -60,11 +59,9 @@ contract NonceTest is Test {
         assertEq(walletHarness.nextUnusedNonce(), 0);
 
         walletHarness.setNonceExternal(0, true);
-
         assertEq(walletHarness.nextUnusedNonce(), 1);
 
         walletHarness.setNonceExternal(1, true);
-
         assertEq(walletHarness.nextUnusedNonce(), 2);
     }
 }

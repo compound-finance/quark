@@ -35,7 +35,6 @@ contract EIP712Test is Test {
     }
 
     function aliceSignature(QuarkWallet.QuarkOperation memory op, uint256 nonce, uint256 expiry) internal view returns (uint8, bytes32, bytes32) {
-        // XXX
         bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash));
         return vm.sign(alicePrivateKey, digest);
