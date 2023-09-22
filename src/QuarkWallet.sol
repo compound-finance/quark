@@ -142,7 +142,7 @@ contract QuarkWallet {
 
         if (isValidSignature(owner, digest, v, r, s)) {
             setNonce(op.nonce, true);
-            return executeQuarkOperationInternal(op);
+            return executeQuarkOperationInternal(op.scriptSource, op.scriptCalldata);
         }
     }
 
@@ -166,19 +166,20 @@ contract QuarkWallet {
     /**
      * @notice Store or lookup the operation script and invoke it with the
      * given encoded calldata
-     * @param op QuarkOpeartion to execute
+     * @param scriptSource Source code of the transaction script to execute
+     * @param scriptCalldata The encoded function selector and arguments to call on the transaction script
      * @return return value from the executed operation
      */
-    function executeQuarkOperation(QuarkOperation calldata op) public payable returns (bytes memory) {
+    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
         // XXX authtenticate caller
-        return executeQuarkOperationInternal(op);
+        return executeQuarkOperationInternal(scriptSource, scriptCalldata);
     }
 
     /**
      * @dev Execute QuarkOperation
      */
-    function executeQuarkOperationInternal(QuarkOperation calldata op) internal returns (bytes memory) {
-        address deployedCode = codeJar.saveCode(op.scriptSource);
+    function executeQuarkOperationInternal(bytes calldata scriptSource, bytes calldata scriptCalldata) internal returns (bytes memory) {
+        address deployedCode = codeJar.saveCode(scriptSource);
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(deployedCode)
@@ -187,9 +188,7 @@ contract QuarkWallet {
             revert QuarkCodeNotFound();
         }
 
-        (bool success, bytes memory result) = deployedCode.delegatecall(
-            op.scriptCalldata
-        );
+        (bool success, bytes memory result) = deployedCode.delegatecall(scriptCalldata);
         if (!success) {
             revert QuarkCallError(result);
         }
