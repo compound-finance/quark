@@ -36,7 +36,8 @@ contract QuarkWalletTest is Test {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         QuarkWallet.QuarkOperation memory operation = QuarkWallet.QuarkOperation({
             scriptSource: new YulHelper().getDeployed("GetOwner.sol/GetOwner.json"),
-            scriptCalldata: abi.encode()
+            scriptCalldata: abi.encode(),
+            nonce: 17
         });
         bytes memory result = wallet.executeQuarkOperation(operation);
         assertEq(result, abi.encode(0xaa));
@@ -49,7 +50,8 @@ contract QuarkWalletTest is Test {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         QuarkWallet.QuarkOperation memory operation = QuarkWallet.QuarkOperation({
             scriptSource: code,
-            scriptCalldata: abi.encodeWithSignature("x()")
+            scriptCalldata: abi.encodeWithSignature("x()"),
+            nonce: 42
         });
 
         vm.expectRevert(abi.encodeWithSelector(
@@ -69,7 +71,8 @@ contract QuarkWalletTest is Test {
         ));
         wallet.executeQuarkOperation(QuarkWallet.QuarkOperation({
             scriptSource: revertsCode,
-            scriptCalldata: abi.encode()
+            scriptCalldata: abi.encode(),
+            nonce: 116
         }));
     }
 
@@ -83,7 +86,8 @@ contract QuarkWalletTest is Test {
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
             scriptSource: ping,
-            scriptCalldata: abi.encode()
+            scriptCalldata: abi.encode(),
+            nonce: 317
           })
         );
     }
@@ -97,7 +101,8 @@ contract QuarkWalletTest is Test {
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
-            scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter)
+            scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
+            nonce: 1
           })
         );
         assertEq(counter.number(), 3);
@@ -116,7 +121,8 @@ contract QuarkWalletTest is Test {
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
             scriptSource: maxCounterScript,
-            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter)),
+            nonce: 4
           })
         );
         assertEq(counter.number(), 1);
@@ -124,7 +130,8 @@ contract QuarkWalletTest is Test {
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
             scriptSource: maxCounterScript,
-            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter)),
+            nonce: 5
           })
         );
         // call thrice
@@ -132,7 +139,8 @@ contract QuarkWalletTest is Test {
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
             scriptSource: maxCounterScript,
-            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter)),
+            nonce: 1
           })
         );
         assertEq(counter.number(), 3);
@@ -147,10 +155,23 @@ contract QuarkWalletTest is Test {
         wallet.executeQuarkOperation(
           QuarkWallet.QuarkOperation({
             scriptSource: maxCounterScript,
-            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter))
+            scriptCalldata: abi.encodeCall(MaxCounterScript.run, (counter)),
+            nonce: 0
           })
         );
         assertEq(counter.number(), 3);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkNonceReplay.selector,
+                4
+            )
+        );
+        wallet.executeQuarkOperation(QuarkWallet.QuarkOperation({
+            scriptSource: maxCounterScript,
+            scriptCalldata: abi.encode(),
+            nonce: 4
+        }));
 
         vm.stopPrank();
     }
