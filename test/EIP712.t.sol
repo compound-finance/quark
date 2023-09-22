@@ -34,7 +34,7 @@ contract EIP712Test is Test {
         wallet = new QuarkWallet(alice, codeJar);
     }
 
-    function aliceSignature(QuarkWallet.QuarkOperation memory op, uint256 nonce, uint256 expiry) internal view returns (uint8, bytes32, bytes32) {
+    function aliceSignature(QuarkWallet.QuarkOperation memory op) internal view returns (uint8, bytes32, bytes32) {
         bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash));
         return vm.sign(alicePrivateKey, digest);
@@ -61,7 +61,7 @@ contract EIP712Test is Test {
         uint256 expiry = block.timestamp + 1000;
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op, nonce, expiry);
+        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
 
         // bob calls executeOp with the signed operation
         vm.prank(bob);
@@ -82,7 +82,7 @@ contract EIP712Test is Test {
         uint256 expiry = block.timestamp + 1000;
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op, nonce, expiry);
+        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
 
         // bob calls executeQuarkOperation with the signed op, but he manipulates the code
         op.scriptSource = new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
@@ -105,7 +105,7 @@ contract EIP712Test is Test {
         uint256 expiry = block.timestamp + 1000;
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op, nonce, expiry);
+        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
 
         // bob calls executeQuarkOperation with the signed op, but he manipulates the calldata
         op.scriptCalldata = abi.encodeWithSignature("decrementCounter(address)", counter);
@@ -128,7 +128,7 @@ contract EIP712Test is Test {
         uint256 expiry = block.timestamp + 1000;
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op, nonce, expiry);
+        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
 
         // bob calls executeQuarkOperation with the signed op, but he manipulates the expiry
         op.expiry += 1;
@@ -151,7 +151,7 @@ contract EIP712Test is Test {
         uint256 expiry = block.timestamp + 1000;
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op, nonce, expiry);
+        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
 
         // bob calls executeQuarkOperation with the signature
         vm.startPrank(bob);
@@ -175,7 +175,7 @@ contract EIP712Test is Test {
         uint256 expiry = block.timestamp + 1000;
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op, nonce, expiry);
+        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
 
         // the expiry block arrives
         vm.warp(expiry);
@@ -197,7 +197,7 @@ contract EIP712Test is Test {
         uint256 expiry = block.timestamp + 1000;
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op, nonce, expiry);
+        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
 
         // 1 greater than the max value of s
         bytes32 invalidS = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1;
