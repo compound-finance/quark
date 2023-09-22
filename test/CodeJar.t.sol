@@ -32,7 +32,7 @@ contract CodeJarTest is Test {
         uint256 gasLeft = gasleft();
         address scriptAddress = codeJar.saveCode(hex"11223344");
         uint256 gasUsed = gasLeft - gasleft();
-        assertEq(scriptAddress.code, hex"55");
+        assertEq(scriptAddress.code, hex"11223344");
         assertApproxEqAbs(gasUsed, 42000, 3000);
     }
 
@@ -43,7 +43,7 @@ contract CodeJarTest is Test {
         address scriptAddressNext = codeJar.saveCode(hex"11223344");        
         uint256 gasUsed = gasLeft - gasleft();
         assertEq(scriptAddress, scriptAddressNext);
-        assertEq(scriptAddressNext.code, hex"55");
+        assertEq(scriptAddressNext.code, hex"11223344");
 
         assertApproxEqAbs(gasUsed, 3000, 1000);
     }
@@ -75,6 +75,8 @@ contract CodeJarTest is Test {
     }
 
     function testCodeJarSelfDestruct() public {
+        // TODO: Consider how to handle this since we run in a transaction and thus can't self destruct
+
         // PUSH0 [5F]; SELFDESTRUCT [FF]
         address scriptAddress = codeJar.saveCode(hex"5fff");
         assertEq(scriptAddress.code, hex"5fff");
@@ -83,4 +85,6 @@ contract CodeJarTest is Test {
         codeJar.saveCode(hex"5fff");
         assertEq(scriptAddress.code, hex"5fff");
     }
+
+    // TODO: Test code too large (overflow)
 }
