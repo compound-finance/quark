@@ -4,13 +4,16 @@ pragma solidity ^0.8.19;
 import "./CodeJar.sol";
 
 contract QuarkWallet {
+    error QuarkReadError();
+    error QuarkCallError(bytes);
+    error QuarkCodeNotFound();
+    error QuarkNonceReplay(uint256);
+
     address public immutable owner;
 
     bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
 
-    error QuarkReadError();
-    error QuarkCallError(bytes);
-    error QuarkCodeNotFound();
+    mapping(uint256 => uint256) public nonces;
 
     CodeJar public codeJar;
 
@@ -21,6 +24,7 @@ contract QuarkWallet {
         // address scriptAddress;
         bytes scriptSource;
         bytes scriptCalldata; // selector + arguments encoded as calldata
+        uint256 nonce;
     }
 
     constructor(address owner_, CodeJar codeJar_) {
@@ -37,10 +41,34 @@ contract QuarkWallet {
     }
 
     /**
-     * @notice store or lookup the operation's script and call it with the
-     * given calldata.
+     * @notice for a uint256 nonce return the nonce bucket and the mask for selecting the nonce in the bucket.
+     */
+    function locateNonce(uint256 nonce) internal view returns (uint256, uint256) {
+        uint256 bucketIndex = nonce / 256;
+        uint256 bitIndex = nonce - (bucketIndex * 256);
+        uint256 selector = (1 << bitIndex);
+        return (bucketIndex, selector);
+    }
+
+    /**
+     * @notice acquire the nonce for an operation. A non-replayable operation will exclusively acquire the nonce,
+     * marking it used; a replayable operation may acquire the same nonce multiple times until a condition is met.
+     */
+    function acquireNonce(QuarkOperation calldata op) internal {
+        (uint256 bucket, uint256 selector) = locateNonce(op.nonce);
+        // if the nonce has been used, revert
+        if ((nonces[bucket] & selector) >= 1) {
+            revert QuarkNonceReplay(op.nonce);
+        }
+        // TODO: if op.replayable, do not mark the nonce used
+        nonces[bucket] |= selector;
+    }
+
+    /**
+     * @notice store or lookup the operation's script and call it with the given calldata.
      */
     function executeQuarkOperation(QuarkOperation calldata op) public payable returns (bytes memory) {
+        acquireNonce(op);
         address deployedCode = codeJar.saveCode(op.scriptSource);
         uint256 codeLen;
         assembly {
