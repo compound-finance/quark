@@ -42,8 +42,8 @@ contract NonceTest is Test {
     }
 
     function testNonLinearNonce() public {
-        // nonce values are not incremental; you can use a random number and
-        // use it as a nonce
+        // nonce values are not incremental; you can use a random number as
+        // long as it has not been set
         uint256 nonce = 1234567890;
 
         assertEq(walletHarness.isSet(nonce), false);
