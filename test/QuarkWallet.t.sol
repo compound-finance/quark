@@ -42,7 +42,7 @@ contract QuarkWalletTest is Test {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
 
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.QuarkCodeNotFound.selector));
-        bytes memory result = wallet.executeQuarkOperation(
+        wallet.executeQuarkOperation(
             abi.encode(),
             abi.encodeWithSignature("x()")
         );
