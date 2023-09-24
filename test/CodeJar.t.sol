@@ -86,5 +86,12 @@ contract CodeJarTest is Test {
         assertEq(scriptAddress.code, hex"5fff");
     }
 
+    function testCodeJarTooLarge() public {
+        // TODO: Consider how to handle this since we run in a transaction and thus can't self destruct
+        bytes32[] memory script = new bytes32[](1000); // 2**32 / 32 + 1
+        bytes memory code = abi.encodePacked(script);
+        address scriptAddress = codeJar.saveCode(code);
+    }
+
     // TODO: Test code too large (overflow)
 }
