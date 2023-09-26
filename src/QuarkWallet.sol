@@ -137,8 +137,9 @@ contract QuarkWallet {
 
         if (isValidSignature(owner, digest, v, r, s)) {
             setNonce(op.nonce);
-            address deployedCode = codeJar.saveCode(op.scriptSource);
-            return executeQuarkOperationInternal(deployedCode, op.scriptCalldata);
+            // XXX handle op.scriptAddress without CodeJar
+            address scriptAddress = codeJar.saveCode(op.scriptSource);
+            return executeQuarkOperationInternal(scriptAddress, op.scriptCalldata);
         }
     }
 
@@ -168,28 +169,23 @@ contract QuarkWallet {
      */
     function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
         // XXX authtenticate caller
-        address deployedCode = codeJar.saveCode(scriptSource);
-        return executeQuarkOperationInternal(deployedCode, scriptCalldata);
-    }
-
-    function executeQuarkOperation(address deployedCode, bytes calldata scriptCalldata) public payable returns (bytes memory) {
-        // XXX authtenticate caller
-        return executeQuarkOperationInternal(deployedCode, scriptCalldata);
+        address scriptAddress = codeJar.saveCode(scriptSource);
+        return executeQuarkOperationInternal(scriptAddress, scriptCalldata);
     }
 
     /**
      * @dev Execute QuarkOperation
      */
-    function executeQuarkOperationInternal(address deployedCode, bytes calldata scriptCalldata) internal returns (bytes memory) {
+    function executeQuarkOperationInternal(address scriptAddress, bytes calldata scriptCalldata) internal returns (bytes memory) {
         uint256 codeLen;
         assembly {
-            codeLen := extcodesize(deployedCode)
+            codeLen := extcodesize(scriptAddress)
         }
         if (codeLen == 0) {
             revert QuarkCodeNotFound();
         }
 
-        (bool success, bytes memory result) = deployedCode.delegatecall(scriptCalldata);
+        (bool success, bytes memory result) = scriptAddress.delegatecall(scriptCalldata);
         if (!success) {
             revert QuarkCallError(result);
         }
