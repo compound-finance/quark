@@ -18,6 +18,9 @@ contract QuarkWallet {
     /// @notice Address of the EOA that controls this wallet
     address public immutable owner;
 
+    /// @notice address of the currently pending callback script
+    address public callback;
+
     /// @notice storage slot for storing the `owner` address
     bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
 
@@ -48,6 +51,7 @@ contract QuarkWallet {
         bytes scriptCalldata; // selector + arguments encoded as calldata
         uint256 nonce;
         uint256 expiry;
+        bool admitCallback;
         // requirements
         // isReplayable
         // isCallbackable
@@ -144,7 +148,16 @@ contract QuarkWallet {
             setNonce(op.nonce, true);
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-            return executeQuarkOperationInternal(scriptAddress, op.scriptCalldata);
+            // if the trx script admits callbacks, set it as the current callback
+            if (op.admitCallback) {
+                if (callback != address(0)) {
+                    revert(); // XXX
+                }
+                callback = scriptAddress;
+            }
+            bytes memory result = executeQuarkOperationInternal(scriptAddress, op.scriptCalldata);
+            callback = address(0);
+            return result;
         }
     }
 
@@ -195,5 +208,13 @@ contract QuarkWallet {
             revert QuarkCallError(result);
         }
         return result;
+    }
+
+    fallback(bytes calldata data) external returns (bytes memory) {
+        if (callback != address(0)) {
+            return callback.delegatecall(data);
+        } else {
+            revert();
+        }
     }
 }
