@@ -190,7 +190,7 @@ contract QuarkWallet {
             revert QuarkCodeNotFound();
         }
 
-        (bool success, bytes memory result) = scriptAddress.delegatecall(scriptCalldata);
+        (bool success, bytes memory result) = scriptAddress.callcode(scriptCalldata);
         if (!success) {
             revert QuarkCallError(result);
         }
