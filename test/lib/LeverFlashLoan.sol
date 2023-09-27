@@ -48,15 +48,9 @@ contract LeverFlashLoan is IUniswapV3FlashCallback {
 
         uint24 fee = 500;
 
-        (token0, token1) = token0 < token1
-            ? (token0, token1)
-            : (token1, token0);
-        (amount0, amount1) = token0 > token1
-            ? (amount0, amount1)
-            : (amount1, amount0);
-
-        console.log("token0", token0);
-        console.log("token1", token1);
+        (token0, token1, amount0, amount1) = token0 < token1
+            ? (token0, token1, amount0, amount1)
+            : (token1, token0, amount1, amount0);
 
         FlashParams memory params = FlashParams({
             token0: token0,
@@ -76,7 +70,18 @@ contract LeverFlashLoan is IUniswapV3FlashCallback {
         uint256 fee1,
         bytes calldata data
     ) external {
-        console.log("uniswapV3FlashCallback");
+        // console.log("fee0", fee0);
+        // console.log("fee1", fee1);
+        // console.logBytes(data);
+        // FlashCallbackData memory flashCallbackData = abi.decode(
+        //     data,
+        //     (FlashCallbackData)
+        // );
+        // console.log("amount0", flashCallbackData.amount0);
+        // console.log("amount1", flashCallbackData.amount1);
+        // console.log("payer", flashCallbackData.payer);
+        // console.log("poolKey.token0", flashCallbackData.poolKey.token0);
+        // console.log("poolKey.token1", flashCallbackData.poolKey.token1);
     }
 
     function initFlash(FlashParams memory params) internal {
@@ -88,9 +93,6 @@ contract LeverFlashLoan is IUniswapV3FlashCallback {
         IUniswapV3Pool pool = IUniswapV3Pool(
             PoolAddress.computeAddress(UNISWAP_FACTORY, poolKey)
         );
-        console.log("pool", address(pool));
-        console.log("amount0", params.amount0);
-        console.log("amount1", params.amount1);
 
         pool.flash(
             address(this),
