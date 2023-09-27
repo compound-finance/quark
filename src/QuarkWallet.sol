@@ -36,7 +36,7 @@ contract QuarkWallet {
     /// @notice Bit-packed nonce values
     mapping(uint256 => uint256) public nonces;
 
-    // @notice Address of CodeJar contract used to save transaction script source code
+    /// @notice Address of CodeJar contract used to save transaction script source code
     CodeJar public codeJar;
 
     struct QuarkOperation {
