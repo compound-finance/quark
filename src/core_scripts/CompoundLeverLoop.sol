@@ -5,7 +5,7 @@ import "../QuarkScript.sol";
 import "../interfaces/IERC20NonStandard.sol";
 import "../interfaces/IUniswapV2Router.sol";
 import "../interfaces/CometInterface.sol";
-import "./../../lib/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "../interfaces/ISwapRouter.sol";
 
 contract CompoundLeverLoop is QuarkScript {
   error InvalidInput();
@@ -50,11 +50,11 @@ contract CompoundLeverLoop is QuarkScript {
       uint256 delta = newAssetHolding - currentTargetAssetExposureAmount;
       while(delta > 0 && loopMax > 0){
         uint256 maxQuota = currentTargetAssetExposureAmount * 
-          CometInterface(cometAddress).getAssetInfoByAddress(targetAsset).collateralFactor / 1e18 - currentBorrowedBalance;
+          CometInterface(cometAddress).getAssetInfoByAddress(targetAsset).borrowCollateralFactor / 1e18 - currentBorrowedBalance;
         uint256 left = delta > maxQuota ? maxQuota : delta;
         CometInterface(cometAddress).withdraw(targetAsset, left);
         // Uniswap trade
-        uint swapOut = swapViaUniswap(cometAddress, left, targetAsset, left, 0);
+        uint swapOut = swapViaUniswap(cometAddress, CometInterface(cometAddress).baseToken(), targetAsset, left, 0);
         // Supply back to Compound
         CometInterface(cometAddress).supply(targetAsset, swapOut);
         delta -= left;
@@ -65,17 +65,17 @@ contract CompoundLeverLoop is QuarkScript {
       // 1. Repay delta to Compound by withdrawing collateral and exchange to base
       uint256 delta = currentTargetAssetExposureAmount - newAssetHolding;
       revert("Not implemented");
-      while (delta > 0){
-        uint256 maxQuota = currentBorrowedBalance;
-        uint256 left = delta > maxQuota ? maxQuota : delta;
-        CometInterface(cometAddress).withdraw(targetAsset, left);
-        // Uniswap trade
-        uint swapOut = swapViaUniswap(cometAddress, left, targetAsset, left, 0);
-        // Supply back to Compound
-        CometInterface(cometAddress).supply(targetAsset, swapOut);
-        delta -= left;
-        loopMax -= 1;
-      }
+      // while (delta > 0){
+      //   uint256 maxQuota = currentBorrowedBalance;
+      //   uint256 left = delta > maxQuota ? maxQuota : delta;
+      //   CometInterface(cometAddress).withdraw(targetAsset, left);
+      //   // Uniswap trade
+      //   // uint swapOut = swapViaUniswap(cometAddress, left, targetAsset, left, 0);
+      //   // Supply back to Compound
+      //   // CometInterface(cometAddress).supply(targetAsset, swapOut);
+      //   delta -= left;
+      //   loopMax -= 1;
+      // }
     }
 
   }
@@ -88,10 +88,12 @@ contract CompoundLeverLoop is QuarkScript {
       if (swapAmount == 0) return 0;
 
       uint24 poolFee = 3000; // 0.3%
+      //address routerAddr = 0xE592427A0AEce92De3Edee1F18E0157C05861564
+      address routerAddr = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
 
-      IERC20NonStandard(assetIn).approve(address(uniswapRouter), swapAmount);
+      IERC20NonStandard(assetIn).approve(address(routerAddr), swapAmount);
       // Swap asset or received ETH to base asset
-      uint256 amountOut = ISwapRouter(uniswapRouter).exactInputSingle(
+      uint256 amountOut = ISwapRouter(routerAddr).exactInputSingle(
           ISwapRouter.ExactInputSingleParams({
               tokenIn: assetIn,
               tokenOut: assetOut,
