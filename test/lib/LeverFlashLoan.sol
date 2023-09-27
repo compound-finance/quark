@@ -4,6 +4,9 @@ pragma solidity ^0.8.19;
 import "forge-std/console.sol";
 
 contract LeverFlashLoan {
+    address constant UNISWAP_ROUTER = address(0);
+    address constant UNISWAP_FACTORY = address(0);
+
     function run(
         Comet comet,
         uint8 collateralAssetIndex,
