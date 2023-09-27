@@ -80,15 +80,10 @@ contract QuarkWallet {
     /**
      * @dev Set or unset `nonce`
      */
-    function setNonce(uint256 nonce, bool value) internal {
+    function setNonce(uint256 nonce) internal {
         uint256 bucket = nonce >> 8;
         uint256 mask = 1 << (nonce & 0xff);
-
-        if (value) {
-            nonces[bucket] |= mask;
-        } else {
-            nonces[bucket] &= ~mask;
-        }
+        nonces[bucket] |= mask;
     }
 
     /**
@@ -141,7 +136,7 @@ contract QuarkWallet {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignature(owner, digest, v, r, s)) {
-            setNonce(op.nonce, true);
+            setNonce(op.nonce);
             address deployedCode = codeJar.saveCode(op.scriptSource);
             return executeQuarkOperationInternal(deployedCode, op.scriptCalldata);
         }

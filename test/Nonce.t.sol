@@ -10,8 +10,8 @@ import { QuarkWallet } from "../src/QuarkWallet.sol";
 contract QuarkWalletHarness is QuarkWallet {
     constructor(address owner, CodeJar codeJar) QuarkWallet(owner, codeJar) { }
 
-    function setNonceExternal(uint256 index, bool value) external {
-        setNonce(index, value);
+    function setNonceExternal(uint256 index) external {
+        setNonce(index);
     }
 }
 
@@ -33,12 +33,8 @@ contract NonceTest is Test {
         assertEq(walletHarness.isSet(0), false);
 
         // it can be set
-        walletHarness.setNonceExternal(0, true);
+        walletHarness.setNonceExternal(0);
         assertEq(walletHarness.isSet(0), true);
-
-        // and unset
-        walletHarness.setNonceExternal(0, false);
-        assertEq(walletHarness.isSet(0), false);
     }
 
     function testNonLinearNonce() public {
@@ -48,20 +44,17 @@ contract NonceTest is Test {
 
         assertEq(walletHarness.isSet(nonce), false);
 
-        walletHarness.setNonceExternal(nonce, true);
+        walletHarness.setNonceExternal(nonce);
         assertEq(walletHarness.isSet(nonce), true);
-
-        walletHarness.setNonceExternal(nonce, false);
-        assertEq(walletHarness.isSet(nonce), false);
     }
 
     function testNextUnusedNonce() public {
         assertEq(walletHarness.nextUnusedNonce(), 0);
 
-        walletHarness.setNonceExternal(0, true);
+        walletHarness.setNonceExternal(0);
         assertEq(walletHarness.nextUnusedNonce(), 1);
 
-        walletHarness.setNonceExternal(1, true);
+        walletHarness.setNonceExternal(1);
         assertEq(walletHarness.nextUnusedNonce(), 2);
     }
 }
