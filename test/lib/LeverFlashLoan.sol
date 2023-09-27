@@ -51,7 +51,7 @@ contract LeverFlashLoan is IUniswapV3FlashCallback {
         (token0, token1) = token0 < token1
             ? (token0, token1)
             : (token1, token0);
-        (amount0, amount1) = token0 < token1
+        (amount0, amount1) = token0 > token1
             ? (amount0, amount1)
             : (amount1, amount0);
 
@@ -89,6 +89,9 @@ contract LeverFlashLoan is IUniswapV3FlashCallback {
             PoolAddress.computeAddress(UNISWAP_FACTORY, poolKey)
         );
         console.log("pool", address(pool));
+        console.log("amount0", params.amount0);
+        console.log("amount1", params.amount1);
+
         pool.flash(
             address(this),
             params.amount0,

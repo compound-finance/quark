@@ -13,6 +13,9 @@ import "./lib/LeverFlashLoan.sol";
 contract LeverFlashLoanTest is Test {
     CodeJar public codeJar;
 
+    uint alicePrivateKey =
+        0xc91f84c86234ca4d2b175a54df651d113afe37d878bca22fe9499e39035be32b;
+
     function setUp() public {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
@@ -22,6 +25,14 @@ contract LeverFlashLoanTest is Test {
                 "LeverFlashLoan.sol/LeverFlashLoan.json"
             )
         );
+
+        address alice = vm.addr(1);
+        vm.createWallet(uint256(keccak256(bytes("1"))));
+        emit log_address(alice);
+        // Wallet memory wallet = vm.createWallet(uint256(keccak256(bytes("1"))));
+        // vm.createWallet(
+        //     "0xc91f84c86234ca4d2b175a54df651d113afe37d878bca22fe9499e39035be32b"
+        // );
     }
 
     function testLeverFlashLoan() public {
