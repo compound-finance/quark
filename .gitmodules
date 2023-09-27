@@ -7,3 +7,6 @@
 [submodule "lib/comet"]
 	path = lib/comet
 	url = https://github.com/compound-finance/comet
+[submodule "lib/v3-periphery"]
+	path = lib/v3-periphery
+	url = https://github.com/uniswap/v3-periphery
