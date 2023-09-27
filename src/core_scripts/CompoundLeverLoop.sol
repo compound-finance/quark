@@ -5,6 +5,7 @@ import "../QuarkScript.sol";
 import "../interfaces/IERC20NonStandard.sol";
 import "../interfaces/IUniswapV2Router.sol";
 import "../interfaces/CometInterface.sol";
+import "./../../lib/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 contract CompoundLeverLoop is QuarkScript {
   error InvalidInput();
@@ -36,7 +37,7 @@ contract CompoundLeverLoop is QuarkScript {
     //Load the initial capital of the user in base asset
     // In base asset
     uint256 currentTargetAssetExposureAmount = 
-      CometInterface(cometAddress).collateralBalanceOf(address(this), targetAsset) * CometIneterface(cometAddress).getPrice(targetAsset) 
+      CometInterface(cometAddress).collateralBalanceOf(address(this), targetAsset) * CometInterface(cometAddress).getPrice(targetAsset) 
       / CometInterface(cometAddress).getAssetInfoByAddress(targetAsset).scale;
     uint256 currentBorrowedBalance = CometInterface(cometAddress).borrowBalanceOf(address(this));
     //leverageRatio = 0 - 500  in %
@@ -53,7 +54,7 @@ contract CompoundLeverLoop is QuarkScript {
         uint256 left = delta > maxQuota ? maxQuota : delta;
         CometInterface(cometAddress).withdraw(targetAsset, left);
         // Uniswap trade
-        uint swapOut = swapViaUniswap(comet, left, targetAsset, left, 0);
+        uint swapOut = swapViaUniswap(cometAddress, left, targetAsset, left, 0);
         // Supply back to Compound
         CometInterface(cometAddress).supply(targetAsset, swapOut);
         delta -= left;
@@ -69,7 +70,7 @@ contract CompoundLeverLoop is QuarkScript {
         uint256 left = delta > maxQuota ? maxQuota : delta;
         CometInterface(cometAddress).withdraw(targetAsset, left);
         // Uniswap trade
-        uint swapOut = swapViaUniswap(comet, left, targetAsset, left, 0);
+        uint swapOut = swapViaUniswap(cometAddress, left, targetAsset, left, 0);
         // Supply back to Compound
         CometInterface(cometAddress).supply(targetAsset, swapOut);
         delta -= left;
@@ -107,11 +108,8 @@ contract CompoundLeverLoop is QuarkScript {
       // `amountOutMinimum` in the swap) so we can provide better information
       // in the error message
       if (amountOut < amountOutMin) {
-          revert InsufficientAmountOut(swapToken, baseToken, swapAmount, amountOut, amountOutMin, poolConfig);
+          revert("INSUFFICIENT_OUTPUT_AMOUNT");
       }
-
-      emit Swap(swapToken, baseToken, swapAmount, amountOut, poolConfig);
-
       return amountOut;
   }
 
