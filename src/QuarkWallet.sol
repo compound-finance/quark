@@ -194,7 +194,7 @@ contract QuarkWallet {
     /**
      * @dev Execute QuarkOperation
      */
-    function executeQuarkOperationInternal(address scriptAddress, bytes calldata scriptCalldata) internal returns (bytes memory) {
+    function executeQuarkOperationInternal(address scriptAddress, bytes memory scriptCalldata) internal returns (bytes memory) {
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(scriptAddress)
@@ -207,8 +207,8 @@ contract QuarkWallet {
         uint sz;
         assembly {
             // first 0x20 (32) bytes are the length
-            calldatacopy(0x0, scriptCalldata.offset, scriptCalldata.length)
-            success := callcode(gas(), scriptAddress, 0/* value */, 0x0, scriptCalldata.length, 0x0, 0)
+            let size := mload(scriptCalldata)
+            success := callcode(gas(), scriptAddress, 0/* value */, add(scriptCalldata, 0x20), size, 0x0, 0)
             sz := returndatasize()
         }
         bytes memory returndata = new bytes(sz);
