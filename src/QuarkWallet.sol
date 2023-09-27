@@ -142,7 +142,8 @@ contract QuarkWallet {
 
         if (isValidSignature(owner, digest, v, r, s)) {
             setNonce(op.nonce, true);
-            return executeQuarkOperationInternal(op.scriptSource, op.scriptCalldata);
+            address deployedCode = codeJar.saveCode(op.scriptSource);
+            return executeQuarkOperationInternal(deployedCode, op.scriptCalldata);
         }
     }
 
@@ -172,14 +173,19 @@ contract QuarkWallet {
      */
     function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
         // XXX authtenticate caller
-        return executeQuarkOperationInternal(scriptSource, scriptCalldata);
+        address deployedCode = codeJar.saveCode(scriptSource);
+        return executeQuarkOperationInternal(deployedCode, scriptCalldata);
+    }
+
+    function executeQuarkOperation(address deployedCode, bytes calldata scriptCalldata) public payable returns (bytes memory) {
+        // XXX authtenticate caller
+        return executeQuarkOperationInternal(deployedCode, scriptCalldata);
     }
 
     /**
      * @dev Execute QuarkOperation
      */
-    function executeQuarkOperationInternal(bytes calldata scriptSource, bytes calldata scriptCalldata) internal returns (bytes memory) {
-        address deployedCode = codeJar.saveCode(scriptSource);
+    function executeQuarkOperationInternal(address deployedCode, bytes calldata scriptCalldata) internal returns (bytes memory) {
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(deployedCode)
