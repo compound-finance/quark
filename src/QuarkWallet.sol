@@ -198,16 +198,28 @@ contract QuarkWallet {
             revert QuarkCodeNotFound();
         }
 
-        (bool success, bytes memory result) = scriptAddress.callcode(scriptCalldata);
-        if (!success) {
-            revert QuarkCallError(result);
+        bool success;
+        uint sz;
+        assembly {
+            // first 0x20 (32) bytes are the length
+            calldatacopy(0x0, scriptCalldata.offset, scriptCalldata.length)
+            success := callcode(gas(), scriptAddress, 0/* value */, 0x0, scriptCalldata.length, 0x0, 0)
+            sz := returndatasize()
         }
-        return result;
+        bytes memory returndata = new bytes(sz);
+        assembly {
+            returndatacopy(add(returndata, 0x20), 0x00, returndatasize())
+        }
+        if (!success) {
+            revert QuarkCallError(returndata);
+        }
+        return returndata;
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
         if (callback != address(0)) {
-            return callback.delegatecall(data);
+            (, bytes memory result) = callback.delegatecall(data);
+            return result;
         } else {
             revert();
         }
