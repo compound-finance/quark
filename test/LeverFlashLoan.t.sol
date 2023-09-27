@@ -35,7 +35,7 @@ contract LeverFlashLoanTest is Test {
             abi.encodeWithSelector(
                 LeverFlashLoan.run.selector,
                 Comet(0xc3d688B66703497DAA19211EEdff47f25384cdc3),
-                0,
+                2,
                 1 ether
             )
         );
