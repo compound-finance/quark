@@ -10,34 +10,15 @@ import "../interfaces/ISwapRouter.sol";
 contract CompoundLeverLoop is QuarkScript {
   error InvalidInput();
   error CallError(uint256 n, address callContract, bytes callData, uint256 callValue, bytes err);
+  error WeirdError();
 
-  // function run(address[] calldata callContracts, bytes[] calldata callDatas, uint256[] calldata callValues) external onlyRelayer returns (bytes memory) {
-  //   if (callContracts.length != callDatas.length) {
-  //     revert InvalidInput();
-  //   }
-
-  //   for (uint256 i = 0; i < callContracts.length; i++) {
-  //     address callContract = callContracts[i];
-  //     if (callContract == 0x906f4bD1940737091f18247eAa870D928A85b9Ce) { // keccak("tx.origin")[0:20]
-  //       callContract = tx.origin;
-  //     }
-  //     bytes memory callData = callDatas[i];
-  //     uint256 callValue = callValues[i];
-  //     (bool success, bytes memory returnData) = callContract.call{value: callValue}(callData);
-  //     if (!success) {
-  //       revert CallError(i, callContract, callData, callValue, returnData);
-  //     }
-  //   }
-  //   return abi.encode(hex"");
-  // }
-
-  function lever(address cometAddress, uint256 targetLeverageRatio, address targetAsset, uint256 baseInputAmount) external onlyRelayer {
+  function lever(address cometAddress, uint256 targetLeverageRatio, address targetAsset, uint256 baseInputAmount) external {
     // Supply baseInputAmount to compound (reduce debt)
-    CometInterface(cometAddress).supply(targetAsset, baseInputAmount);
+    if (baseInputAmount > 0) CometInterface(cometAddress).supply(targetAsset, baseInputAmount);
     //Load the initial capital of the user in base asset
     // In base asset
     uint256 currentTargetAssetExposureAmount = 
-      CometInterface(cometAddress).collateralBalanceOf(address(this), targetAsset) * CometInterface(cometAddress).getPrice(targetAsset) 
+      CometInterface(cometAddress).collateralBalanceOf(address(this), targetAsset) * CometInterface(cometAddress).getPrice(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419) 
       / CometInterface(cometAddress).getAssetInfoByAddress(targetAsset).scale;
     uint256 currentBorrowedBalance = CometInterface(cometAddress).borrowBalanceOf(address(this));
     //leverageRatio = 0 - 500  in %
@@ -61,23 +42,8 @@ contract CompoundLeverLoop is QuarkScript {
         loopMax -= 1;
       }
     } else {
-      // decrease leverage
-      // 1. Repay delta to Compound by withdrawing collateral and exchange to base
-      uint256 delta = currentTargetAssetExposureAmount - newAssetHolding;
-      revert("Not implemented");
-      // while (delta > 0){
-      //   uint256 maxQuota = currentBorrowedBalance;
-      //   uint256 left = delta > maxQuota ? maxQuota : delta;
-      //   CometInterface(cometAddress).withdraw(targetAsset, left);
-      //   // Uniswap trade
-      //   // uint swapOut = swapViaUniswap(cometAddress, left, targetAsset, left, 0);
-      //   // Supply back to Compound
-      //   // CometInterface(cometAddress).supply(targetAsset, swapOut);
-      //   delta -= left;
-      //   loopMax -= 1;
-      // }
+      revert WeirdError();
     }
-
   }
 
   /**

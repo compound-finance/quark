@@ -19,6 +19,8 @@ interface CometInterface {
 
     function supply(address asset, uint amount) external view returns (uint256);
 
+    function supplyTo(address dst, address asset, uint amount) external;
+
     function collateralBalanceOf(address account, address asset) external view returns (uint128);
 
     function getAssetInfoByAddress(address asset) external view returns (AssetInfo memory);
