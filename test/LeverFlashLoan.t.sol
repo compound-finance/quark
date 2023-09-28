@@ -45,11 +45,13 @@ contract LeverFlashLoanTest is Test {
             "LeverFlashLoan.sol/LeverFlashLoan.json"
         );
 
+        Comet comet = Comet(0xc3d688B66703497DAA19211EEdff47f25384cdc3);
+
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: leverFlashLoan,
             scriptCalldata: abi.encodeWithSelector(
                 LeverFlashLoan.run.selector,
-                Comet(0xc3d688B66703497DAA19211EEdff47f25384cdc3),
+                comet,
                 2,
                 collateralAmount
             ),
@@ -61,6 +63,9 @@ contract LeverFlashLoanTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = aliceSignature(wallet, op);
 
         bytes memory result = wallet.executeQuarkOperation(op, v, r, s);
+
+        uint borrowBalanceOfAlice = comet.borrowBalanceOf(address(wallet));
+        console.log("Borrow balance of alice", borrowBalanceOfAlice);
     }
 
     function aliceSignature(

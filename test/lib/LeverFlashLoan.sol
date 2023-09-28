@@ -4,30 +4,34 @@ pragma solidity ^0.8.19;
 import "forge-std/console.sol";
 
 import "v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
+import "v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "v3-core/contracts/libraries/TickMath.sol";
+import "v3-periphery/interfaces/ISwapRouter.sol";
 import "solmate/tokens/ERC20.sol";
 import "./PoolAddress.sol";
 
-contract LeverFlashLoan is IUniswapV3FlashCallback {
-    address constant UNISWAP_ROUTER = address(0);
+contract LeverFlashLoan is IUniswapV3SwapCallback {
     address constant UNISWAP_FACTORY =
         0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
-    struct FlashParams {
+    struct SwapParams {
         address token0;
         address token1;
         uint24 fee;
         uint256 amount0;
         uint256 amount1;
         Comet comet;
+        uint collateralAmount;
     }
 
-    struct FlashCallbackData {
+    struct SwapCallbackData {
         uint256 amount0;
         uint256 amount1;
         address payer;
         PoolAddress.PoolKey poolKey;
         Comet comet;
+        uint collateralAmount;
     }
 
     constructor() {}
@@ -40,78 +44,81 @@ contract LeverFlashLoan is IUniswapV3FlashCallback {
         AssetInfo memory collateralAsset = comet.getAssetInfo(
             collateralAssetIndex
         );
-        uint64 borrowCollateralFactor = collateralAsset.borrowCollateralFactor;
-        uint flashLoanAmount = (collateralAmount * borrowCollateralFactor) /
-            (1e18 - borrowCollateralFactor);
+
+        // -0.01 ether is a hack because I'm currently too lazy to figure out slippage math
+        uint64 borrowCollateralFactor = collateralAsset.borrowCollateralFactor -
+            0.01 ether;
+        uint24 fee = 500;
+        uint scaledFee = (uint(fee) * 1e18) / 1e6;
+        uint swapAmount = (borrowCollateralFactor * collateralAmount) /
+            (1e18 - scaledFee - borrowCollateralFactor);
+
+        console.log("BorrowCollateralFactor:", borrowCollateralFactor);
+        console.log("CollateralAmount:", collateralAmount);
+        console.log("SwapAmount:", swapAmount);
 
         address token0 = collateralAsset.asset;
         address token1 = comet.baseToken();
-        uint amount0 = flashLoanAmount;
+        uint amount0 = swapAmount;
         uint amount1 = 0;
-
-        uint24 fee = 500;
 
         (token0, token1, amount0, amount1) = token0 < token1
             ? (token0, token1, amount0, amount1)
             : (token1, token0, amount1, amount0);
 
-        FlashParams memory params = FlashParams({
+        SwapParams memory params = SwapParams({
             token0: token0,
             token1: token1,
             fee: fee,
             amount0: amount0,
             amount1: amount1,
-            comet: comet
+            comet: comet,
+            collateralAmount: collateralAmount
         });
 
-        initFlash(params);
+        initSwap(params);
 
         return abi.encode();
     }
 
-    function uniswapV3FlashCallback(
-        uint256 fee0,
-        uint256 fee1,
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
         bytes calldata data
     ) external {
-        // console.log("fee0", fee0);
-        // console.log("fee1", fee1);
-        // console.logBytes(data);
-        FlashCallbackData memory flashCallbackData = abi.decode(
+        SwapCallbackData memory swapCallbackData = abi.decode(
             data,
-            (FlashCallbackData)
+            (SwapCallbackData)
         );
-        console.log("amount0", flashCallbackData.amount0);
-        console.log("amount1", flashCallbackData.amount1);
-        // console.log("payer", flashCallbackData.payer);
-        console.log("poolKey.token0", flashCallbackData.poolKey.token0);
-        console.log("poolKey.token1", flashCallbackData.poolKey.token1);
+        supplyAndWithdrawFromCompound(swapCallbackData);
 
-        console.log(
-            "Token0 balance:",
-            ERC20(flashCallbackData.poolKey.token0).balanceOf(address(this))
-        );
-        console.log(
-            "Token1 balance:",
-            ERC20(flashCallbackData.poolKey.token1).balanceOf(address(this))
-        );
+        if (amount0Delta > 0) {
+            ERC20(swapCallbackData.poolKey.token0).transfer(
+                msg.sender,
+                uint256(amount0Delta)
+            );
+        } else if (amount1Delta > 0) {
+            ERC20(swapCallbackData.poolKey.token1).transfer(
+                msg.sender,
+                uint256(amount1Delta)
+            );
+        }
+    }
 
+    function supplyAndWithdrawFromCompound(
+        SwapCallbackData memory swapCallbackData
+    ) internal {
         // Supply collateral to compound
-        address collateralToken = flashCallbackData.poolKey.token1;
-        uint collateralAmount = flashCallbackData.amount1;
-        Comet comet = flashCallbackData.comet;
-        ERC20(collateralToken).approve(
-            address(comet),
-            flashCallbackData.amount1
-        );
-        comet.supply(collateralToken, flashCallbackData.amount1);
+        address collateralToken = swapCallbackData.poolKey.token1;
+        uint collateralAmount = swapCallbackData.amount1 +
+            swapCallbackData.collateralAmount;
+        Comet comet = swapCallbackData.comet;
+        ERC20(collateralToken).approve(address(comet), collateralAmount);
+        comet.supply(collateralToken, collateralAmount);
 
         // Withdraw base asset
         address baseToken = comet.baseToken();
         uint cometBalance = comet.balanceOf(address(this));
-        console.log("cometBalance:", cometBalance);
-        uint usdcBalance = ERC20(baseToken).balanceOf(address(this));
-        console.log("usdcBalance:", usdcBalance);
 
         AssetInfo memory collateralAsset = comet.getAssetInfoByAddress(
             collateralToken
@@ -130,13 +137,9 @@ contract LeverFlashLoan is IUniswapV3FlashCallback {
         uint scaledBorrowAmount = (maxBorrowAmount * 1e6) / 1e18;
 
         comet.withdraw(baseToken, scaledBorrowAmount);
-
-        // Swap base token back to collateral token
-
-        // Repay flash loan
     }
 
-    function initFlash(FlashParams memory params) internal {
+    function initSwap(SwapParams memory params) internal {
         PoolAddress.PoolKey memory poolKey = PoolAddress.PoolKey({
             token0: params.token0,
             token1: params.token1,
@@ -146,17 +149,19 @@ contract LeverFlashLoan is IUniswapV3FlashCallback {
             PoolAddress.computeAddress(UNISWAP_FACTORY, poolKey)
         );
 
-        pool.flash(
+        pool.swap(
             address(this),
-            params.amount0,
-            params.amount1,
+            true,
+            -int256(params.amount1),
+            TickMath.MIN_SQRT_RATIO + 1,
             abi.encode(
-                FlashCallbackData({
+                SwapCallbackData({
                     amount0: params.amount0,
                     amount1: params.amount1,
                     payer: msg.sender,
                     poolKey: poolKey,
-                    comet: params.comet
+                    comet: params.comet,
+                    collateralAmount: params.collateralAmount
                 })
             )
         );
@@ -196,4 +201,6 @@ interface Comet {
     ) external view returns (AssetInfo memory);
 
     function baseTokenPriceFeed() external view returns (address);
+
+    function borrowBalanceOf(address account) external view returns (uint256);
 }
