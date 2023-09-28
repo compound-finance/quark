@@ -35,7 +35,7 @@ contract CompoundLeverLoop is QuarkScript {
         uint256 left = delta > maxQuota ? maxQuota : delta;
         CometInterface(cometAddress).withdraw(targetAsset, left);
         // Uniswap trade
-        uint swapOut = swapViaUniswap(cometAddress, CometInterface(cometAddress).baseToken(), targetAsset, left, 0);
+        uint swapOut = swapViaUniswap(CometInterface(cometAddress).baseToken(), targetAsset, left, 0);
         // Supply back to Compound
         CometInterface(cometAddress).supply(targetAsset, swapOut);
         delta -= left;
@@ -46,16 +46,27 @@ contract CompoundLeverLoop is QuarkScript {
     }
   }
 
+  function leverLoop(address cometAddress, uint256 stepAmount, address targetAsset) external {
+    uint loopMax = 3;
+    while(loopMax > 0){
+        CometInterface(cometAddress).withdraw(targetAsset, stepAmount);
+        // Uniswap trade
+        uint swapOut = swapViaUniswap(CometInterface(cometAddress).baseToken(), targetAsset, stepAmount, 0);
+        // Supply back to Compound
+        CometInterface(cometAddress).supply(targetAsset, swapOut);
+        loopMax -= 1;
+    }
+  }
   /**
     * @dev Swaps the given asset to USDC (base token) using Uniswap pools
     */
-  function swapViaUniswap(address comet, address assetIn, address assetOut, uint256 swapAmount, uint256 amountOutMin) internal returns (uint256) {
+  function swapViaUniswap(address assetIn, address assetOut, uint256 swapAmount, uint256 amountOutMin) internal returns (uint256) {
       // Safety check, make sure residue balance in protocol is ignored
       if (swapAmount == 0) return 0;
 
       uint24 poolFee = 3000; // 0.3%
-      //address routerAddr = 0xE592427A0AEce92De3Edee1F18E0157C05861564
-      address routerAddr = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
+      address routerAddr = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+      // address routerAddr = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
 
       IERC20NonStandard(assetIn).approve(address(routerAddr), swapAmount);
       // Swap asset or received ETH to base asset

@@ -39,9 +39,9 @@ contract CompoundLeverLoopTest is Test {
         address USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
         address Comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
         
-        deal(account, 1000);
-        deal(WETH, account, 1000);
-        deal(USDC, account, 1000);
+        deal(account, 1000e18);
+        deal(WETH, account, 1000e18);
+        deal(USDC, account, 1000e6);
 
         // lever(address cometAddress, uint256 targetLeverageRatio, address targetAsset, uint256 baseInputAmount)
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
@@ -50,17 +50,30 @@ contract CompoundLeverLoopTest is Test {
         vm.startPrank(account);
         IERC20NonStandard(WETH).approve(Comet, type(uint256).max);
         IERC20NonStandard(USDC).approve(Comet, type(uint256).max);
-        CometInterface(Comet).supplyTo(address(wallet), WETH, 10);
+        CometInterface(Comet).supplyTo(address(wallet), WETH, 10e18);
         vm.stopPrank();
 
+        // wallet.executeQuarkOperation(
+        //     cll,
+        //     abi.encodeWithSelector(
+        //     CompoundLeverLoop.lever.selector, 
+        //     Comet,
+        //     200, 
+        //     WETH, 
+        //     0 )
+        // );
         wallet.executeQuarkOperation(
-            cll,
+            cll, 
             abi.encodeWithSelector(
-            CompoundLeverLoop.lever.selector, 
-            Comet,
-            200, 
-            WETH, 
-            0 )
+                CompoundLeverLoop.leverLoop.selector,
+                Comet, 
+                1e18, 
+                WETH
+            )
         );
+
+        console.log("Comet position after:");
+        console.log(CometInterface(Comet).collateralBalanceOf(address(wallet), WETH));
+        console.log(CometInterface(Comet).borrowBalanceOf(address(wallet)));
     }
 }
