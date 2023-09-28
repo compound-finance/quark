@@ -34,6 +34,11 @@ contract RebalanceTest is Test {
     address public constant WBTC_ADDRESS = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public rebalanceTrxScript;
 
+    QuarkWallet public wallet;
+    bytes rebalance;
+
+    address public constant ALICE = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+
     event Portfolio(uint128 asset1BalanceInUSDC, uint128 asset2BalanceInUSDC, uint targetWeight, uint currentWeight);
 
     function setUp() public  {
@@ -45,34 +50,36 @@ contract RebalanceTest is Test {
                 "Rebalance.sol/Rebalance.json"
             )
         );
-    }
 
-    function testRebalance() public {
-        address alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-        bytes memory rebalance = new YulHelper().getDeployed("Rebalance.sol/Rebalance.json");
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        wallet = new QuarkWallet{salt: 0}(ALICE, codeJar);
 
-        // GIVE ALICE SOME WETH AND UNI AND HAVE HER SUPPLY TO COMET
-        uint wethAmount = 29 * (10 ** 18);
-        uint wbtcAmount = 1 * (10 ** 8);
-        deal(WETH_ADDRESS, alice, wethAmount);
-        deal(WBTC_ADDRESS, alice, wbtcAmount);
+        rebalance = new YulHelper().getDeployed("Rebalance.sol/Rebalance.json");
 
-        // alice approves WETH and WBTC for Comet and supply
-        vm.startPrank(alice);
+        // ALICE approves WETH and WBTC for Comet
+        vm.startPrank(ALICE);
         IWeth9(WETH_ADDRESS).approve(COMET_ADDRESS, type(uint256).max);
         IWBTC(WBTC_ADDRESS).approve(COMET_ADDRESS, type(uint256).max);
-
-        CometInterface(COMET_ADDRESS).supplyTo(address(wallet), WETH_ADDRESS, wethAmount);
-        CometInterface(COMET_ADDRESS).supplyTo(address(wallet), WBTC_ADDRESS, wbtcAmount);
         vm.stopPrank();
 
-        // QuarkWallet approves Comet contract to supply its WBTC and WETH to protocol
+        // QuarkWallet approves WETH and WBTC for Comet
         vm.startPrank(address(wallet));
         IWeth9(WETH_ADDRESS).approve(COMET_ADDRESS, type(uint256).max);
         IWBTC(WBTC_ADDRESS).approve(COMET_ADDRESS, type(uint256).max);
         vm.stopPrank();
+    }
 
+    // portfolio is 60-40 WETH-WBTC, so sell WETH and then supply WBTC
+    function testRebalanceSellAsset1() public {
+        // GIVE ALICE SOME WETH AND WBTC AND HAVE HER SUPPLY TO COMET
+        uint wethAmount = 29 * (10 ** 18);
+        uint wbtcAmount = 1 * (10 ** 8);
+        deal(WETH_ADDRESS, ALICE, wethAmount);
+        deal(WBTC_ADDRESS, ALICE, wbtcAmount);
+
+        vm.startPrank(ALICE);
+        CometInterface(COMET_ADDRESS).supplyTo(address(wallet), WETH_ADDRESS, wethAmount);
+        CometInterface(COMET_ADDRESS).supplyTo(address(wallet), WBTC_ADDRESS, wbtcAmount);
+        vm.stopPrank();
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: rebalance,
@@ -94,7 +101,74 @@ contract RebalanceTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
-    function _aliceSignature(QuarkWallet wallet, QuarkWallet.QuarkOperation memory op) internal view returns (uint8, bytes32, bytes32) {
+    // portfolio is 37-63 WETH-WBTC, so sell WBTC and then supply WETH
+    function testRebalanceSellAsset2() public {
+        // GIVE ALICE SOME WETH AND WBTC AND HAVE HER SUPPLY TO COMET
+        uint wethAmount = 20 * (10 ** 18);
+        uint wbtcAmount = 1.7 * (10 ** 8);
+        deal(WETH_ADDRESS, ALICE, wethAmount);
+        deal(WBTC_ADDRESS, ALICE, wbtcAmount);
+
+        vm.startPrank(ALICE);
+        CometInterface(COMET_ADDRESS).supplyTo(address(wallet), WETH_ADDRESS, wethAmount);
+        CometInterface(COMET_ADDRESS).supplyTo(address(wallet), WBTC_ADDRESS, wbtcAmount);
+        vm.stopPrank();
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: rebalance,
+            scriptCalldata: abi.encodeWithSelector(
+                Rebalance.rebalance.selector,
+                COMET_ADDRESS,
+                WETH_ADDRESS,
+                WBTC_ADDRESS,
+                50, // asset1Weight = 50%
+                10 // threshold = 10%
+            ),
+            nonce: 0,
+            expiry: type(uint256).max,
+            admitCallback: true
+        });
+
+        (uint8 v, bytes32 r, bytes32 s) = _aliceSignature(wallet, op);
+
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    // portfolio is roughly 50-50 so does not rebalance
+    function testRevertIfNotRebalanceable() public {
+        // GIVE ALICE SOME WETH AND WBTC AND HAVE HER SUPPLY TO COMET
+        uint wethAmount = 20 * (10 ** 18);
+        uint wbtcAmount = 1 * (10 ** 8);
+        deal(WETH_ADDRESS, ALICE, wethAmount);
+        deal(WBTC_ADDRESS, ALICE, wbtcAmount);
+
+        vm.startPrank(ALICE);
+        CometInterface(COMET_ADDRESS).supplyTo(address(wallet), WETH_ADDRESS, wethAmount);
+        CometInterface(COMET_ADDRESS).supplyTo(address(wallet), WBTC_ADDRESS, wbtcAmount);
+        vm.stopPrank();
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: rebalance,
+            scriptCalldata: abi.encodeWithSelector(
+                Rebalance.rebalance.selector,
+                COMET_ADDRESS,
+                WETH_ADDRESS,
+                WBTC_ADDRESS,
+                50, // asset1Weight = 50%
+                10 // threshold = 10%
+            ),
+            nonce: 0,
+            expiry: type(uint256).max,
+            admitCallback: true
+        });
+
+        (uint8 v, bytes32 r, bytes32 s) = _aliceSignature(wallet, op);
+
+        vm.expectRevert();
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    function _aliceSignature(QuarkWallet _wallet, QuarkWallet.QuarkOperation memory op) internal view returns (uint8, bytes32, bytes32) {
         bytes32 structHash = keccak256(
             abi.encode(
                 QUARK_OPERATION_TYPEHASH,
@@ -106,7 +180,7 @@ contract RebalanceTest is Test {
         );
 
         bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash)
+            abi.encodePacked("\x19\x01", _wallet.DOMAIN_SEPARATOR(), structHash)
         );
 
         return
