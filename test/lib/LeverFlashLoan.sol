@@ -12,6 +12,8 @@ import "solmate/tokens/ERC20.sol";
 import "./PoolAddress.sol";
 
 contract LeverFlashLoan is IUniswapV3SwapCallback {
+    address constant UNISWAP_ROUTER =
+        0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address constant UNISWAP_FACTORY =
         0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
