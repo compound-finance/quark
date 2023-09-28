@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import { CodeJar } from "./CodeJar.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {CodeJar} from "./CodeJar.sol";
+import "forge-std/console.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract QuarkWallet {
     error BadSignatory();
@@ -18,14 +19,23 @@ contract QuarkWallet {
     /// @notice Address of the EOA that controls this wallet
     address public immutable owner;
 
+    /// @notice address of the currently pending callback script
+    address public callback;
+
     /// @notice storage slot for storing the `owner` address
     bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
 
     /// @dev The EIP-712 typehash for authorizing an operation
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)");
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH =
+        keccak256(
+            "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)"
+        );
 
     /// @dev The EIP-712 typehash for the contract's domain
-    bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 internal constant DOMAIN_TYPEHASH =
+        keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
 
     /// @notice Name of contract, for use in DOMAIN_SEPARATOR
     string public constant name = "Quark Wallet";
@@ -48,6 +58,7 @@ contract QuarkWallet {
         bytes scriptCalldata; // selector + arguments encoded as calldata
         uint256 nonce;
         uint256 expiry;
+        bool admitCallback;
         // requirements
         // isReplayable
         // isCallbackable
@@ -63,7 +74,9 @@ contract QuarkWallet {
          * variable that we are allowed to access with impunity.
          */
         bytes32 slot = OWNER_SLOT;
-        assembly { sstore(slot, owner_) }
+        assembly {
+            sstore(slot, owner_)
+        }
     }
 
     /**
@@ -99,12 +112,12 @@ contract QuarkWallet {
      * @return The next unused nonce
      */
     function nextUnusedNonce() external returns (uint256) {
-      uint256 i;
-      for (i = 0; i < type(uint256).max; i++) {
-        if (!isSet(i)) return i;
-      }
+        uint256 i;
+        for (i = 0; i < type(uint256).max; i++) {
+            if (!isSet(i)) return i;
+        }
 
-      revert NoUnusedNonces();
+        revert NoUnusedNonces();
     }
 
     /**
@@ -112,11 +125,16 @@ contract QuarkWallet {
      * @return bytes32 The domain separator
      */
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(VERSION)), block.chainid, address(this)
-            )
-        );
+        return
+            keccak256(
+                abi.encode(
+                    DOMAIN_TYPEHASH,
+                    keccak256(bytes(name)),
+                    keccak256(bytes(VERSION)),
+                    block.chainid,
+                    address(this)
+                )
+            );
     }
 
     /**
@@ -129,35 +147,64 @@ contract QuarkWallet {
      * @return return value from the executed operation
      */
     function executeQuarkOperation(
-      QuarkOperation calldata op,
-      uint8 v,
-      bytes32 r,
-      bytes32 s
+        QuarkOperation calldata op,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) public payable returns (bytes memory) {
         if (block.timestamp >= op.expiry) revert SignatureExpired();
         if (isSet(op.nonce)) revert InvalidNonce();
 
-        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
+        bytes32 structHash = keccak256(
+            abi.encode(
+                QUARK_OPERATION_TYPEHASH,
+                op.scriptSource,
+                op.scriptCalldata,
+                op.nonce,
+                op.expiry
+            )
+        );
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash)
+        );
 
         if (isValidSignature(owner, digest, v, r, s)) {
             setNonce(op.nonce, true);
-            return executeQuarkOperationInternal(op.scriptSource, op.scriptCalldata);
+            // XXX handle op.scriptAddress without CodeJar
+            address scriptAddress = codeJar.saveCode(op.scriptSource);
+            // if the trx script admits callbacks, set it as the current callback
+            if (op.admitCallback) {
+                if (callback != address(0)) {
+                    revert(); // XXX
+                }
+                callback = scriptAddress;
+            }
+            bytes memory result = executeQuarkOperationInternal(
+                scriptAddress,
+                op.scriptCalldata
+            );
+            callback = address(0);
+            return result;
         }
     }
 
     /**
      * @dev Validates EIP-712 signature
      */
-    function isValidSignature(address signer, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
-        internal
-        pure
-        returns (bool)
-    {
-        (address recoveredSigner, ECDSA.RecoverError recoverError) = ECDSA.tryRecover(digest, v, r, s);
+    function isValidSignature(
+        address signer,
+        bytes32 digest,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (bool) {
+        (address recoveredSigner, ECDSA.RecoverError recoverError) = ECDSA
+            .tryRecover(digest, v, r, s);
 
-        if (recoverError == ECDSA.RecoverError.InvalidSignatureS) revert InvalidSignatureS();
-        if (recoverError == ECDSA.RecoverError.InvalidSignature) revert BadSignatory();
+        if (recoverError == ECDSA.RecoverError.InvalidSignatureS)
+            revert InvalidSignatureS();
+        if (recoverError == ECDSA.RecoverError.InvalidSignature)
+            revert BadSignatory();
         if (recoveredSigner != signer) revert BadSignatory();
 
         return true;
@@ -170,28 +217,64 @@ contract QuarkWallet {
      * @param scriptCalldata The encoded function selector and arguments to call on the transaction script
      * @return return value from the executed operation
      */
-    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
+    function executeQuarkOperation(
+        bytes calldata scriptSource,
+        bytes calldata scriptCalldata
+    ) public payable returns (bytes memory) {
         // XXX authtenticate caller
-        return executeQuarkOperationInternal(scriptSource, scriptCalldata);
+        address scriptAddress = codeJar.saveCode(scriptSource);
+        return executeQuarkOperationInternal(scriptAddress, scriptCalldata);
     }
 
     /**
      * @dev Execute QuarkOperation
      */
-    function executeQuarkOperationInternal(bytes calldata scriptSource, bytes calldata scriptCalldata) internal returns (bytes memory) {
-        address deployedCode = codeJar.saveCode(scriptSource);
+    function executeQuarkOperationInternal(
+        address scriptAddress,
+        bytes memory scriptCalldata
+    ) internal returns (bytes memory) {
         uint256 codeLen;
         assembly {
-            codeLen := extcodesize(deployedCode)
+            codeLen := extcodesize(scriptAddress)
         }
         if (codeLen == 0) {
             revert QuarkCodeNotFound();
         }
 
-        (bool success, bytes memory result) = deployedCode.delegatecall(scriptCalldata);
-        if (!success) {
-            revert QuarkCallError(result);
+        bool success;
+        uint sz;
+        assembly {
+            // first 0x20 (32) bytes are the length
+            let size := mload(scriptCalldata)
+            success := callcode(
+                gas(),
+                scriptAddress,
+                0 /* value */,
+                add(scriptCalldata, 0x20),
+                size,
+                0x0,
+                0
+            )
+            sz := returndatasize()
         }
-        return result;
+        bytes memory returndata = new bytes(sz);
+        assembly {
+            returndatacopy(add(returndata, 0x20), 0x00, returndatasize())
+        }
+        if (!success) {
+            revert QuarkCallError(returndata);
+        }
+        return returndata;
+    }
+
+    fallback(bytes calldata data) external returns (bytes memory) {
+        console.log("Calling fallback");
+        console.log("callback:", callback);
+        if (callback != address(0)) {
+            (, bytes memory result) = callback.delegatecall(data);
+            return result;
+        } else {
+            revert();
+        }
     }
 }

@@ -5,6 +5,7 @@ libs = ["lib"]
 remappings = [
   "@openzeppelin/=lib/openzeppelin-contracts/",
   "@comet/=lib/comet/contracts/",
+  "@uniswap/v3-core/=lib/v3-core",
 ]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
