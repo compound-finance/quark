@@ -52,6 +52,10 @@ contract CompoundLeverLoopTest is Test {
         IERC20NonStandard(USDC).approve(Comet, type(uint256).max);
         CometInterface(Comet).supplyTo(address(wallet), WETH, 10e18);
         vm.stopPrank();
+        vm.startPrank(address(wallet));
+        IERC20NonStandard(WETH).approve(Comet, type(uint256).max);
+        IERC20NonStandard(USDC).approve(Comet, type(uint256).max);
+        vm.stopPrank();
 
         // wallet.executeQuarkOperation(
         //     cll,
@@ -67,8 +71,9 @@ contract CompoundLeverLoopTest is Test {
             abi.encodeWithSelector(
                 CompoundLeverLoop.leverLoop.selector,
                 Comet, 
-                1e18, 
-                WETH
+                1000e6, 
+                WETH, 
+                USDC
             )
         );
 

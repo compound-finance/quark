@@ -17,7 +17,7 @@ interface CometInterface {
 
     function baseToken() external view returns (address);
 
-    function supply(address asset, uint amount) external view returns (uint256);
+    function supply(address asset, uint amount) external;
 
     function supplyTo(address dst, address asset, uint amount) external;
 

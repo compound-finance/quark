@@ -11,4 +11,5 @@ interface IERC20NonStandard {
     function transfer(address to, uint256 value) external;
     function transferFrom(address from, address to, uint256 value) external;
     function balanceOf(address account) external view returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
 }

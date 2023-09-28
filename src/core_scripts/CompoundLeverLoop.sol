@@ -6,6 +6,7 @@ import "../interfaces/IERC20NonStandard.sol";
 import "../interfaces/IUniswapV2Router.sol";
 import "../interfaces/CometInterface.sol";
 import "../interfaces/ISwapRouter.sol";
+import "forge-std/console.sol";
 
 contract CompoundLeverLoop is QuarkScript {
   error InvalidInput();
@@ -46,12 +47,12 @@ contract CompoundLeverLoop is QuarkScript {
     }
   }
 
-  function leverLoop(address cometAddress, uint256 stepAmount, address targetAsset) external {
+  function leverLoop(address cometAddress, uint256 stepAmount, address targetAsset, address baseAsset) external {
     uint loopMax = 3;
     while(loopMax > 0){
-        CometInterface(cometAddress).withdraw(targetAsset, stepAmount);
+        CometInterface(cometAddress).withdraw(baseAsset, stepAmount);
         // Uniswap trade
-        uint swapOut = swapViaUniswap(CometInterface(cometAddress).baseToken(), targetAsset, stepAmount, 0);
+        uint256 swapOut = swapViaUniswap(CometInterface(cometAddress).baseToken(), targetAsset, stepAmount, 0);
         // Supply back to Compound
         CometInterface(cometAddress).supply(targetAsset, swapOut);
         loopMax -= 1;
