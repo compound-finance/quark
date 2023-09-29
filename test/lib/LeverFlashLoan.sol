@@ -59,10 +59,6 @@ contract LeverFlashLoan is IUniswapV3SwapCallback {
         uint swapAmount = (borrowCollateralFactor * collateralAmount) /
             (1e18 - scaledFee - borrowCollateralFactor);
 
-        console.log("BorrowCollateralFactor:", borrowCollateralFactor);
-        console.log("CollateralAmount:", collateralAmount);
-        console.log("SwapAmount:", swapAmount);
-
         address token0 = collateralAsset.asset;
         address token1 = comet.baseToken();
         uint amount0 = swapAmount;
@@ -194,6 +190,11 @@ struct AssetInfo {
     uint128 supplyCap;
 }
 
+struct UserCollateral {
+    uint128 balance;
+    uint128 _reserved;
+}
+
 interface Comet {
     function getAssetInfo(uint8 i) external view returns (AssetInfo memory);
 
@@ -211,7 +212,17 @@ interface Comet {
 
     function borrowBalanceOf(address account) external view returns (uint256);
 
-    function collateralBalanceOf(address account, address asset) external view returns (uint128);
+    function collateralBalanceOf(
+        address account,
+        address asset
+    ) external view returns (uint128);
 
-    function getAssetInfoByAddress(address asset) external view returns (AssetInfo memory);
+    function getAssetInfoByAddress(
+        address asset
+    ) external view returns (AssetInfo memory);
+
+    function userCollateral(
+        address account,
+        address asset
+    ) external view returns (UserCollateral memory);
 }

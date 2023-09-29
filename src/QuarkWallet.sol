@@ -217,14 +217,14 @@ contract QuarkWallet {
      * @param scriptCalldata The encoded function selector and arguments to call on the transaction script
      * @return return value from the executed operation
      */
-    function executeQuarkOperation(
-        bytes calldata scriptSource,
-        bytes calldata scriptCalldata
-    ) public payable returns (bytes memory) {
-        // XXX authtenticate caller
-        address scriptAddress = codeJar.saveCode(scriptSource);
-        return executeQuarkOperationInternal(scriptAddress, scriptCalldata);
-    }
+    // function executeQuarkOperation(
+    //     bytes calldata scriptSource,
+    //     bytes calldata scriptCalldata
+    // ) public payable returns (bytes memory) {
+    //     // XXX authtenticate caller
+    //     address scriptAddress = codeJar.saveCode(scriptSource);
+    //     return executeQuarkOperationInternal(scriptAddress, scriptCalldata);
+    // }
 
     /**
      * @dev Execute QuarkOperation
@@ -268,8 +268,6 @@ contract QuarkWallet {
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
-        console.log("Calling fallback");
-        console.log("callback:", callback);
         if (callback != address(0)) {
             (, bytes memory result) = callback.delegatecall(data);
             return result;
@@ -277,4 +275,6 @@ contract QuarkWallet {
             revert();
         }
     }
+
+    receive() external payable {}
 }

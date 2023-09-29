@@ -56,7 +56,7 @@ contract LeverFlashLoanTest is Test {
                 collateralAmount
             ),
             nonce: 0,
-            expiry: type(uint256).max,
+            expiry: 10695928823,
             admitCallback: true
         });
 
