@@ -103,7 +103,32 @@ contract LeverFlashLoanTest is Test {
 
         console.log("After#2#Borrow balance of alice", comet.borrowBalanceOf(address(wallet)));
         console.log("After#2#Collateral balance of alice", comet.collateralBalanceOf(address(wallet), WETH));
+
+
+        // Try to reduce
+        // Alice decrease to 300% leverage
+        QuarkWallet.QuarkOperation memory op3 = QuarkWallet.QuarkOperation({
+            scriptSource: leverFlashLoanAdjustable,
+            scriptCalldata: abi.encodeWithSelector(
+                LeverFlashLoanAdjustable.runSlider.selector,
+                comet,
+                300
+            ),
+            nonce: 2,
+            expiry: type(uint256).max,
+            admitCallback: true
+        });
+
+        (v,  r,  s) = aliceSignature(wallet, op3);
+
+        result = wallet.executeQuarkOperation(op3, v, r, s);
+
+        console.log("After#3#Borrow balance of alice", comet.borrowBalanceOf(address(wallet)));
+        console.log("After#3#Collateral balance of alice", comet.collateralBalanceOf(address(wallet), WETH));
+
     }
+
+
 
     function aliceSignature(
         QuarkWallet wallet,

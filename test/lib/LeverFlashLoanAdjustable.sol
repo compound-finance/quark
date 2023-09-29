@@ -82,15 +82,17 @@ contract LeverFlashLoanAdjustable is IUniswapV3SwapCallback {
 
         } else if (leverage < currenLeverage) {
             // Apply leverage equation to get the amount of baseAsset to repay
-            // dA = (A + LD - LE) / (1 - Lf)
+            // dA = (A + LD - LE) / (1 - 2Lf)
             // with scales
-            // dA = (100*A + L*D - L*A) * 1000000 / (100*1000000 - L*f)
+            // dA = (100*A + L*D - L*A) * 1000000 / (100*1000000 - 2*L*f)
             uint assetToSellInUSD = 
                 (100 * collateralAssetValue + leverage * debtValue - leverage * collateralAssetValue) * 1e6
-                / (1e8 - leverage * fee);
+                / (1e8 - 2 * leverage * fee);
             // uint assetToSell = assetToSellInUSD * 1e18 / collateralAssetPrice;
             uint usdcToGet = assetToSellInUSD * 1e6 / comet.getPrice(comet.baseTokenPriceFeed());
-
+            
+            console.log("assetToSellInUSD", assetToSellInUSD);
+            console.log("usdcToGet", usdcToGet);
 
             address token0 = collateralAsset.asset;
             address token1 = comet.baseToken();
@@ -130,9 +132,14 @@ contract LeverFlashLoanAdjustable is IUniswapV3SwapCallback {
             (SwapCallbackData)
         );
         Comet comet = swapCallbackData.comet;
-
+        console.log("*****");
+        console.logInt(amount0Delta);
+        console.logInt(amount1Delta);
         supplyAndWithdrawFromCompound(swapCallbackData, amount0Delta, amount1Delta);
-
+        // 100228737767367557660
+        console.log("usdc balance", ERC20(comet.baseToken()).balanceOf(address(this)));
+        console.log("eth balance", ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).balanceOf(address(this)));
+  
 
         if (amount0Delta > 0) {
             ERC20(swapCallbackData.poolKey.token0).transfer(
@@ -170,7 +177,7 @@ contract LeverFlashLoanAdjustable is IUniswapV3SwapCallback {
             comet.withdraw(swapCallbackData.poolKey.token0, uint256(amount0Delta));
         } else if (amount1Delta > 0){
             // withdraw token1
-            comet.withdraw(swapCallbackData.poolKey.token0, uint256(amount1Delta));
+            comet.withdraw(swapCallbackData.poolKey.token1, uint256(amount1Delta));
         } else {
             revert("No withdraw");
         }
