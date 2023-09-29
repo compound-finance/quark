@@ -38,6 +38,10 @@ contract LeverFlashLoan is IUniswapV3SwapCallback {
 
     constructor() {}
 
+    // function runSlider(Comet comet, uint8 collateralAssetIndex, uint leverage, uint collateralAmount) exeternal returns (bytes memory) {
+    //     uint currenLeverage = 0;
+    // }
+
     function run(
         Comet comet,
         uint8 collateralAssetIndex,
@@ -92,6 +96,7 @@ contract LeverFlashLoan is IUniswapV3SwapCallback {
             data,
             (SwapCallbackData)
         );
+        Comet comet = swapCallbackData.comet;
         supplyAndWithdrawFromCompound(swapCallbackData);
 
         if (amount0Delta > 0) {
@@ -150,12 +155,16 @@ contract LeverFlashLoan is IUniswapV3SwapCallback {
         IUniswapV3Pool pool = IUniswapV3Pool(
             PoolAddress.computeAddress(UNISWAP_FACTORY, poolKey)
         );
-
+        console.log("initSwap");
+        console.log("token0:", params.token0);
+        console.log("token1:", params.token1);
+        console.log("amount0:", params.amount0);
+        console.log("amount1:", params.amount1);
         pool.swap(
             address(this),
-            true,
-            -int256(params.amount1),
-            TickMath.MIN_SQRT_RATIO + 1,
+            true, // 0 -> 1 direction
+            -int256(params.amount1), // amount paid in ETH and receive usdc
+            TickMath.MIN_SQRT_RATIO + 1, // if opposite direction, TickMath.MAX_SQRT_RATIO - 1, this will break production or MEV not safe
             abi.encode(
                 SwapCallbackData({
                     amount0: params.amount0,
@@ -198,11 +207,11 @@ interface Comet {
 
     function getPrice(address priceFeed) external view returns (uint256);
 
-    function getAssetInfoByAddress(
-        address asset
-    ) external view returns (AssetInfo memory);
-
     function baseTokenPriceFeed() external view returns (address);
 
     function borrowBalanceOf(address account) external view returns (uint256);
+
+    function collateralBalanceOf(address account, address asset) external view returns (uint128);
+
+    function getAssetInfoByAddress(address asset) external view returns (AssetInfo memory);
 }
