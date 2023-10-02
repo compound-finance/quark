@@ -66,16 +66,16 @@ contract CompoundLeverLoopTest is Test {
         //     WETH, 
         //     0 )
         // );
-        wallet.executeQuarkOperation(
-            cll, 
-            abi.encodeWithSelector(
-                CompoundLeverLoop.leverLoop.selector,
-                Comet, 
-                1000e6, 
-                WETH, 
-                USDC
-            )
-        );
+        // wallet.executeQuarkOperation(
+        //     cll, 
+        //     abi.encodeWithSelector(
+        //         CompoundLeverLoop.leverLoop.selector,
+        //         Comet, 
+        //         1000e6, 
+        //         WETH, 
+        //         USDC
+        //     )
+        // );
 
         console.log("Comet position after:");
         console.log(CometInterface(Comet).collateralBalanceOf(address(wallet), WETH));

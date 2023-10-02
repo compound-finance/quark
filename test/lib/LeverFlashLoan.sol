@@ -225,4 +225,6 @@ interface Comet {
         address account,
         address asset
     ) external view returns (UserCollateral memory);
+
+    function supplyTo(address dst, address asset, uint amount) external;
 }

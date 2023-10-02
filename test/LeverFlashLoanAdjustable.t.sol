@@ -44,9 +44,9 @@ contract LeverFlashLoanTest is Test {
         // (bool success, ) = address(wallet).call{value: collateralAmount}("");
         // require(success, "Failed to send ether to wallet");
         // vm.stopPrank();
-        deal(WETH, address(wallet), 1 ether);
-        deal(WETH, alice, 10 ether);
-        
+        // deal(WETH, address(wallet), 1 ether);
+        deal(WETH, alice, 1 ether);
+
         bytes memory leverFlashLoanAdjustable = new YulHelper().getDeployed(
             "LeverFlashLoanAdjustable.sol/LeverFlashLoanAdjustable.json"
         );
@@ -54,17 +54,35 @@ contract LeverFlashLoanTest is Test {
         Comet comet = Comet(0xc3d688B66703497DAA19211EEdff47f25384cdc3);
 
         vm.startPrank(alice);
-        IERC20NonStandard(WETH).approve(0xc3d688B66703497DAA19211EEdff47f25384cdc3, type(uint256).max);
-        IERC20NonStandard(USDC).approve(0xc3d688B66703497DAA19211EEdff47f25384cdc3, type(uint256).max);
+        IERC20NonStandard(WETH).approve(
+            0xc3d688B66703497DAA19211EEdff47f25384cdc3,
+            type(uint256).max
+        );
+        IERC20NonStandard(USDC).approve(
+            0xc3d688B66703497DAA19211EEdff47f25384cdc3,
+            type(uint256).max
+        );
         comet.supplyTo(address(wallet), WETH, 1e18);
         vm.stopPrank();
         vm.startPrank(address(wallet));
-        IERC20NonStandard(WETH).approve(0xc3d688B66703497DAA19211EEdff47f25384cdc3, type(uint256).max);
-        IERC20NonStandard(USDC).approve(0xc3d688B66703497DAA19211EEdff47f25384cdc3, type(uint256).max);
+        IERC20NonStandard(WETH).approve(
+            0xc3d688B66703497DAA19211EEdff47f25384cdc3,
+            type(uint256).max
+        );
+        IERC20NonStandard(USDC).approve(
+            0xc3d688B66703497DAA19211EEdff47f25384cdc3,
+            type(uint256).max
+        );
         vm.stopPrank();
 
-        console.log("Before#1#Borrow balance of alice", comet.borrowBalanceOf(address(wallet)));
-        console.log("Before#1#Collateral balance of alice", comet.collateralBalanceOf(address(wallet), WETH));
+        console.log(
+            "Before#1#Borrow balance of alice",
+            comet.borrowBalanceOf(address(wallet))
+        );
+        console.log(
+            "Before#1#Collateral balance of alice",
+            comet.collateralBalanceOf(address(wallet), WETH)
+        );
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: leverFlashLoanAdjustable,
             scriptCalldata: abi.encodeWithSelector(
@@ -81,8 +99,14 @@ contract LeverFlashLoanTest is Test {
 
         bytes memory result = wallet.executeQuarkOperation(op, v, r, s);
 
-        console.log("After#1#Borrow balance of alice", comet.borrowBalanceOf(address(wallet)));
-        console.log("After#1#Collateral balance of alice", comet.collateralBalanceOf(address(wallet), WETH));
+        console.log(
+            "After#1#Borrow balance of alice",
+            comet.borrowBalanceOf(address(wallet))
+        );
+        console.log(
+            "After#1#Collateral balance of alice",
+            comet.collateralBalanceOf(address(wallet), WETH)
+        );
 
         // Alice increase to 400% leverage
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
@@ -97,13 +121,18 @@ contract LeverFlashLoanTest is Test {
             admitCallback: true
         });
 
-        (v,  r,  s) = aliceSignature(wallet, op2);
+        (v, r, s) = aliceSignature(wallet, op2);
 
         result = wallet.executeQuarkOperation(op2, v, r, s);
 
-        console.log("After#2#Borrow balance of alice", comet.borrowBalanceOf(address(wallet)));
-        console.log("After#2#Collateral balance of alice", comet.collateralBalanceOf(address(wallet), WETH));
-
+        console.log(
+            "After#2#Borrow balance of alice",
+            comet.borrowBalanceOf(address(wallet))
+        );
+        console.log(
+            "After#2#Collateral balance of alice",
+            comet.collateralBalanceOf(address(wallet), WETH)
+        );
 
         // Try to reduce
         // Alice decrease to 300% leverage
@@ -119,16 +148,19 @@ contract LeverFlashLoanTest is Test {
             admitCallback: true
         });
 
-        (v,  r,  s) = aliceSignature(wallet, op3);
+        (v, r, s) = aliceSignature(wallet, op3);
 
         result = wallet.executeQuarkOperation(op3, v, r, s);
 
-        console.log("After#3#Borrow balance of alice", comet.borrowBalanceOf(address(wallet)));
-        console.log("After#3#Collateral balance of alice", comet.collateralBalanceOf(address(wallet), WETH));
-
+        console.log(
+            "After#3#Borrow balance of alice",
+            comet.borrowBalanceOf(address(wallet))
+        );
+        console.log(
+            "After#3#Collateral balance of alice",
+            comet.collateralBalanceOf(address(wallet), WETH)
+        );
     }
-
-
 
     function aliceSignature(
         QuarkWallet wallet,
