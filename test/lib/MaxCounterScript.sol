@@ -9,7 +9,7 @@ contract MaxCounterScript is QuarkScript {
 
   string constant maxCountVar = "quark.org.MaxCounterScript.maxCount";
 
-  function run(Counter c) external onlyRelayer returns (bytes memory) {
+  function run(Counter c) external returns (bytes memory) {
     c.increment();
     uint256 count = sloadU256(maxCountVar);
     if (count >= 3) {
