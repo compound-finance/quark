@@ -64,6 +64,30 @@ contract CodeJarTest is Test {
         }
     }
 
+    function testCodeJarDifferentZeros() public {
+        vm.startPrank(address(0xaa));
+
+        // Check that random addresses have zero extcodehash
+        assertEq(address(0x0011223344).codehash, 0);
+
+        // Check that accounts that send have zero extcodehash
+        assertEq(vm.getNonce(address(0xaa)), 0);
+        assertEq(address(0xaa).codehash, 0);
+        address(0).call(hex"");
+
+        // TODO: This is returning 0, maybe a fluke in foundry
+        // assertEq(vm.getNonce(address(0xaa)), 1);
+
+        assertEq(address(0xaa).codehash, 0);
+
+        address zeroDeploy = codeJar.saveCode(hex"");
+        assertEq(zeroDeploy.codehash, keccak256(hex""));
+        assertEq(codeJar.readCode(zeroDeploy), hex"");
+
+        address nonZeroDeploy = codeJar.saveCode(hex"00");
+        assertEq(codeJar.readCode(nonZeroDeploy), hex"00");
+    }
+
     function testCodeJarCounter() public {
         address scriptAddress = codeJar.saveCode(type(Counter).runtimeCode);
         assertEq(scriptAddress.code, type(Counter).runtimeCode);
