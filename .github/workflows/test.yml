@@ -35,5 +35,5 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test --fork-url https://node-provider.compound.finance/ethereum-mainnet -vvv
+          forge test --fork-url https://mainnet.infura.io/v3/44c48f91002a4048b0ae30b9067f700f -vvv
         id: test
