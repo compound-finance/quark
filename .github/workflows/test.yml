@@ -35,5 +35,5 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge test --fork-url https://node-provider.compound.finance/ethereum-mainnet -vvv
         id: test
