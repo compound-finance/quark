@@ -27,7 +27,7 @@ contract QuarkWalletTest is Test {
         console.log("Counter deployed to: %s", address(counter));
     }
 
-    function testExecuteQuarkOperation() public {
+    function testGetOwner() public {
         address account = address(0xaa);
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         bytes memory result = wallet.executeQuarkOperation(
