@@ -21,7 +21,6 @@ contract UniswapFlashLoanMulticall is CoreScript, IUniswapV3FlashCallback {
     uint256 amount1;
     PoolAddress.PoolKey poolKey;
     address[] callContracts;
-    bytes[] callCodes;
     bytes[] callDatas;
     uint256[] callValues;
   }
@@ -33,7 +32,6 @@ contract UniswapFlashLoanMulticall is CoreScript, IUniswapV3FlashCallback {
     uint256 amount0;
     uint256 amount1;
     address[] callContracts;
-    bytes[] callCodes;
     bytes[] callDatas;
     uint256[] callValues;
   }
@@ -55,7 +53,6 @@ contract UniswapFlashLoanMulticall is CoreScript, IUniswapV3FlashCallback {
             amount1: payload.amount1,
             poolKey: PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee),
             callContracts: payload.callContracts,
-            callCodes: payload.callCodes,
             callDatas: payload.callDatas,
             callValues: payload.callValues
           })
@@ -73,7 +70,7 @@ contract UniswapFlashLoanMulticall is CoreScript, IUniswapV3FlashCallback {
       revert InvalidCaller();
     }
     
-    executeMultiInternal(input.callContracts, input.callCodes, input.callDatas, input.callValues);
+    executeMultiInternal(input.callContracts, input.callDatas, input.callValues);
 
     // Attempt to pay back amount owed after multi calls completed
     if (input.amount0 + fee0 > 0) {

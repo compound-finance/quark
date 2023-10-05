@@ -19,14 +19,6 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
   struct FlashSwapMulticallInput {
     PoolAddress.PoolKey poolKey;
     address[] callContracts;
-    bytes[] callCodes;
-    bytes[] callDatas;
-    uint256[] callValues;
-  }
-
-  struct ExecutionPayload { 
-    address[] callContracts;
-    bytes[] callCodes;
     bytes[] callDatas;
     uint256[] callValues;
   }
@@ -39,7 +31,6 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
     uint256 amount1;
     uint160 sqrtPriceLimitX96;
     address[] callContracts;
-    bytes[] callCodes;
     bytes[] callDatas;
     uint256[] callValues;
   }
@@ -62,7 +53,6 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
           FlashSwapMulticallInput({
             poolKey: PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee),
             callContracts: payload.callContracts,
-            callCodes: payload.callCodes,
             callDatas: payload.callDatas,
             callValues: payload.callValues
           })
@@ -80,7 +70,7 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
       revert InvalidCaller();
     }
     
-    executeMultiInternal(input.callContracts, input.callCodes, input.callDatas, input.callValues);
+    executeMultiInternal(input.callContracts, input.callDatas, input.callValues);
     // Attempt to pay back amount owed after multi calls completed
     if (amount0Delta > 0) {
         IERC20NonStandard(input.poolKey.token0).transfer(
