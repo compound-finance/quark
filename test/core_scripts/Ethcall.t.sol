@@ -49,7 +49,6 @@ contract EthcallTest is Test {
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector,
                 address(counter),
-                hex"",
                 abi.encodeCall(
                     Counter.incrementBy,
                     (1)
