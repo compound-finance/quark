@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
+import "forge-std/StdUtils.sol";
 
 import "../../src/CodeJar.sol";
 import "../../src/QuarkWallet.sol";
@@ -28,13 +29,14 @@ contract CometSupplyTest is Test {
 
     function testCometSupplySucceeds() public {
         address account = address(0xa11ce);
-        address wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
 
         bytes memory supplyScript = new YulHelper().getDeployed("CometSupply.sol/CometSupply.json");
 
-        vm.deal(usdc, wallet, 5000000);
+        
+        deal(usdc, address(wallet), 5000000);
 
-        bytes memory action = CometSupply.CometSupplyAction({
+        CometSupplyAction memory action = CometSupplyAction({
             comet: comet,
             asset: usdc,
             amount: 5000000 // 5 USDC
@@ -42,10 +44,12 @@ contract CometSupplyTest is Test {
 
         wallet.executeQuarkOperation(
             supplyScript,
-            abi.encodeWithSignature(
-                "run(tuple(address,address,uint256))",
+            abi.encodeWithSelector(
+                CometSupply.run.selector,
                 action
             )
         );
+
+        // assertEq(IComet(comet).balanceOf(address(wallet)), 5000000);
     }
 }
