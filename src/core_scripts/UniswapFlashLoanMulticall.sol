@@ -39,7 +39,7 @@ contract UniswapFlashLoanMulticall is CoreScript, IUniswapV3FlashCallback {
   }
   function run(
     UniswapFlashLoanMulticallPayload memory payload
-  ) external onlyRelayer returns (bytes memory) {
+  ) external returns (bytes memory) {
       // Reorder the token0, token1 to ensure it's in the correct order token1 > token0
       if (payload.token0 > payload.token1) {
         (payload.token0, payload.token1) = (payload.token1, payload.token0);
