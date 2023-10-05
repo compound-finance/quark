@@ -87,12 +87,12 @@ contract QuarkWallet {
      * @return The next unused nonce
      */
     function nextUnusedNonce() external returns (uint256) {
-      uint256 i;
-      for (i = 0; i < type(uint256).max; i++) {
-        if (!isSet(i)) return i;
-      }
+        uint256 i;
+        for (i = 0; i < type(uint256).max; i++) {
+            if (!isSet(i)) return i;
+        }
 
-      revert NoUnusedNonces();
+        revert NoUnusedNonces();
     }
 
     /**
