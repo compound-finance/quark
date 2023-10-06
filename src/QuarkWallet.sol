@@ -205,14 +205,16 @@ contract QuarkWallet {
             success := callcode(gas(), scriptAddress, 0/* value */, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
         }
-        bytes memory returndata = new bytes(returnSize);
+
+        bytes memory returnData = new bytes(returnSize);
         assembly {
-            returndatacopy(add(returndata, 0x20), 0x00, returnSize)
+            returndatacopy(add(returnData, 0x20), 0x00, returnSize)
         }
         if (!success) {
-            revert QuarkCallError(returndata);
+            revert QuarkCallError(returnData);
         }
-        return returndata;
+
+        return returnData;
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
