@@ -37,7 +37,8 @@ contract EthcallTest is Test {
         console.log("Counter deployed to : %s", address(counter));
     }
 
-    function testEthCallCounter() public {
+    // Test Case #1: Invoke Counter contract via signature
+    function testEthCallCounterBySig() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
@@ -49,6 +50,7 @@ contract EthcallTest is Test {
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector,
                 address(counter),
+                hex"",
                 abi.encodeCall(
                     Counter.incrementBy,
                     (1)
@@ -65,8 +67,6 @@ contract EthcallTest is Test {
         bytes memory result = wallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 1);
     }
-
-
 
     function aliceSignature(
         QuarkWallet wallet,
