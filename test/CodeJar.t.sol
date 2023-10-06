@@ -18,6 +18,7 @@ contract CodeJarTest is Test {
     event Ping(uint256 value);
 
     CodeJar public codeJar;
+    address destructingAddress;
 
     constructor() {
         codeJar = new CodeJar();
@@ -25,7 +26,13 @@ contract CodeJarTest is Test {
     }
 
     function setUp() public {
-        // nothing
+        // TODO: Only on certain tests?
+
+        // PUSH0 [5F]; SELFDESTRUCT [FF]
+        destructingAddress = codeJar.saveCode(hex"5fff");
+        assertEq(destructingAddress.code, hex"5fff");
+        destructingAddress.call(hex"");
+        assertEq(destructingAddress.code, hex"5fff");
     }
 
     function testCodeJarFirstDeploy() public {
@@ -99,23 +106,18 @@ contract CodeJarTest is Test {
     }
 
     function testCodeJarSelfDestruct() public {
-        // TODO: Consider how to handle this since we run in a transaction and thus can't self destruct
-
-        // PUSH0 [5F]; SELFDESTRUCT [FF]
-        address scriptAddress = codeJar.saveCode(hex"5fff");
-        assertEq(scriptAddress.code, hex"5fff");
-        scriptAddress.call(hex"");
-        assertEq(scriptAddress.code, hex"");
-        codeJar.saveCode(hex"5fff");
-        assertEq(scriptAddress.code, hex"5fff");
+        assertEq(destructingAddress.code, hex"");
+        assertEq(destructingAddress.codehash, 0);
+        assertEq(destructingAddress, codeJar.saveCode(hex"5fff"));
+        assertEq(destructingAddress.code, hex"5fff");
+        assertEq(destructingAddress.codehash, keccak256(hex"5fff"));
     }
 
-    function testCodeJarTooLarge() public {
-        // TODO: Consider how to handle this since we run in a transaction and thus can't self destruct
-        bytes32[] memory script = new bytes32[](1000); // 2**32 / 32 + 1
+    function testCodeJarLarge() public {
+        bytes32[] memory script = new bytes32[](10000);
         bytes memory code = abi.encodePacked(script);
-        address scriptAddress = codeJar.saveCode(code);
+        codeJar.saveCode(code);
     }
 
-    // TODO: Test code too large (overflow)
+    // Note: cannot test code too large, as overflow impossible to test
 }
