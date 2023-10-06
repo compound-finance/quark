@@ -98,12 +98,12 @@ contract QuarkWallet {
      * @return The next unused nonce
      */
     function nextUnusedNonce() external returns (uint256) {
-      uint256 i;
-      for (i = 0; i < type(uint256).max; i++) {
-        if (!isSet(i)) return i;
-      }
+        uint256 i;
+        for (i = 0; i < type(uint256).max; i++) {
+            if (!isSet(i)) return i;
+        }
 
-      revert NoUnusedNonces();
+        revert NoUnusedNonces();
     }
 
     /**
@@ -128,10 +128,10 @@ contract QuarkWallet {
      * @return return value from the executed operation
      */
     function executeQuarkOperation(
-      QuarkOperation calldata op,
-      uint8 v,
-      bytes32 r,
-      bytes32 s
+        QuarkOperation calldata op,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) public payable returns (bytes memory) {
         if (block.timestamp >= op.expiry) revert SignatureExpired();
         if (isSet(op.nonce)) revert InvalidNonce();
