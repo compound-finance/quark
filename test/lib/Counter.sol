@@ -30,9 +30,9 @@ contract Counter {
         return number;
     }
 
-    function incrementCallback() public {
+    function incrementAndCallback() public {
         number++;
-        (CallbackInterface(address(msg.sender))).counterCallback(number);
+        msg.sender.call("");
     }
 }
 
