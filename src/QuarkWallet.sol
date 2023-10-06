@@ -18,11 +18,11 @@ contract QuarkWallet {
     /// @notice Address of the EOA that controls this wallet
     address public immutable owner;
 
-    /// @notice address of the currently pending callback script
-    address public callback;
-
     /// @notice storage slot for storing the `owner` address
     bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
+
+    /// @notice storage slot for storing the active `callback` address
+    bytes32 internal constant ACTIVE_CALLBACK_SLOT = bytes32(keccak256("org.quark.active-callback"));
 
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)");
@@ -118,6 +118,18 @@ contract QuarkWallet {
         );
     }
 
+    function getActiveCallback() internal returns (address) {
+        bytes32 slot = ACTIVE_CALLBACK_SLOT;
+        address callback;
+        assembly { callback := sload(slot) }
+        return callback;
+    }
+
+    function setActiveCallback(address callback) internal {
+        bytes32 slot = ACTIVE_CALLBACK_SLOT;
+        assembly { sstore(slot, callback) }
+    }
+
     /**
      * @notice Execute a QuarkOperation via signature
      * @dev Can only be called with signatures from the wallet's owner
@@ -143,15 +155,20 @@ contract QuarkWallet {
             setNonce(op.nonce);
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-            // if the trx script allows callbacks, set it as the current callback
+
+            // if the script allows callbacks, set it as the current callback
             if (op.allowCallback) {
+                address callback = getActiveCallback();
                 if (callback != address(0)) {
                     revert(); // XXX
                 }
-                callback = scriptAddress;
+                setActiveCallback(scriptAddress);
             }
+
             bytes memory result = executeQuarkOperationInternal(scriptAddress, op.scriptCalldata);
-            callback = address(0);
+
+            setActiveCallback(address(0));
+
             return result;
         }
     }
@@ -218,6 +235,7 @@ contract QuarkWallet {
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
+        address callback = getActiveCallback();
         if (callback != address(0)) {
             (, bytes memory result) = callback.delegatecall(data);
             return result;
