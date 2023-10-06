@@ -199,16 +199,16 @@ contract QuarkWallet {
         }
 
         bool success;
-        uint sz;
+        uint returnSize;
         assembly {
             // first 0x20 (32) bytes are the length
             let size := mload(scriptCalldata)
             success := callcode(gas(), scriptAddress, 0/* value */, add(scriptCalldata, 0x20), size, 0x0, 0)
-            sz := returndatasize()
+            returnSize := returndatasize()
         }
-        bytes memory returndata = new bytes(sz);
+        bytes memory returndata = new bytes(returnSize);
         assembly {
-            returndatacopy(add(returndata, 0x20), 0x00, returndatasize())
+            returndatacopy(add(returndata, 0x20), 0x00, returnSize)
         }
         if (!success) {
             revert QuarkCallError(returndata);
