@@ -14,6 +14,7 @@ contract QuarkWallet {
     error QuarkCodeNotFound();
     error QuarkNonceReplay(uint256);
     error SignatureExpired();
+    error QuarkCallbackAlreadyActive();
 
     /// @notice Address of the EOA that controls this wallet
     address public immutable owner;
@@ -160,7 +161,7 @@ contract QuarkWallet {
             if (op.allowCallback) {
                 address callback = getActiveCallback();
                 if (callback != address(0)) {
-                    revert(); // XXX
+                    revert QuarkCallbackAlreadyActive();
                 }
                 setActiveCallback(scriptAddress);
             }
