@@ -67,7 +67,11 @@ contract CodeJarTest is Test {
         scripts[7] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
 
         for (uint8 i = 0; i < scripts.length; i++) {
-            assertEq(codeJar.saveCode(scripts[i]).code, scripts[i]);
+            assertEq(codeJar.codeExists(scripts[i]), false);
+            address codeAddress = codeJar.saveCode(scripts[i]);
+            assertEq(codeAddress.code, scripts[i]);
+            assertEq(codeJar.codeExists(scripts[i]), true);
+            assertEq(codeJar.readCode(codeAddress), scripts[i]);
         }
     }
 
@@ -120,4 +124,5 @@ contract CodeJarTest is Test {
     }
 
     // Note: cannot test code too large, as overflow impossible to test
+
 }
