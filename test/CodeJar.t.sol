@@ -4,15 +4,9 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "./lib/YulHelper.sol";
 import "./lib/Counter.sol";
-import "./lib/CounterScript.sol";
-import "./lib/MaxCounterScript.sol";
-import "./lib/Invariant.sol";
 
 import "../src/CodeJar.sol";
-import "../src/Relayer.sol";
-import "../src/RelayerAtomic.sol";
 
 contract CodeJarTest is Test {
     event Ping(uint256 value);
@@ -32,7 +26,8 @@ contract CodeJarTest is Test {
         // PUSH0 [5F]; SELFDESTRUCT [FF]
         destructingAddress = codeJar.saveCode(hex"5fff");
         assertEq(destructingAddress.code, hex"5fff");
-        destructingAddress.call(hex"");
+        (bool success,) = destructingAddress.call(hex"");
+        assertEq(success, true);
         assertEq(destructingAddress.code, hex"5fff");
     }
 
@@ -85,7 +80,8 @@ contract CodeJarTest is Test {
         // Check that accounts that send have zero extcodehash
         assertEq(vm.getNonce(address(0xaa)), 0);
         assertEq(address(0xaa).codehash, 0);
-        address(0).call(hex"");
+        (bool success,) = address(0).call(hex"");
+        assertEq(success, true);
 
         // TODO: This is returning 0, maybe a fluke in foundry
         // assertEq(vm.getNonce(address(0xaa)), 1);
