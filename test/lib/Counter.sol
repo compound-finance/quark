@@ -20,16 +20,6 @@ contract Counter {
         number += n;
     }
 
-    function incrementBy(uint256 n) public returns (uint256) {
-        number += n;
-        return number;
-    }
-
-    function decrementBy(uint256 n) public returns (uint256) {
-        number -= n;
-        return number;
-    }
-
     function incrementAndCallback() public {
         number++;
         msg.sender.call("");
