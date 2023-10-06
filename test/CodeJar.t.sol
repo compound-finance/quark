@@ -16,6 +16,7 @@ import "../src/RelayerAtomic.sol";
 
 contract CodeJarTest is Test {
     event Ping(uint256 value);
+    error CodeInvalid(address codeAddress);
 
     CodeJar public codeJar;
     address destructingAddress;
@@ -123,6 +124,13 @@ contract CodeJarTest is Test {
         codeJar.saveCode(code);
     }
 
-    // Note: cannot test code too large, as overflow impossible to test
+    function testCodeJarReadNonExistent() public {
+        vm.expectRevert(abi.encodeWithSelector(CodeInvalid.selector, address(0x55)));
+        codeJar.readCode(address(0x55));
 
+        vm.expectRevert(abi.encodeWithSelector(CodeInvalid.selector, address(codeJar)));
+        codeJar.readCode(address(codeJar));
+    }
+
+    // Note: cannot test code too large, as overflow impossible to test
 }
