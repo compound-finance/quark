@@ -8,7 +8,7 @@ contract CodeJar {
     error CodeHashMismatch(address codeAddress, bytes32 expected, bytes32 given);
 
     /**
-     * @notice Saves the code to the code jar, no-op if it already exists
+     * @notice Saves the code to Code Jar, no-op if it already exists
      * @dev This calls it meant to be idemponent and fairly inexpensive on a second call.
      * @return The address of the contract that matches the input code.
      */
@@ -42,8 +42,9 @@ contract CodeJar {
     }
 
     /**
-     * @notice Checks if code already exists in the code jar
-     * @return True if code already exists in code jar
+     * @notice Checks if code already exists in Code Jar
+     * @dev Use `saveCode` to get the address of the contract with that code
+     * @return True if code already exists in Code Jar
      */
     function codeExists(bytes calldata code) external view returns (bool) {
         bytes memory initCode = getInitCode(code);
@@ -52,8 +53,11 @@ contract CodeJar {
         return codeAddress.codehash == keccak256(code);
     }
 
-    /// Returns initCode that would produce `code` as its output. See the
-    /// full contract specification for in-depth details.
+    /**
+     * @dev Builds the initCode that would produce `code` as its output.
+     * @dev See the full contract specification for in-depth details.
+     * @return initCode that would produce  `code` as its output
+     */
     function getInitCode(bytes memory code) internal pure returns (bytes memory) {
         // Note: The gas cost in memory is `O(a^2)`, thus for an array to be
         //       more than 2^32 bytes long, the gas cost would be (2^32)^2 or
@@ -67,7 +71,10 @@ contract CodeJar {
         return abi.encodePacked(hex"63", codeLen, hex"80600e6000396000f3", code);
     }
 
-    /// This is simply the create2 address based on running the initCode constructor.
+    /**
+     * @dev Returns the create2 address based on the given initCode
+     * @return The create2 address based on running the initCode constructor
+     */
     function getCodeAddress(bytes memory initCode) internal view returns (address) {
         return address(uint160(uint(
             keccak256(
@@ -82,8 +89,9 @@ contract CodeJar {
     }
 
     /**
-     * @notice Reads the given code from the code jar
-     * @dev This simply is an extcodecopy from the address. Reverts if code doesn't exist.
+     * @notice Reads the given code from Code Jar.
+     * @dev This should revert if `codeAddress` was not deployed from this contract.
+     * @return The code at `codeAddress` if `codeAddress` was created by this contract.
      */
     function readCode(address codeAddress) external view returns (bytes memory) {
         bytes memory code = codeAddress.code;
