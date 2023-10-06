@@ -51,7 +51,7 @@ contract QuarkWallet {
         bytes scriptCalldata; // selector + arguments encoded as calldata
         uint256 nonce;
         uint256 expiry;
-        bool admitCallback;
+        bool allowCallback;
         // requirements
         // isReplayable
         // isCallbackable
@@ -143,8 +143,8 @@ contract QuarkWallet {
             setNonce(op.nonce);
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-            // if the trx script admits callbacks, set it as the current callback
-            if (op.admitCallback) {
+            // if the trx script allows callbacks, set it as the current callback
+            if (op.allowCallback) {
                 if (callback != address(0)) {
                     revert(); // XXX
                 }

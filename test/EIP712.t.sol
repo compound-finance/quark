@@ -48,7 +48,7 @@ contract EIP712Test is Test {
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: expiry,
-            admitCallback: false
+            allowCallback: false
         });
 
         return op;
