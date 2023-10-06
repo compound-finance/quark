@@ -68,6 +68,36 @@ contract EthcallTest is Test {
         assertEq(counter.number(), 1);
     }
 
+    // Test Case #2: Invoke Counter contract
+    function testEthCallCounter() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        bytes memory ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
+
+        assertEq(counter.number(), 0);
+        bytes memory result = wallet.executeQuarkOperation(
+            ethcall,
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                address(counter),
+                hex"",
+                abi.encodeCall(
+                    Counter.incrementBy,
+                    (1)
+                ),
+                0
+            )
+        );
+
+        assertEq(counter.number(), 1);
+    }
+
+    // Test Case #3: Supply USDC to Comet
+
+    // Test Case #4: Withdraw USDC from Comet
+
+    
     function aliceSignature(
         QuarkWallet wallet,
         QuarkWallet.QuarkOperation memory op
