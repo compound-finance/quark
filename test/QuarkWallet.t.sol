@@ -32,7 +32,8 @@ contract QuarkWalletTest is Test {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         bytes memory result = wallet.executeQuarkOperation(
             new YulHelper().getDeployed("GetOwner.sol/GetOwner.json"),
-            abi.encode()
+            abi.encode(), 
+            false
         );
         assertEq(result, abi.encode(0xaa));
     }
@@ -44,7 +45,8 @@ contract QuarkWalletTest is Test {
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.QuarkCodeNotFound.selector));
         wallet.executeQuarkOperation(
             abi.encode(),
-            abi.encodeWithSignature("x()")
+            abi.encodeWithSignature("x()"), 
+            false
         );
     }
 
@@ -58,7 +60,8 @@ contract QuarkWalletTest is Test {
         ));
         wallet.executeQuarkOperation(
             revertsCode,
-            abi.encode()
+            abi.encode(), 
+            false
         );
     }
 
@@ -71,7 +74,8 @@ contract QuarkWalletTest is Test {
         emit Ping(55);
         wallet.executeQuarkOperation(
             ping,
-            abi.encode()
+            abi.encode(), 
+            false
         );
     }
 
@@ -83,7 +87,8 @@ contract QuarkWalletTest is Test {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         wallet.executeQuarkOperation(
             incrementer,
-            abi.encodeWithSignature("incrementCounter(address)", counter)
+            abi.encodeWithSignature("incrementCounter(address)", counter), 
+            false
         );
         assertEq(counter.number(), 3);
     }
@@ -100,19 +105,22 @@ contract QuarkWalletTest is Test {
         // call once
         wallet.executeQuarkOperation(
             maxCounterScript,
-            abi.encodeCall(MaxCounterScript.run, (counter))
+            abi.encodeCall(MaxCounterScript.run, (counter)), 
+            false
         );
         assertEq(counter.number(), 1);
         // call twice
         wallet.executeQuarkOperation(
             maxCounterScript,
-            abi.encodeCall(MaxCounterScript.run, (counter))
+            abi.encodeCall(MaxCounterScript.run, (counter)), 
+            false
         );
         // call thrice
         assertEq(counter.number(), 2);
         wallet.executeQuarkOperation(
             maxCounterScript,
-            abi.encodeCall(MaxCounterScript.run, (counter))
+            abi.encodeCall(MaxCounterScript.run, (counter)), 
+            false
         );
         assertEq(counter.number(), 3);
 
@@ -125,7 +133,8 @@ contract QuarkWalletTest is Test {
         );
         wallet.executeQuarkOperation(
             maxCounterScript,
-            abi.encodeCall(MaxCounterScript.run, (counter))
+            abi.encodeCall(MaxCounterScript.run, (counter)), 
+            false
         );
         assertEq(counter.number(), 3);
 
