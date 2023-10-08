@@ -7,35 +7,99 @@ import "forge-std/StdUtils.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
-import "./../../src/core_scripts/Multicall.sol";
+import "./../../src/core_scripts/interfaces/IComet.sol";
+import "./../../src/core_scripts/interfaces/IERC20.sol";
+import "./../../src/core_scripts/UniswapFlashSwapMulticall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
 
 contract UniswapFlashSwapMulticallTest is Test {
     CodeJar public codeJar;
-    address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     bytes32 internal constant QUARK_OPERATION_TYPEHASH =
         keccak256(
             "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)"
         );
-    Counter public counter;
-    // Need alice info here, for signature to QuarkWallet
-    address alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    uint256 alicePK = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+
     function setUp() public {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
         codeJar.saveCode(
             new YulHelper().getDeployed(
-                "Ethcall.sol/Ethcall.json"
+                "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
             )
         );
-
-        counter = new Counter();
-        counter.setNumber(0);
-        console.log("Counter deployed to : %s", address(counter));
     }
 
     // Test #1: Using flash swap to leverage/deleverage Comet position on single asset
+    function testUniswapFlashSwapMultiCallLeverageComet() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        bytes memory uniswapFlashSwapMulticall = new YulHelper().getDeployed(
+            "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
+        );
+
+        // Comet address in mainnet
+        address cometAddr = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+        address USDC =  0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        // Set up some funds for test
+        deal(WETH, address(wallet), 10 ether);
+
+        // User has establish position in comet, try to use flash swap to leverage up
+        // Borrow 1 ETH worth of USDC from comet, and purchase 1 ETH re-supply and remaining USDC back to Comet
+        // Some computation is required to get the right number to pass into UniswapFlashSwapMulticall core scripts
+        AssetInfo memory ethAssetInfo = IComet(cometAddr).getAssetInfoByAddress(WETH);
+        uint ethPrice = IComet(cometAddr).getPrice(ethAssetInfo.priceFeed) * 1e6 / 1e8;
+        // Pool fee that will be used to do flash swap
+        uint24 poolFee = 500; 
+
+        // Compose array of actions
+        address[] memory callContracts = new address[](3);
+        bytes[] memory callCodes = new bytes[](3);
+        bytes[] memory callDatas = new bytes[](3);
+        uint256[] memory callValues = new uint256[](3);
+
+        // Approve Comet to spend WETH
+        callContracts[0] = address(WETH);
+        callCodes[0] = hex"";
+        callDatas[0] = abi.encodeCall(IERC20.approve, (cometAddr, 100 ether));
+        callValues[0] = 0 wei;
+
+        // Supply ETH to Comet
+        callContracts[1] = address(cometAddr);
+        callCodes[1] = hex"";
+        callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 11 ether)); // 10 original + 1 leveraged
+        callValues[1] = 0 wei;
+
+        // Withdraw 1 ETH worth of USDC from Comet
+        callContracts[2] = address(cometAddr);
+        callCodes[2] = hex"";
+        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, ethPrice * 12 / 10)); //  Use 1.2 multiplier to address price slippage and fee during swap
+        callValues[2] = 0 wei;
+
+        UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload memory payload = UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload({
+            token0: WETH,
+            token1: USDC,
+            fee: poolFee,
+            amount0: 1 ether,
+            amount1: 0,
+            sqrtPriceLimitX96: uint160(4295128739 + 1),
+            callContracts: callContracts,
+            callCodes: callCodes,
+            callDatas: callDatas,
+            callValues: callValues
+        });
+
+        wallet.executeQuarkOperation(
+            uniswapFlashSwapMulticall,
+            abi.encodeWithSelector(
+                UniswapFlashSwapMulticall.run.selector,
+                payload
+            ), 
+            true
+        );
+
+        // Verify that user is now holsing 10 + 1 ether exposure
+        assertEq(IComet(cometAddr).collateralBalanceOf(address(wallet), WETH), 11 ether);
+    }
 }

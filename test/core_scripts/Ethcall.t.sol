@@ -7,13 +7,14 @@ import "forge-std/StdUtils.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
+import "./../../src/core_scripts/interfaces/IComet.sol";
+import "./../../src/core_scripts/interfaces/IERC20.sol";
 import "./../../src/core_scripts/Ethcall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
 
 contract EthcallTest is Test {
     CodeJar public codeJar;
-    address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     bytes32 internal constant QUARK_OPERATION_TYPEHASH =
         keccak256(
             "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)"
@@ -87,16 +88,124 @@ contract EthcallTest is Test {
                     (1)
                 ),
                 0
-            )
+            ), 
+            false
         );
 
         assertEq(counter.number(), 1);
     }
 
     // Test Case #3: Supply USDC to Comet
+    function testSupplyUSDCToComet() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        bytes memory ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
+
+        // Comet address in mainnet
+        address cometAddr = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+        address USDCAddr =  0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        // Set up some funds for test
+        deal(USDCAddr, address(wallet), 1000_000_000);
+        // Approve Comet to spend USDC
+        wallet.executeQuarkOperation(
+            ethcall,
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                address(USDCAddr),
+                hex"",
+                abi.encodeCall(
+                    IERC20.approve,
+                    (cometAddr, 1000_000_000)
+                ),
+                0
+            ), 
+            false
+        );
+
+        assertEq(IComet(cometAddr).balanceOf(address(wallet)), 0);
+        // Supply Comet
+        wallet.executeQuarkOperation(
+            ethcall,
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                address(cometAddr),
+                hex"",
+                abi.encodeCall(
+                    IComet.supply,
+                    (USDCAddr, 1000_000_000)
+                ),
+                0
+            ), 
+            false
+        );
+
+        assertGt(IComet(cometAddr).balanceOf(address(wallet)), 0);
+    }
 
     // Test Case #4: Withdraw USDC from Comet
+    function testWithdrawUSDCFromComet() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        bytes memory ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
 
+        // Comet address in mainnet
+        address cometAddr = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+        address USDCAddr =  0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        // Set up some funds for test
+        deal(WETH, address(wallet), 100 ether);
+        // Approve Comet to spend USDC
+        wallet.executeQuarkOperation(
+            ethcall,
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                address(WETH),
+                hex"",
+                abi.encodeCall(
+                    IERC20.approve,
+                    (cometAddr, 100 ether)
+                ),
+                0
+            ), 
+            false
+        );
+
+        // Supply ETH to Comet
+        wallet.executeQuarkOperation(
+            ethcall,
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                address(cometAddr),
+                hex"",
+                abi.encodeCall(
+                    IComet.supply,
+                    (WETH, 100 ether)
+                ),
+                0
+            ), 
+            false
+        );
+
+        // Withdraw USDC from Comet
+        wallet.executeQuarkOperation(
+            ethcall,
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                address(cometAddr),
+                hex"",
+                abi.encodeCall(
+                    IComet.withdraw,
+                    (USDCAddr, 1000_000_000)
+                ),
+                0
+            ), 
+            false
+        );
+
+        assertEq(IERC20(USDCAddr).balanceOf(address(wallet)), 1000_000_000);
+    }
     
     function aliceSignature(
         QuarkWallet wallet,

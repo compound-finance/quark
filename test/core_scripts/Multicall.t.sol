@@ -7,21 +7,20 @@ import "forge-std/StdUtils.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
+import "./../../src/core_scripts/interfaces/IComet.sol";
+import "./../../src/core_scripts/interfaces/IERC20.sol";
 import "./../../src/core_scripts/Multicall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
 
 contract MulticallTest is Test {
     CodeJar public codeJar;
-    address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     bytes32 internal constant QUARK_OPERATION_TYPEHASH =
         keccak256(
             "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)"
         );
     Counter public counter;
-    // Need alice info here, for signature to QuarkWallet
-    address alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    uint256 alicePK = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+
     function setUp() public {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
@@ -38,8 +37,91 @@ contract MulticallTest is Test {
     }
 
     // Test #1: Invoke Counter twice via signature
+    function testMultiCallCounter() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        bytes memory multiCall = new YulHelper().getDeployed(
+            "Multicall.sol/Multicall.json"
+        );
+
+        // Compose array of parameters
+        address[] memory callContracts = new address[](2);
+        bytes[] memory callCodes = new bytes[](2);
+        bytes[] memory callDatas = new bytes[](2);
+        uint256[] memory callValues = new uint256[](2);
+        callContracts[0] = address(counter);
+        callCodes[0] = hex"";
+        callDatas[0] = abi.encodeCall(Counter.incrementBy, (20));
+        callValues[0] = 0 wei;
+        callContracts[1] = address(counter);
+        callCodes[1] = hex"";
+        callDatas[1] = abi.encodeCall(Counter.decrementBy, (5));
+        callValues[1] = 0 wei;
+
+        assertEq(counter.number(), 0);
+        bytes memory result = wallet.executeQuarkOperation(
+            multiCall,
+            abi.encodeWithSelector(
+                Multicall.run.selector,
+                callContracts,
+                callCodes,
+                callDatas,
+                callValues
+            ), 
+            false
+        );
+
+        assertEq(counter.number(), 15);
+    }
 
     // Test #2: Supply ETH and withdraw USDC on Comet
+    function testMultiCallSupplyEthAndWithdrawUSDC() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        bytes memory multiCall = new YulHelper().getDeployed(
+            "Multicall.sol/Multicall.json"
+        );
 
-    // Test #3: Supply ETH and withdraw USDC and buy LINK via uniswap router
+        // Comet address in mainnet
+        address cometAddr = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+        address USDCAddr =  0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        // Set up some funds for test
+        deal(WETH, address(wallet), 100 ether);
+        // Compose array of parameters
+        address[] memory callContracts = new address[](3);
+        bytes[] memory callCodes = new bytes[](3);
+        bytes[] memory callDatas = new bytes[](3);
+        uint256[] memory callValues = new uint256[](3);
+
+        // Approve Comet to spend USDC
+        callContracts[0] = address(WETH);
+        callCodes[0] = hex"";
+        callDatas[0] = abi.encodeCall(IERC20.approve, (cometAddr, 100 ether));
+        callValues[0] = 0 wei;
+
+        // Supply ETH to Comet
+        callContracts[1] = address(cometAddr);
+        callCodes[1] = hex"";
+        callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
+        callValues[1] = 0 wei;
+
+        // Withdraw USDC from Comet
+        callContracts[2] = address(cometAddr);
+        callCodes[2] = hex"";
+        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDCAddr, 1000_000_000));
+        callValues[2] = 0 wei;
+
+        wallet.executeQuarkOperation(
+            multiCall,
+            abi.encodeWithSelector(
+                Multicall.run.selector,
+                callContracts,
+                callCodes,
+                callDatas,
+                callValues
+            ), 
+            false
+        );
+
+        assertEq(IERC20(USDCAddr).balanceOf(address(wallet)), 1000_000_000);
+    }
 }
