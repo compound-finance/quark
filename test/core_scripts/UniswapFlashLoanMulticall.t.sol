@@ -8,10 +8,11 @@ import "forge-std/interfaces/IERC20.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
-import "./../../src/core_scripts/interfaces/IComet.sol";
 import "./../../src/core_scripts/UniswapFlashLoanMulticall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
+import "./interfaces/ISwapRouter.sol";
+import "./interfaces/IComet.sol";
 
 contract UniswapFlashLoanMulticallTest is Test {
     CodeJar public codeJar;
@@ -154,23 +155,4 @@ contract UniswapFlashLoanMulticallTest is Test {
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), LinkBalanceEst);
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
     }
-}
-
-// Helper interfaces thats only used in test for swapping
-interface ISwapRouter {
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 deadline;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
-
-    /// @notice Swaps `amountIn` of one token for as much as possible of another token
-    /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
-    /// @return amountOut The amount of the received token
-    function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
 }

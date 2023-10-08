@@ -8,11 +8,11 @@ import "forge-std/interfaces/IERC20.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
-import "./../../src/core_scripts/interfaces/IComet.sol";
 import "./../../src/core_scripts/Multicall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
 import "./scripts/SupplyComet.sol";
+import "./interfaces/IComet.sol";
 
 contract MulticallTest is Test {
     CodeJar public codeJar;
