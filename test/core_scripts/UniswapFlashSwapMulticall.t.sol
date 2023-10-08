@@ -22,8 +22,6 @@ contract UniswapFlashSwapMulticallTest is Test {
 
     function setUp() public {
         codeJar = new CodeJar();
-        console.log("CodeJar deployed to: %s", address(codeJar));
-
         codeJar.saveCode(
             new YulHelper().getDeployed(
                 "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"

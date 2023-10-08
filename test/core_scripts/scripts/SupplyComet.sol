@@ -5,7 +5,7 @@ import "../../../src/QuarkScript.sol";
 import "../../../src/core_scripts/interfaces/IComet.sol";
 
 contract SupplyComet is QuarkScript {
-    function supplyUSDC(address comet, address asset, uint256 amount) external {
+    function supply(address comet, address asset, uint256 amount) external {
         IComet(comet).supply(asset, amount);
     }
 }

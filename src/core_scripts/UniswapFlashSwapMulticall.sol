@@ -89,7 +89,6 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
         int256 amount1Delta,
         bytes calldata data
     ) external {
-        console.log("* START callback *");
         FlashSwapMulticallInput memory input = abi.decode(
             data,
             (FlashSwapMulticallInput)
@@ -100,15 +99,13 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
         if (msg.sender != address(pool)) {
             revert InvalidCaller();
         }
-        console.log("* START executeMultiInternal *");
         executeMultiInternal(
             input.callContracts,
             input.callCodes,
             input.callDatas,
             input.callValues
         );
-        console.log("* END executeMultiInternal *");
-        
+
         // Attempt to pay back amount owed after multi calls completed
         if (amount0Delta > 0) {
             IERC20NonStandard(input.poolKey.token0).transfer(

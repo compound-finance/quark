@@ -12,6 +12,7 @@ import "./../../src/core_scripts/interfaces/IERC20.sol";
 import "./../../src/core_scripts/Multicall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
+import "./scripts/SupplyComet.sol";
 
 contract MulticallTest is Test {
     CodeJar public codeJar;
@@ -23,8 +24,6 @@ contract MulticallTest is Test {
 
     function setUp() public {
         codeJar = new CodeJar();
-        console.log("CodeJar deployed to: %s", address(codeJar));
-
         codeJar.saveCode(
             new YulHelper().getDeployed(
                 "Multicall.sol/Multicall.json"
@@ -33,7 +32,6 @@ contract MulticallTest is Test {
 
         counter = new Counter();
         counter.setNumber(0);
-        console.log("Counter deployed to : %s", address(counter));
     }
 
     // Test #1: Invoke Counter twice via signature
@@ -123,5 +121,51 @@ contract MulticallTest is Test {
         );
 
         assertEq(IERC20(USDCAddr).balanceOf(address(wallet)), 1000_000_000);
+    }
+
+    // Test #3: Multicall on runtime code in callcodes
+    function testMultiCallSupplyCometViaRuntimeCodes() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        bytes memory multiCall = new YulHelper().getDeployed(
+            "Multicall.sol/Multicall.json"
+        );
+
+        // Comet address on mainnet
+        address comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+        address USDC =  0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        // Set up some funds for test
+        deal(USDC, address(wallet), 1000e6);
+        // Compose array of parameters
+        address[] memory callContracts = new address[](3);
+        bytes[] memory callCodes = new bytes[](3);
+        bytes[] memory callDatas = new bytes[](3);
+        uint256[] memory callValues = new uint256[](3);
+        callContracts[0] = address(USDC);
+        callCodes[0] = hex"";
+        callDatas[0] = abi.encodeCall(IERC20.approve, (comet, type(uint256).max));
+        callValues[0] = 0 wei;
+        callContracts[1] = address(0);
+        callCodes[1] = type(SupplyComet).runtimeCode;
+        callDatas[1] = abi.encodeCall(SupplyComet.supply,(comet, USDC, 500e6));
+        callValues[1] = 0 wei;
+        callContracts[2] = address(0);
+        callCodes[2] = type(SupplyComet).runtimeCode;
+        callDatas[2] = abi.encodeCall(SupplyComet.supply,(comet, USDC, 500e6));
+        callValues[2] = 0 wei;
+        // Approve Comet to spend USDC
+        wallet.executeQuarkOperation(
+            multiCall,
+            abi.encodeWithSelector(
+                Multicall.run.selector,
+                callContracts,
+                callCodes,
+                callDatas,
+                callValues
+            ), 
+            false
+        );
+
+        // Since there is rouding diff, assert on diff is less than 10 wei
+        assertLt(stdMath.delta(1000e6, IComet(comet).balanceOf(address(wallet))), 10);
     }
 }
