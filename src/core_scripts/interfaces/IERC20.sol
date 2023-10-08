@@ -5,7 +5,7 @@ pragma solidity ^0.8.19;
  * @title ERC 20 Token Standard Interface
  *  https://eips.ethereum.org/EIPS/eip-20
  */
-interface ERC20 {
+interface IERC20 {
     function name() external view returns (string memory);
 
     function symbol() external view returns (string memory);

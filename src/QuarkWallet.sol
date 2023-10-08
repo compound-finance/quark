@@ -169,10 +169,20 @@ contract QuarkWallet {
      * @param scriptCalldata The encoded function selector and arguments to call on the transaction script
      * @return return value from the executed operation
      */
-    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
+    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata, bool admitCallback) public payable returns (bytes memory) {
         // XXX authtenticate caller
         address scriptAddress = codeJar.saveCode(scriptSource);
-        return executeQuarkOperationInternal(scriptAddress, scriptCalldata);
+        // if the trx script admits callbacks, set it as the current callback
+        if (admitCallback) {
+            if (callback != address(0)) {
+                revert(); // XXX
+            }
+            callback = scriptAddress;
+        }
+
+        bytes memory result = executeQuarkOperationInternal(scriptAddress, scriptCalldata);
+        callback = address(0);
+        return result;
     }
 
     /**

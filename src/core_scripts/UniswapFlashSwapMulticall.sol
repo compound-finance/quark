@@ -6,6 +6,7 @@ import "./interfaces/IUniswapV3SwapCallback.sol";
 import "./interfaces/IERC20NonStandard.sol";
 import "./lib/PoolAddress.sol";
 import "./CoreScript.sol";
+import "forge-std/console.sol";
 
 contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
     // Constant of uniswap's factory to authorize callback caller
@@ -63,7 +64,7 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
                 payload.amount1 > payload.amount0 ? true : false,
                 payload.amount1 > payload.amount0
                     ? -int256(payload.amount1)
-                    : int256(payload.amount0),
+                    : -int256(payload.amount0),
                 payload.sqrtPriceLimitX96,
                 abi.encode(
                     FlashSwapMulticallInput({
@@ -88,6 +89,7 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
         int256 amount1Delta,
         bytes calldata data
     ) external {
+        console.log("* START callback *");
         FlashSwapMulticallInput memory input = abi.decode(
             data,
             (FlashSwapMulticallInput)
@@ -98,13 +100,15 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
         if (msg.sender != address(pool)) {
             revert InvalidCaller();
         }
-
+        console.log("* START executeMultiInternal *");
         executeMultiInternal(
             input.callContracts,
             input.callCodes,
             input.callDatas,
             input.callValues
         );
+        console.log("* END executeMultiInternal *");
+        
         // Attempt to pay back amount owed after multi calls completed
         if (amount0Delta > 0) {
             IERC20NonStandard(input.poolKey.token0).transfer(
