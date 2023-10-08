@@ -5,11 +5,11 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
+import "forge-std/interfaces/IERC20.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
 import "./../../src/core_scripts/interfaces/IComet.sol";
-import "./../../src/core_scripts/interfaces/IERC20.sol";
 import "./../../src/core_scripts/Ethcall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
