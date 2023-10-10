@@ -73,4 +73,45 @@ contract CallbacksTest is Test {
 
         assertEq(counter.number(), 11);
     }
+
+    function testRevertsNestedCallbackScriptIfCallbackAlreadyActive() public {
+        bytes memory callbackFromCounter = new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+        bytes memory runOtherScript = new YulHelper().getDeployed("RunOther.sol/RunOther.json");
+
+        uint256 nonce1 = aliceWallet.nextUnusedNonce();
+        QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
+            scriptSource: callbackFromCounter,
+            scriptCalldata: abi.encodeWithSignature(
+                "doIncrementAndCallback(address)",
+                counter
+            ),
+            nonce: nonce1,
+            expiry: block.timestamp + 1000,
+            allowCallback: true
+        });
+        (uint8 v_, bytes32 r_, bytes32 s_) = signOp(alicePrivateKey, aliceWallet, nestedOp);
+
+        uint256 nonce2 = nonce1 + 1;
+        QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
+            scriptSource: runOtherScript,
+            scriptCalldata: abi.encodeWithSignature(
+                "run((bytes,bytes,uint256,uint256,bool),uint8,bytes32,bytes32)",
+                nestedOp,
+                v_,
+                r_,
+                s_
+            ),
+            nonce: nonce2,
+            expiry: block.timestamp + 1000,
+            allowCallback: true
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, parentOp);
+
+        vm.prank(address(0x73861));
+        vm.expectRevert(
+            abi.encodeWithSelector(QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(QuarkWallet.QuarkCallbackAlreadyActive.selector))
+        );
+        aliceWallet.executeQuarkOperation(parentOp, v, r, s);
+    }
 }
