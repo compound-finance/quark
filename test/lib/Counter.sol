@@ -16,9 +16,16 @@ contract Counter {
         number += n;
     }
 
-    function incrementAndCallback() public {
+    function incrementAndCallback() public returns (bytes memory) {
         number++;
-        msg.sender.call("");
+        (bool success, bytes memory result) = msg.sender.call("");
+        if (!success) {
+            assembly {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+        }
+        return result;
     }
 }
 

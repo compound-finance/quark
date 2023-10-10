@@ -6,8 +6,8 @@ import "forge-std/console.sol";
 import "./Counter.sol";
 
 contract CallbackFromCounter {
-    function doIncrementAndCallback(Counter counter) external {
-      counter.incrementAndCallback();
+    function doIncrementAndCallback(Counter counter) external returns (bytes memory) {
+      return counter.incrementAndCallback();
     }
 
     fallback() external {
