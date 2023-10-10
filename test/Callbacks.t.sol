@@ -68,7 +68,6 @@ contract CallbacksTest is Test {
             allowCallback: true
         });
         (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, op);
-        vm.prank(address(0xbeef));
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 11);
@@ -107,7 +106,6 @@ contract CallbacksTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, parentOp);
 
-        vm.prank(address(0x73861));
         vm.expectRevert(
             abi.encodeWithSelector(QuarkWallet.QuarkCallError.selector,
                 abi.encodeWithSelector(QuarkWallet.QuarkCallbackAlreadyActive.selector))
@@ -150,7 +148,6 @@ contract CallbacksTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, parentOp);
 
-        vm.prank(address(0x73861));
         aliceWallet.executeQuarkOperation(parentOp, v, r, s);
         assertEq(counter.number(), 2);
     }
