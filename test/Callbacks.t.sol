@@ -174,4 +174,27 @@ contract CallbacksTest is Test {
         aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 2);
     }
+
+    function testRevertsOnCallbackWhenNoActiveCallback() public {
+        bytes memory callbackFromCounter = new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+
+        uint256 nonce = aliceWallet.nextUnusedNonce();
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: callbackFromCounter,
+            scriptCalldata: abi.encodeWithSignature(
+                "doIncrementAndCallback(address)",
+                counter
+            ),
+            nonce: nonce,
+            expiry: block.timestamp + 1000,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, op);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector))
+        );
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
 }
