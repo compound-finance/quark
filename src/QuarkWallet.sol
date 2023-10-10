@@ -157,18 +157,7 @@ contract QuarkWallet {
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
 
-            // if the script allows callbacks, set it as the current callback
-            if (op.allowCallback) {
-                address callback = getActiveCallback();
-                if (callback != address(0)) {
-                    revert QuarkCallbackAlreadyActive();
-                }
-                setActiveCallback(scriptAddress);
-            }
-
-            bytes memory result = executeQuarkOperationInternal(scriptAddress, op.scriptCalldata);
-
-            setActiveCallback(address(0));
+            bytes memory result = executeQuarkOperationInternal(scriptAddress, op.scriptCalldata, op.allowCallback);
 
             return result;
         }
@@ -199,21 +188,31 @@ contract QuarkWallet {
      * @return return value from the executed operation
      */
     function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
-        // XXX authtenticate caller
+        // XXX authenticate caller
         address scriptAddress = codeJar.saveCode(scriptSource);
-        return executeQuarkOperationInternal(scriptAddress, scriptCalldata);
+        // XXX add support for allowCallback to the direct path
+        return executeQuarkOperationInternal(scriptAddress, scriptCalldata, false);
     }
 
     /**
      * @dev Execute QuarkOperation
      */
-    function executeQuarkOperationInternal(address scriptAddress, bytes memory scriptCalldata) internal returns (bytes memory) {
+    function executeQuarkOperationInternal(address scriptAddress, bytes memory scriptCalldata, bool allowCallback) internal returns (bytes memory) {
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(scriptAddress)
         }
         if (codeLen == 0) {
             revert QuarkCodeNotFound();
+        }
+
+        // if the script allows callbacks, set it as the current callback
+        if (allowCallback) {
+            address callback = getActiveCallback();
+            if (callback != address(0)) {
+                revert QuarkCallbackAlreadyActive();
+            }
+            setActiveCallback(scriptAddress);
         }
 
         bool success;
@@ -223,6 +222,8 @@ contract QuarkWallet {
             success := callcode(gas(), scriptAddress, 0/* value */, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
         }
+
+        setActiveCallback(address(0));
 
         bytes memory returnData = new bytes(returnSize);
         assembly {
