@@ -75,7 +75,7 @@ contract CallbacksTest is Test {
 
     function testRevertsNestedCallbackScriptIfCallbackAlreadyActive() public {
         bytes memory callbackFromCounter = new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
-        bytes memory runOtherScript = new YulHelper().getDeployed("RunOther.sol/RunOther.json");
+        bytes memory executeOtherScript = new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
         uint256 nonce1 = aliceWallet.nextUnusedNonce();
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
@@ -92,7 +92,7 @@ contract CallbacksTest is Test {
 
         uint256 nonce2 = nonce1 + 1;
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
-            scriptSource: runOtherScript,
+            scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSignature(
                 "run((bytes,bytes,uint256,uint256,bool),uint8,bytes32,bytes32)",
                 nestedOp,
@@ -117,7 +117,7 @@ contract CallbacksTest is Test {
         assertEq(counter.number(), 0);
 
         bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
-        bytes memory runOtherScript = new YulHelper().getDeployed("RunOther.sol/RunOther.json");
+        bytes memory executeOtherScript = new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
         uint256 nonce1 = aliceWallet.nextUnusedNonce();
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
@@ -134,7 +134,7 @@ contract CallbacksTest is Test {
 
         uint256 nonce2 = nonce1 + 1;
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
-            scriptSource: runOtherScript,
+            scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSignature(
                 "run((bytes,bytes,uint256,uint256,bool),uint8,bytes32,bytes32)",
                 nestedOp,
