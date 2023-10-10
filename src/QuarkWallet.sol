@@ -55,7 +55,6 @@ contract QuarkWallet {
         bool allowCallback;
         // requirements
         // isReplayable
-        // isCallbackable
     }
 
     constructor(address owner_, CodeJar codeJar_) {
@@ -63,7 +62,7 @@ contract QuarkWallet {
         codeJar = codeJar_;
         /*
          * translation note: we cannot directly access OWNER_SLOT within
-         * an inline assembly block, for arbitrary and stupid reasons;
+         * an inline assembly block, for seemingly arbitrary reasons;
          * therefore, we copy the immutable slot addresse into a local
          * variable that we are allowed to access with impunity.
          */
@@ -119,6 +118,9 @@ contract QuarkWallet {
         );
     }
 
+    /**
+     * @dev Returns the current active callback script address.
+     */
     function getActiveCallback() internal returns (address) {
         bytes32 slot = ACTIVE_CALLBACK_SLOT;
         address callback;
@@ -126,6 +128,12 @@ contract QuarkWallet {
         return callback;
     }
 
+    /**
+     * @dev Sets the current active callback script address. This is the
+     *  address of the currently-running transaction script that expects to
+     *  receive a callback, which will be handled by the wallet's fallback
+     *  function.
+     */
     function setActiveCallback(address callback) internal {
         bytes32 slot = ACTIVE_CALLBACK_SLOT;
         assembly { sstore(slot, callback) }
