@@ -6,15 +6,15 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract QuarkWallet {
     error BadSignatory();
-    error InvalidSignatureS();
     error InvalidNonce();
+    error InvalidSignatureS();
     error NoUnusedNonces();
-    error QuarkReadError();
+    error QuarkCallbackAlreadyActive();
     error QuarkCallError(bytes);
     error QuarkCodeNotFound();
     error QuarkNonceReplay(uint256);
+    error QuarkReadError();
     error SignatureExpired();
-    error QuarkCallbackAlreadyActive();
 
     /// @notice Address of the EOA that controls this wallet
     address public immutable owner;
