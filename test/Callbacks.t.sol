@@ -114,4 +114,44 @@ contract CallbacksTest is Test {
         );
         aliceWallet.executeQuarkOperation(parentOp, v, r, s);
     }
+
+    function testNestedCallWithNoCallbackSucceeds() public {
+        assertEq(counter.number(), 0);
+
+        bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
+        bytes memory runOtherScript = new YulHelper().getDeployed("RunOther.sol/RunOther.json");
+
+        uint256 nonce1 = aliceWallet.nextUnusedNonce();
+        QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
+            scriptSource: counterScript,
+            scriptCalldata: abi.encodeWithSignature(
+                "run(address)",
+                counter
+            ),
+            nonce: nonce1,
+            expiry: block.timestamp + 1000,
+            allowCallback: false
+        });
+        (uint8 v_, bytes32 r_, bytes32 s_) = signOp(alicePrivateKey, aliceWallet, nestedOp);
+
+        uint256 nonce2 = nonce1 + 1;
+        QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
+            scriptSource: runOtherScript,
+            scriptCalldata: abi.encodeWithSignature(
+                "run((bytes,bytes,uint256,uint256,bool),uint8,bytes32,bytes32)",
+                nestedOp,
+                v_,
+                r_,
+                s_
+            ),
+            nonce: nonce2,
+            expiry: block.timestamp + 1000,
+            allowCallback: true
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, parentOp);
+
+        vm.prank(address(0x73861));
+        aliceWallet.executeQuarkOperation(parentOp, v, r, s);
+        assertEq(counter.number(), 2);
+    }
 }
