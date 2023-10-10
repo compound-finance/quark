@@ -8,6 +8,7 @@ contract QuarkWallet {
     error BadSignatory();
     error InvalidNonce();
     error InvalidSignatureS();
+    error NoActiveCallback();
     error NoUnusedNonces();
     error QuarkCallbackAlreadyActive();
     error QuarkCallError(bytes);
@@ -250,7 +251,7 @@ contract QuarkWallet {
             (, bytes memory result) = callback.delegatecall(data);
             return result;
         } else {
-            revert();
+            revert NoActiveCallback();
         }
     }
 }
