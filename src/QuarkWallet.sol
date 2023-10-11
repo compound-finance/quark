@@ -20,8 +20,8 @@ contract QuarkWallet {
     /// @notice Address of the EOA that controls this wallet
     address public immutable owner;
 
-    /// @notice address of the currently pending callback script
-    address public callback;
+    /// @notice storage slot for storing the `owner` address
+    bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
 
     /// @notice storage slot for storing the active `callback` address
     bytes32 internal constant ACTIVE_CALLBACK_SLOT = bytes32(keccak256("org.quark.active-callback"));
@@ -196,11 +196,11 @@ contract QuarkWallet {
      * @param scriptCalldata The encoded function selector and arguments to call on the transaction script
      * @return return value from the executed operation
      */
-    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
+    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata, bool allowCallback) public payable returns (bytes memory) {
         // XXX authenticate caller
         address scriptAddress = codeJar.saveCode(scriptSource);
         // XXX add support for allowCallback to the direct path
-        return executeQuarkOperationInternal(scriptAddress, scriptCalldata, false);
+        return executeQuarkOperationInternal(scriptAddress, scriptCalldata, allowCallback);
     }
 
     /**

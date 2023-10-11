@@ -19,7 +19,7 @@ contract EthcallTest is Test {
     CodeJar public codeJar;
     bytes32 internal constant QUARK_OPERATION_TYPEHASH =
         keccak256(
-            "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)"
+            "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
         );
     Counter public counter;
     // Need alice info here, for signature to QuarkWallet
@@ -59,7 +59,7 @@ contract EthcallTest is Test {
             ),
             nonce: 0,
             expiry: type(uint256).max,
-            admitCallback: true
+            allowCallback: true
         });
 
         assertEq(counter.number(), 0);
@@ -266,7 +266,8 @@ contract EthcallTest is Test {
                 op.scriptSource,
                 op.scriptCalldata,
                 op.nonce,
-                op.expiry
+                op.expiry, 
+                op.allowCallback
             )
         );
         bytes32 digest = keccak256(

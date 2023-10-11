@@ -15,6 +15,14 @@ contract Counter {
     function increment(uint256 n) public {
         number += n;
     }
+    
+    function incrementBy(uint256 n) public {
+        number += n;
+    }
+
+    function decrementBy(uint256 n) public {
+        number -= n;
+    }
 
     function incrementAndCallback() public returns (bytes memory) {
         number++;
