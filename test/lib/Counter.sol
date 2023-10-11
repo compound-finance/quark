@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+interface HasCallback {
+    function callback() external;
+}
+
 contract Counter {
     uint256 public number;
 
@@ -16,16 +20,9 @@ contract Counter {
         number += n;
     }
 
-    function incrementAndCallback() public returns (bytes memory) {
+    function incrementAndCallback() public {
         number++;
-        (bool success, bytes memory result) = msg.sender.call("");
-        if (!success) {
-            assembly {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-        }
-        return result;
+        return HasCallback(msg.sender).callback();
     }
 }
 
