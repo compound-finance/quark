@@ -142,5 +142,70 @@ contract UniswapFlashSwapMulticallTest is Test {
             true
         );
     }
-    // Test #3: Failed flash swap
+
+    // Test #3: flash swap revert if not paying back
+    function testNotEnoughToPayFlashSwap() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        bytes memory uniswapFlashSwapMulticall = new YulHelper().getDeployed(
+            "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
+        );
+
+        // Set up some funds for test
+        deal(WETH, address(wallet), 10 ether);
+
+        // User has establish position in comet, try to use flash swap to leverage up
+        // Borrow 1 ETH worth of USDC from comet, and purchase 1 ETH re-supply and remaining USDC back to Comet
+        // Some computation is required to get the right number to pass into UniswapFlashSwapMulticall core scripts
+        AssetInfo memory ethAssetInfo = IComet(cometAddr).getAssetInfoByAddress(WETH);
+
+        // Compose array of actions
+        address[] memory callContracts = new address[](2);
+        bytes[] memory callCodes = new bytes[](2);
+        bytes[] memory callDatas = new bytes[](2);
+        uint256[] memory callValues = new uint256[](2);
+
+        // Approve Comet to spend WETH
+        callContracts[0] = address(WETH);
+        callCodes[0] = hex"";
+        callDatas[0] = abi.encodeCall(IERC20.approve, (cometAddr, 100 ether));
+        callValues[0] = 0 wei;
+
+        // Supply ETH to Comet
+        callContracts[1] = address(cometAddr);
+        callCodes[1] = hex"";
+        callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 11 ether)); // 10 original + 1 leveraged
+        callValues[1] = 0 wei;
+
+        UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload memory payload = UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload({
+            token0: WETH,
+            token1: USDC,
+            fee: 500,
+            amount0: 1 ether,
+            amount1: 0,
+            sqrtPriceLimitX96: uint160(4295128739 + 1),
+            callContracts: callContracts,
+            callCodes: callCodes,
+            callDatas: callDatas,
+            callValues: callValues
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSignature(
+                    "Error(string)",
+                    "ERC20: transfer amount exceeds balance"
+                )
+            )            
+        );
+
+        wallet.executeQuarkOperation(
+            uniswapFlashSwapMulticall,
+            abi.encodeWithSelector(
+                UniswapFlashSwapMulticall.run.selector,
+                payload
+            ), 
+            true
+        );
+    }
 }

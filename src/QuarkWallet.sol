@@ -248,7 +248,13 @@ contract QuarkWallet {
     fallback(bytes calldata data) external returns (bytes memory) {
         address callback = getActiveCallback();
         if (callback != address(0)) {
-            (, bytes memory result) = callback.delegatecall(data);
+            (bool success, bytes memory result) = callback.delegatecall(data);
+            if (!success) {
+                assembly {
+                    let size := mload(result)
+                    revert(add(result, 0x20), size)
+                }
+            }
             return result;
         } else {
             revert NoActiveCallback();

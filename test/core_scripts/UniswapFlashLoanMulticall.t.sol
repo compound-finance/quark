@@ -199,8 +199,8 @@ contract UniswapFlashLoanMulticallTest is Test {
         );
     }
 
-    // Test #3: Failed flash loan
-    function testFailedFlashLoan() public {
+    // Test #3: Not enough to repay flash loan, the transaction shall fail and revert
+    function testNotEnoughToRepayFlashLoan() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
         bytes memory uniswapFlashLoanMulticall = new YulHelper().getDeployed(
             "UniswapFlashLoanMulticall.sol/UniswapFlashLoanMulticall.json"
@@ -238,7 +238,6 @@ contract UniswapFlashLoanMulticallTest is Test {
                 )
             )            
         );
-
         wallet.executeQuarkOperation(
             uniswapFlashLoanMulticall,
             abi.encodeWithSelector(
