@@ -9,6 +9,7 @@ import "forge-std/interfaces/IERC20.sol";
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
 import "./../../src/core_scripts/UniswapFlashSwapMulticall.sol";
+import "./../../src/core_scripts/lib/PoolAddress.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
 import "./interfaces/IComet.sol";
@@ -20,6 +21,10 @@ contract UniswapFlashSwapMulticallTest is Test {
         keccak256(
             "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)"
         );
+    // Comet address in mainnet
+    address cometAddr = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+    address USDC =  0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     function setUp() public {
         codeJar = new CodeJar();
@@ -37,10 +42,6 @@ contract UniswapFlashSwapMulticallTest is Test {
             "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
         );
 
-        // Comet address in mainnet
-        address cometAddr = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-        address USDC =  0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-        address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
         // Set up some funds for test
         deal(WETH, address(wallet), 10 ether);
 
@@ -48,9 +49,7 @@ contract UniswapFlashSwapMulticallTest is Test {
         // Borrow 1 ETH worth of USDC from comet, and purchase 1 ETH re-supply and remaining USDC back to Comet
         // Some computation is required to get the right number to pass into UniswapFlashSwapMulticall core scripts
         AssetInfo memory ethAssetInfo = IComet(cometAddr).getAssetInfoByAddress(WETH);
-        uint ethPrice = IComet(cometAddr).getPrice(ethAssetInfo.priceFeed) * 1e6 / 1e8;
-        // Pool fee that will be used to do flash swap
-        uint24 poolFee = 500; 
+        uint ethPrice = IComet(cometAddr).getPrice(ethAssetInfo.priceFeed) * 1e6 / 1e8; 
 
         // Compose array of actions
         address[] memory callContracts = new address[](3);
@@ -79,7 +78,7 @@ contract UniswapFlashSwapMulticallTest is Test {
         UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload memory payload = UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload({
             token0: WETH,
             token1: USDC,
-            fee: poolFee,
+            fee: 500,
             amount0: 1 ether,
             amount1: 0,
             sqrtPriceLimitX96: uint160(4295128739 + 1),
@@ -101,4 +100,47 @@ contract UniswapFlashSwapMulticallTest is Test {
         // Verify that user is now holsing 10 + 1 ether exposure
         assertEq(IComet(cometAddr).collateralBalanceOf(address(wallet), WETH), 11 ether);
     }
+
+    // Test #2: Invalid caller
+    function testInvalidCallerFlashSwap() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        bytes memory uniswapFlashSwapMulticall = new YulHelper().getDeployed(
+            "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
+        );
+        
+        deal(WETH, address(wallet), 100 ether);
+        deal(USDC, address(wallet), 1000e6);
+
+        // Try to invoke callback directly, expect revert with invalid caller
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(UniswapFlashSwapMulticall.InvalidCaller.selector)
+            )            
+        );
+
+        wallet.executeQuarkOperation(
+            uniswapFlashSwapMulticall,
+            abi.encodeWithSelector(
+                UniswapFlashSwapMulticall.uniswapV3SwapCallback.selector,
+                1000e6,
+                1000e6,
+                abi.encode(
+                    UniswapFlashSwapMulticall.FlashSwapMulticallInput({
+                        poolKey: PoolAddress.getPoolKey(
+                            WETH,
+                            USDC,
+                            500
+                        ),
+                        callContracts: new address[](3),
+                        callCodes: new bytes[](3),
+                        callDatas: new bytes[](3),
+                        callValues: new uint256[](3)
+                    })
+                )
+            ), 
+            true
+        );
+    }
+    // Test #3: Failed flash swap
 }

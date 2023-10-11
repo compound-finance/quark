@@ -155,4 +155,97 @@ contract UniswapFlashLoanMulticallTest is Test {
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), LinkBalanceEst);
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
     }
+
+    // Test #2: Invalid caller
+    function testInvalidCallerFlashLoan() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        bytes memory uniswapFlashLoanMulticall = new YulHelper().getDeployed(
+            "UniswapFlashLoanMulticall.sol/UniswapFlashLoanMulticall.json"
+        );
+        
+        deal(WETH, address(wallet), 100 ether);
+        deal(USDC, address(wallet), 1000e6);
+
+        // Try to invoke callback directly, expect revert with invalid caller
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(UniswapFlashLoanMulticall.InvalidCaller.selector)
+            )            
+        );
+        wallet.executeQuarkOperation(
+            uniswapFlashLoanMulticall,
+            abi.encodeWithSelector(
+                UniswapFlashLoanMulticall.uniswapV3FlashCallback.selector,
+                1000e6,
+                1000e6,
+                abi.encode(
+                    UniswapFlashLoanMulticall.FlashLoanInput({
+                        amount0: 1 ether,
+                        amount1: 0,
+                        poolKey: PoolAddress.getPoolKey(
+                            WETH,
+                            USDC,
+                            500
+                        ),
+                        callContracts: new address[](3),
+                        callCodes: new bytes[](3),
+                        callDatas: new bytes[](3),
+                        callValues: new uint256[](3)
+                    })
+                )
+            ), 
+            true
+        );
+    }
+
+    // Test #3: Failed flash loan
+    function testFailedFlashLoan() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        bytes memory uniswapFlashLoanMulticall = new YulHelper().getDeployed(
+            "UniswapFlashLoanMulticall.sol/UniswapFlashLoanMulticall.json"
+        );
+
+        address[] memory callContracts = new address[](1);
+        bytes[] memory callCodes = new bytes[](1);
+        bytes[] memory callDatas = new bytes[](1);
+        uint256[] memory callValues = new uint256[](1);
+
+        // Send USDC to random address
+        callContracts[0] = address(USDC);
+        callCodes[0] = hex"";
+        callDatas[0] = abi.encodeCall(IERC20.transfer, (address(1), 1000e6));
+        callValues[0] = 0 wei;
+
+        UniswapFlashLoanMulticall.UniswapFlashLoanMulticallPayload memory payload = UniswapFlashLoanMulticall.UniswapFlashLoanMulticallPayload({
+            token0: USDC,
+            token1: DAI,
+            fee: 100,
+            amount0: 1000e6,
+            amount1: 0,
+            callContracts: callContracts,
+            callCodes: callCodes,
+            callDatas: callDatas,
+            callValues: callValues
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSignature(
+                    "Error(string)",
+                    "ERC20: transfer amount exceeds balance"
+                )
+            )            
+        );
+
+        wallet.executeQuarkOperation(
+            uniswapFlashLoanMulticall,
+            abi.encodeWithSelector(
+                UniswapFlashLoanMulticall.run.selector,
+                payload
+            ), 
+            true
+        );
+    }
 }
