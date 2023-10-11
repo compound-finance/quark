@@ -42,7 +42,7 @@ contract QuarkWalletFactory {
 
     /**
      * @notice Get QuarkWallet address for account (and default salt value)
-     * @dev QuarkWallet at returned address may not have been created yet, but 
+     * @dev QuarkWallet at returned address may not have been created yet
      * @param account Address to find QuarkWallet address for
      * @return address Address of the QuarkWallet for account
      */
@@ -52,7 +52,7 @@ contract QuarkWalletFactory {
 
     /**
      * @notice Get QuarkWallet address for account, salt pair
-     * @dev QuarkWallet at returned address may not have been created yet, but 
+     * @dev QuarkWallet at returned address may not have been created yet
      * @param account Address to find QuarkWallet address for
      * @param salt Salt value for QuarkWallet
      * @return address Address of the QuarkWallet for account, salt pair
