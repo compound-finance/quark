@@ -21,8 +21,8 @@ contract Counter {
         (bool success, bytes memory result) = msg.sender.call("");
         if (!success) {
             assembly {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
+                let size := mload(result)
+                revert(add(result, 0x20), size)
             }
         }
         return result;
