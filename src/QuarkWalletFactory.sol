@@ -23,7 +23,7 @@ contract QuarkWalletFactory {
      * @param account Address to create a QuarkWallet for
      * @return address Address of the newly-created wallet
      */
-    function create(address account) public returns (address) {
+    function create(address account) external returns (address) {
         return create(account, 0);
     }
 
@@ -91,7 +91,7 @@ contract QuarkWalletFactory {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public payable returns (bytes memory) {
+    ) external returns (bytes memory) {
         return createAndExecute(account, 0, op, v, r, s);
     }
 
@@ -112,7 +112,7 @@ contract QuarkWalletFactory {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public payable returns (bytes memory) {
+    ) public returns (bytes memory) {
         uint256 walletCodeLen;
         address walletAddress = walletAddressForAccount(account, salt);
 
