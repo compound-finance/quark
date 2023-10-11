@@ -6,13 +6,15 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract QuarkWallet {
     error BadSignatory();
-    error InvalidSignatureS();
     error InvalidNonce();
+    error InvalidSignatureS();
+    error NoActiveCallback();
     error NoUnusedNonces();
-    error QuarkReadError();
+    error QuarkCallbackAlreadyActive();
     error QuarkCallError(bytes);
     error QuarkCodeNotFound();
     error QuarkNonceReplay(uint256);
+    error QuarkReadError();
     error SignatureExpired();
 
     /// @notice Address of the EOA that controls this wallet
@@ -21,8 +23,11 @@ contract QuarkWallet {
     /// @notice address of the currently pending callback script
     address public callback;
 
+    /// @notice storage slot for storing the active `callback` address
+    bytes32 internal constant ACTIVE_CALLBACK_SLOT = bytes32(keccak256("org.quark.active-callback"));
+
     /// @dev The EIP-712 typehash for authorizing an operation
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)");
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)");
 
     /// @dev The EIP-712 typehash for the contract's domain
     bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -48,15 +53,22 @@ contract QuarkWallet {
         bytes scriptCalldata; // selector + arguments encoded as calldata
         uint256 nonce;
         uint256 expiry;
-        bool admitCallback;
+        bool allowCallback;
         // requirements
         // isReplayable
-        // isCallbackable
     }
 
     constructor(address owner_, CodeJar codeJar_) {
         owner = owner_;
         codeJar = codeJar_;
+        /*
+         * translation note: we cannot directly access OWNER_SLOT within
+         * an inline assembly block, for seemingly arbitrary reasons;
+         * therefore, we copy the immutable slot addresse into a local
+         * variable that we are allowed to access with impunity.
+         */
+        bytes32 slot = OWNER_SLOT;
+        assembly { sstore(slot, owner_) }
     }
 
     /**
@@ -108,6 +120,27 @@ contract QuarkWallet {
     }
 
     /**
+     * @dev Returns the current active callback script address.
+     */
+    function getActiveCallback() internal returns (address) {
+        bytes32 slot = ACTIVE_CALLBACK_SLOT;
+        address callback;
+        assembly { callback := sload(slot) }
+        return callback;
+    }
+
+    /**
+     * @dev Sets the current active callback script address. This is the
+     *  address of the currently-running transaction script that expects to
+     *  receive a callback, which will be handled by the wallet's fallback
+     *  function.
+     */
+    function setActiveCallback(address callback) internal {
+        bytes32 slot = ACTIVE_CALLBACK_SLOT;
+        assembly { sstore(slot, callback) }
+    }
+
+    /**
      * @notice Execute a QuarkOperation via signature
      * @dev Can only be called with signatures from the wallet's owner
      * @param op A QuarkOperation struct
@@ -117,30 +150,24 @@ contract QuarkWallet {
      * @return return value from the executed operation
      */
     function executeQuarkOperation(
-      QuarkOperation calldata op,
-      uint8 v,
-      bytes32 r,
-      bytes32 s
+        QuarkOperation calldata op,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) public payable returns (bytes memory) {
         if (block.timestamp >= op.expiry) revert SignatureExpired();
         if (isSet(op.nonce)) revert InvalidNonce();
 
-        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry));
+        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignature(owner, digest, v, r, s)) {
             setNonce(op.nonce);
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-            // if the trx script admits callbacks, set it as the current callback
-            if (op.admitCallback) {
-                if (callback != address(0)) {
-                    revert(); // XXX
-                }
-                callback = scriptAddress;
-            }
-            bytes memory result = executeQuarkOperationInternal(scriptAddress, op.scriptCalldata);
-            callback = address(0);
+
+            bytes memory result = executeQuarkOperationInternal(scriptAddress, op.scriptCalldata, op.allowCallback);
+
             return result;
         }
     }
@@ -169,26 +196,17 @@ contract QuarkWallet {
      * @param scriptCalldata The encoded function selector and arguments to call on the transaction script
      * @return return value from the executed operation
      */
-    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata, bool admitCallback) public payable returns (bytes memory) {
-        // XXX authtenticate caller
+    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
+        // XXX authenticate caller
         address scriptAddress = codeJar.saveCode(scriptSource);
-        // if the trx script admits callbacks, set it as the current callback
-        if (admitCallback) {
-            if (callback != address(0)) {
-                revert(); // XXX
-            }
-            callback = scriptAddress;
-        }
-
-        bytes memory result = executeQuarkOperationInternal(scriptAddress, scriptCalldata);
-        callback = address(0);
-        return result;
+        // XXX add support for allowCallback to the direct path
+        return executeQuarkOperationInternal(scriptAddress, scriptCalldata, false);
     }
 
     /**
      * @dev Execute QuarkOperation
      */
-    function executeQuarkOperationInternal(address scriptAddress, bytes memory scriptCalldata) internal returns (bytes memory) {
+    function executeQuarkOperationInternal(address scriptAddress, bytes memory scriptCalldata, bool allowCallback) internal returns (bytes memory) {
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(scriptAddress)
@@ -197,30 +215,43 @@ contract QuarkWallet {
             revert QuarkCodeNotFound();
         }
 
-        bool success;
-        uint sz;
-        assembly {
-            // first 0x20 (32) bytes are the length
-            let size := mload(scriptCalldata)
-            success := callcode(gas(), scriptAddress, 0/* value */, add(scriptCalldata, 0x20), size, 0x0, 0)
-            sz := returndatasize()
+        // if the script allows callbacks, set it as the current callback
+        if (allowCallback) {
+            address callback = getActiveCallback();
+            if (callback != address(0)) {
+                revert QuarkCallbackAlreadyActive();
+            }
+            setActiveCallback(scriptAddress);
         }
-        bytes memory returndata = new bytes(sz);
+
+        bool success;
+        uint returnSize;
+        uint scriptCalldataLen = scriptCalldata.length;
         assembly {
-            returndatacopy(add(returndata, 0x20), 0x00, returndatasize())
+            success := callcode(gas(), scriptAddress, 0/* value */, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
+            returnSize := returndatasize()
+        }
+
+        setActiveCallback(address(0));
+
+        bytes memory returnData = new bytes(returnSize);
+        assembly {
+            returndatacopy(add(returnData, 0x20), 0x00, returnSize)
         }
         if (!success) {
-            revert QuarkCallError(returndata);
+            revert QuarkCallError(returnData);
         }
-        return returndata;
+
+        return returnData;
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
+        address callback = getActiveCallback();
         if (callback != address(0)) {
             (, bytes memory result) = callback.delegatecall(data);
             return result;
         } else {
-            revert();
+            revert NoActiveCallback();
         }
     }
 }
