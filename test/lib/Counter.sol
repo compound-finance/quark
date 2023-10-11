@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-interface CallbackInterface {
-    function counterCallback(uint256) external;
-}
-
 contract Counter {
     uint256 public number;
 
@@ -20,19 +16,16 @@ contract Counter {
         number += n;
     }
 
-    function incrementBy(uint256 n) public returns (uint256) {
-        number += n;
-        return number;
-    }
-
-    function decrementBy(uint256 n) public returns (uint256) {
-        number -= n;
-        return number;
-    }
-
-    function incrementCallback() public {
+    function incrementAndCallback() public returns (bytes memory) {
         number++;
-        (CallbackInterface(address(msg.sender))).counterCallback(number);
+        (bool success, bytes memory result) = msg.sender.call("");
+        if (!success) {
+            assembly {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+        }
+        return result;
     }
 }
 
