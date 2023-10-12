@@ -9,13 +9,13 @@ import "v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
 contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
-    // Constant of uniswap's factory to authorize callback caller
-    // TODO: Need to find a way to make this configurable, but not too freely adjustable in callback
+    // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
     address constant UNISWAP_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
     error FailedFlashSwap(address token);
     error InvalidCaller();
 
+    /// @notice Input for flash swap multicall when interact with UniswapV3 Pool swap function
     struct FlashSwapMulticallInput {
         PoolAddress.PoolKey poolKey;
         address[] callContracts;
@@ -24,6 +24,7 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
         uint256[] callValues;
     }
 
+    /// @notice Payload for UniswapFlashSwapMulticall
     struct UniswapFlashSwapMulticallPayload {
         address token0;
         address token1;
@@ -37,7 +38,11 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
         uint256[] callValues;
     }
 
-    function run(UniswapFlashSwapMulticallPayload memory payload) external returns (bytes memory) {
+    /**
+     * @notice Execute multiple calls in a single transaction with flash swap
+     * @param payload Struct of UniswapFlashSwapMulticallPayload contains pool info and Multicall inputs
+     */
+    function run(UniswapFlashSwapMulticallPayload memory payload) external {
         // Reorder the token0, token1 to ensure it's in the correct order token1 > token0
         if (payload.token0 > payload.token1) {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
@@ -63,10 +68,14 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
                 })
             )
         );
-
-        return abi.encode(hex"");
     }
 
+    /**
+     * @notice Callback function for Uniswap flash swap
+     * @param amount0Delta Amount of token0 owed (only need to repay positive value)
+     * @param amount1Delta Amount of token1 owed (only need to repay positive value)
+     * @param data Data passed from UniswapV3Pool.swap() which contains Multicall inputs to execute before sending the owed amount back
+     */
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         FlashSwapMulticallInput memory input = abi.decode(data, (FlashSwapMulticallInput));
         IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(UNISWAP_FACTORY, input.poolKey));

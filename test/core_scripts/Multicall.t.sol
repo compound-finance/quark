@@ -17,9 +17,7 @@ import "./interfaces/IComet.sol";
 contract MulticallTest is Test {
     CodeJar public codeJar;
     bytes32 internal constant QUARK_OPERATION_TYPEHASH =
-        keccak256(
-            "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)"
-        );
+        keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)");
     Counter public counter;
 
     function setUp() public {
@@ -58,13 +56,7 @@ contract MulticallTest is Test {
         assertEq(counter.number(), 0);
         bytes memory result = wallet.executeQuarkOperation(
             multiCall,
-            abi.encodeWithSelector(
-                Multicall.run.selector,
-                callContracts,
-                callCodes,
-                callDatas,
-                callValues
-            ), 
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callCodes, callDatas, callValues),
             false
         );
 
@@ -80,7 +72,7 @@ contract MulticallTest is Test {
 
         // Comet address in mainnet
         address cometAddr = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-        address USDCAddr =  0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        address USDCAddr = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
         address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
@@ -110,13 +102,7 @@ contract MulticallTest is Test {
 
         wallet.executeQuarkOperation(
             multiCall,
-            abi.encodeWithSelector(
-                Multicall.run.selector,
-                callContracts,
-                callCodes,
-                callDatas,
-                callValues
-            ), 
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callCodes, callDatas, callValues),
             false
         );
 
@@ -132,7 +118,7 @@ contract MulticallTest is Test {
 
         // Comet address on mainnet
         address comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-        address USDC =  0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        address USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
         // Set up some funds for test
         deal(USDC, address(wallet), 1000e6);
         // Compose array of parameters
@@ -146,22 +132,16 @@ contract MulticallTest is Test {
         callValues[0] = 0 wei;
         callContracts[1] = address(0);
         callCodes[1] = type(SupplyComet).runtimeCode;
-        callDatas[1] = abi.encodeCall(SupplyComet.supply,(comet, USDC, 500e6));
+        callDatas[1] = abi.encodeCall(SupplyComet.supply, (comet, USDC, 500e6));
         callValues[1] = 0 wei;
         callContracts[2] = address(0);
         callCodes[2] = type(SupplyComet).runtimeCode;
-        callDatas[2] = abi.encodeCall(SupplyComet.supply,(comet, USDC, 500e6));
+        callDatas[2] = abi.encodeCall(SupplyComet.supply, (comet, USDC, 500e6));
         callValues[2] = 0 wei;
         // Approve Comet to spend USDC
         wallet.executeQuarkOperation(
             multiCall,
-            abi.encodeWithSelector(
-                Multicall.run.selector,
-                callContracts,
-                callCodes,
-                callDatas,
-                callValues
-            ), 
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callCodes, callDatas, callValues),
             false
         );
 
