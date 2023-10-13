@@ -28,13 +28,10 @@ contract QuarkWallet is IERC1271 {
     bytes32 internal constant ACTIVE_CALLBACK_SLOT = bytes32(keccak256("org.quark.active-callback"));
 
     /// @dev The EIP-712 typehash for authorizing an operation
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
-    );
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)");
 
     /// @dev The EIP-712 typehash for the contract's domain
-    bytes32 internal constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     /// @notice Name of contract, for use in DOMAIN_SEPARATOR
     string public constant name = "Quark Wallet";
@@ -61,9 +58,10 @@ contract QuarkWallet is IERC1271 {
         uint256 nonce;
         uint256 expiry;
         bool allowCallback;
+        // requirements
+        // isReplayable
     }
-    // requirements
-    // isReplayable
+
 
     constructor(address owner_, CodeJar codeJar_) {
         owner = owner_;
@@ -75,9 +73,7 @@ contract QuarkWallet is IERC1271 {
          * variable that we are allowed to access with impunity.
          */
         bytes32 slot = OWNER_SLOT;
-        assembly {
-            sstore(slot, owner_)
-        }
+        assembly { sstore(slot, owner_) }
     }
 
     /**
@@ -121,7 +117,9 @@ contract QuarkWallet is IERC1271 {
      */
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
         return keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(VERSION)), block.chainid, address(this))
+            abi.encode(
+                DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(VERSION)), block.chainid, address(this)
+            )
         );
     }
 
@@ -131,9 +129,7 @@ contract QuarkWallet is IERC1271 {
     function getActiveCallback() internal returns (address) {
         bytes32 slot = ACTIVE_CALLBACK_SLOT;
         address callback;
-        assembly {
-            callback := sload(slot)
-        }
+        assembly { callback := sload(slot) }
         return callback;
     }
 
@@ -145,9 +141,7 @@ contract QuarkWallet is IERC1271 {
      */
     function setActiveCallback(address callback) internal {
         bytes32 slot = ACTIVE_CALLBACK_SLOT;
-        assembly {
-            sstore(slot, callback)
-        }
+        assembly { sstore(slot, callback) }
     }
 
     /**
@@ -159,19 +153,16 @@ contract QuarkWallet is IERC1271 {
      * @param s EIP-712 signature s value
      * @return return value from the executed operation
      */
-    function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
-        public
-        payable
-        returns (bytes memory)
-    {
+    function executeQuarkOperation(
+        QuarkOperation calldata op, 
+        uint8 v, 
+        bytes32 r, 
+        bytes32 s
+    ) public payable returns (bytes memory) {
         if (block.timestamp >= op.expiry) revert SignatureExpired();
         if (isSet(op.nonce)) revert InvalidNonce();
 
-        bytes32 structHash = keccak256(
-            abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
-            )
-        );
+        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignatureInternal(owner, digest, v, r, s)) {
@@ -226,11 +217,7 @@ contract QuarkWallet is IERC1271 {
      * @return return value from the executed operation
      */
 
-    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata)
-        public
-        payable
-        returns (bytes memory)
-    {
+    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
         // XXX authenticate caller
         address scriptAddress = codeJar.saveCode(scriptSource);
         // XXX add support for allowCallback to the direct path
@@ -240,10 +227,7 @@ contract QuarkWallet is IERC1271 {
     /**
      * @dev Execute QuarkOperation
      */
-    function executeQuarkOperationInternal(address scriptAddress, bytes memory scriptCalldata, bool allowCallback)
-        internal
-        returns (bytes memory)
-    {
+    function executeQuarkOperationInternal(address scriptAddress, bytes memory scriptCalldata, bool allowCallback) internal returns (bytes memory) {
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(scriptAddress)
@@ -262,11 +246,10 @@ contract QuarkWallet is IERC1271 {
         }
 
         bool success;
-        uint256 returnSize;
-        uint256 scriptCalldataLen = scriptCalldata.length;
+        uint returnSize;
+        uint scriptCalldataLen = scriptCalldata.length;
         assembly {
-            success :=
-                callcode(gas(), scriptAddress, 0, /* value */ add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
+            success := callcode(gas(), scriptAddress, 0, /* value */ add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
         }
 
