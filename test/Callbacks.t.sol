@@ -18,9 +18,7 @@ contract CallbacksTest is Test {
     address aliceAccount; // see constructor()
     QuarkWallet public aliceWallet;
 
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
-    );
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable)");
 
     constructor() {
         codeJar = new CodeJar();
@@ -34,17 +32,21 @@ contract CallbacksTest is Test {
         aliceWallet = new QuarkWallet(aliceAccount, codeJar);
     }
 
-    function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op)
-        internal
-        view
-        returns (uint8, bytes32, bytes32)
-    {
-        bytes32 structHash = keccak256(
-            abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
-            )
-        );
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash));
+    function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op) internal view returns (uint8, bytes32, bytes32) {
+        bytes32 structHash = keccak256(abi.encode(
+            QUARK_OPERATION_TYPEHASH,
+            op.scriptSource,
+            op.scriptCalldata,
+            op.nonce,
+            op.expiry,
+            op.allowCallback,
+            op.isReplayable
+        ));
+        bytes32 digest = keccak256(abi.encodePacked(
+            "\x19\x01",
+            wallet.DOMAIN_SEPARATOR(),
+            structHash
+        ));
         return vm.sign(privateKey, digest);
     }
 
@@ -61,7 +63,8 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: true
+            allowCallback: true,
+            isReplayable: false
         });
         (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, op);
         aliceWallet.executeQuarkOperation(op, v, r, s);
@@ -81,7 +84,8 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce1,
             expiry: block.timestamp + 1000,
-            allowCallback: true
+            allowCallback: true,
+            isReplayable: false
         });
         (uint8 v_, bytes32 r_, bytes32 s_) = signOp(alicePrivateKey, aliceWallet, nestedOp);
 
@@ -93,7 +97,8 @@ contract CallbacksTest is Test {
                 ),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
-            allowCallback: true
+            allowCallback: true,
+            isReplayable: false
         });
         (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, parentOp);
 
@@ -119,7 +124,8 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("run(address)", counter),
             nonce: nonce1,
             expiry: block.timestamp + 1000,
-            allowCallback: false
+            allowCallback: false,
+            isReplayable: false
         });
         (uint8 v_, bytes32 r_, bytes32 s_) = signOp(alicePrivateKey, aliceWallet, nestedOp);
 
@@ -131,7 +137,8 @@ contract CallbacksTest is Test {
                 ),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
-            allowCallback: true
+            allowCallback: true,
+            isReplayable: false
         });
         (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, parentOp);
 
@@ -148,7 +155,8 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("run(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: true
+            allowCallback: true,
+            isReplayable: false
         });
         (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, op);
 
@@ -166,7 +174,8 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: false
+            allowCallback: false,
+            isReplayable: false
         });
         (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, op);
 

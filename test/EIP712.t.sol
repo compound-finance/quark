@@ -20,9 +20,7 @@ contract EIP712Test is Test {
     address bob = address(11); // 0x00...b
     address charlie = address(12); // 0x00...c
 
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
-    );
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable)");
 
     function setUp() public {
         codeJar = new CodeJar();
@@ -37,11 +35,7 @@ contract EIP712Test is Test {
     }
 
     function aliceSignature(QuarkWallet.QuarkOperation memory op) internal view returns (uint8, bytes32, bytes32) {
-        bytes32 structHash = keccak256(
-            abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
-            )
-        );
+        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback, op.isReplayable));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash));
         return vm.sign(alicePrivateKey, digest);
     }
@@ -57,7 +51,8 @@ contract EIP712Test is Test {
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: expiry,
-            allowCallback: false
+            allowCallback: false,
+            isReplayable: false
         });
 
         return op;
@@ -220,4 +215,30 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
         assertEq(wallet.nextUnusedNonce(), 0);
     }
+
+    // does not spend the nonce if isReplayable=true
+    function testNonceIsNotSetForReplayableOperation() public {
+        assertEq(counter.number(), 0);
+        assertEq(wallet.nextUnusedNonce(), 0);
+
+        uint256 nonce = wallet.nextUnusedNonce();
+        uint256 expiry = block.timestamp + 1000;
+
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
+        op.isReplayable = true;
+        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
+
+        // bob calls executeOp with the signed operation
+        vm.prank(bob);
+        wallet.executeQuarkOperation(op, v, r, s);
+
+        // counter has incremented
+        assertEq(counter.number(), 3);
+
+        // nonce is NOT spent
+        assertEq(wallet.isSet(nonce), false);
+    }
+
+    // sets the current active nonce
+    //   clears it at the end of the transaction the current active nonce
 }

@@ -27,9 +27,7 @@ contract QuarkWallet {
     bytes32 internal constant ACTIVE_CALLBACK_SLOT = bytes32(keccak256("org.quark.active-callback"));
 
     /// @dev The EIP-712 typehash for authorizing an operation
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
-    );
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable)");
 
     /// @dev The EIP-712 typehash for the contract's domain
     bytes32 internal constant DOMAIN_TYPEHASH =
@@ -57,9 +55,9 @@ contract QuarkWallet {
         uint256 nonce;
         uint256 expiry;
         bool allowCallback;
+        bool isReplayable;
+        // requirements
     }
-    // requirements
-    // isReplayable
 
     constructor(address owner_, CodeJar codeJar_) {
         owner = owner_;
@@ -89,7 +87,7 @@ contract QuarkWallet {
     }
 
     /**
-     * @dev Set or unset `nonce`
+     * @dev Set `nonce` as used
      */
     function setNonce(uint256 nonce) internal {
         uint256 bucket = nonce >> 8;
@@ -165,15 +163,13 @@ contract QuarkWallet {
         if (block.timestamp >= op.expiry) revert SignatureExpired();
         if (isSet(op.nonce)) revert InvalidNonce();
 
-        bytes32 structHash = keccak256(
-            abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
-            )
-        );
+        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback, op.isReplayable));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignature(owner, digest, v, r, s)) {
-            setNonce(op.nonce);
+            if (!op.isReplayable) {
+                setNonce(op.nonce);
+            }
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
             return executeQuarkOperationInternal(scriptAddress, op.scriptCalldata, op.allowCallback);
