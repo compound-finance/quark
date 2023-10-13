@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "./interfaces/IERC20NonStandard.sol";
 import "./lib/PoolAddress.sol";
 import "./CoreScript.sol";
+import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
 
 contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
+    using SafeERC20 for IERC20;
     // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
     // TODO: Need to find a way to make this configurable for other chains, but not too freely adjustable in callback
     address constant UNISWAP_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
@@ -88,51 +89,11 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
 
         // Attempt to pay back amount owed after multi calls completed
         if (input.amount0 + fee0 > 0) {
-            IERC20NonStandard(input.poolKey.token0).transfer(address(pool), input.amount0 + fee0);
-            bool success;
-            assembly {
-                switch returndatasize()
-                case 0 {
-                    // This is a non-standard ERC-20
-                    success := not(0) // set success to true
-                }
-                case 32 {
-                    // This is a compliant ERC-20
-                    returndatacopy(0, 0, 32)
-                    success := mload(0) // Set `success = returndata` of override external call
-                }
-                default {
-                    // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
-            }
-            if (!success) {
-                revert FailedFlashRepay(input.poolKey.token0);
-            }
+            IERC20(input.poolKey.token0).transfer(address(pool), input.amount0 + fee0);
         }
 
         if (input.amount1 + fee1 > 0) {
-            IERC20NonStandard(input.poolKey.token1).transfer(address(pool), input.amount1 + fee1);
-            bool success;
-            assembly {
-                switch returndatasize()
-                case 0 {
-                    // This is a non-standard ERC-20
-                    success := not(0) // set success to true
-                }
-                case 32 {
-                    // This is a compliant ERC-20
-                    returndatacopy(0, 0, 32)
-                    success := mload(0) // Set `success = returndata` of override external call
-                }
-                default {
-                    // This is an excessively non-compliant ERC-20, revert.
-                    revert(0, 0)
-                }
-            }
-            if (!success) {
-                revert FailedFlashRepay(input.poolKey.token1);
-            }
+            IERC20(input.poolKey.token1).transfer(address(pool), input.amount1 + fee1);
         }
     }
 }

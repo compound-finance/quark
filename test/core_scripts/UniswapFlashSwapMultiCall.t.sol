@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
-import "forge-std/interfaces/IERC20.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
