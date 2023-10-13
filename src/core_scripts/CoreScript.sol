@@ -43,7 +43,7 @@ contract CoreScript is QuarkScript {
                     revert InvalidInput();
                 }
 
-                address codeAddress = QuarkWallet(msg.sender).codeJar().saveCode(callCodes[i]);
+                address codeAddress = QuarkWallet(address(this)).codeJar().saveCode(callCodes[i]);
                 (bool success, bytes memory returnData) = codeAddress.delegatecall(callDatas[i]);
                 if (!success) {
                     revert MultiDelegateCallError(i, callCodes[i], callDatas[i], callValues[i], returnData);
@@ -84,7 +84,7 @@ contract CoreScript is QuarkScript {
                 revert InvalidInput();
             }
 
-            address codeAddress = QuarkWallet(msg.sender).codeJar().saveCode(callCode);
+            address codeAddress = QuarkWallet(address(this)).codeJar().saveCode(callCode);
             (bool success, bytes memory returnData) = codeAddress.delegatecall(callData);
             if (!success) {
                 revert DelegateCallError(callCode, callData, callValue, returnData);
