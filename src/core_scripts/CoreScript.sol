@@ -101,6 +101,8 @@ contract CoreScript is QuarkScript {
 
             return returnData;
         }
+
+        return hex""; // return empty bytes, should not reach here
     }
 
     // Allow unwrapping Ether

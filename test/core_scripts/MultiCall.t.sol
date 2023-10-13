@@ -54,7 +54,7 @@ contract MultiCallTest is Test {
         callValues[1] = 0 wei;
 
         assertEq(counter.number(), 0);
-        bytes memory result = wallet.executeQuarkOperation(
+        wallet.executeQuarkOperation(
             multiCall,
             abi.encodeWithSelector(MultiCall.run.selector, callContracts, callCodes, callDatas, callValues),
             false

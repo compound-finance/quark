@@ -56,7 +56,7 @@ contract EthCallTest is Test {
 
         assertEq(counter.number(), 0);
         (uint8 v, bytes32 r, bytes32 s) = aliceSignature(wallet, op);
-        bytes memory result = wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 1);
     }
 
@@ -68,7 +68,7 @@ contract EthCallTest is Test {
         );
 
         assertEq(counter.number(), 0);
-        bytes memory result = wallet.executeQuarkOperation(
+        wallet.executeQuarkOperation(
             ethcall,
             abi.encodeWithSelector(
                 EthCall.run.selector, address(counter), hex"", abi.encodeCall(Counter.incrementBy, (1)), 0

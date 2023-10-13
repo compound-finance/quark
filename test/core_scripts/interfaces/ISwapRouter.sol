@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.19;
 // Router interfaces thats only used in test for swapping
 interface ISwapRouter {
     struct ExactInputSingleParams {
