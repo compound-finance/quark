@@ -62,7 +62,6 @@ contract QuarkWallet is IERC1271 {
         // isReplayable
     }
 
-
     constructor(address owner_, CodeJar codeJar_) {
         owner = owner_;
         codeJar = codeJar_;
@@ -154,9 +153,9 @@ contract QuarkWallet is IERC1271 {
      * @return return value from the executed operation
      */
     function executeQuarkOperation(
-        QuarkOperation calldata op, 
-        uint8 v, 
-        bytes32 r, 
+        QuarkOperation calldata op,
+        uint8 v,
+        bytes32 r,
         bytes32 s
     ) public payable returns (bytes memory) {
         if (block.timestamp >= op.expiry) revert SignatureExpired();
@@ -216,7 +215,6 @@ contract QuarkWallet is IERC1271 {
      * @param scriptCalldata The encoded function selector and arguments to call on the transaction script
      * @return return value from the executed operation
      */
-
     function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata) public payable returns (bytes memory) {
         // XXX authenticate caller
         address scriptAddress = codeJar.saveCode(scriptSource);
