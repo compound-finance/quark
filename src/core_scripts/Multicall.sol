@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "./CoreScript.sol";
 
-contract Multicall is CoreScript {
+contract MultiCall is CoreScript {
     /**
      * @notice Execute multiple calls in a single transaction
      * @param callContracts Array of contracts to call

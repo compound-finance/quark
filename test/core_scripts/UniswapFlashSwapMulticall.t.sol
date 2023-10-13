@@ -8,14 +8,14 @@ import "forge-std/interfaces/IERC20.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
-import "./../../src/core_scripts/UniswapFlashSwapMulticall.sol";
+import "./../../src/core_scripts/UniswapFlashSwapMultiCall.sol";
 import "./../../src/core_scripts/lib/PoolAddress.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
 import "./interfaces/IComet.sol";
 
 
-contract UniswapFlashSwapMulticallTest is Test {
+contract UniswapFlashSwapMultiCallTest is Test {
     CodeJar public codeJar;
     bytes32 internal constant QUARK_OPERATION_TYPEHASH =
         keccak256(
@@ -30,7 +30,7 @@ contract UniswapFlashSwapMulticallTest is Test {
         codeJar = new CodeJar();
         codeJar.saveCode(
             new YulHelper().getDeployed(
-                "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
+                "UniswapFlashSwapMultiCall.sol/UniswapFlashSwapMultiCall.json"
             )
         );
     }
@@ -38,8 +38,8 @@ contract UniswapFlashSwapMulticallTest is Test {
     // Test #1: Using flash swap to leverage/deleverage Comet position on single asset
     function testUniswapFlashSwapMultiCallLeverageComet() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
-        bytes memory uniswapFlashSwapMulticall = new YulHelper().getDeployed(
-            "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
+        bytes memory uniswapFlashSwapMultiCall = new YulHelper().getDeployed(
+            "UniswapFlashSwapMultiCall.sol/UniswapFlashSwapMultiCall.json"
         );
 
         // Set up some funds for test
@@ -47,7 +47,7 @@ contract UniswapFlashSwapMulticallTest is Test {
 
         // User has establish position in comet, try to use flash swap to leverage up
         // Borrow 1 ETH worth of USDC from comet, and purchase 1 ETH re-supply and remaining USDC back to Comet
-        // Some computation is required to get the right number to pass into UniswapFlashSwapMulticall core scripts
+        // Some computation is required to get the right number to pass into UniswapFlashSwapMultiCall core scripts
         AssetInfo memory ethAssetInfo = IComet(cometAddr).getAssetInfoByAddress(WETH);
         uint ethPrice = IComet(cometAddr).getPrice(ethAssetInfo.priceFeed) * 1e6 / 1e8; 
 
@@ -75,7 +75,7 @@ contract UniswapFlashSwapMulticallTest is Test {
         callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, ethPrice * 12 / 10)); //  Use 1.2 multiplier to address price slippage and fee during swap
         callValues[2] = 0 wei;
 
-        UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload memory payload = UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload({
+        UniswapFlashSwapMultiCall.UniswapFlashSwapMultiCallPayload memory payload = UniswapFlashSwapMultiCall.UniswapFlashSwapMultiCallPayload({
             token0: WETH,
             token1: USDC,
             fee: 500,
@@ -89,9 +89,9 @@ contract UniswapFlashSwapMulticallTest is Test {
         });
 
         wallet.executeQuarkOperation(
-            uniswapFlashSwapMulticall,
+            uniswapFlashSwapMultiCall,
             abi.encodeWithSelector(
-                UniswapFlashSwapMulticall.run.selector,
+                UniswapFlashSwapMultiCall.run.selector,
                 payload
             ), 
             true
@@ -104,8 +104,8 @@ contract UniswapFlashSwapMulticallTest is Test {
     // Test #2: Invalid caller
     function testInvalidCallerFlashSwap() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
-        bytes memory uniswapFlashSwapMulticall = new YulHelper().getDeployed(
-            "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
+        bytes memory uniswapFlashSwapMultiCall = new YulHelper().getDeployed(
+            "UniswapFlashSwapMultiCall.sol/UniswapFlashSwapMultiCall.json"
         );
         
         deal(WETH, address(wallet), 100 ether);
@@ -115,18 +115,18 @@ contract UniswapFlashSwapMulticallTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(UniswapFlashSwapMulticall.InvalidCaller.selector)
+                abi.encodeWithSelector(UniswapFlashSwapMultiCall.InvalidCaller.selector)
             )            
         );
 
         wallet.executeQuarkOperation(
-            uniswapFlashSwapMulticall,
+            uniswapFlashSwapMultiCall,
             abi.encodeWithSelector(
-                UniswapFlashSwapMulticall.uniswapV3SwapCallback.selector,
+                UniswapFlashSwapMultiCall.uniswapV3SwapCallback.selector,
                 1000e6,
                 1000e6,
                 abi.encode(
-                    UniswapFlashSwapMulticall.FlashSwapMulticallInput({
+                    UniswapFlashSwapMultiCall.FlashSwapMultiCallInput({
                         poolKey: PoolAddress.getPoolKey(
                             WETH,
                             USDC,
@@ -146,8 +146,8 @@ contract UniswapFlashSwapMulticallTest is Test {
     // Test #3: flash swap revert if not paying back
     function testNotEnoughToPayFlashSwap() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
-        bytes memory uniswapFlashSwapMulticall = new YulHelper().getDeployed(
-            "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
+        bytes memory uniswapFlashSwapMultiCall = new YulHelper().getDeployed(
+            "UniswapFlashSwapMultiCall.sol/UniswapFlashSwapMultiCall.json"
         );
 
         // Set up some funds for test
@@ -155,7 +155,7 @@ contract UniswapFlashSwapMulticallTest is Test {
 
         // User has establish position in comet, try to use flash swap to leverage up
         // Borrow 1 ETH worth of USDC from comet, and purchase 1 ETH re-supply and remaining USDC back to Comet
-        // Some computation is required to get the right number to pass into UniswapFlashSwapMulticall core scripts
+        // Some computation is required to get the right number to pass into UniswapFlashSwapMultiCall core scripts
         AssetInfo memory ethAssetInfo = IComet(cometAddr).getAssetInfoByAddress(WETH);
 
         // Compose array of actions
@@ -176,7 +176,7 @@ contract UniswapFlashSwapMulticallTest is Test {
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 11 ether)); // 10 original + 1 leveraged
         callValues[1] = 0 wei;
 
-        UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload memory payload = UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload({
+        UniswapFlashSwapMultiCall.UniswapFlashSwapMultiCallPayload memory payload = UniswapFlashSwapMultiCall.UniswapFlashSwapMultiCallPayload({
             token0: WETH,
             token1: USDC,
             fee: 500,
@@ -200,9 +200,9 @@ contract UniswapFlashSwapMulticallTest is Test {
         );
 
         wallet.executeQuarkOperation(
-            uniswapFlashSwapMulticall,
+            uniswapFlashSwapMultiCall,
             abi.encodeWithSelector(
-                UniswapFlashSwapMulticall.run.selector,
+                UniswapFlashSwapMultiCall.run.selector,
                 payload
             ), 
             true

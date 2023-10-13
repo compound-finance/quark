@@ -7,7 +7,7 @@ import "./CoreScript.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
 
-contract UniswapFlashLoanMulticall is CoreScript, IUniswapV3FlashCallback {
+contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
     // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
     // TODO: Need to find a way to make this configurable for other chains, but not too freely adjustable in callback
     address constant UNISWAP_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
@@ -26,8 +26,8 @@ contract UniswapFlashLoanMulticall is CoreScript, IUniswapV3FlashCallback {
         uint256[] callValues;
     }
 
-    /// @notice Payload for UniswapFlashLoanMulticall
-    struct UniswapFlashLoanMulticallPayload {
+    /// @notice Payload for UniswapFlashLoanMultiCall
+    struct UniswapFlashLoanMultiCallPayload {
         address token0;
         address token1;
         uint24 fee;
@@ -41,9 +41,9 @@ contract UniswapFlashLoanMulticall is CoreScript, IUniswapV3FlashCallback {
 
     /**
      * @notice Execute multiple calls in a single transaction with flash loan
-     * @param payload Struct of UniswapFlashLoanMulticallPayload contains pool info and Multicall inputs
+     * @param payload Struct of UniswapFlashLoanMultiCallPayload contains pool info and MultiCall inputs
      */
-    function run(UniswapFlashLoanMulticallPayload memory payload) external {
+    function run(UniswapFlashLoanMultiCallPayload memory payload) external {
         // Reorder the token0, token1 to ensure it's in the correct order token1 > token0
         if (payload.token0 > payload.token1) {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
@@ -75,7 +75,7 @@ contract UniswapFlashLoanMulticall is CoreScript, IUniswapV3FlashCallback {
      * @notice Callback function for Uniswap flashloan
      * @param fee0 Fees that need to repay for token0 from the flashloan pool
      * @param fee1 Fees that need to repay for token1 from the flashloan pool
-     * @param data Data that passed from invoking IUniswapV3Pool.flash(), which contains Multicall inputs to execute before repaying the flashloan
+     * @param data Data that passed from invoking IUniswapV3Pool.flash(), which contains MultiCall inputs to execute before repaying the flashloan
      */
     function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {
         FlashLoanInput memory input = abi.decode(data, (FlashLoanInput));

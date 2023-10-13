@@ -8,13 +8,13 @@ import "forge-std/interfaces/IERC20.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
-import "./../../src/core_scripts/Multicall.sol";
+import "./../../src/core_scripts/MultiCall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/Counter.sol";
 import "./scripts/SupplyComet.sol";
 import "./interfaces/IComet.sol";
 
-contract MulticallTest is Test {
+contract MultiCallTest is Test {
     CodeJar public codeJar;
     bytes32 internal constant QUARK_OPERATION_TYPEHASH =
         keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)");
@@ -24,7 +24,7 @@ contract MulticallTest is Test {
         codeJar = new CodeJar();
         codeJar.saveCode(
             new YulHelper().getDeployed(
-                "Multicall.sol/Multicall.json"
+                "MultiCall.sol/MultiCall.json"
             )
         );
 
@@ -36,7 +36,7 @@ contract MulticallTest is Test {
     function testMultiCallCounter() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
+            "MultiCall.sol/MultiCall.json"
         );
 
         // Compose array of parameters
@@ -56,7 +56,7 @@ contract MulticallTest is Test {
         assertEq(counter.number(), 0);
         bytes memory result = wallet.executeQuarkOperation(
             multiCall,
-            abi.encodeWithSelector(Multicall.run.selector, callContracts, callCodes, callDatas, callValues),
+            abi.encodeWithSelector(MultiCall.run.selector, callContracts, callCodes, callDatas, callValues),
             false
         );
 
@@ -67,7 +67,7 @@ contract MulticallTest is Test {
     function testMultiCallSupplyEthAndWithdrawUSDC() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
+            "MultiCall.sol/MultiCall.json"
         );
 
         // Comet address in mainnet
@@ -102,18 +102,18 @@ contract MulticallTest is Test {
 
         wallet.executeQuarkOperation(
             multiCall,
-            abi.encodeWithSelector(Multicall.run.selector, callContracts, callCodes, callDatas, callValues),
+            abi.encodeWithSelector(MultiCall.run.selector, callContracts, callCodes, callDatas, callValues),
             false
         );
 
         assertEq(IERC20(USDCAddr).balanceOf(address(wallet)), 1000_000_000);
     }
 
-    // Test #3: Multicall on runtime code in callcodes
+    // Test #3: MultiCall on runtime code in callcodes
     function testMultiCallSupplyCometViaRuntimeCodes() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
+            "MultiCall.sol/MultiCall.json"
         );
 
         // Comet address on mainnet
@@ -141,7 +141,7 @@ contract MulticallTest is Test {
         // Approve Comet to spend USDC
         wallet.executeQuarkOperation(
             multiCall,
-            abi.encodeWithSelector(Multicall.run.selector, callContracts, callCodes, callDatas, callValues),
+            abi.encodeWithSelector(MultiCall.run.selector, callContracts, callCodes, callDatas, callValues),
             false
         );
 

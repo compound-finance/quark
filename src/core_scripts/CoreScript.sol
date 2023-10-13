@@ -48,13 +48,13 @@ contract CoreScript is QuarkScript {
                 if (!success) {
                     revert MultiDelegateCallError(i, callCodes[i], callDatas[i], callValues[i], returnData);
                 }
-            } else if (isCallContract) {
+            }
+
+            if (isCallContract) {
                 (bool success, bytes memory returnData) = callContracts[i].call{value: callValues[i]}(callDatas[i]);
                 if (!success) {
                     revert MultiCallError(i, callContracts[i], callDatas[i], callValues[i], returnData);
                 }
-            } else {
-                revert InvalidInput();
             }
         }
     }
@@ -91,15 +91,15 @@ contract CoreScript is QuarkScript {
             }
 
             return returnData;
-        } else if (isCallContract) {
-            (bool success, bytes memory returnData) = callContract.call{value: callValue}(callData);
+        }
+
+        if (isCallContract) {
+            (bool success, bytes memory returnData) = callContract.call(callData);
             if (!success) {
                 revert CallError(callContract, callData, callValue, returnData);
             }
 
             return returnData;
-        } else {
-            revert InvalidInput();
         }
     }
 

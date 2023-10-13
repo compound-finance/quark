@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "./CoreScript.sol";
 
-contract Ethcall is CoreScript {
+contract EthCall is CoreScript {
     /**
      * @notice Execute a single call in a single transaction
      * @param callContract Contract to call

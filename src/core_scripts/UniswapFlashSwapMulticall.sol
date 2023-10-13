@@ -8,7 +8,7 @@ import "forge-std/console.sol";
 import "v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
-contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
+contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
     // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
     address constant UNISWAP_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
@@ -16,7 +16,7 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
     error InvalidCaller();
 
     /// @notice Input for flash swap multicall when interact with UniswapV3 Pool swap function
-    struct FlashSwapMulticallInput {
+    struct FlashSwapMultiCallInput {
         PoolAddress.PoolKey poolKey;
         address[] callContracts;
         bytes[] callCodes;
@@ -24,8 +24,8 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
         uint256[] callValues;
     }
 
-    /// @notice Payload for UniswapFlashSwapMulticall
-    struct UniswapFlashSwapMulticallPayload {
+    /// @notice Payload for UniswapFlashSwapMultiCall
+    struct UniswapFlashSwapMultiCallPayload {
         address token0;
         address token1;
         uint24 fee;
@@ -40,9 +40,9 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
 
     /**
      * @notice Execute multiple calls in a single transaction with flash swap
-     * @param payload Struct of UniswapFlashSwapMulticallPayload contains pool info and Multicall inputs
+     * @param payload Struct of UniswapFlashSwapMultiCallPayload contains pool info and MultiCall inputs
      */
-    function run(UniswapFlashSwapMulticallPayload memory payload) external {
+    function run(UniswapFlashSwapMultiCallPayload memory payload) external {
         // Reorder the token0, token1 to ensure it's in the correct order token1 > token0
         if (payload.token0 > payload.token1) {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
@@ -59,7 +59,7 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
             payload.amount1 > payload.amount0 ? -int256(payload.amount1) : -int256(payload.amount0),
             payload.sqrtPriceLimitX96,
             abi.encode(
-                FlashSwapMulticallInput({
+                FlashSwapMultiCallInput({
                     poolKey: PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee),
                     callContracts: payload.callContracts,
                     callCodes: payload.callCodes,
@@ -74,10 +74,10 @@ contract UniswapFlashSwapMulticall is CoreScript, IUniswapV3SwapCallback {
      * @notice Callback function for Uniswap flash swap
      * @param amount0Delta Amount of token0 owed (only need to repay positive value)
      * @param amount1Delta Amount of token1 owed (only need to repay positive value)
-     * @param data Data passed from UniswapV3Pool.swap() which contains Multicall inputs to execute before sending the owed amount back
+     * @param data Data passed from UniswapV3Pool.swap() which contains MultiCall inputs to execute before sending the owed amount back
      */
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
-        FlashSwapMulticallInput memory input = abi.decode(data, (FlashSwapMulticallInput));
+        FlashSwapMultiCallInput memory input = abi.decode(data, (FlashSwapMultiCallInput));
         IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(UNISWAP_FACTORY, input.poolKey));
         if (msg.sender != address(pool)) {
             revert InvalidCaller();
