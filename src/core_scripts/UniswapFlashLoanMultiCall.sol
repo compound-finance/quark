@@ -89,11 +89,11 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
 
         // Attempt to pay back amount owed after multi calls completed
         if (input.amount0 + fee0 > 0) {
-            IERC20(input.poolKey.token0).transfer(address(pool), input.amount0 + fee0);
+            IERC20(input.poolKey.token0).safeTransfer(address(pool), input.amount0 + fee0);
         }
 
         if (input.amount1 + fee1 > 0) {
-            IERC20(input.poolKey.token1).transfer(address(pool), input.amount1 + fee1);
+            IERC20(input.poolKey.token1).safeTransfer(address(pool), input.amount1 + fee1);
         }
     }
 }
