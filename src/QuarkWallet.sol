@@ -15,6 +15,7 @@ contract QuarkWallet {
     error QuarkCodeNotFound();
     error QuarkNonceReplay(uint256);
     error QuarkReadError();
+    error RequirementNotMet();
     error SignatureExpired();
 
     /// @notice Address of the EOA that controls this wallet
@@ -27,7 +28,7 @@ contract QuarkWallet {
     bytes32 internal constant ACTIVE_CALLBACK_SLOT = bytes32(keccak256("org.quark.active-callback"));
 
     /// @dev The EIP-712 typehash for authorizing an operation
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable)");
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable,uint256[] requirements)");
 
     /// @dev The EIP-712 typehash for the contract's domain
     bytes32 internal constant DOMAIN_TYPEHASH =
@@ -56,7 +57,7 @@ contract QuarkWallet {
         uint256 expiry;
         bool allowCallback;
         bool isReplayable;
-        // requirements
+        uint256[] requirements;
     }
 
     constructor(address owner_, CodeJar codeJar_) {
@@ -163,12 +164,15 @@ contract QuarkWallet {
         if (block.timestamp >= op.expiry) revert SignatureExpired();
         if (isSet(op.nonce)) revert InvalidNonce();
 
-        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback, op.isReplayable));
+        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback, op.isReplayable, op.requirements));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignature(owner, digest, v, r, s)) {
             if (!op.isReplayable) {
                 setNonce(op.nonce);
+            }
+            for (uint256 i; i < op.requirements.length; i++) {
+                if (!isSet(i)) revert RequirementNotMet();
             }
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
