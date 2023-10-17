@@ -20,10 +20,6 @@ contract QuarkScript {
         return relayer_;
     }
 
-    function sloadU256(string memory key) internal view returns (uint256) {
-        return uint256(sload(key));
-    }
-
     function sload(string memory key) internal view returns (bytes32) {
         return sload(keccak256(bytes(key)));
     }
@@ -34,14 +30,39 @@ contract QuarkScript {
         }
     }
 
-    function sstoreU256(string memory key, uint256 value) internal {
-        return sstore(keccak256(bytes(key)), bytes32(value));
-    }
-
     function sstore(bytes32 key, bytes32 value) internal {
         assembly {
             sstore(key, value)
         }
+    }
+
+    function sstore(string memory key, bytes32 value) internal {
+        return sstore(keccak256(bytes(key)), value);
+    }
+
+    function sstoreU256(string memory key, uint256 value) internal {
+        return sstore((key), bytes32(value));
+    }
+
+    function sloadU256(string memory key) internal view returns (uint256) {
+        return uint256(sload(key));
+    }
+
+    function sstoreBool(string memory key, bool value) internal {
+        if (value) return sstore(key, bytes32(uint(1)));
+        else       return sstore(key, bytes32(0));
+    }
+
+    function sloadBool(string memory key) internal view returns (bool) {
+        return sload(key) != 0;
+    }
+
+    function sstoreAddress(string memory key, address value) internal {
+        return sstore(key, bytes32(bytes20(value)));
+    }
+
+    function sloadAddress(string memory key) internal view returns (address) {
+        return address(bytes20(sload(key)));
     }
 
     modifier onlyRelayer() {
@@ -49,4 +70,3 @@ contract QuarkScript {
         _;
     }
 }
-
