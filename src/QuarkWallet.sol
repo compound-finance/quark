@@ -259,4 +259,17 @@ contract QuarkWallet {
             revert NoActiveCallback();
         }
     }
+
+    receive() external payable {
+        address callback = getActiveCallback();
+        if (callback != address(0)) {
+            (bool success, bytes memory result) = callback.delegatecall("");
+            if (!success) {
+                assembly {
+                    let size := mload(result)
+                    revert(add(result, 0x20), size)
+                }
+            }
+        }
+    }
 }
