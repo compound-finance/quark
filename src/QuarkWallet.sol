@@ -244,7 +244,7 @@ contract QuarkWallet {
         return returnData;
     }
 
-    fallback(bytes calldata data) external returns (bytes memory) {
+    fallback(bytes calldata data) external payable returns (bytes memory) {
         address callback = getActiveCallback();
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);

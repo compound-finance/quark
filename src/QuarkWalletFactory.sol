@@ -72,8 +72,8 @@ contract QuarkWalletFactory {
                         )
                     )
                 )
-            )))
-        );
+            )
+        )));
     }
 
     /**
@@ -123,6 +123,6 @@ contract QuarkWalletFactory {
             create(account, salt);
         }
 
-        return QuarkWallet(walletAddress).executeQuarkOperation(op, v, r, s);
+        return QuarkWallet(payable(walletAddress)).executeQuarkOperation(op, v, r, s);
     }
 }

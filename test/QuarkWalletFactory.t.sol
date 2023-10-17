@@ -141,7 +141,7 @@ contract QuarkWalletFactoryTest is Test {
 
         // uses up the operation's nonce
         assertEq(
-            QuarkWallet(factory.walletAddressForAccount(alice)).isSet(0),
+            QuarkWallet(payable(factory.walletAddressForAccount(alice))).isSet(0),
             true
         );
     }
@@ -179,7 +179,7 @@ contract QuarkWalletFactoryTest is Test {
 
         // uses up the operation's nonce
         assertEq(
-            QuarkWallet(factory.walletAddressForAccount(alice, salt)).isSet(0),
+            QuarkWallet(payable(factory.walletAddressForAccount(alice, salt))).isSet(0),
             true
         );
     }
@@ -217,7 +217,7 @@ contract QuarkWalletFactoryTest is Test {
 
         // uses up the operation's nonce
         assertEq(
-            QuarkWallet(factory.walletAddressForAccount(alice)).isSet(0),
+            QuarkWallet(payable(factory.walletAddressForAccount(alice))).isSet(0),
             true
         );
     }
