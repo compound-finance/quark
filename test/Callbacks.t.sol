@@ -310,7 +310,7 @@ contract CallbacksTest is Test {
 
         vm.prank(aliceAccount, aliceAccount);
         aliceWallet.executeQuarkOperation(aliceOp2, alice_v2, alice_r2, alice_s2);
-        assertEq(address(aliceWallet).balance, 100000000);
+        assertEq(address(aliceAccount).balance, 100000000);
         assertEq(address(bobWallet).balance, 100000000);
     }
 }
