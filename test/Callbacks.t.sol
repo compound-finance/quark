@@ -98,8 +98,12 @@ contract CallbacksTest is Test {
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
             scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSignature(
-                "run((bytes,bytes,uint256,uint256,bool),uint8,bytes32,bytes32)", nestedOp, v_, r_, s_
-                ),
+                "run((bytes,bytes,uint256,uint256,bool,bool,uint256[]),uint8,bytes32,bytes32)",
+                nestedOp,
+                v_,
+                r_,
+                s_
+            ),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
             allowCallback: true,
@@ -141,8 +145,12 @@ contract CallbacksTest is Test {
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
             scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSignature(
-                "run((bytes,bytes,uint256,uint256,bool),uint8,bytes32,bytes32)", nestedOp, v_, r_, s_
-                ),
+                "run((bytes,bytes,uint256,uint256,bool,bool,uint256[]),uint8,bytes32,bytes32)",
+                nestedOp,
+                v_,
+                r_,
+                s_
+            ),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
             allowCallback: true,
