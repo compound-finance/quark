@@ -2,110 +2,81 @@
 pragma solidity ^0.8.19;
 
 contract CodeJar {
-    error CodeSaveFailed(bytes initCode);
-    error CodeSaveMismatch(bytes initCode, bytes code, address expected, address created);
     error CodeTooLarge(uint256 sz);
     error CodeNotFound(address codeAddress);
+    error CodeInvalid(address codeAddress);
+    error CodeHashMismatch(address codeAddress, bytes32 expected, bytes32 given);
 
     /**
-     * @notice Saves the code to the code jar, if it doesn't already exist
+     * @notice Saves the code to Code Jar, no-op if it already exists
      * @dev This calls it meant to be idemponent and fairly inexpensive on a second call.
-     * @return The address of the contract that matches the inputted code.
+     * @return The address of the contract that matches the input code.
      */
     function saveCode(bytes calldata code) external returns (address) {
-        (address codeAddress, uint256 codeAddressLen, bytes memory initCode, uint256 initCodeLen) = getInitCode(code);
+        bytes memory initCode = getInitCode(code);
+        address codeAddress = getCodeAddress(initCode);
+        bytes32 codeAddressHash = codeAddress.codehash;
 
-        if (codeAddressLen == 0) {
+        if (codeAddressHash == 0) {
+            // The code has not been deployed here (or it was deployed and destructed).
             address codeCreateAddress;
+            uint256 initCodeLen = initCode.length;
             assembly {
                 codeCreateAddress := create2(0, add(initCode, 32), initCodeLen, 0)
             }
 
-            // Ensure that the wallet was created.
-            if (uint160(address(codeCreateAddress)) == 0) {
-                revert CodeSaveFailed(initCode);
-            }
+            // Posit: these cannot fail and are purely defense-in-depth
+            require(codeCreateAddress != address(0));
+            require(codeCreateAddress == codeAddress);
 
-            if (codeCreateAddress != codeAddress) {
-                revert CodeSaveMismatch(initCode, code, codeAddress, codeCreateAddress);
-            }
+            return codeAddress;
+        } else if (codeAddressHash == keccak256(code)) {
+            // Code is already deployed and matches expected code
+            return codeAddress;
+        } else {
+            // Code is already deployed but does not match expected code.
+            // Note: this should never happen except if the initCode script
+            //       has an unknown bug.
+            revert CodeHashMismatch(codeAddress, keccak256(code), codeAddressHash);
         }
-
-        return codeAddress;
     }
 
     /**
-     * @notice Checks if code already exists in the code jar
-     * @return True if code already exists in code jar
+     * @notice Checks if code already exists in Code Jar
+     * @dev Use `saveCode` to get the address of the contract with that code
+     * @return True if code already exists in Code Jar
      */
-    function codeExists(bytes calldata code) external returns (bool) {
-        (address codeAddress, uint256 codeAddressLen, bytes memory initCode, uint256 initCodeLen) = getInitCode(code);
+    function codeExists(bytes calldata code) external view returns (bool) {
+        bytes memory initCode = getInitCode(code);
+        address codeAddress = getCodeAddress(initCode);
 
-        return codeAddressLen > 0;
+        return codeAddress.codehash == keccak256(code);
     }
 
-    // Helper to get the init code and check if the code exists already.
-    function getInitCode(bytes memory code) internal returns (address, uint256, bytes memory, uint256) {
-        /**
-         * 0000    63XXXXXXXX  PUSH4 XXXXXXXX // code size
-         * 0005    80          DUP1
-         * 0006    600e        PUSH1 0x0e // this size
-         * 0008    6000        PUSH1 0x00
-         * 000a    39          CODECOPY
-         * 000b    6000        PUSH1 0x00
-         * 000d    F3          *RETURN
-         */
-        uint32 initCodeBaseSz = uint32(0x0e); // 0x630000000080600e6000396000f3
-        if (code.length > type(uint32).max) {
-                revert CodeTooLarge(code.length);
-        }
-        uint32 codeSz = uint32(code.length);
-        uint256 initCodeLen = initCodeBaseSz + codeSz;
-        bytes memory initCode = new bytes(initCodeLen);
+    /**
+     * @dev Builds the initCode that would produce `code` as its output.
+     * @dev See the full contract specification for in-depth details.
+     * @return initCode that would produce  `code` as its output
+     */
+    function getInitCode(bytes memory code) internal pure returns (bytes memory) {
+        // Note: The gas cost in memory is `O(a^2)`, thus for an array to be
+        //       more than 2^32 bytes long, the gas cost would be (2^32)^2 or
+        //       about 13 orders of magnitude above the current block gas
+        //       limit. As such, we check the type-conversion, but understand
+        //       it is not possible to accept a value whose length whose length
+        //       would not actually fit in 32-bits.
+        require(code.length < type(uint32).max);
+        uint32 codeLen = uint32(code.length);
 
-        assembly {
-            function memcpy(dst, src, size) {
-                for {} gt(size, 0) {}
-                {
-                    // Copy word
-                    if gt(size, 31) { // ≥32
-                        mstore(dst, mload(src))
-                        dst := add(dst, 32)
-                        src := add(src, 32)
-                        size := sub(size, 32)
-                        continue
-                    }
+        return abi.encodePacked(hex"63", codeLen, hex"80600e6000396000f3", code);
+    }
 
-                    // Copy byte
-                    //
-                    // Note: we can't use `mstore` here to store a full word since we could
-                    // truncate past the end of the dst ptr.
-                    mstore8(dst, and(mload(src), 0xff))
-                    dst := add(dst, 1)
-                    src := add(src, 1)
-                    size := sub(size, 1)
-                }
-            }
-
-            function copy4(dst, v) {
-                if gt(v, 0xffffffff) {
-                    // operand too large
-                    revert(0, 0)
-                }
-
-                mstore8(add(dst, 0), byte(28, v))
-                mstore8(add(dst, 1), byte(29, v))
-                mstore8(add(dst, 2), byte(30, v))
-                mstore8(add(dst, 3), byte(31, v))
-            }
-
-            let initCodeOffset := add(initCode, 0x20)
-            mstore(initCodeOffset, 0x630000000080600e6000396000f3000000000000000000000000000000000000)
-            memcpy(add(initCodeOffset, initCodeBaseSz), add(code, 0x20), codeSz)
-            copy4(add(initCodeOffset, 1), codeSz)
-        }
-
-        address codeAddress = address(uint160(uint(
+    /**
+     * @dev Returns the create2 address based on the given initCode
+     * @return The create2 address based on running the initCode constructor
+     */
+    function getCodeAddress(bytes memory initCode) internal view returns (address) {
+        return address(uint160(uint(
             keccak256(
                 abi.encodePacked(
                     bytes1(0xff),
@@ -115,39 +86,25 @@ contract CodeJar {
                 )
             )))
         );
-
-        uint256 codeAddressLen;
-        assembly {
-            codeAddressLen := extcodesize(codeAddress)
-        }
-
-        return (codeAddress, codeAddressLen, initCode, initCodeLen);
     }
 
     /**
-     * @notice Reads the given code from the code jar
-     * @dev This simply is an extcodecopy from the address. Reverts if code doesn't exist.
-     * @dev This does not check that the address was created by this contract, and thus
-     *      will read any contract.
+     * @notice Reads the given code from Code Jar.
+     * @dev This should revert if `codeAddress` was not deployed from this contract.
+     * @return The code at `codeAddress` if `codeAddress` was created by this contract.
      */
     function readCode(address codeAddress) external view returns (bytes memory) {
-        uint256 codeLen;
-        assembly {
-            codeLen := extcodesize(codeAddress)
-        }
+        bytes memory code = codeAddress.code;
 
-        if (codeLen == 0) {
-            revert CodeNotFound(codeAddress);
-        }
+        // Check that address where that given code would have been created by this contract
+        bytes memory initCode = getInitCode(code);
 
-        bytes memory code = new bytes(codeLen);
-        assembly {
-            extcodecopy(codeAddress, add(code, 0x20), 0, codeLen)
+        // Revert if the code doesn't match where we should have deployed it.
+        // This is to prevent using this contract to read random contract codes.
+        if (getCodeAddress(initCode) != codeAddress) {
+            revert CodeInvalid(codeAddress);
         }
-
-        // TODO: Check that the code was created by this code jar?
 
         return code;
     }
 }
-
