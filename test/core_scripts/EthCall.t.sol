@@ -101,7 +101,7 @@ contract EthCallTest is Test {
         wallet.executeQuarkOperation(op2, v, r, s);
 
         // Since there is rouding diff, assert on diff is less than 10 wei
-        assertLt(stdMath.delta(1000e6, IComet(comet).balanceOf(address(wallet))), 10);
+        assertLt(stdMath.delta(1000e6, IComet(comet).balanceOf(address(wallet))), 2);
     }
 
     // Test Case #3: Withdraw USDC from Comet
@@ -118,7 +118,7 @@ contract EthCallTest is Test {
         uint8 v;
         bytes32 r;
         bytes32 s;
-        // Approve Comet to spend USDC
+        // Approve Comet to spend WETH
         op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
