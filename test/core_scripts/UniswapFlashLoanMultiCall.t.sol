@@ -86,7 +86,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         callDatas[2] = abi.encodeCall(IComet.withdraw, (WETH, 2 ether));
         callValues[2] = 0 wei;
 
-        // Approve router for ETH
+        // Approve router for WETH
         callContracts[3] = address(WETH);
         callDatas[3] = abi.encodeCall(IERC20.approve, (router, 2 ether));
         callValues[3] = 0 wei;
