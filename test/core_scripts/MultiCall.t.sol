@@ -256,7 +256,6 @@ contract MultiCallTest is Test {
         checkSelectors[4] = ConditionChecks.uint256Eq.selector;
         checkValues[4] = abi.encode(uint256(1000e6));
 
-        // Condition checks, account balance of ETH is 0
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
@@ -279,7 +278,7 @@ contract MultiCallTest is Test {
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000_000_000);
     }
 
-    // Test #5: MultiCall with checks simple failed
+    // Test #5: MultiCall with failed checks
     function testMultiCallWithChecksSimpleUnmetCondition() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
@@ -296,7 +295,7 @@ contract MultiCallTest is Test {
         bytes4[] memory checkSelectors = new bytes4[](2);
         bytes[] memory checkValues = new bytes[](2);
 
-        // Approve Comet to spend USDC
+        // Approve Comet to spend WETH
         callContracts[0] = WETH;
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
         callValues[0] = 0 wei;
@@ -304,7 +303,7 @@ contract MultiCallTest is Test {
         checkSelectors[0] = ConditionChecks.isFalse.selector;
         checkValues[0] = hex"";
 
-        // Supply ETH to Comet
+        // Supply WETH to Comet
         callContracts[1] = comet;
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
         callValues[1] = 0 wei;
@@ -349,7 +348,7 @@ contract MultiCallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
-    // Test #6: MultiCall with condition that wallet only repay when wallet accrue some USDC/ETH and owe to Comet at the same time
+    // Test #6: MultiCall with condition that the wallet repays after accruing USDC/ETH, with outstanding borrow from Comet
     function testMultiCallWithChecksOnConditionalRepay() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
@@ -383,7 +382,7 @@ contract MultiCallTest is Test {
         checkSelectors[0] = ConditionChecks.uint256Gte.selector;
         checkValues[0] = abi.encode(uint256(400e6));
 
-        // Check still owe Comet USDC
+        // Check that wallet still has USDC borrow in Comet
         callContracts[1] = comet;
         callDatas[1] = abi.encodeCall(IComet.borrowBalanceOf, (address(wallet)));
         callValues[1] = 0 wei;
@@ -465,7 +464,7 @@ contract MultiCallTest is Test {
         (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        // Wallet has accrue another 400 USDC
+        // Wallet has accrued another 400 USDC
         deal(USDC, address(wallet), 400e6);
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
@@ -485,7 +484,7 @@ contract MultiCallTest is Test {
         (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        // Wallet has accrue another 400 USDC
+        // Wallet has accrued another 400 USDC
         deal(USDC, address(wallet), 400e6);
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
@@ -505,7 +504,7 @@ contract MultiCallTest is Test {
         (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        // Wallet no longer owe Comet, condition#2 will fail
+        // Wallet no longer borrows from Comet, condition 2 will fail
         deal(USDC, address(wallet), 400e6);
 
         op = QuarkWallet.QuarkOperation({
@@ -566,7 +565,7 @@ contract MultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](4);
         uint256[] memory callValues = new uint256[](4);
 
-        // Approve Comet to spend USDC
+        // Approve Comet to spend WETH
         callContracts[0] = WETH;
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
         callValues[0] = 0 wei;
