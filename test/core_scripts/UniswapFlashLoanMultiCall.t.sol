@@ -62,9 +62,10 @@ contract UniswapFlashLoanMultiCallTest is Test {
         // Test user can switch colalteral from ETH to LINK via flashloan without allocating USDC to pay off debt 
         // Math here is not perfect, as in Terminal scripts we should be able to comout with the more precised numbers to accomplish this type of actions
         address[] memory callContracts = new address[](8);
-        bytes[] memory callCodes = new bytes[](8);
         bytes[] memory callDatas = new bytes[](8);
         uint256[] memory callValues = new uint256[](8);
+        address[] memory checkContracts = new address[](8);
+        bytes[] memory checkValues = new bytes[](8);
 
         uint256 LinkBalanceEst = 
             2e18 * IComet(comet).getPrice(IComet(comet).getAssetInfoByAddress(WETH).priceFeed) / IComet(comet).getPrice(IComet(comet).getAssetInfoByAddress(LINK).priceFeed) 
@@ -73,31 +74,26 @@ contract UniswapFlashLoanMultiCallTest is Test {
 
         // Approve Comet to spend USDC
         callContracts[0] = address(USDC);
-        callCodes[0] = hex"";
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 1000e6));
         callValues[0] = 0 wei;
 
         // Use flashloan usdc to pay off comet debt (1000USDC)
         callContracts[1] = address(comet);
-        callCodes[1] = hex"";
         callDatas[1] = abi.encodeCall(IComet.supply, (USDC, 1000e6));
         callValues[1] = 0 wei;
 
         // Withdraw all comet collateral (2ETH)
         callContracts[2] = address(comet);
-        callCodes[2] = hex"";
         callDatas[2] = abi.encodeCall(IComet.withdraw,  (WETH, 2 ether));
         callValues[2] = 0 wei;
 
         // Approve router for ETH
         callContracts[3] = address(WETH);
-        callCodes[3] = hex"";
         callDatas[3] = abi.encodeCall(IERC20.approve, (router, 2 ether));
         callValues[3] = 0 wei;
 
         // Swap 2ETH to LINK via router
         callContracts[4] = address(router);
-        callCodes[4] = hex"";
         callDatas[4] = abi.encodeCall(ISwapRouter.exactInputSingle, (ISwapRouter.ExactInputSingleParams({
               tokenIn: WETH,
               tokenOut: LINK,
@@ -112,19 +108,16 @@ contract UniswapFlashLoanMultiCallTest is Test {
 
         // Approve LINK to Comet
         callContracts[5] = address(LINK);
-        callCodes[5] = hex"";
         callDatas[5] = abi.encodeCall(IERC20.approve, (comet, type(uint256).max));
         callValues[5] = 0 wei;
 
         // Supply LINK back to Comet
         callContracts[6] = address(comet);
-        callCodes[6] = hex"";
         callDatas[6] = abi.encodeCall(IComet.supply, (LINK, LinkBalanceEst));
         callValues[6] = 0 wei;
 
         // Withdraw 1000 USDC from Comet again to repay debt
         callContracts[7] = address(comet);
-        callCodes[7] = hex"";
         callDatas[7] = abi.encodeCall(IComet.withdraw,  (USDC, 1000e6));
         callValues[7] = 0 wei;
 
@@ -135,9 +128,11 @@ contract UniswapFlashLoanMultiCallTest is Test {
             amount0: 1000e6,
             amount1: 0,
             callContracts: callContracts,
-            callCodes: callCodes,
             callDatas: callDatas,
-            callValues: callValues
+            callValues: callValues, 
+            withChecks: false,
+            checkContracts: checkContracts,
+            checkValues: checkValues
         });
 
         wallet.executeQuarkOperation(
@@ -188,9 +183,11 @@ contract UniswapFlashLoanMultiCallTest is Test {
                             500
                         ),
                         callContracts: new address[](3),
-                        callCodes: new bytes[](3),
                         callDatas: new bytes[](3),
-                        callValues: new uint256[](3)
+                        callValues: new uint256[](3), 
+                        withChecks: false,
+                        checkContracts: new address[](3),
+                        checkValues: new bytes[](3)
                     })
                 )
             ), 
@@ -206,13 +203,13 @@ contract UniswapFlashLoanMultiCallTest is Test {
         );
 
         address[] memory callContracts = new address[](1);
-        bytes[] memory callCodes = new bytes[](1);
         bytes[] memory callDatas = new bytes[](1);
         uint256[] memory callValues = new uint256[](1);
+        address[] memory checkContracts = new address[](1);
+        bytes[] memory checkValues = new bytes[](1);
 
         // Send USDC to random address
         callContracts[0] = address(USDC);
-        callCodes[0] = hex"";
         callDatas[0] = abi.encodeCall(IERC20.transfer, (address(1), 1000e6));
         callValues[0] = 0 wei;
 
@@ -223,9 +220,11 @@ contract UniswapFlashLoanMultiCallTest is Test {
             amount0: 1000e6,
             amount1: 0,
             callContracts: callContracts,
-            callCodes: callCodes,
             callDatas: callDatas,
-            callValues: callValues
+            callValues: callValues, 
+            withChecks: false,
+            checkContracts: checkContracts,
+            checkValues: checkValues
         });
 
         vm.expectRevert(

@@ -25,6 +25,16 @@ interface IComet {
     function supplyTo(address dst, address asset, uint amount) external;
 
     function baseScale() external view returns (uint);
+
+    function isLiquidatable(address account) external view returns (bool);
+
+    function withdrawTo(address to, address asset, uint amount) external;
+
+    function withdrawFrom(address src, address to, address asset, uint amount) external;
+
+    function supplyFrom(address from, address dst, address asset, uint amount) external;
+
+    function allow(address manager, bool isAllowed_) external;
 }
 
 struct AssetInfo {

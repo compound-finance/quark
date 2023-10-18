@@ -11,6 +11,7 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
     using SafeERC20 for IERC20;
     // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
     // TODO: Need to find a way to make this configurable for other chains, but not too freely adjustable in callback
+
     address constant UNISWAP_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
     error FailedFlashRepay(address token);
@@ -22,9 +23,11 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
         uint256 amount1;
         PoolAddress.PoolKey poolKey;
         address[] callContracts;
-        bytes[] callCodes;
         bytes[] callDatas;
         uint256[] callValues;
+        bool withChecks;
+        address [] checkContracts;
+        bytes[] checkValues;
     }
 
     /// @notice Payload for UniswapFlashLoanMultiCall
@@ -35,9 +38,11 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
         uint256 amount0;
         uint256 amount1;
         address[] callContracts;
-        bytes[] callCodes;
         bytes[] callDatas;
         uint256[] callValues;
+        bool withChecks;
+        address [] checkContracts;
+        bytes[] checkValues;
     }
 
     /**
@@ -64,9 +69,11 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
                     amount1: payload.amount1,
                     poolKey: PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee),
                     callContracts: payload.callContracts,
-                    callCodes: payload.callCodes,
                     callDatas: payload.callDatas,
-                    callValues: payload.callValues
+                    callValues: payload.callValues, 
+                    withChecks: payload.withChecks,
+                    checkContracts: payload.checkContracts,
+                    checkValues: payload.checkValues
                 })
             )
         );
@@ -85,7 +92,13 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
             revert InvalidCaller();
         }
 
-        executeMultiInternal(input.callContracts, input.callCodes, input.callDatas, input.callValues);
+        if (input.withChecks) {
+            // Execute multiple calls with checks
+            executeMultiChecksInternal(input.callContracts, input.callDatas, input.callValues, input.checkContracts, input.checkValues);
+        } else {
+            // Execute multiple calls without checks
+            executeMultiInternal(input.callContracts, input.callDatas, input.callValues);
+        }
 
         // Attempt to pay back amount owed after multi calls completed
         if (input.amount0 + fee0 > 0) {

@@ -52,25 +52,23 @@ contract UniswapFlashSwapMultiCallTest is Test {
 
         // Compose array of actions
         address[] memory callContracts = new address[](3);
-        bytes[] memory callCodes = new bytes[](3);
         bytes[] memory callDatas = new bytes[](3);
         uint256[] memory callValues = new uint256[](3);
+        address[] memory checkContracts = new address[](3);
+        bytes[] memory checkValues = new bytes[](3);
 
         // Approve Comet to spend WETH
         callContracts[0] = address(WETH);
-        callCodes[0] = hex"";
         callDatas[0] = abi.encodeCall(IERC20.approve, (cometAddr, 100 ether));
         callValues[0] = 0 wei;
 
         // Supply ETH to Comet
         callContracts[1] = address(cometAddr);
-        callCodes[1] = hex"";
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 11 ether)); // 10 original + 1 leveraged
         callValues[1] = 0 wei;
 
         // Withdraw 1 ETH worth of USDC from Comet
         callContracts[2] = address(cometAddr);
-        callCodes[2] = hex"";
         callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, ethPrice * 12 / 10)); //  Use 1.2 multiplier to address price slippage and fee during swap
         callValues[2] = 0 wei;
 
@@ -82,9 +80,11 @@ contract UniswapFlashSwapMultiCallTest is Test {
             amount1: 0,
             sqrtPriceLimitX96: uint160(4295128739 + 1),
             callContracts: callContracts,
-            callCodes: callCodes,
             callDatas: callDatas,
-            callValues: callValues
+            callValues: callValues,
+            withChecks: false,
+            checkContracts: checkContracts,
+            checkValues: checkValues
         });
 
         wallet.executeQuarkOperation(
@@ -132,9 +132,11 @@ contract UniswapFlashSwapMultiCallTest is Test {
                             500
                         ),
                         callContracts: new address[](3),
-                        callCodes: new bytes[](3),
                         callDatas: new bytes[](3),
-                        callValues: new uint256[](3)
+                        callValues: new uint256[](3), 
+                        withChecks: false,
+                        checkContracts: new address[](3),
+                        checkValues: new bytes[](3)
                     })
                 )
             ), 
@@ -154,19 +156,18 @@ contract UniswapFlashSwapMultiCallTest is Test {
 
         // Compose array of actions
         address[] memory callContracts = new address[](2);
-        bytes[] memory callCodes = new bytes[](2);
         bytes[] memory callDatas = new bytes[](2);
         uint256[] memory callValues = new uint256[](2);
+        address[] memory checkContracts = new address[](2);
+        bytes[] memory checkValues = new bytes[](2);
 
         // Approve Comet to spend WETH
         callContracts[0] = address(WETH);
-        callCodes[0] = hex"";
         callDatas[0] = abi.encodeCall(IERC20.approve, (cometAddr, 100 ether));
         callValues[0] = 0 wei;
 
         // Supply ETH to Comet
         callContracts[1] = address(cometAddr);
-        callCodes[1] = hex"";
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 11 ether)); // 10 original + 1 leveraged
         callValues[1] = 0 wei;
 
@@ -178,9 +179,11 @@ contract UniswapFlashSwapMultiCallTest is Test {
             amount1: 0,
             sqrtPriceLimitX96: uint160(4295128739 + 1),
             callContracts: callContracts,
-            callCodes: callCodes,
             callDatas: callDatas,
-            callValues: callValues
+            callValues: callValues, 
+            withChecks: false,
+            checkContracts: checkContracts,
+            checkValues: checkValues
         });
 
         vm.expectRevert(

@@ -47,7 +47,7 @@ contract EthCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                EthCall.run.selector, address(counter), hex"", abi.encodeCall(Counter.incrementBy, (1)), 0
+                EthCall.run.selector, address(counter), abi.encodeCall(Counter.incrementBy, (1)), 0
                 ),
             nonce: 0,
             expiry: type(uint256).max,
@@ -71,7 +71,7 @@ contract EthCallTest is Test {
         wallet.executeQuarkOperation(
             ethcall,
             abi.encodeWithSelector(
-                EthCall.run.selector, address(counter), hex"", abi.encodeCall(Counter.incrementBy, (1)), 0
+                EthCall.run.selector, address(counter), abi.encodeCall(Counter.incrementBy, (1)), 0
             ),
             false
         );
@@ -95,7 +95,7 @@ contract EthCallTest is Test {
         wallet.executeQuarkOperation(
             ethcall,
             abi.encodeWithSelector(
-                EthCall.run.selector, address(USDC), hex"", abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
+                EthCall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
             ),
             false
         );
@@ -105,7 +105,7 @@ contract EthCallTest is Test {
         wallet.executeQuarkOperation(
             ethcall,
             abi.encodeWithSelector(
-                EthCall.run.selector, address(comet), hex"", abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0
+                EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0
             ),
             false
         );
@@ -131,7 +131,7 @@ contract EthCallTest is Test {
         wallet.executeQuarkOperation(
             ethcall,
             abi.encodeWithSelector(
-                EthCall.run.selector, address(WETH), hex"", abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
+                EthCall.run.selector, address(WETH), abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
             ),
             false
         );
@@ -140,7 +140,7 @@ contract EthCallTest is Test {
         wallet.executeQuarkOperation(
             ethcall,
             abi.encodeWithSelector(
-                EthCall.run.selector, address(comet), hex"", abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
+                EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
             ),
             false
         );
@@ -149,51 +149,12 @@ contract EthCallTest is Test {
         wallet.executeQuarkOperation(
             ethcall,
             abi.encodeWithSelector(
-                EthCall.run.selector, address(comet), hex"", abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
+                EthCall.run.selector, address(comet), abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
             ),
             false
         );
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
-    }
-
-    // Test Case #5: EthCall on runtime code in callcode
-    function testEthCallSupplyCometViaRuntimeCode() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "EthCall.sol/EthCall.json"
-        );
-
-        // Comet address in mainnet
-        address comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-        address USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-        // Set up some funds for test
-        deal(USDC, address(wallet), 1000e6);
-        // Approve Comet to spend USDC
-        wallet.executeQuarkOperation(
-            ethcall,
-            abi.encodeWithSelector(
-                EthCall.run.selector, address(USDC), hex"", abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
-            ),
-            false
-        );
-
-        assertEq(IComet(comet).balanceOf(address(wallet)), 0);
-        // Supply Comet using codes
-        wallet.executeQuarkOperation(
-            ethcall,
-            abi.encodeWithSelector(
-                EthCall.run.selector,
-                address(0),
-                type(SupplyComet).runtimeCode,
-                abi.encodeCall(SupplyComet.supply, (comet, USDC, 1000e6)),
-                0
-            ),
-            false
-        );
-
-        // Since there is rouding diff, assert on diff is less than 10 wei
-        assertLt(stdMath.delta(1000e6, IComet(comet).balanceOf(address(wallet))), 10);
     }
 
     function aliceSignature(QuarkWallet wallet, QuarkWallet.QuarkOperation memory op)
