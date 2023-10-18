@@ -20,8 +20,9 @@ contract EthCallTest is Test {
     CodeJar public codeJar;
     Counter public counter;
     // Need alice info here, for signature to QuarkWallet
-    address constant alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    uint256 constant alicePK = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    uint256 alicePK = 0xa11ce;
+    address alice = vm.addr(alicePK);
+    // Contracts address on mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;

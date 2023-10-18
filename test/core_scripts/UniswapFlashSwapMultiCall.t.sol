@@ -17,8 +17,8 @@ import "./interfaces/IComet.sol";
 contract UniswapFlashSwapMultiCallTest is Test {
     CodeJar public codeJar;
     // For signature to QuarkWallet
-    address constant alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    uint256 constant alicePK = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    uint256 alicePK = 0xa11ce;
+    address alice = vm.addr(alicePK);
     SignatureHelper public signatureHelper;
     // Comet address in mainnet
     address constant cometAddr = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
