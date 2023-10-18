@@ -630,7 +630,7 @@ contract MultiCallTest is Test {
         callDatas[1] = abi.encodeCall(IERC20.approve, (uniswapRouter, 1000e6));
         callValues[1] = 0 wei;
 
-        // Swap 1000USDC for WETH via uniswapRouter
+        // Swap 1000 USDC for WETH via uniswapRouter
         callContracts[2] = address(uniswapRouter);
         callDatas[2] = abi.encodeCall(
             ISwapRouter.exactInputSingle,
