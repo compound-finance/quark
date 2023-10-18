@@ -40,10 +40,6 @@ contract CoreScript is QuarkScript {
 
     /**
      * @dev Execute multiple calls in a single transaction with returns (more gassy)
-     * @param callContracts Array of contracts to call
-     * @param callDatas Array of calldatas to call
-     * @param callValues Array of values to call
-     * @return Array of return data of the calls in bytes
      */
     function executeMultiWithReturnsInternal(
         address[] memory callContracts,
@@ -68,13 +64,6 @@ contract CoreScript is QuarkScript {
 
     /**
      * @dev Execute multiple calls in a single transaction with returns and checks
-     * @param callContracts Array of contracts to call
-     * @param callDatas Array of calldatas to call
-     * @param callValues Array of values to call
-     * @param checkContracts Array of contracts to call to check the return data
-     * @param checkSelectors Array of signatures of the function in check contracts
-     * @param checkValues Array of values for check contracts to check
-     * @return bytes from the last call
      */
     function executeMultiChecksInternal(
         address[] memory callContracts,
@@ -126,10 +115,6 @@ contract CoreScript is QuarkScript {
 
     /**
      * @dev Execute a single call in a single transaction
-     * @param callContract Contract to call (contract address, can't have both callContract and callCode)
-     * @param callData Calldata to call
-     * @param callValue Value to call
-     * @return return value from the executed operation in bytes
      */
     function executeSingleInternal(address callContract, bytes memory callData, uint256 callValue)
         internal
