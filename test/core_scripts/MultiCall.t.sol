@@ -767,7 +767,7 @@ contract MultiCallTest is Test {
         checkSelectors[1] = ConditionChecks.isTrue.selector;
         checkValues[1] = hex"";
 
-        // Swap 1000USDC for WETH via uniswapRouter
+        // Swap 1000 USDC for WETH via uniswapRouter
         callContracts[2] = address(uniswapRouter);
         callDatas[2] = abi.encodeCall(
             ISwapRouter.exactInputSingle,

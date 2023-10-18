@@ -50,9 +50,9 @@ contract UniswapFlashLoanMultiCallTest is Test {
         deal(WETH, address(wallet), 100 ether);
         // Set up compound position via prank
         vm.startPrank(address(wallet));
-        // Approve Comet to spend USDC
+        // Approve Comet to spend WETH
         IERC20(WETH).approve(comet, 100 ether);
-        // Supply ETH to Comet
+        // Supply WETH to Comet
         IComet(comet).supply(WETH, 2 ether);
         // Withdraw USDC from Comet
         IComet(comet).withdraw(USDC, 1000e6);
@@ -61,8 +61,8 @@ contract UniswapFlashLoanMultiCallTest is Test {
         IERC20(USDC).transfer(address(123), 999e6);
         vm.stopPrank();
 
-        // Test user can switch colalteral from ETH to LINK via flashloan without allocating USDC to pay off debt
-        // Math here is not perfect, as in Terminal scripts we should be able to comout with the more precised numbers to accomplish this type of actions
+        // Test user can switch collateral from ETH to LINK via flashloan without allocating USDC to pay off debt
+        // Math here is not perfect, as in Terminal scripts we should be able to compute and find more precised numbers to accomplish this type of actions
         address[] memory callContracts = new address[](8);
         bytes[] memory callDatas = new bytes[](8);
         uint256[] memory callValues = new uint256[](8);
@@ -85,7 +85,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         callDatas[1] = abi.encodeCall(IComet.supply, (USDC, 1000e6));
         callValues[1] = 0 wei;
 
-        // Withdraw all comet collateral (2ETH)
+        // Withdraw all comet collateral (2 ETH)
         callContracts[2] = address(comet);
         callDatas[2] = abi.encodeCall(IComet.withdraw, (WETH, 2 ether));
         callValues[2] = 0 wei;
@@ -95,7 +95,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         callDatas[3] = abi.encodeCall(IERC20.approve, (router, 2 ether));
         callValues[3] = 0 wei;
 
-        // Swap 2ETH to LINK via router
+        // Swap 2 ETH to LINK via router
         callContracts[4] = address(router);
         callDatas[4] = abi.encodeCall(
             ISwapRouter.exactInputSingle,
