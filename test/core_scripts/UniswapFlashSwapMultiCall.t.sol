@@ -41,8 +41,8 @@ contract UniswapFlashSwapMultiCallTest is Test {
         // Set up some funds for test
         deal(WETH, address(wallet), 10 ether);
 
-        // User has establish position in comet, try to use flash swap to leverage up
-        // Borrow 1 ETH worth of USDC from comet, and purchase 1 ETH re-supply and remaining USDC back to Comet
+        // User has a borrow position in comet and tries to use a flash swap to leverage up
+        // They borrow 1 ETH worth of USDC from comet and purchase 1 ETH
         // Some computation is required to get the right number to pass into UniswapFlashSwapMultiCall core scripts
 
         // Compose array of actions
@@ -102,7 +102,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        // Verify that user is now holsing 10 + 1 ether exposure
+        // Verify that user is now supplying 10 + 1 WETH
         assertEq(IComet(cometAddr).collateralBalanceOf(address(wallet), WETH), 11 ether);
     }
 
@@ -150,7 +150,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
-    // Test #3: flash swap revert if not paying back
+    // Test #3: flash swap reverts if not paying back
     function testNotEnoughToPayFlashSwap() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashSwapMultiCall = new YulHelper().getDeployed(
@@ -173,7 +173,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         callDatas[0] = abi.encodeCall(IERC20.approve, (cometAddr, 100 ether));
         callValues[0] = 0 wei;
 
-        // Supply ETH to Comet
+        // Supply WETH to Comet
         callContracts[1] = address(cometAddr);
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 11 ether)); // 10 original + 1 leveraged
         callValues[1] = 0 wei;
