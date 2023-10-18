@@ -67,6 +67,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](8);
         uint256[] memory callValues = new uint256[](8);
         address[] memory checkContracts = new address[](8);
+        bytes4[] memory checkSelectors = new bytes4[](8);
         bytes[] memory checkValues = new bytes[](8);
 
         uint256 LinkBalanceEst = 2e18 * IComet(comet).getPrice(IComet(comet).getAssetInfoByAddress(WETH).priceFeed)
@@ -128,24 +129,25 @@ contract UniswapFlashLoanMultiCallTest is Test {
         callDatas[7] = abi.encodeCall(IComet.withdraw, (USDC, 1000e6));
         callValues[7] = 0 wei;
 
-        UniswapFlashLoanMultiCall.UniswapFlashLoanMultiCallPayload memory payload = UniswapFlashLoanMultiCall
-            .UniswapFlashLoanMultiCallPayload({
-            token0: USDC,
-            token1: DAI,
-            fee: 100,
-            amount0: 1000e6,
-            amount1: 0,
-            callContracts: callContracts,
-            callDatas: callDatas,
-            callValues: callValues,
-            withChecks: false,
-            checkContracts: checkContracts,
-            checkValues: checkValues
-        });
-
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: uniswapFlashLoanMultiCall,
-            scriptCalldata: abi.encodeWithSelector(UniswapFlashLoanMultiCall.run.selector, payload),
+            scriptCalldata: abi.encodeWithSelector(
+                UniswapFlashLoanMultiCall.run.selector,
+                UniswapFlashLoanMultiCall.UniswapFlashLoanMultiCallPayload({
+                    token0: USDC,
+                    token1: DAI,
+                    fee: 100,
+                    amount0: 1000e6,
+                    amount1: 0,
+                    callContracts: callContracts,
+                    callDatas: callDatas,
+                    callValues: callValues,
+                    withChecks: false,
+                    checkContracts: checkContracts,
+                    checkSelectors: checkSelectors,
+                    checkValues: checkValues
+                })
+                ),
             nonce: 0,
             expiry: type(uint256).max,
             allowCallback: true
@@ -186,6 +188,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
                         callValues: new uint256[](3),
                         withChecks: false,
                         checkContracts: new address[](3),
+                        checkSelectors: new bytes4[](3),
                         checkValues: new bytes[](3)
                     })
                 )
@@ -215,6 +218,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](1);
         uint256[] memory callValues = new uint256[](1);
         address[] memory checkContracts = new address[](1);
+        bytes4[] memory checkSelectors = new bytes4[](1);
         bytes[] memory checkValues = new bytes[](1);
 
         // Send USDC to random address
@@ -234,6 +238,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
             callValues: callValues,
             withChecks: false,
             checkContracts: checkContracts,
+            checkSelectors: checkSelectors,
             checkValues: checkValues
         });
 

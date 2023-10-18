@@ -8,7 +8,17 @@ contract CoreScript is QuarkScript {
     error InvalidInput();
     error CallError(address callContract, bytes callData, uint256 callValue, bytes err);
     error MultiCallError(uint256 n, address callContract, bytes callData, uint256 callValue, bytes err);
-    error MultiCallCheckError(uint256 n, address callContract, bytes callData, uint256 callValue, bytes data, address checkContract, bytes checkData, bytes err);
+    error MultiCallCheckError(
+        uint256 n,
+        address callContract,
+        bytes callData,
+        uint256 callValue,
+        bytes data,
+        address checkContract,
+        bytes4 checkSelector,
+        bytes checkData,
+        bytes err
+    );
     /**
      * @dev Execute multiple calls in a single transaction
      * @param callContracts Array of contracts to call
@@ -65,6 +75,7 @@ contract CoreScript is QuarkScript {
      * @param callDatas Array of calldatas to call
      * @param callValues Array of values to call
      * @param checkContracts Array of contracts to call to check the return data
+     * @param checkSelectors Array of signatures of the function in check contracts
      * @param checkValues Array of values for check contracts to check
      * @return bytes from the last call
      */
@@ -73,11 +84,13 @@ contract CoreScript is QuarkScript {
         bytes[] memory callDatas,
         uint256[] memory callValues,
         address[] memory checkContracts,
+        bytes4[] memory checkSelectors,
         bytes[] memory checkValues
     ) internal returns (bytes memory) {
         if (
             callContracts.length != callDatas.length || callContracts.length != callValues.length
                 || checkContracts.length != callContracts.length || checkContracts.length != checkValues.length
+                || checkContracts.length != checkSelectors.length
         ) {
             revert InvalidInput();
         }
@@ -92,12 +105,20 @@ contract CoreScript is QuarkScript {
             data = returnData;
             if (checkContracts[i] != address(0)) {
                 bytes memory encodedCheckCall = checkValues[i].length > 0
-                    ? abi.encodeWithSignature("check(bytes,bytes)", data, checkValues[i])
-                    : abi.encodeWithSignature("check(bytes)", data);
+                    ? abi.encodeWithSelector(checkSelectors[i], data, checkValues[i])
+                    : abi.encodeWithSelector(checkSelectors[i], data);
                 (bool checkSuccess, bytes memory checkReturnData) = checkContracts[i].call(encodedCheckCall);
                 if (!checkSuccess) {
                     revert MultiCallCheckError(
-                        i, callContracts[i], callDatas[i], callValues[i], data, checkContracts[i], checkValues[i], checkReturnData
+                        i,
+                        callContracts[i],
+                        callDatas[i],
+                        callValues[i],
+                        data,
+                        checkContracts[i],
+                        checkSelectors[i],
+                        checkValues[i],
+                        checkReturnData
                     );
                 }
             }

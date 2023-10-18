@@ -10,12 +10,7 @@ import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
 import "./../../src/core_scripts/CoreScript.sol";
 import "./../../src/core_scripts/MultiCall.sol";
-import "./../../src/core_scripts/lib/CheckIsTrue.sol";
-import "./../../src/core_scripts/lib/CheckIsFalse.sol";
-import "./../../src/core_scripts/lib/CheckUint256Gt.sol";
-import "./../../src/core_scripts/lib/CheckUint256Gte.sol";
-import "./../../src/core_scripts/lib/CheckUint256Lt.sol";
-import "./../../src/core_scripts/lib/CheckUint256Eq.sol";
+import "./../../src/core_scripts/lib/ConditionChecks.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
@@ -41,12 +36,7 @@ contract MultiCallTest is Test {
     // Router info on mainnet
     address constant router = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
-    address checkIsTrue;
-    address checkIsFalse;
-    address checkUint256Gt;
-    address checkUint256Lt;
-    address checkUint256Eq;
-    address checkUint256Gte;
+    address conditionChecks;
 
     function setUp() public {
         signatureHelper = new SignatureHelper();
@@ -61,35 +51,10 @@ contract MultiCallTest is Test {
         counter.setNumber(0);
 
         // Load condition checks
-        // Load addresses via code jar for the check contracts
-        checkIsTrue = codeJar.saveCode(
+        // Load addresses via code jar for the check contract
+        conditionChecks = codeJar.saveCode(
             new YulHelper().getDeployed(
-                "CheckIsTrue.sol/CheckIsTrue.json"
-            )
-        );
-        checkIsFalse = codeJar.saveCode(
-            new YulHelper().getDeployed(
-                "CheckIsFalse.sol/CheckIsFalse.json"
-            )
-        );
-        checkUint256Gt = codeJar.saveCode(
-            new YulHelper().getDeployed(
-                "CheckUint256Gt.sol/CheckUint256Gt.json"
-            )
-        );
-        checkUint256Lt = codeJar.saveCode(
-            new YulHelper().getDeployed(
-                "CheckUint256Lt.sol/CheckUint256Lt.json"
-            )
-        );
-        checkUint256Eq = codeJar.saveCode(
-            new YulHelper().getDeployed(
-                "CheckUint256Eq.sol/CheckUint256Eq.json"
-            )
-        );
-        checkUint256Gte = codeJar.saveCode(
-            new YulHelper().getDeployed(
-                "CheckUint256Gte.sol/CheckUint256Gte.json"
+                "ConditionChecks.sol/ConditionChecks.json"
             )
         );
     }
@@ -248,13 +213,15 @@ contract MultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](5);
         uint256[] memory callValues = new uint256[](5);
         address[] memory checkContracts = new address[](5);
+        bytes4[] memory checkSelectors = new bytes4[](5);
         bytes[] memory checkValues = new bytes[](5);
 
         // Approve Comet to spend USDC
         callContracts[0] = WETH;
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
         callValues[0] = 0 wei;
-        checkContracts[0] = checkIsTrue;
+        checkContracts[0] = conditionChecks;
+        checkSelectors[0] = ConditionChecks.isTrue.selector;
         checkValues[0] = hex"";
 
         // Supply ETH to Comet
@@ -262,6 +229,7 @@ contract MultiCallTest is Test {
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
         callValues[1] = 0 wei;
         checkContracts[1] = address(0);
+        checkSelectors[1] = hex"";
         checkValues[1] = hex"";
 
         // Withdraw USDC from Comet
@@ -269,27 +237,36 @@ contract MultiCallTest is Test {
         callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1000_000_000));
         callValues[2] = 0 wei;
         checkContracts[2] = address(0);
+        checkSelectors[2] = hex"";
         checkValues[2] = hex"";
 
         // Condition checks, account is not liquidatable
         callContracts[3] = comet;
         callDatas[3] = abi.encodeCall(IComet.isLiquidatable, (address(wallet)));
         callValues[3] = 0 wei;
-        checkContracts[3] = checkIsFalse;
+        checkContracts[3] = conditionChecks;
+        checkSelectors[3] = ConditionChecks.isFalse.selector;
         checkValues[3] = hex"";
 
         // Condition checks, account borrow balance is 1000
         callContracts[4] = comet;
         callDatas[4] = abi.encodeCall(IComet.borrowBalanceOf, (address(wallet)));
         callValues[4] = 0 wei;
-        checkContracts[4] = checkUint256Eq;
+        checkContracts[4] = conditionChecks;
+        checkSelectors[4] = ConditionChecks.uint256Eq.selector;
         checkValues[4] = abi.encode(uint256(1000e6));
 
         // Condition checks, account balance of ETH is 0
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 0,
             expiry: type(uint256).max,
@@ -316,13 +293,15 @@ contract MultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](2);
         uint256[] memory callValues = new uint256[](2);
         address[] memory checkContracts = new address[](2);
+        bytes4[] memory checkSelectors = new bytes4[](2);
         bytes[] memory checkValues = new bytes[](2);
 
         // Approve Comet to spend USDC
         callContracts[0] = WETH;
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
         callValues[0] = 0 wei;
-        checkContracts[0] = checkIsFalse;
+        checkContracts[0] = conditionChecks;
+        checkSelectors[0] = ConditionChecks.isFalse.selector;
         checkValues[0] = hex"";
 
         // Supply ETH to Comet
@@ -330,12 +309,19 @@ contract MultiCallTest is Test {
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
         callValues[1] = 0 wei;
         checkContracts[1] = address(0);
+        checkSelectors[1] = hex"";
         checkValues[1] = hex"";
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 0,
             expiry: type(uint256).max,
@@ -343,7 +329,6 @@ contract MultiCallTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
 
-        // Expect CheckFailed() revert error from MultiCallCheckError from QuarkCallError
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -355,8 +340,9 @@ contract MultiCallTest is Test {
                     callValues[0],
                     abi.encode(true),
                     checkContracts[0],
+                    checkSelectors[0],
                     hex"",
-                    abi.encodeWithSelector(CheckIsFalse.CheckFailed.selector)
+                    abi.encodeWithSelector(ConditionChecks.CheckFailed.selector)
                 )
             )
         );
@@ -385,6 +371,7 @@ contract MultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](4);
         uint256[] memory callValues = new uint256[](4);
         address[] memory checkContracts = new address[](4);
+        bytes4[] memory checkSelectors = new bytes4[](4);
         bytes[] memory checkValues = new bytes[](4);
 
         // Monitor wallet balance, if it ever goes over 400 USDC, it will start repaying Comet if borrowBalance is still > 0
@@ -392,14 +379,16 @@ contract MultiCallTest is Test {
         callContracts[0] = USDC;
         callDatas[0] = abi.encodeCall(IERC20.balanceOf, (address(wallet)));
         callValues[0] = 0 wei;
-        checkContracts[0] = checkUint256Gte;
+        checkContracts[0] = conditionChecks;
+        checkSelectors[0] = ConditionChecks.uint256Gte.selector;
         checkValues[0] = abi.encode(uint256(400e6));
 
         // Check still owe Comet USDC
         callContracts[1] = comet;
         callDatas[1] = abi.encodeCall(IComet.borrowBalanceOf, (address(wallet)));
         callValues[1] = 0 wei;
-        checkContracts[1] = checkUint256Gt;
+        checkContracts[1] = conditionChecks;
+        checkSelectors[1] = ConditionChecks.uint256Gt.selector;
         checkValues[1] = abi.encode(uint256(0));
 
         // Supply USDC to Comet to repay
@@ -407,19 +396,27 @@ contract MultiCallTest is Test {
         callDatas[2] = abi.encodeCall(IComet.supply, (USDC, 400e6));
         callValues[2] = 0 wei;
         checkContracts[2] = address(0);
+        checkSelectors[2] = hex"";
         checkValues[2] = hex"";
 
         // Condition checks, account has less than threshold
         callContracts[3] = USDC;
         callDatas[3] = abi.encodeCall(IERC20.balanceOf, (address(wallet)));
         callValues[3] = 0 wei;
-        checkContracts[3] = checkUint256Lt;
+        checkContracts[3] = conditionChecks;
+        checkSelectors[3] = ConditionChecks.uint256Lt.selector;
         checkValues[3] = abi.encode(uint256(400e6));
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 0,
             expiry: type(uint256).max,
@@ -438,8 +435,9 @@ contract MultiCallTest is Test {
                     callValues[0],
                     abi.encode(uint256(0)),
                     checkContracts[0],
+                    checkSelectors[0],
                     checkValues[0],
-                    abi.encodeWithSelector(CheckUint256Gte.CheckFailed.selector)
+                    abi.encodeWithSelector(ConditionChecks.CheckFailed.selector)
                 )
             )
         );
@@ -452,7 +450,13 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 1,
             expiry: type(uint256).max,
@@ -466,7 +470,13 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 2,
             expiry: type(uint256).max,
@@ -480,7 +490,13 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 3,
             expiry: type(uint256).max,
@@ -495,7 +511,13 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 4,
             expiry: type(uint256).max,
@@ -513,8 +535,9 @@ contract MultiCallTest is Test {
                     callValues[1],
                     abi.encode(uint256(0)),
                     checkContracts[1],
+                    checkSelectors[1],
                     checkValues[1],
-                    abi.encodeWithSelector(CheckUint256Gt.CheckFailed.selector)
+                    abi.encodeWithSelector(ConditionChecks.CheckFailed.selector)
                 )
             )
         );
@@ -727,20 +750,23 @@ contract MultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](3);
         uint256[] memory callValues = new uint256[](3);
         address[] memory checkContracts = new address[](3);
+        bytes4[] memory checkSelectors = new bytes4[](3);
         bytes[] memory checkValues = new bytes[](3);
 
         // Execute everyMondayTriggerCondition script
         callContracts[0] = isMonday;
         callDatas[0] = abi.encodeCall(IsMonday.isMonday, ());
         callValues[0] = 0 wei;
-        checkContracts[0] = checkIsTrue;
+        checkContracts[0] = conditionChecks;
+        checkSelectors[0] = ConditionChecks.isTrue.selector;
         checkValues[0] = hex"";
 
         // Approve router to spend USDC
         callContracts[1] = USDC;
         callDatas[1] = abi.encodeCall(IERC20.approve, (router, 1000e6));
         callValues[1] = 0 wei;
-        checkContracts[1] = checkIsTrue;
+        checkContracts[1] = conditionChecks;
+        checkSelectors[1] = ConditionChecks.isTrue.selector;
         checkValues[1] = hex"";
 
         // Swap 1000USDC for WETH via router
@@ -762,14 +788,21 @@ contract MultiCallTest is Test {
         );
         callValues[2] = 0 wei;
         // Check minimum amount received is what we want along the way
-        checkContracts[2] = checkUint256Gte;
+        checkContracts[2] = conditionChecks;
+        checkSelectors[2] = ConditionChecks.uint256Gte.selector;
         checkValues[2] = abi.encode(uint256(1e17)); // At least 0.1ETH
 
         // It's not Monday yet, so revert
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 0,
             expiry: type(uint256).max,
@@ -787,8 +820,9 @@ contract MultiCallTest is Test {
                     callValues[0],
                     abi.encode(false),
                     checkContracts[0],
+                    checkSelectors[0],
                     hex"",
-                    abi.encodeWithSelector(CheckIsTrue.CheckFailed.selector)
+                    abi.encodeWithSelector(ConditionChecks.CheckFailed.selector)
                 )
             )
         );
@@ -799,7 +833,13 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 1,
             expiry: type(uint256).max,
@@ -813,7 +853,13 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 2,
             expiry: type(uint256).max,
@@ -831,8 +877,9 @@ contract MultiCallTest is Test {
                     callValues[0],
                     abi.encode(false),
                     checkContracts[0],
+                    checkSelectors[0],
                     hex"",
-                    abi.encodeWithSelector(CheckIsTrue.CheckFailed.selector)
+                    abi.encodeWithSelector(ConditionChecks.CheckFailed.selector)
                 )
             )
         );
@@ -843,7 +890,13 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                MultiCall.runWithChecks.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkContracts,
+                checkSelectors,
+                checkValues
                 ),
             nonce: 2,
             expiry: type(uint256).max,

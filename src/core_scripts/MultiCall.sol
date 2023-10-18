@@ -30,9 +30,12 @@ contract MultiCall is CoreScript {
         bytes[] calldata callDatas,
         uint256[] calldata callValues,
         address[] calldata checkContracts,
+        bytes4[] calldata checkSelectors,
         bytes[] calldata checkValues
     ) external returns (bytes memory) {
-        return executeMultiChecksInternal(callContracts, callDatas, callValues, checkContracts, checkValues);
+        return executeMultiChecksInternal(
+            callContracts, callDatas, callValues, checkContracts, checkSelectors, checkValues
+        );
     }
 
     /**

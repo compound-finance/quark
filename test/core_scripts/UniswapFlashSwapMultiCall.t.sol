@@ -57,6 +57,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](3);
         uint256[] memory callValues = new uint256[](3);
         address[] memory checkContracts = new address[](3);
+        bytes4[] memory checkSelectors = new bytes4[](3);
         bytes[] memory checkValues = new bytes[](3);
 
         // Approve Comet to spend WETH
@@ -94,6 +95,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
             callValues: callValues,
             withChecks: false,
             checkContracts: checkContracts,
+            checkSelectors: checkSelectors,
             checkValues: checkValues
         });
 
@@ -136,6 +138,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
                         callValues: new uint256[](3),
                         withChecks: false,
                         checkContracts: new address[](3),
+                        checkSelectors: new bytes4[](3),
                         checkValues: new bytes[](3)
                     })
                 )
@@ -169,6 +172,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](2);
         uint256[] memory callValues = new uint256[](2);
         address[] memory checkContracts = new address[](2);
+        bytes4[] memory checkSelectors = new bytes4[](2);
         bytes[] memory checkValues = new bytes[](2);
 
         // Approve Comet to spend WETH
@@ -194,6 +198,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
             callValues: callValues,
             withChecks: false,
             checkContracts: checkContracts,
+            checkSelectors: checkSelectors,
             checkValues: checkValues
         });
 

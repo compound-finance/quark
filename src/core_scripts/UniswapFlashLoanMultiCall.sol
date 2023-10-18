@@ -26,7 +26,8 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
         bytes[] callDatas;
         uint256[] callValues;
         bool withChecks;
-        address [] checkContracts;
+        address[] checkContracts;
+        bytes4[] checkSelectors;
         bytes[] checkValues;
     }
 
@@ -41,7 +42,8 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
         bytes[] callDatas;
         uint256[] callValues;
         bool withChecks;
-        address [] checkContracts;
+        address[] checkContracts;
+        bytes4[] checkSelectors;
         bytes[] checkValues;
     }
 
@@ -70,9 +72,10 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
                     poolKey: PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee),
                     callContracts: payload.callContracts,
                     callDatas: payload.callDatas,
-                    callValues: payload.callValues, 
+                    callValues: payload.callValues,
                     withChecks: payload.withChecks,
                     checkContracts: payload.checkContracts,
+                    checkSelectors: payload.checkSelectors,
                     checkValues: payload.checkValues
                 })
             )
@@ -94,7 +97,14 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
 
         if (input.withChecks) {
             // Execute multiple calls with checks
-            executeMultiChecksInternal(input.callContracts, input.callDatas, input.callValues, input.checkContracts, input.checkValues);
+            executeMultiChecksInternal(
+                input.callContracts,
+                input.callDatas,
+                input.callValues,
+                input.checkContracts,
+                input.checkSelectors,
+                input.checkValues
+            );
         } else {
             // Execute multiple calls without checks
             executeMultiInternal(input.callContracts, input.callDatas, input.callValues);

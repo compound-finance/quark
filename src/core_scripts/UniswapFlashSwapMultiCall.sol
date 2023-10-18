@@ -24,6 +24,7 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
         uint256[] callValues;
         bool withChecks;
         address[] checkContracts;
+        bytes4[] checkSelectors;
         bytes[] checkValues;
     }
 
@@ -40,6 +41,7 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
         uint256[] callValues;
         bool withChecks;
         address[] checkContracts;
+        bytes4[] checkSelectors;
         bytes[] checkValues;
     }
 
@@ -68,9 +70,10 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
                     poolKey: PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee),
                     callContracts: payload.callContracts,
                     callDatas: payload.callDatas,
-                    callValues: payload.callValues, 
+                    callValues: payload.callValues,
                     withChecks: payload.withChecks,
                     checkContracts: payload.checkContracts,
+                    checkSelectors: payload.checkSelectors,
                     checkValues: payload.checkValues
                 })
             )
@@ -92,7 +95,14 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
 
         if (input.withChecks) {
             // Execute multiple calls with checks
-            executeMultiChecksInternal(input.callContracts, input.callDatas, input.callValues, input.checkContracts, input.checkValues);
+            executeMultiChecksInternal(
+                input.callContracts,
+                input.callDatas,
+                input.callValues,
+                input.checkContracts,
+                input.checkSelectors,
+                input.checkValues
+            );
         } else {
             // Execute multiple calls without checks
             executeMultiInternal(input.callContracts, input.callDatas, input.callValues);
