@@ -6,8 +6,8 @@ import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/interfaces/IERC20.sol";
 
-import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
+import "./../../src/QuarkWalletFactory.sol";
 import "./../../src/core_scripts/CoreScript.sol";
 import "./../../src/core_scripts/MultiCall.sol";
 import "./../../src/core_scripts/lib/ConditionChecks.sol";
@@ -22,7 +22,7 @@ import "./interfaces/IComet.sol";
 import "./interfaces/ISwapRouter.sol";
 
 contract MultiCallTest is Test {
-    CodeJar public codeJar;
+    QuarkWalletFactory public factory;
     Counter public counter;
     // For signature to QuarkWallet
     uint256 alicePK = 0xa11ce;
@@ -39,20 +39,11 @@ contract MultiCallTest is Test {
     address conditionChecks;
 
     function setUp() public {
+        factory = new QuarkWalletFactory();
         signatureHelper = new SignatureHelper();
-        codeJar = new CodeJar();
-        codeJar.saveCode(
-            new YulHelper().getDeployed(
-                "MultiCall.sol/MultiCall.json"
-            )
-        );
-
         counter = new Counter();
         counter.setNumber(0);
-
-        // Load condition checks
-        // Load addresses via code jar for the check contract
-        conditionChecks = codeJar.saveCode(
+        conditionChecks = factory.codeJar().saveCode(
             new YulHelper().getDeployed(
                 "ConditionChecks.sol/ConditionChecks.json"
             )
@@ -61,7 +52,7 @@ contract MultiCallTest is Test {
 
     // Test #1: Invoke Counter twice via signature
     function testMultiCallCounter() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -94,7 +85,7 @@ contract MultiCallTest is Test {
 
     // Test #2: Supply ETH and withdraw USDC on Comet
     function testMultiCallSupplyEthAndWithdrawUSDC() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -136,7 +127,7 @@ contract MultiCallTest is Test {
 
     // Test #3: MultiCall with array returns
     function testMultiCallWithArrayOfReturns() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -201,7 +192,7 @@ contract MultiCallTest is Test {
 
     // Test #4: MultiCall with checks simple passed
     function testMultiCallWithChecksSimplePassed() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -280,7 +271,7 @@ contract MultiCallTest is Test {
 
     // Test #5: MultiCall with failed checks
     function testMultiCallWithChecksSimpleUnmetCondition() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -350,7 +341,7 @@ contract MultiCallTest is Test {
 
     // Test #6: MultiCall with condition that the wallet repays after accruing USDC/ETH, with outstanding borrow from Comet
     function testMultiCallWithChecksOnConditionalRepay() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -548,11 +539,11 @@ contract MultiCallTest is Test {
 
     // Test #7: MultiCall test to use SupplyComet scripts to supply and borrow in one transaction
     function testApproveSupplyCometInCustomScript() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
-        address cometSupply = codeJar.saveCode(
+        address cometSupply = wallet.codeJar().saveCode(
             new YulHelper().getDeployed(
                 "SupplyComet.sol/SupplyComet.json"
             )
@@ -600,11 +591,11 @@ contract MultiCallTest is Test {
 
     // Test #8: MultiCall to execute buy every Monday with custom scripts
     function testBuyEthEveryMonday() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
-        address everyMondayTriggerCondition = codeJar.saveCode(
+        address everyMondayTriggerCondition = wallet.codeJar().saveCode(
             new YulHelper().getDeployed(
                 "EveryMondayTriggerCondition.sol/EveryMondayTriggerCondition.json"
             )
@@ -727,12 +718,12 @@ contract MultiCallTest is Test {
 
     // Test #9: MultiCall to execute buy every Monday with custom scripts and checks
     function testBuyEthEveryMondayWithChecks() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
-        // one time deploy EveryMondayTriggerCondition
-        address isMonday = codeJar.saveCode(
+        // Deploy EveryMondayTriggerCondition
+        address isMonday = wallet.codeJar().saveCode(
             new YulHelper().getDeployed(
                 "IsMonday.sol/IsMonday.json"
             )

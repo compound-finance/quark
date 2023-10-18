@@ -7,6 +7,7 @@ import "forge-std/StdUtils.sol";
 
 import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
+import "./../../src/QuarkWalletFactory.sol";
 import "./../../src/core_scripts/UniswapFlashSwapMultiCall.sol";
 import "./../../src/core_scripts/lib/PoolAddress.sol";
 import "./../lib/YulHelper.sol";
@@ -15,7 +16,7 @@ import "./../lib/Counter.sol";
 import "./interfaces/IComet.sol";
 
 contract UniswapFlashSwapMultiCallTest is Test {
-    CodeJar public codeJar;
+    QuarkWalletFactory public factory;
     // For signature to QuarkWallet
     uint256 alicePK = 0xa11ce;
     address alice = vm.addr(alicePK);
@@ -26,19 +27,13 @@ contract UniswapFlashSwapMultiCallTest is Test {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     function setUp() public {
-        codeJar = new CodeJar();
+        factory = new QuarkWalletFactory();
         signatureHelper = new SignatureHelper();
-
-        codeJar.saveCode(
-            new YulHelper().getDeployed(
-                "UniswapFlashSwapMultiCall.sol/UniswapFlashSwapMultiCall.json"
-            )
-        );
     }
 
     // Test #1: Using flash swap to leverage/deleverage Comet position on single asset
     function testUniswapFlashSwapMultiCallLeverageComet() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashSwapMultiCall = new YulHelper().getDeployed(
             "UniswapFlashSwapMultiCall.sol/UniswapFlashSwapMultiCall.json"
         );
@@ -113,7 +108,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
 
     // Test #2: Invalid caller
     function testInvalidCallerFlashSwap() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashSwapMultiCall = new YulHelper().getDeployed(
             "UniswapFlashSwapMultiCall.sol/UniswapFlashSwapMultiCall.json"
         );
@@ -157,7 +152,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
 
     // Test #3: flash swap revert if not paying back
     function testNotEnoughToPayFlashSwap() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashSwapMultiCall = new YulHelper().getDeployed(
             "UniswapFlashSwapMultiCall.sol/UniswapFlashSwapMultiCall.json"
         );

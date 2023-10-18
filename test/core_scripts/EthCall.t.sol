@@ -7,8 +7,8 @@ import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
 import "forge-std/interfaces/IERC20.sol";
 
-import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
+import "./../../src/QuarkWalletFactory.sol";
 import "./../../src/core_scripts/EthCall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/SignatureHelper.sol";
@@ -17,7 +17,7 @@ import "./scripts/SupplyComet.sol";
 import "./interfaces/IComet.sol";
 
 contract EthCallTest is Test {
-    CodeJar public codeJar;
+    QuarkWalletFactory public factory;
     Counter public counter;
     // Need alice info here, for signature to QuarkWallet
     uint256 alicePK = 0xa11ce;
@@ -30,21 +30,15 @@ contract EthCallTest is Test {
     SignatureHelper public signatureHelper;
 
     function setUp() public {
-        codeJar = new CodeJar();
-        codeJar.saveCode(
-            new YulHelper().getDeployed(
-                "EthCall.sol/EthCall.json"
-            )
-        );
-
         counter = new Counter();
         counter.setNumber(0);
         signatureHelper = new SignatureHelper();
+        factory = new QuarkWalletFactory();
     }
 
     // Test Case #1: Invoke Counter contract via signature
     function testEthCallCounter() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "EthCall.sol/EthCall.json"
         );
@@ -67,7 +61,7 @@ contract EthCallTest is Test {
 
     // Test Case #2: Supply USDC to Comet
     function testEthCallSupplyUSDCToComet() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "EthCall.sol/EthCall.json"
         );
@@ -107,7 +101,7 @@ contract EthCallTest is Test {
 
     // Test Case #3: Withdraw USDC from Comet
     function testEthCallWithdrawUSDCFromComet() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(alice), codeJar);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "EthCall.sol/EthCall.json"
         );
