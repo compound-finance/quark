@@ -42,7 +42,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         deal(WETH, address(wallet), 10 ether);
 
         // User has a borrow position in comet and tries to use a flash swap to leverage up
-        // Borrow 1 ETH worth of USDC from comet, and purchase 1 ETH re-supply and remaining USDC back to Comet
+        // They borrow 1 ETH worth of USDC from comet and purchase 1 ETH
         // Some computation is required to get the right number to pass into UniswapFlashSwapMultiCall core scripts
 
         // Compose array of actions
