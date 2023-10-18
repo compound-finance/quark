@@ -9,8 +9,8 @@ import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
 contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
     using SafeERC20 for IERC20;
-    // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
 
+    // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
     address constant UNISWAP_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
     error FailedFlashSwap(address token);
@@ -47,10 +47,10 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
 
     /**
      * @notice Execute multiple calls in a single transaction with flash swap
-     * @param payload Struct of UniswapFlashSwapMultiCallPayload contains pool info and MultiCall inputs
+     * @param payload UniswapFlashSwapMultiCallPayload struct; contains pool info and MultiCall inputs
      */
     function run(UniswapFlashSwapMultiCallPayload memory payload) external {
-        // Reorder the token0, token1 to ensure it's in the correct order token1 > token0
+        // Reorder token0, token1 to ensure token1 > token0
         if (payload.token0 > payload.token1) {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
             (payload.amount0, payload.amount1) = (payload.amount1, payload.amount0);
