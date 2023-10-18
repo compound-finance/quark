@@ -102,7 +102,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        // Verify that user is now holsing 10 + 1 ether exposure
+        // Verify that user is now supplying 10 + 1 WETH
         assertEq(IComet(cometAddr).collateralBalanceOf(address(wallet), WETH), 11 ether);
     }
 
