@@ -9,7 +9,9 @@ contract SupplyComet is QuarkScript {
         IComet(comet).supplyFrom(msg.sender, msg.sender, asset, amount);
     }
 
-    function supplyAndBorrow(address comet, address asset, uint256 amount, address borrowAsset, uint256 borrowAmount) external {
+    function supplyAndBorrow(address comet, address asset, uint256 amount, address borrowAsset, uint256 borrowAmount)
+        external
+    {
         IComet(comet).supplyFrom(msg.sender, msg.sender, asset, amount);
         IComet(comet).withdrawFrom(msg.sender, msg.sender, borrowAsset, borrowAmount);
     }

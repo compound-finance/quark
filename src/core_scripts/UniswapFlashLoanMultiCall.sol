@@ -17,7 +17,7 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
     error FailedFlashRepay(address token);
     error InvalidCaller();
 
-    /// @notice Input for flash loan multicall when interact with UniswapV3 Pool contract
+    /// @notice Input for flash loan multicall when interacting with UniswapV3 Pool contract
     struct FlashLoanInput {
         uint256 amount0;
         uint256 amount1;
@@ -49,10 +49,10 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
 
     /**
      * @notice Execute multiple calls in a single transaction with flash loan
-     * @param payload Struct of UniswapFlashLoanMultiCallPayload contains pool info and MultiCall inputs
+     * @param payload UniswapFlashLoanMultiCallPayload struct; contains pool info and MultiCall inputs
      */
     function run(UniswapFlashLoanMultiCallPayload memory payload) external {
-        // Reorder the token0, token1 to ensure it's in the correct order token1 > token0
+        // Reorder token0, token1 to ensure token1 > token0
         if (payload.token0 > payload.token1) {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
             (payload.amount0, payload.amount1) = (payload.amount1, payload.amount0);

@@ -5,11 +5,11 @@ import "../QuarkScript.sol";
 import "../QuarkWallet.sol";
 
 contract CoreScript is QuarkScript {
-    error InvalidInput();
     error CallError(address callContract, bytes callData, uint256 callValue, bytes err);
-    error MultiCallError(uint256 n, address callContract, bytes callData, uint256 callValue, bytes err);
+    error InvalidInput();
+    error MultiCallError(uint256 callIndex, address callContract, bytes callData, uint256 callValue, bytes err);
     error MultiCallCheckError(
-        uint256 n,
+        uint256 callIndex,
         address callContract,
         bytes callData,
         uint256 callValue,
@@ -19,13 +19,10 @@ contract CoreScript is QuarkScript {
         bytes checkData,
         bytes err
     );
+
     /**
      * @dev Execute multiple calls in a single transaction
-     * @param callContracts Array of contracts to call
-     * @param callDatas Array of calldatas to call
-     * @param callValues Array of values to call
      */
-
     function executeMultiInternal(address[] memory callContracts, bytes[] memory callDatas, uint256[] memory callValues)
         internal
     {
@@ -42,7 +39,7 @@ contract CoreScript is QuarkScript {
     }
 
     /**
-     * @dev Execute multiple calls in a single transaction with returns (more gasy)
+     * @dev Execute multiple calls in a single transaction with returns (more gassy)
      * @param callContracts Array of contracts to call
      * @param callDatas Array of calldatas to call
      * @param callValues Array of values to call
@@ -89,8 +86,8 @@ contract CoreScript is QuarkScript {
     ) internal returns (bytes memory) {
         if (
             callContracts.length != callDatas.length || callContracts.length != callValues.length
-                || checkContracts.length != callContracts.length || checkContracts.length != checkValues.length
-                || checkContracts.length != checkSelectors.length
+                || callContracts.length != checkContracts.length || callContracts.length != checkValues.length
+                || callContracts.length != checkSelectors.length
         ) {
             revert InvalidInput();
         }

@@ -49,7 +49,7 @@ contract EthCallTest is Test {
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(counter), abi.encodeCall(Counter.incrementBy, (1)), 0
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: true
         });
@@ -78,7 +78,7 @@ contract EthCallTest is Test {
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -92,7 +92,7 @@ contract EthCallTest is Test {
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0
                 ),
-            nonce: 1,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -127,7 +127,7 @@ contract EthCallTest is Test {
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(WETH), abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -140,7 +140,7 @@ contract EthCallTest is Test {
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
                 ),
-            nonce: 1,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -153,7 +153,7 @@ contract EthCallTest is Test {
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(comet), abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
                 ),
-            nonce: 2,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });

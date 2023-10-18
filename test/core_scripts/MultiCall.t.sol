@@ -82,7 +82,7 @@ contract MultiCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -124,7 +124,7 @@ contract MultiCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -182,7 +182,7 @@ contract MultiCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(MultiCall.runWithReturns.selector, callContracts, callDatas, callValues),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -268,12 +268,12 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
-        bytes memory returnData = wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // When reaches here, meaning all checks are passed
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000_000_000);
@@ -323,7 +323,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -418,7 +418,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -458,7 +458,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 1,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -478,7 +478,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 2,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -498,7 +498,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 3,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -519,7 +519,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 4,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -589,7 +589,7 @@ contract MultiCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -605,7 +605,6 @@ contract MultiCallTest is Test {
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
-        // one time deploy EveryMondayTriggerCondition
         address everyMondayTriggerCondition = codeJar.saveCode(
             new YulHelper().getDeployed(
                 "EveryMondayTriggerCondition.sol/EveryMondayTriggerCondition.json"
@@ -655,7 +654,7 @@ contract MultiCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -669,7 +668,7 @@ contract MultiCallTest is Test {
                     callContracts[0],
                     callDatas[0],
                     callValues[0],
-                    abi.encodeWithSelector(WeeklyTriggerCondition.ConditionFailed.selector)
+                    abi.encodeWithSelector(EveryMondayTriggerCondition.NotMonday.selector)
                 )
             )
         );
@@ -680,7 +679,7 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
-            nonce: 1,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -691,7 +690,7 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
-            nonce: 2,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -716,7 +715,7 @@ contract MultiCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: multiCall,
             scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
-            nonce: 3,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -804,7 +803,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -841,7 +840,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 1,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -861,7 +860,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 2,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });
@@ -898,7 +897,7 @@ contract MultiCallTest is Test {
                 checkSelectors,
                 checkValues
                 ),
-            nonce: 2,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false
         });

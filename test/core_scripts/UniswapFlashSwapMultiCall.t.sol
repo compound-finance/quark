@@ -20,8 +20,6 @@ contract UniswapFlashSwapMultiCallTest is Test {
     address constant alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     uint256 constant alicePK = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
     SignatureHelper public signatureHelper;
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH =
-        keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)");
     // Comet address in mainnet
     address constant cometAddr = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -102,7 +100,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: uniswapFlashSwapMultiCall,
             scriptCalldata: abi.encodeWithSelector(UniswapFlashSwapMultiCall.run.selector, payload),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: true
         });
@@ -143,7 +141,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
                     })
                 )
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: true
         });
@@ -205,7 +203,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: uniswapFlashSwapMultiCall,
             scriptCalldata: abi.encodeWithSelector(UniswapFlashSwapMultiCall.run.selector, payload),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: true
         });

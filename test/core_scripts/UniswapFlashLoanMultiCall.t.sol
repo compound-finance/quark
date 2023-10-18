@@ -148,7 +148,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
                     checkValues: checkValues
                 })
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: true
         });
@@ -193,7 +193,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
                     })
                 )
                 ),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: true
         });
@@ -245,7 +245,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: uniswapFlashLoanMultiCall,
             scriptCalldata: abi.encodeWithSelector(UniswapFlashLoanMultiCall.run.selector, payload),
-            nonce: 0,
+            nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: true
         });
