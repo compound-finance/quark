@@ -33,8 +33,8 @@ contract MultiCallTest is Test {
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    // Router info on mainnet
-    address constant router = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    // Uniswap router info on mainnet
+    address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
     address conditionChecks;
 
@@ -626,13 +626,13 @@ contract MultiCallTest is Test {
         callDatas[0] = abi.encodeCall(EveryMondayTriggerCondition.timeToWeeklyRun, ());
         callValues[0] = 0 wei;
 
-        // Approve router to spend USDC
+        // Approve uniswapRouter to spend USDC
         callContracts[1] = USDC;
-        callDatas[1] = abi.encodeCall(IERC20.approve, (router, 1000e6));
+        callDatas[1] = abi.encodeCall(IERC20.approve, (uniswapRouter, 1000e6));
         callValues[1] = 0 wei;
 
-        // Swap 1000USDC for WETH via router
-        callContracts[2] = address(router);
+        // Swap 1000USDC for WETH via uniswapRouter
+        callContracts[2] = address(uniswapRouter);
         callDatas[2] = abi.encodeCall(
             ISwapRouter.exactInputSingle,
             (
@@ -760,16 +760,16 @@ contract MultiCallTest is Test {
         checkSelectors[0] = ConditionChecks.isTrue.selector;
         checkValues[0] = hex"";
 
-        // Approve router to spend USDC
+        // Approve uniswapRouter to spend USDC
         callContracts[1] = USDC;
-        callDatas[1] = abi.encodeCall(IERC20.approve, (router, 1000e6));
+        callDatas[1] = abi.encodeCall(IERC20.approve, (uniswapRouter, 1000e6));
         callValues[1] = 0 wei;
         checkContracts[1] = conditionChecks;
         checkSelectors[1] = ConditionChecks.isTrue.selector;
         checkValues[1] = hex"";
 
-        // Swap 1000USDC for WETH via router
-        callContracts[2] = address(router);
+        // Swap 1000USDC for WETH via uniswapRouter
+        callContracts[2] = address(uniswapRouter);
         callDatas[2] = abi.encodeCall(
             ISwapRouter.exactInputSingle,
             (

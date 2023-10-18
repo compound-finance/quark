@@ -10,7 +10,7 @@ contract ConditionChecks {
      * @param checkData The address to check with in bytes
      */
     function addressEq(bytes calldata data, bytes calldata checkData) external pure {
-        // Only revert if condition didn't meet
+        // Only revert if condition isn't met
         if (abi.decode(data, (address)) != abi.decode(checkData, (address))) {
             revert CheckFailed();
         }
@@ -38,7 +38,7 @@ contract ConditionChecks {
      * @param data The bool data to check in bytes
      */
     function isTrue(bytes calldata data) external pure {
-        // Only revert if condition didn't meet
+        // Only revert if condition isn't met
         if (!abi.decode(data, (bool))) {
             revert CheckFailed();
         }
@@ -49,7 +49,7 @@ contract ConditionChecks {
      * @param data The bool data to check in bytes
      */
     function isFalse(bytes calldata data) external pure {
-        // Only revert if condition didn't meet
+        // Only revert if condition isn't met
         if (abi.decode(data, (bool))) {
             revert CheckFailed();
         }
@@ -61,7 +61,7 @@ contract ConditionChecks {
      * @param checkData The uint256 data to check with in bytes
      */
     function uint256Eq(bytes calldata data, bytes calldata checkData) external pure {
-        // Only revert if condition didn't meet
+        // Only revert if condition isn't met
         if (abi.decode(data, (uint256)) != abi.decode(checkData, (uint256))) {
             revert CheckFailed();
         }
@@ -73,7 +73,7 @@ contract ConditionChecks {
      * @param checkData The uint256 data to check with in bytes
      */
     function uint256Gt(bytes calldata data, bytes calldata checkData) external pure {
-        // Only revert if condition didn't meet
+        // Only revert if condition isn't met
         if (abi.decode(data, (uint256)) <= abi.decode(checkData, (uint256))) {
             revert CheckFailed();
         }
@@ -85,7 +85,7 @@ contract ConditionChecks {
      * @param checkData The uint256 data to check with in bytes
      */
     function uint256Gte(bytes calldata data, bytes calldata checkData) external pure {
-        // Only revert if condition didn't meet
+        // Only revert if condition isn't met
         if (abi.decode(data, (uint256)) < abi.decode(checkData, (uint256))) {
             revert CheckFailed();
         }
@@ -97,7 +97,7 @@ contract ConditionChecks {
      * @param checkData The uint256 data to check with in bytes
      */
     function uint256Lt(bytes calldata data, bytes calldata checkData) external pure {
-        // Only revert if condition didn't meet
+        // Only revert if condition isn't met
         if (abi.decode(data, (uint256)) >= abi.decode(checkData, (uint256))) {
             revert CheckFailed();
         }
@@ -109,7 +109,7 @@ contract ConditionChecks {
      * @param checkData The uint256 data to check with in bytes
      */
     function uint256Lte(bytes calldata data, bytes calldata checkData) external pure {
-        // Only revert if condition didn't meet
+        // Only revert if condition isn't met
         if (abi.decode(data, (uint256)) > abi.decode(checkData, (uint256))) {
             revert CheckFailed();
         }
