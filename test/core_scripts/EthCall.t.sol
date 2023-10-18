@@ -11,19 +11,18 @@ import "./../../src/CodeJar.sol";
 import "./../../src/QuarkWallet.sol";
 import "./../../src/core_scripts/EthCall.sol";
 import "./../lib/YulHelper.sol";
+import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 import "./scripts/SupplyComet.sol";
 import "./interfaces/IComet.sol";
 
 contract EthCallTest is Test {
     CodeJar public codeJar;
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
-    );
     Counter public counter;
     // Need alice info here, for signature to QuarkWallet
-    address alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    uint256 alicePK = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    address constant alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    uint256 constant alicePK = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    SignatureHelper public signatureHelper;
 
     function setUp() public {
         codeJar = new CodeJar();
@@ -35,10 +34,11 @@ contract EthCallTest is Test {
 
         counter = new Counter();
         counter.setNumber(0);
+        signatureHelper = new SignatureHelper();
     }
 
     // Test Case #1: Invoke Counter contract via signature
-    function testEthCallCounterBySig() public {
+    function testEthCallCounter() public {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory ethcall = new YulHelper().getDeployed(
             "EthCall.sol/EthCall.json"
@@ -55,33 +55,14 @@ contract EthCallTest is Test {
         });
 
         assertEq(counter.number(), 0);
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 1);
     }
 
-    // Test Case #2: Invoke Counter contract
-    function testEthCallCounter() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "EthCall.sol/EthCall.json"
-        );
-
-        assertEq(counter.number(), 0);
-        wallet.executeQuarkOperation(
-            ethcall,
-            abi.encodeWithSelector(
-                EthCall.run.selector, address(counter), abi.encodeCall(Counter.incrementBy, (1)), 0
-            ),
-            false
-        );
-
-        assertEq(counter.number(), 1);
-    }
-
-    // Test Case #3: Supply USDC to Comet
+    // Test Case #2: Supply USDC to Comet
     function testEthCallSupplyUSDCToComet() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory ethcall = new YulHelper().getDeployed(
             "EthCall.sol/EthCall.json"
         );
@@ -92,31 +73,39 @@ contract EthCallTest is Test {
         // Set up some funds for test
         deal(USDC, address(wallet), 1000e6);
         // Approve Comet to spend USDC
-        wallet.executeQuarkOperation(
-            ethcall,
-            abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
-            ),
-            false
-        );
+                ),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IComet(comet).balanceOf(address(wallet)), 0);
         // Supply Comet
-        wallet.executeQuarkOperation(
-            ethcall,
-            abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0
-            ),
-            false
-        );
+                ),
+            nonce: 1,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op2, alicePK);
+        wallet.executeQuarkOperation(op2, v, r, s);
 
         // Since there is rouding diff, assert on diff is less than 10 wei
         assertLt(stdMath.delta(1000e6, IComet(comet).balanceOf(address(wallet))), 10);
     }
 
-    // Test Case #4: Withdraw USDC from Comet
+    // Test Case #3: Withdraw USDC from Comet
     function testEthCallWithdrawUSDCFromComet() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(alice), codeJar);
         bytes memory ethcall = new YulHelper().getDeployed(
             "EthCall.sol/EthCall.json"
         );
@@ -127,51 +116,50 @@ contract EthCallTest is Test {
         address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
+
+        QuarkWallet.QuarkOperation memory op;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
         // Approve Comet to spend USDC
-        wallet.executeQuarkOperation(
-            ethcall,
-            abi.encodeWithSelector(
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(WETH), abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
-            ),
-            false
-        );
+                ),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Supply ETH to Comet
-        wallet.executeQuarkOperation(
-            ethcall,
-            abi.encodeWithSelector(
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
-            ),
-            false
-        );
+                ),
+            nonce: 1,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Withdraw USDC from Comet
-        wallet.executeQuarkOperation(
-            ethcall,
-            abi.encodeWithSelector(
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(comet), abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
-            ),
-            false
-        );
+                ),
+            nonce: 2,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
-    }
-
-    function aliceSignature(QuarkWallet wallet, QuarkWallet.QuarkOperation memory op)
-        internal
-        view
-        returns (uint8, bytes32, bytes32)
-    {
-        bytes32 structHash = keccak256(
-            abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
-            )
-        );
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash));
-        return vm.sign(
-            // ALICE PRIVATE KEY
-            0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80,
-            digest
-        );
     }
 }

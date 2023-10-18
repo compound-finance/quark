@@ -17,6 +17,7 @@ import "./../../src/core_scripts/lib/CheckUint256Gte.sol";
 import "./../../src/core_scripts/lib/CheckUint256Lt.sol";
 import "./../../src/core_scripts/lib/CheckUint256Eq.sol";
 import "./../lib/YulHelper.sol";
+import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 import "./scripts/SupplyComet.sol";
 import "./scripts/EveryMondayTriggerCondition.sol";
@@ -27,9 +28,12 @@ import "./interfaces/ISwapRouter.sol";
 
 contract MultiCallTest is Test {
     CodeJar public codeJar;
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH =
-        keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry)");
     Counter public counter;
+    // For signature to QuarkWallet
+    address constant alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    uint256 constant alicePK = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    SignatureHelper public signatureHelper;
+
     // Comet address in mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -45,6 +49,7 @@ contract MultiCallTest is Test {
     address checkUint256Gte;
 
     function setUp() public {
+        signatureHelper = new SignatureHelper();
         codeJar = new CodeJar();
         codeJar.saveCode(
             new YulHelper().getDeployed(
@@ -91,7 +96,7 @@ contract MultiCallTest is Test {
 
     // Test #1: Invoke Counter twice via signature
     function testMultiCallCounter() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -108,16 +113,23 @@ contract MultiCallTest is Test {
         callValues[1] = 0 wei;
 
         assertEq(counter.number(), 0);
-        wallet.executeQuarkOperation(
-            multiCall, abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues), false
-        );
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 15);
     }
 
     // Test #2: Supply ETH and withdraw USDC on Comet
     function testMultiCallSupplyEthAndWithdrawUSDC() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -141,19 +153,25 @@ contract MultiCallTest is Test {
 
         // Withdraw USDC from Comet
         callContracts[2] = comet;
-        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1000_000_000));
+        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1000e6));
         callValues[2] = 0 wei;
 
-        wallet.executeQuarkOperation(
-            multiCall, abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues), false
-        );
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000_000_000);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
 
     // Test #3: MultiCall with array returns
     function testMultiCallWithArrayOfReturns() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -196,11 +214,15 @@ contract MultiCallTest is Test {
         callDatas[5] = abi.encodeCall(IComet.borrowBalanceOf, (address(wallet)));
         callValues[5] = 0 wei;
 
-        bytes memory returnData = wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(MultiCall.runWithReturns.selector, callContracts, callDatas, callValues),
-            false
-        );
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(MultiCall.runWithReturns.selector, callContracts, callDatas, callValues),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+        bytes memory returnData = wallet.executeQuarkOperation(op, v, r, s);
 
         bytes[] memory data = abi.decode(returnData, (bytes[]));
         // Check on the last three return values
@@ -214,7 +236,7 @@ contract MultiCallTest is Test {
 
     // Test #4: MultiCall with checks simple passed
     function testMultiCallWithChecksSimplePassed() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -264,14 +286,17 @@ contract MultiCallTest is Test {
         checkValues[4] = abi.encode(uint256(1000e6));
 
         // Condition checks, account balance of ETH is 0
-
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
                 MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            false
-        );
+                ),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+        bytes memory returnData = wallet.executeQuarkOperation(op, v, r, s);
 
         // When reaches here, meaning all checks are passed
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000_000_000);
@@ -279,7 +304,7 @@ contract MultiCallTest is Test {
 
     // Test #5: MultiCall with checks simple failed
     function testMultiCallWithChecksSimpleUnmetCondition() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -307,7 +332,18 @@ contract MultiCallTest is Test {
         checkContracts[1] = address(0);
         checkValues[1] = hex"";
 
-        /// Expect CheckFailed() revert error from MultiCallCheckError from QuarkCallError
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
+                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                ),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+
+        // Expect CheckFailed() revert error from MultiCallCheckError from QuarkCallError
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -324,18 +360,12 @@ contract MultiCallTest is Test {
                 )
             )
         );
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            false
-        );
+        wallet.executeQuarkOperation(op, v, r, s);
     }
 
     // Test #6: MultiCall with condition that wallet only repay when wallet accrue some USDC/ETH and owe to Comet at the same time
     function testMultiCallWithChecksOnConditionalRepay() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -386,6 +416,16 @@ contract MultiCallTest is Test {
         checkContracts[3] = checkUint256Lt;
         checkValues[3] = abi.encode(uint256(400e6));
 
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
+                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                ),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         // Wallet doen't have USDC, condition will fail
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -403,46 +443,65 @@ contract MultiCallTest is Test {
                 )
             )
         );
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            false
-        );
+        wallet.executeQuarkOperation(op, v, r, s);
 
-        // Wallet has accue 400 USDC
+        // Wallet has accrue 400 USDC
         deal(USDC, address(wallet), 400e6);
 
         // Condition met should repay Comet
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
                 MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            false
-        );
+                ),
+            nonce: 1,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
+        // Wallet has accrue another 400 USDC
         deal(USDC, address(wallet), 400e6);
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
                 MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            false
-        );
+                ),
+            nonce: 2,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
+        // Wallet has accrue another 400 USDC
         deal(USDC, address(wallet), 400e6);
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
                 MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            false
-        );
+                ),
+            nonce: 3,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Wallet no longer owe Comet, condition#2 will fail
         deal(USDC, address(wallet), 400e6);
+
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
+                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                ),
+            nonce: 4,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -459,21 +518,15 @@ contract MultiCallTest is Test {
                 )
             )
         );
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            false
-        );
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Wallet fully pays off debt
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 0);
     }
 
     // Test #7: MultiCall test to use SupplyComet scripts to supply and borrow in one transaction
-    function testApproveSupplyComet() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+    function testApproveSupplyCometInCustomScript() public {
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -510,16 +563,22 @@ contract MultiCallTest is Test {
         callDatas[3] = abi.encodeCall(IComet.allow, (cometSupply, false));
         callValues[3] = 0 wei;
 
-        wallet.executeQuarkOperation(
-            multiCall, abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues), false
-        );
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000_000_000);
     }
 
     // Test #8: MultiCall to execute buy every Monday with custom scripts
     function testBuyEthEveryMonday() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -569,7 +628,15 @@ contract MultiCallTest is Test {
         );
         callValues[2] = 0 wei;
 
-        // It's not Monday yet, so revert
+        // It's not Monday yet, so will revert
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -583,18 +650,29 @@ contract MultiCallTest is Test {
                 )
             )
         );
-
-        wallet.executeQuarkOperation(
-            multiCall, abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues), true
-        );
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Warp to Monday
         vm.warp(block.timestamp / 1 weeks * 1 weeks + 4 days);
-        wallet.executeQuarkOperation(
-            multiCall, abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues), true
-        );
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
+            nonce: 1,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Last run just completed, need to wait 7 days to buy eth again
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
+            nonce: 2,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -608,15 +686,19 @@ contract MultiCallTest is Test {
                 )
             )
         );
-        wallet.executeQuarkOperation(
-            multiCall, abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues), false
-        );
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Warp to next Monday
         vm.warp(block.timestamp / 1 weeks * 1 weeks + 11 days + 6 hours); // Add additional 6 hours, simulate couple hours in the middle of the day
-        wallet.executeQuarkOperation(
-            multiCall, abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues), false
-        );
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(MultiCall.run.selector, callContracts, callDatas, callValues),
+            nonce: 3,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Successfully bought 2 times
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 8000e6);
@@ -624,7 +706,7 @@ contract MultiCallTest is Test {
 
     // Test #9: MultiCall to execute buy every Monday with custom scripts and checks
     function testBuyEthEveryMondayWithChecks() public {
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(address(this), codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(alice, codeJar);
         bytes memory multiCall = new YulHelper().getDeployed(
             "MultiCall.sol/MultiCall.json"
         );
@@ -684,6 +766,16 @@ contract MultiCallTest is Test {
         checkValues[2] = abi.encode(uint256(1e17)); // At least 0.1ETH
 
         // It's not Monday yet, so revert
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
+                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                ),
+            nonce: 0,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -700,26 +792,34 @@ contract MultiCallTest is Test {
                 )
             )
         );
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            true
-        );
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Warp to Monday
         vm.warp(block.timestamp / 1 weeks * 1 weeks + 4 days);
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
                 MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            true
-        );
+                ),
+            nonce: 1,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Warp to Tuesday
         vm.warp(block.timestamp / 1 weeks * 1 weeks + 5 days);
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
+                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
+                ),
+            nonce: 2,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -736,23 +836,21 @@ contract MultiCallTest is Test {
                 )
             )
         );
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
-                MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            true
-        );
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Warp to next Monday
         vm.warp(block.timestamp / 1 weeks * 1 weeks + 11 days + 6 hours); // Add additional 6 hours, simulate couple hours in the middle of the day
-        wallet.executeQuarkOperation(
-            multiCall,
-            abi.encodeWithSelector(
+        op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
                 MultiCall.runWithChecks.selector, callContracts, callDatas, callValues, checkContracts, checkValues
-            ),
-            true
-        );
+                ),
+            nonce: 2,
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Successfully bought 2 times
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 8000e6);
