@@ -22,6 +22,10 @@ contract EthCallTest is Test {
     // Need alice info here, for signature to QuarkWallet
     address constant alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     uint256 constant alicePK = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+    address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
     SignatureHelper public signatureHelper;
 
     function setUp() public {
@@ -67,9 +71,6 @@ contract EthCallTest is Test {
             "EthCall.sol/EthCall.json"
         );
 
-        // Comet address in mainnet
-        address comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-        address USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
         // Set up some funds for test
         deal(USDC, address(wallet), 1000e6);
         // Approve Comet to spend USDC
@@ -110,10 +111,6 @@ contract EthCallTest is Test {
             "EthCall.sol/EthCall.json"
         );
 
-        // Comet address in mainnet
-        address comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-        address USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-        address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
