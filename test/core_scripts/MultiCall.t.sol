@@ -216,7 +216,7 @@ contract MultiCallTest is Test {
         bytes4[] memory checkSelectors = new bytes4[](5);
         bytes[] memory checkValues = new bytes[](5);
 
-        // Approve Comet to spend USDC
+        // Approve Comet to spend WETH
         callContracts[0] = WETH;
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
         callValues[0] = 0 wei;
@@ -224,7 +224,7 @@ contract MultiCallTest is Test {
         checkSelectors[0] = ConditionChecks.isTrue.selector;
         checkValues[0] = hex"";
 
-        // Supply ETH to Comet
+        // Supply WETH to Comet
         callContracts[1] = comet;
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
         callValues[1] = 0 wei;
