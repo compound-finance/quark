@@ -150,7 +150,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
-    // Test #3: flash swap revert if not paying back
+    // Test #3: flash swap reverts if not paying back
     function testNotEnoughToPayFlashSwap() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashSwapMultiCall = new YulHelper().getDeployed(
