@@ -13,7 +13,7 @@ import "./../../src/core_scripts/MultiCall.sol";
 import "./../../src/core_scripts/lib/CheckIsTrue.sol";
 import "./../../src/core_scripts/lib/CheckIsFalse.sol";
 import "./../../src/core_scripts/lib/CheckUint256Gt.sol";
-import "./../../src/core_scripts/lib/checkUint256Gte.sol";
+import "./../../src/core_scripts/lib/CheckUint256Gte.sol";
 import "./../../src/core_scripts/lib/CheckUint256Lt.sol";
 import "./../../src/core_scripts/lib/CheckUint256Eq.sol";
 import "./../lib/YulHelper.sol";
