@@ -6,9 +6,9 @@ interface IComet {
 
     function baseToken() external view returns (address);
 
-    function supply(address asset, uint amount) external;
+    function supply(address asset, uint256 amount) external;
 
-    function withdraw(address asset, uint amount) external;
+    function withdraw(address asset, uint256 amount) external;
 
     function balanceOf(address owner) external view returns (uint256);
 
@@ -22,17 +22,17 @@ interface IComet {
 
     function getAssetInfoByAddress(address asset) external view returns (AssetInfo memory);
 
-    function supplyTo(address dst, address asset, uint amount) external;
+    function supplyTo(address dst, address asset, uint256 amount) external;
 
-    function baseScale() external view returns (uint);
+    function baseScale() external view returns (uint256);
 
     function isLiquidatable(address account) external view returns (bool);
 
-    function withdrawTo(address to, address asset, uint amount) external;
+    function withdrawTo(address to, address asset, uint256 amount) external;
 
-    function withdrawFrom(address src, address to, address asset, uint amount) external;
+    function withdrawFrom(address src, address to, address asset, uint256 amount) external;
 
-    function supplyFrom(address from, address dst, address asset, uint amount) external;
+    function supplyFrom(address from, address dst, address asset, uint256 amount) external;
 
     function allow(address manager, bool isAllowed_) external;
 }
