@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 interface IComet {
     function getAssetInfo(uint8 i) external view returns (AssetInfo memory);

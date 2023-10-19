@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -9,14 +9,14 @@ import "forge-std/interfaces/IERC20.sol";
 
 import "./../../src/QuarkWallet.sol";
 import "./../../src/QuarkWalletFactory.sol";
-import "./../../src/core_scripts/EthCall.sol";
+import "./../../src/core_scripts/Ethcall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 import "./custom_scripts/SupplyComet.sol";
 import "./interfaces/IComet.sol";
 
-contract EthCallTest is Test {
+contract EthcallTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     // Need alice info here, for signature to QuarkWallet
@@ -37,16 +37,16 @@ contract EthCallTest is Test {
     }
 
     // Test Case #1: Invoke Counter contract via signature
-    function testEthCallCounter() public {
+    function testEthcallCounter() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
-            "EthCall.sol/EthCall.json"
+            "Ethcall.sol/Ethcall.json"
         );
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                EthCall.run.selector, address(counter), abi.encodeCall(Counter.incrementBy, (1)), 0
+                Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (1)), 0
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -60,10 +60,10 @@ contract EthCallTest is Test {
     }
 
     // Test Case #2: Supply USDC to Comet
-    function testEthCallSupplyUSDCToComet() public {
+    function testEthcallSupplyUSDCToComet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
-            "EthCall.sol/EthCall.json"
+            "Ethcall.sol/Ethcall.json"
         );
 
         // Set up some funds for test
@@ -72,7 +72,7 @@ contract EthCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                EthCall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
+                Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -86,7 +86,7 @@ contract EthCallTest is Test {
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0
+                Ethcall.run.selector, address(comet), abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -100,10 +100,10 @@ contract EthCallTest is Test {
     }
 
     // Test Case #3: Withdraw USDC from Comet
-    function testEthCallWithdrawUSDCFromComet() public {
+    function testEthcallWithdrawUSDCFromComet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
-            "EthCall.sol/EthCall.json"
+            "Ethcall.sol/Ethcall.json"
         );
 
         // Set up some funds for test
@@ -113,7 +113,7 @@ contract EthCallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                EthCall.run.selector, address(WETH), abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
+                Ethcall.run.selector, address(WETH), abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -126,7 +126,7 @@ contract EthCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
+                Ethcall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -139,7 +139,7 @@ contract EthCallTest is Test {
         op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                EthCall.run.selector, address(comet), abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
+                Ethcall.run.selector, address(comet), abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
