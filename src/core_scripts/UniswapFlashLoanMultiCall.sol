@@ -105,7 +105,6 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
                 input.checkValues
             );
         } else {
-            // Execute multiple calls without checks
             executeMultiInternal(input.callContracts, input.callDatas, input.callValues);
         }
 
