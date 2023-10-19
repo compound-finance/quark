@@ -12,6 +12,6 @@ contract EthCall is CoreScript {
      * @return Return data of the call in bytes
      */
     function run(address callContract, bytes calldata callData, uint256 callValue) external returns (bytes memory) {
-        return executeSingleInternal(callContract, callData, callValue);
+        return executeSingleWithReturnInternal(callContract, callData, callValue);
     }
 }
