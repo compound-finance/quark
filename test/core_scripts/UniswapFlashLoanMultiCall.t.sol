@@ -151,7 +151,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        // Verify that user now has no ETH collateral on Comet, but only LINK
+        // Verify that user now has no WETH collateral on Comet, but only LINK
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), LinkBalanceEst);
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
