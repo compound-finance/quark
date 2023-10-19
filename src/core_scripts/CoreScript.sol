@@ -116,7 +116,7 @@ contract CoreScript is QuarkScript {
     /**
      * @dev Execute a single call in a single transaction and return the result
      */
-    function executeSingleInternal(address callContract, bytes memory callData, uint256 callValue)
+    function executeSingleWithReturnInternal(address callContract, bytes memory callData, uint256 callValue)
         internal
         returns (bytes memory)
     {
