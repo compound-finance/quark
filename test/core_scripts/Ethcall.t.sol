@@ -51,8 +51,8 @@ contract EthcallTest is Test {
                 Ethcall.run.selector,
                 address(counter),
                 hex"",
-                abi.encodeCall(
-                    Counter.incrementBy,
+                abi.encodeWithSignature(
+                    "increment(uint256)",
                     (1)
                 ),
                 0
@@ -82,8 +82,8 @@ contract EthcallTest is Test {
                 Ethcall.run.selector,
                 address(counter),
                 hex"",
-                abi.encodeCall(
-                    Counter.incrementBy,
+                abi.encodeWithSignature(
+                    "increment(uint256)",
                     (1)
                 ),
                 0
