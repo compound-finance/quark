@@ -106,7 +106,7 @@ contract ConditionChecks {
     /**
      * @dev Check if the data is less than or equal to checkData in uint256
      * @param data The uint256 data to check in bytes
-     * @param checkData The uint256 data to check with in bytes
+     * @param checkData The uint256 data to check against in bytes
      */
     function uint256Lte(bytes calldata data, bytes calldata checkData) external pure {
         // Only revert if condition isn't met
