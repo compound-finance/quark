@@ -102,7 +102,7 @@ contract MultiCallTest is Test {
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
         callValues[0] = 0 wei;
 
-        // Supply ETH to Comet
+        // Supply WETH to Comet
         callContracts[1] = comet;
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
         callValues[1] = 0 wei;
