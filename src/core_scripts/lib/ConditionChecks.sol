@@ -5,7 +5,7 @@ contract ConditionChecks {
     error CheckFailed();
 
     /**
-     * @dev Check if two addresses is equal
+     * @dev Check if two addresses are equal
      * @param data The address to check in bytes
      * @param checkData The address to check with in bytes
      */
