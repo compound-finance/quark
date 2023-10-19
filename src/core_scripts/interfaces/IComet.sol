@@ -6,9 +6,9 @@ interface IComet {
 
     function baseToken() external view returns (address);
 
-    function supply(address asset, uint amount) external;
+    function supply(address asset, uint256 amount) external;
 
-    function withdraw(address asset, uint amount) external;
+    function withdraw(address asset, uint256 amount) external;
 
     function balanceOf(address owner) external view returns (uint256);
 
@@ -22,9 +22,9 @@ interface IComet {
 
     function getAssetInfoByAddress(address asset) external view returns (AssetInfo memory);
 
-    function supplyTo(address dst, address asset, uint amount) external;
+    function supplyTo(address dst, address asset, uint256 amount) external;
 
-    function baseScale() external view returns (uint);
+    function baseScale() external view returns (uint256);
 }
 
 struct AssetInfo {
