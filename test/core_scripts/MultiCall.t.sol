@@ -102,7 +102,7 @@ contract MultiCallTest is Test {
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
         callValues[0] = 0 wei;
 
-        // Supply ETH to Comet
+        // Supply WETH to Comet
         callContracts[1] = comet;
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
         callValues[1] = 0 wei;
@@ -140,7 +140,7 @@ contract MultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](6);
         uint256[] memory callValues = new uint256[](6);
 
-        // Approve Comet to spend USDC
+        // Approve Comet to spend WETH
         callContracts[0] = WETH;
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
         callValues[0] = 0 wei;
@@ -225,7 +225,7 @@ contract MultiCallTest is Test {
 
         // Withdraw USDC from Comet
         callContracts[2] = comet;
-        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1000_000_000));
+        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1_000_000_000));
         callValues[2] = 0 wei;
         checkContracts[2] = address(0);
         checkSelectors[2] = hex"";
@@ -239,7 +239,7 @@ contract MultiCallTest is Test {
         checkSelectors[3] = ConditionChecks.isFalse.selector;
         checkValues[3] = hex"";
 
-        // Condition checks, account borrow balance is 1000
+        // Condition checks that account borrow balance is 1000
         callContracts[4] = comet;
         callDatas[4] = abi.encodeCall(IComet.borrowBalanceOf, (address(wallet)));
         callValues[4] = 0 wei;
@@ -266,7 +266,7 @@ contract MultiCallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         // When reaches here, meaning all checks are passed
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000_000_000);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1_000_000_000);
     }
 
     // Test #5: MultiCall with failed checks
@@ -389,7 +389,7 @@ contract MultiCallTest is Test {
         checkSelectors[2] = hex"";
         checkValues[2] = hex"";
 
-        // Condition checks, account has less than threshold
+        // Condition checks that account has less than threshold
         callContracts[3] = USDC;
         callDatas[3] = abi.encodeCall(IERC20.balanceOf, (address(wallet)));
         callValues[3] = 0 wei;
@@ -413,7 +413,7 @@ contract MultiCallTest is Test {
             allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
-        // Wallet doen't have USDC, condition will fail
+        // Wallet doesn't have USDC, condition will fail
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -586,7 +586,7 @@ contract MultiCallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000_000_000);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1_000_000_000);
     }
 
     // Test #8: MultiCall to execute buy every Monday with custom scripts

@@ -58,7 +58,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         vm.stopPrank();
 
         // Test user can switch collateral from ETH to LINK via flashloan without allocating USDC to pay off debt
-        // Math here is not perfect, as in Terminal scripts we should be able to compute and find more precised numbers to accomplish this type of actions
+        // Math here is not perfect, as in Terminal scripts we should be able to compute and find more precise numbers to accomplish this type of action
         address[] memory callContracts = new address[](8);
         bytes[] memory callDatas = new bytes[](8);
         uint256[] memory callValues = new uint256[](8);
@@ -116,7 +116,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
 
         // Supply LINK back to Comet
         callContracts[6] = address(comet);
-        callDatas[6] = abi.encodeCall(IComet.supply, (LINK, LinkBalanceEst));
+        callDatas[6] = abi.encodeCall(IComet.supply, (LINK, linkBalanceEst));
         callValues[6] = 0 wei;
 
         // Withdraw 1000 USDC from Comet again to repay debt
@@ -150,9 +150,9 @@ contract UniswapFlashLoanMultiCallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        // Verify that user now has no ETH collateral on Comet, but only LINK
+        // Verify that user now has no WETH collateral on Comet, but only LINK
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), LinkBalanceEst);
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), linkBalanceEst);
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
     }
 

@@ -84,10 +84,10 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
     }
 
     /**
-     * @notice Callback function for Uniswap flashloan
+     * @notice Callback function for Uniswap flash loan
      * @param fee0 token0 fee to repay to the flash loan pool
      * @param fee1 token1 fee to repay to the flash loan pool
-     * @param data Data passed from IUniswapV3Pool.flash() call, which contains MultiCall inputs to execute before repaying the flash loan
+     * @param data FlashLoanInput encoded to bytes passed from IUniswapV3Pool.flash(); contains a MultiCall to execute (possibly with checks) before repaying the flash loan
      */
     function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {
         FlashLoanInput memory input = abi.decode(data, (FlashLoanInput));
@@ -97,7 +97,6 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
         }
 
         if (input.withChecks) {
-            // Execute multiple calls with checks
             executeMultiChecksInternal(
                 input.callContracts,
                 input.callDatas,
@@ -107,7 +106,6 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
                 input.checkValues
             );
         } else {
-            // Execute multiple calls without checks
             executeMultiInternal(input.callContracts, input.callDatas, input.callValues);
         }
 

@@ -5,7 +5,7 @@ contract ConditionChecks {
     error CheckFailed();
 
     /**
-     * @dev Check if two addresses is equal
+     * @dev Check if two addresses are equal
      * @param data The address to check in bytes
      * @param checkData The address to check with in bytes
      */
@@ -56,9 +56,9 @@ contract ConditionChecks {
     }
 
     /**
-     * @dev Check if the data is equal to checkData in uint256
-     * @param data The uint256 data to check in bytes
-     * @param checkData The uint256 data to check with in bytes
+     * @dev Check if two uint256 values are equal
+     * @param data The uint256 received, in bytes
+     * @param checkData The uint256 expected, in bytes
      */
     function uint256Eq(bytes calldata data, bytes calldata checkData) external pure {
         // Only revert if condition isn't met
@@ -68,9 +68,9 @@ contract ConditionChecks {
     }
 
     /**
-     * @dev Check if the data is greater than checkData in uint256
-     * @param data The uint256 data to check in bytes
-     * @param checkData The uint256 data to check with in bytes
+     * @dev Check whether a uint256 is greater than a lower bound
+     * @param data The uint256 received, in bytes
+     * @param checkData The uint256 lower bound, in bytes
      */
     function uint256Gt(bytes calldata data, bytes calldata checkData) external pure {
         // Only revert if condition isn't met
@@ -80,9 +80,9 @@ contract ConditionChecks {
     }
 
     /**
-     * @dev Check if the data is greater than or equal to checkData in uint256
-     * @param data The uint256 data to check in bytes
-     * @param checkData The uint256 data to check with in bytes
+     * @dev Check whether a uint256 is greater than or equal to a lower bound
+     * @param data The uint256 received, in bytes
+     * @param checkData The uint256 lower bound, in bytes
      */
     function uint256Gte(bytes calldata data, bytes calldata checkData) external pure {
         // Only revert if condition isn't met
@@ -92,9 +92,9 @@ contract ConditionChecks {
     }
 
     /**
-     * @dev Check if the data is less than to checkData in uint256
-     * @param data The uint256 data to check in bytes
-     * @param checkData The uint256 data to check with in bytes
+     * @dev Check whether a uint256 is less than an upper bound
+     * @param data The uint256 received, in bytes
+     * @param checkData The uint256 upper bound, in bytes
      */
     function uint256Lt(bytes calldata data, bytes calldata checkData) external pure {
         // Only revert if condition isn't met
@@ -106,7 +106,7 @@ contract ConditionChecks {
     /**
      * @dev Check if the data is less than or equal to checkData in uint256
      * @param data The uint256 data to check in bytes
-     * @param checkData The uint256 data to check with in bytes
+     * @param checkData The uint256 data to check against in bytes
      */
     function uint256Lte(bytes calldata data, bytes calldata checkData) external pure {
         // Only revert if condition isn't met

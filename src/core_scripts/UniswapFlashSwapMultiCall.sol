@@ -16,7 +16,7 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
     error FailedFlashSwap(address token);
     error InvalidCaller();
 
-    /// @notice Input for flash swap multicall when interact with UniswapV3 Pool swap function
+    /// @notice Input for flash swap multicall when interacting with UniswapV3 Pool swap function
     struct FlashSwapMultiCallInput {
         PoolAddress.PoolKey poolKey;
         address[] callContracts;
@@ -47,7 +47,7 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
 
     /**
      * @notice Execute multiple calls in a single transaction with flash swap
-     * @param payload UniswapFlashSwapMultiCallPayload struct; contains pool info and MultiCall inputs
+     * @param payload Struct containing pool info and MultiCall to execute before repaying the flash swap
      */
     function run(UniswapFlashSwapMultiCallPayload memory payload) external {
         // Reorder token0, token1 to ensure token1 > token0
@@ -84,7 +84,7 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
      * @notice Callback function for Uniswap flash swap
      * @param amount0Delta Amount of token0 owed (only need to repay positive value)
      * @param amount1Delta Amount of token1 owed (only need to repay positive value)
-     * @param data Data passed from UniswapV3Pool.swap() which contains MultiCall inputs to execute before sending the owed amount back
+     * @param data FlashSwapMultiCall encoded to bytes passed from UniswapV3Pool.swap(); contains a MultiCall to execute (possibly with checks) before returning the owed amount
      */
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         FlashSwapMultiCallInput memory input = abi.decode(data, (FlashSwapMultiCallInput));
