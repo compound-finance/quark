@@ -126,7 +126,7 @@ contract EthCallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        // Supply ETH to Comet
+        // Supply WETH to Comet
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
