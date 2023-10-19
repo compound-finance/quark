@@ -24,7 +24,7 @@ contract Counter {
         number += n;
     }
 
-    function decrementBy(uint256 n) public {
+    function decrement(uint256 n) public {
         number -= n;
     }
 
