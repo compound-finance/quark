@@ -7,8 +7,8 @@ contract MultiCall is CoreScript {
     /**
      * @notice Execute multiple calls in a single transaction
      * @param callContracts Array of contracts to call
-     * @param callDatas Array of calldatas to call
-     * @param callValues Array of values to call
+     * @param callDatas Array of encoded calldata for each call
+     * @param callValues Array of values for each call
      */
     function run(address[] calldata callContracts, bytes[] calldata callDatas, uint256[] calldata callValues)
         external
@@ -19,10 +19,10 @@ contract MultiCall is CoreScript {
     /**
      * @notice Execute multiple calls in a single transaction with checks
      * @param callContracts Array of contracts to call
-     * @param callDatas Array of calldatas to call
-     * @param callValues Array of values to call
+     * @param callDatas Array of encoded calldata for each call
+     * @param callValues Array of values for each call
      * @param checkContracts Array of check contracts
-     * @param checkValues Array of values to compare in check
+     * @param checkValues Array of expected values for checks
      * @return Return data from the last contract call
      */
     function runWithChecks(
@@ -41,8 +41,8 @@ contract MultiCall is CoreScript {
     /**
      * @notice Execute multiple calls in a single transaction with checks
      * @param callContracts Array of contracts to call
-     * @param callDatas Array of calldatas to call
-     * @param callValues Array of values to call
+     * @param callDatas Array of encoded calldata for each call
+     * @param callValues Array of values for each call
      * @return Array of return data from contract calls
      */
     function runWithReturns(address[] calldata callContracts, bytes[] calldata callDatas, uint256[] calldata callValues)
