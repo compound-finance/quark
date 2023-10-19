@@ -140,7 +140,7 @@ contract MultiCallTest is Test {
         bytes[] memory callDatas = new bytes[](6);
         uint256[] memory callValues = new uint256[](6);
 
-        // Approve Comet to spend USDC
+        // Approve Comet to spend WETH
         callContracts[0] = WETH;
         callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
         callValues[0] = 0 wei;
