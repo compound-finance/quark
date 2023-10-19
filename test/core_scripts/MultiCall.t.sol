@@ -389,7 +389,7 @@ contract MultiCallTest is Test {
         checkSelectors[2] = hex"";
         checkValues[2] = hex"";
 
-        // Condition checks, account has less than threshold
+        // Condition checks that account has less than threshold
         callContracts[3] = USDC;
         callDatas[3] = abi.encodeCall(IERC20.balanceOf, (address(wallet)));
         callValues[3] = 0 wei;
