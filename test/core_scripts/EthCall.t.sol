@@ -123,7 +123,7 @@ contract EthCallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Supply ETH to Comet
