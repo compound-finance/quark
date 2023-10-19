@@ -58,7 +58,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         vm.stopPrank();
 
         // Test user can switch collateral from ETH to LINK via flashloan without allocating USDC to pay off debt
-        // Math here is not perfect, as in Terminal scripts we should be able to compute and find more precised numbers to accomplish this type of actions
+        // Math here is not perfect, as in Terminal scripts we should be able to compute and find more precise numbers to accomplish this type of action
         address[] memory callContracts = new address[](8);
         bytes[] memory callDatas = new bytes[](8);
         uint256[] memory callValues = new uint256[](8);
