@@ -62,9 +62,6 @@ contract UniswapFlashLoanMultiCallTest is Test {
         address[] memory callContracts = new address[](8);
         bytes[] memory callDatas = new bytes[](8);
         uint256[] memory callValues = new uint256[](8);
-        address[] memory checkContracts = new address[](8);
-        bytes4[] memory checkSelectors = new bytes4[](8);
-        bytes[] memory checkValues = new bytes[](8);
 
         // Use 90% of price calculation to encounter to price slippage during swapping
         uint256 LinkBalanceEst = 2e18 * IComet(comet).getPrice(IComet(comet).getAssetInfoByAddress(WETH).priceFeed)
@@ -204,9 +201,6 @@ contract UniswapFlashLoanMultiCallTest is Test {
         address[] memory callContracts = new address[](1);
         bytes[] memory callDatas = new bytes[](1);
         uint256[] memory callValues = new uint256[](1);
-        address[] memory checkContracts = new address[](1);
-        bytes4[] memory checkSelectors = new bytes4[](1);
-        bytes[] memory checkValues = new bytes[](1);
 
         // Send USDC to random address
         callContracts[0] = address(USDC);
