@@ -266,7 +266,7 @@ contract MultiCallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         // When reaches here, meaning all checks are passed
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000_000_000);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1_000_000_000);
     }
 
     // Test #5: MultiCall with failed checks
