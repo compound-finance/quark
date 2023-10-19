@@ -83,7 +83,7 @@ contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
     }
 
     /**
-     * @notice Callback function for Uniswap flashloan
+     * @notice Callback function for Uniswap flash loan
      * @param fee0 token0 fee to repay to the flash loan pool
      * @param fee1 token1 fee to repay to the flash loan pool
      * @param data Data passed from IUniswapV3Pool.flash() call, which contains MultiCall inputs to execute before repaying the flash loan
