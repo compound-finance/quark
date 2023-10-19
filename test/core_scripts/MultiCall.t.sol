@@ -413,7 +413,7 @@ contract MultiCallTest is Test {
             allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
-        // Wallet doen't have USDC, condition will fail
+        // Wallet doesn't have USDC, condition will fail
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
