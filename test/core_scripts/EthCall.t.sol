@@ -136,7 +136,7 @@ contract EthCallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        (uint8 v2, bytes32 r2, bytes32 s2) = signatureHelper.signOp(wallet, op2, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Withdraw USDC from Comet
