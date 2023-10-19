@@ -127,7 +127,7 @@ contract EthCallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Supply ETH to Comet
-        op = QuarkWallet.QuarkOperation({
+        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
