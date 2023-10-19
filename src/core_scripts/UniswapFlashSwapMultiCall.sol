@@ -16,7 +16,7 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
     error FailedFlashSwap(address token);
     error InvalidCaller();
 
-    /// @notice Input for flash swap multicall when interact with UniswapV3 Pool swap function
+    /// @notice Input for flash swap multicall when interacting with UniswapV3 Pool swap function
     struct FlashSwapMultiCallInput {
         PoolAddress.PoolKey poolKey;
         address[] callContracts;
