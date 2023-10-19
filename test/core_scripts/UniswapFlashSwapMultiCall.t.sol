@@ -58,7 +58,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
         callDatas[0] = abi.encodeCall(IERC20.approve, (cometAddr, 100 ether));
         callValues[0] = 0 wei;
 
-        // Supply ETH to Comet
+        // Supply WETH to Comet
         callContracts[1] = cometAddr;
         callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 11 ether)); // 10 original + 1 leveraged
         callValues[1] = 0 wei;
