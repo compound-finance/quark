@@ -63,7 +63,7 @@ contract CoreScript is QuarkScript {
     }
 
     /**
-     * @dev Execute multiple calls in a single transaction with returns and checks
+     * @dev Execute multiple calls in a single transaction with checks, returning the last result
      */
     function executeMultiChecksInternal(
         address[] memory callContracts,
