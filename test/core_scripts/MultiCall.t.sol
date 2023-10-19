@@ -225,7 +225,7 @@ contract MultiCallTest is Test {
 
         // Withdraw USDC from Comet
         callContracts[2] = comet;
-        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1000_000_000));
+        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1_000_000_000));
         callValues[2] = 0 wei;
         checkContracts[2] = address(0);
         checkSelectors[2] = hex"";
