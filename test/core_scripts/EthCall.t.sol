@@ -114,7 +114,7 @@ contract EthCallTest is Test {
         bytes32 r;
         bytes32 s;
         // Approve Comet to spend WETH
-        op = QuarkWallet.QuarkOperation({
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(WETH), abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
