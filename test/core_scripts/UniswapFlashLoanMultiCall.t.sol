@@ -117,7 +117,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
 
         // Supply LINK back to Comet
         callContracts[6] = address(comet);
-        callDatas[6] = abi.encodeCall(IComet.supply, (LINK, LinkBalanceEst));
+        callDatas[6] = abi.encodeCall(IComet.supply, (LINK, linkBalanceEst));
         callValues[6] = 0 wei;
 
         // Withdraw 1000 USDC from Comet again to repay debt
