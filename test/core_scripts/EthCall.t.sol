@@ -150,7 +150,7 @@ contract EthCallTest is Test {
             allowCallback: false
         });
         (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op3, v3, r3, s3);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
