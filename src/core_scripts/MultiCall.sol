@@ -23,7 +23,7 @@ contract MultiCall is CoreScript {
      * @param callValues Array of values to call
      * @param checkContracts Array of check contracts
      * @param checkValues Array of values to compare in check
-     * @return Return return data from the last contract call
+     * @return Return data from the last contract call
      */
     function runWithChecks(
         address[] calldata callContracts,
