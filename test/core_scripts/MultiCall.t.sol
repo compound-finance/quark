@@ -586,7 +586,7 @@ contract MultiCallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000_000_000);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1_000_000_000);
     }
 
     // Test #8: MultiCall to execute buy every Monday with custom scripts
