@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-interface CallbackInterface {
-    function counterCallback(uint256) external;
+interface HasCallback {
+    function callback() external;
 }
 
 contract Counter {
@@ -25,9 +25,9 @@ contract Counter {
         return number;
     }
 
-    function incrementCallback() public {
+    function incrementAndCallback() public {
         number++;
-        (CallbackInterface(address(msg.sender))).counterCallback(number);
+        return HasCallback(msg.sender).callback();
     }
 }
 
