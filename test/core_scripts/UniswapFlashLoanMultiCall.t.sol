@@ -116,7 +116,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
 
         // Supply LINK back to Comet
         callContracts[6] = address(comet);
-        callDatas[6] = abi.encodeCall(IComet.supply, (LINK, linkBalanceEst));
+        callDatas[6] = abi.encodeCall(IComet.supply, (LINK, LinkBalanceEst));
         callValues[6] = 0 wei;
 
         // Withdraw 1000 USDC from Comet again to repay debt
@@ -152,7 +152,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
 
         // Verify that user now has no WETH collateral on Comet, but only LINK
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), linkBalanceEst);
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), LinkBalanceEst);
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
     }
 
