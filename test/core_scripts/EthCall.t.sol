@@ -123,7 +123,7 @@ contract EthCallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Supply WETH to Comet
-        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
+        op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
@@ -132,11 +132,11 @@ contract EthCallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (uint8 v2, bytes32 r2, bytes32 s2) = signatureHelper.signOp(wallet, op2, alicePK);
-        wallet.executeQuarkOperation(op2, v2, r2, s2);
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         // Withdraw USDC from Comet
-        QuarkWallet.QuarkOperation memory op3 = QuarkWallet.QuarkOperation({
+        op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 EthCall.run.selector, address(comet), abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
@@ -145,8 +145,8 @@ contract EthCallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (uint8 v3, bytes32 r3, bytes32 s3) = signatureHelper.signOp(wallet, op3, alicePK);
-        wallet.executeQuarkOperation(op3, v3, r3, s3);
+        (v, r, s) = signatureHelper.signOp(wallet, op, alicePK);
+        wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
