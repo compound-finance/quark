@@ -7,7 +7,6 @@ import "../QuarkWallet.sol";
 contract CoreScript is QuarkScript {
     error CallError(address callContract, bytes callData, uint256 callValue, bytes err);
     error InvalidInput();
-    error MultiCallError(uint256 callIndex, address callContract, bytes callData, uint256 callValue, bytes err);
     error MultiCallCheckError(
         uint256 callIndex,
         address callContract,
@@ -19,6 +18,7 @@ contract CoreScript is QuarkScript {
         bytes checkData,
         bytes err
     );
+    error MultiCallError(uint256 callIndex, address callContract, bytes callData, uint256 callValue, bytes err);
 
     /**
      * @dev Execute multiple calls in a single transaction

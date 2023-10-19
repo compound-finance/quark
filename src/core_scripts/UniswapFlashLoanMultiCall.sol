@@ -9,6 +9,7 @@ import "v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
 
 contract UniswapFlashLoanMultiCall is CoreScript, IUniswapV3FlashCallback {
     using SafeERC20 for IERC20;
+
     // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
     // TODO: Need to find a way to make this configurable for other chains, but not too freely adjustable in callback
 
