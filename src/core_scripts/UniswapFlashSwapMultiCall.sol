@@ -47,7 +47,7 @@ contract UniswapFlashSwapMultiCall is CoreScript, IUniswapV3SwapCallback {
 
     /**
      * @notice Execute multiple calls in a single transaction with flash swap
-     * @param payload UniswapFlashSwapMultiCallPayload struct; contains pool info and MultiCall inputs
+     * @param payload Struct containing pool info and MultiCall to execute before repaying the flash swap
      */
     function run(UniswapFlashSwapMultiCallPayload memory payload) external {
         // Reorder token0, token1 to ensure token1 > token0
