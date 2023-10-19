@@ -7,8 +7,8 @@ contract MultiCall is CoreScript {
     /**
      * @notice Execute multiple calls in a single transaction
      * @param callContracts Array of contracts to call
-     * @param callDatas Array of calldatas to call
-     * @param callValues Array of values to call
+     * @param callDatas Array of encoded calldata for each call
+     * @param callValues Array of values for each call
      */
     function run(address[] calldata callContracts, bytes[] calldata callDatas, uint256[] calldata callValues)
         external
