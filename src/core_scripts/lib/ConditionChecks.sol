@@ -56,9 +56,9 @@ contract ConditionChecks {
     }
 
     /**
-     * @dev Check if the data is equal to checkData in uint256
-     * @param data The uint256 data to check in bytes
-     * @param checkData The uint256 data to check with in bytes
+     * @dev Check if two uint256 values are equal
+     * @param data The uint256 received, in bytes
+     * @param checkData The uint256 expected, in bytes
      */
     function uint256Eq(bytes calldata data, bytes calldata checkData) external pure {
         // Only revert if condition isn't met
