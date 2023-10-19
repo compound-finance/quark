@@ -153,7 +153,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
 
         // Verify that user now has no WETH collateral on Comet, but only LINK
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), LinkBalanceEst);
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), linkBalanceEst);
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
     }
 
