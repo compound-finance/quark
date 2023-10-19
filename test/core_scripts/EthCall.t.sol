@@ -93,7 +93,7 @@ contract EthCallTest is Test {
             allowCallback: false
         });
         (uint8 v2, bytes32 r2, bytes32 s2) = signatureHelper.signOp(wallet, op2, alicePK);
-        wallet.executeQuarkOperation(op2, v, r, s);
+        wallet.executeQuarkOperation(op2, v2, r2, s2);
 
         // Since there is rouding diff, assert on diff is less than 10 wei
         assertLt(stdMath.delta(1000e6, IComet(comet).balanceOf(address(wallet))), 2);
