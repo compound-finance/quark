@@ -239,7 +239,7 @@ contract MultiCallTest is Test {
         checkSelectors[3] = ConditionChecks.isFalse.selector;
         checkValues[3] = hex"";
 
-        // Condition checks, account borrow balance is 1000
+        // Condition checks that account borrow balance is 1000
         callContracts[4] = comet;
         callDatas[4] = abi.encodeCall(IComet.borrowBalanceOf, (address(wallet)));
         callValues[4] = 0 wei;
