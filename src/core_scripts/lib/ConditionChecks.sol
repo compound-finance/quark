@@ -68,9 +68,9 @@ contract ConditionChecks {
     }
 
     /**
-     * @dev Check if the data is greater than checkData in uint256
-     * @param data The uint256 data to check in bytes
-     * @param checkData The uint256 data to check with in bytes
+     * @dev Check whether a uint256 is greater than a lower bound
+     * @param data The uint256 received, in bytes
+     * @param checkData The uint256 lower bound, in bytes
      */
     function uint256Gt(bytes calldata data, bytes calldata checkData) external pure {
         // Only revert if condition isn't met
