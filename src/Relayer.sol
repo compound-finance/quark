@@ -32,21 +32,26 @@ abstract contract Relayer {
     /// @notice The major version of this contract
     string public constant version = "0";
 
-    /** Internal constants **/
+    /**
+     * Internal constants *
+     */
 
     /// @dev The EIP-712 typehash for the contract's domain
-    bytes32 internal constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 internal constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     /// @dev The EIP-712 typehash for runTrxScript
-    bytes32 internal constant TRX_SCRIPT_TYPEHASH = keccak256("TrxScript(address account,uint32 nonce,uint32[] reqs,bytes trxScript,bytes trxCalldata,uint256 expiry)");
+    bytes32 internal constant TRX_SCRIPT_TYPEHASH = keccak256(
+        "TrxScript(address account,uint32 nonce,uint32[] reqs,bytes trxScript,bytes trxCalldata,uint256 expiry)"
+    );
 
     /// @dev See https://ethereum.github.io/yellowpaper/paper.pdf #307)
-    uint internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+    uint256 internal constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
 
     // Sets a nonce if it's unset, otherwise reverts with `NonceReplay`.
     function trySetNonce(address account, uint32 nonce, bool replayable) internal {
         uint32 nonceIndex = nonce / 256;
-        uint32 nonceOffset = nonce - ( nonceIndex * 256 );
+        uint32 nonceOffset = nonce - (nonceIndex * 256);
         uint256 nonceBit = (2 << nonceOffset);
 
         uint256 nonceChunk = nonces[account][uint256(nonceIndex)];
@@ -62,7 +67,7 @@ abstract contract Relayer {
     // TODO: We could make this a lot more efficient if we bulk nonces together
     function getNonce(address account, uint32 nonce) internal view returns (bool) {
         uint32 nonceIndex = nonce / 256;
-        uint32 nonceOffset = nonce - ( nonceIndex * 256 );
+        uint32 nonceOffset = nonce - (nonceIndex * 256);
         uint256 nonceBit = (2 << nonceOffset);
 
         uint256 nonceChunk = nonces[account][uint256(nonceIndex)];
@@ -93,7 +98,17 @@ abstract contract Relayer {
         if (uint256(s) > MAX_VALID_ECDSA_S) revert InvalidValueS();
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         if (v != 27 && v != 28) revert InvalidValueV();
-        bytes32 structHash = keccak256(abi.encode(TRX_SCRIPT_TYPEHASH, account, nonce, keccak256(abi.encodePacked(reqs)), keccak256(trxScript), keccak256(trxCalldata), expiry));
+        bytes32 structHash = keccak256(
+            abi.encode(
+                TRX_SCRIPT_TYPEHASH,
+                account,
+                nonce,
+                keccak256(abi.encodePacked(reqs)),
+                keccak256(trxScript),
+                keccak256(trxCalldata),
+                expiry
+            )
+        );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
         address signatory = ecrecover(digest, v, r, s);
         if (signatory == address(0)) revert BadSignatory();
@@ -132,13 +147,15 @@ abstract contract Relayer {
     }
 
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Quark"), keccak256(bytes(version)), block.chainid, address(this)));
+        return keccak256(
+            abi.encode(DOMAIN_TYPEHASH, keccak256("Quark"), keccak256(bytes(version)), block.chainid, address(this))
+        );
     }
 
     /**
      * @notice Helper function to return a quark address for a given account.
      */
-    function getQuarkAddress(address account) public virtual view returns (address);
+    function getQuarkAddress(address account) public view virtual returns (address);
 
     /**
      * Run a quark script from a given account. Note: can also use fallback, which is
@@ -157,7 +174,8 @@ abstract contract Relayer {
         return _doRunQuark(msg.sender, quarkCode, quarkCalldata);
     }
 
-    /***
+    /**
+     *
      * @notice Runs a given quark script, if valid, from the current sender.
      */
     fallback(bytes calldata quarkCode) external payable returns (bytes memory) {
@@ -166,7 +184,10 @@ abstract contract Relayer {
 
     // Internal function for running a quark. This handles the `create2`, invoking the script,
     // and then calling `destruct` to clean it up. We attempt to revert on any failed step.
-    function _doRunQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata) internal returns (bytes memory) {
+    function _doRunQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata)
+        internal
+        returns (bytes memory)
+    {
         bytes memory resData = _runQuark(account, quarkCode, quarkCalldata);
         assembly {
             log1(0, 0, 0xDEADBEEF)
@@ -176,13 +197,16 @@ abstract contract Relayer {
 
     // Internal function for running a quark. This handles the `create2`, invoking the script,
     // and then calling `destruct` to clean it up. We attempt to revert on any failed step.
-    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata) internal virtual returns (bytes memory);
+    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata)
+        internal
+        virtual
+        returns (bytes memory);
 
-    /***
+    /**
+     *
      * @notice Revert given empty call.
      */
     receive() external payable {
         revert();
     }
 }
-

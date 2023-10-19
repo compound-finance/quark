@@ -25,4 +25,3 @@ contract Counter {
         return HasCallback(msg.sender).callback();
     }
 }
-

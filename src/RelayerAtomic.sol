@@ -20,22 +20,24 @@ contract RelayerAtomic is Relayer {
     /**
      * @notice Helper function to return a quark address for a given account.
      */
-    function getQuarkAddress(address account) public override view returns (address) {
-        return address(uint160(uint(
-            keccak256(
-                abi.encodePacked(
-                    bytes1(0xff),
-                    address(this),
-                    uint256(0),
+    function getQuarkAddress(address account) public view override returns (address) {
+        return address(
+            uint160(
+                uint256(
                     keccak256(
                         abi.encodePacked(
-                            type(QuarkWallet).creationCode,
-                            abi.encode(account),
-                            abi.encode(address(codeJar))
+                            bytes1(0xff),
+                            address(this),
+                            uint256(0),
+                            keccak256(
+                                abi.encodePacked(
+                                    type(QuarkWallet).creationCode, abi.encode(account), abi.encode(address(codeJar))
+                                )
+                            )
                         )
                     )
                 )
-            )))
+            )
         );
     }
 
@@ -68,7 +70,11 @@ contract RelayerAtomic is Relayer {
 
     // Internal function for running a quark. This handles the `create2`, invoking the script,
     // and then calling `destruct` to clean it up. We attempt to revert on any failed step.
-    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata) internal override returns (bytes memory) {
+    function _runQuark(address account, bytes memory quarkCode, bytes memory quarkCalldata)
+        internal
+        override
+        returns (bytes memory)
+    {
         address quarkAddress = getQuarkAddress(account);
 
         // Ensure a quark isn't already running

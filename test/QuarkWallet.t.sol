@@ -30,10 +30,8 @@ contract QuarkWalletTest is Test {
     function testExecuteQuarkOperation() public {
         address account = address(0xaa);
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
-        bytes memory result = wallet.executeQuarkOperation(
-            new YulHelper().getDeployed("GetOwner.sol/GetOwner.json"),
-            abi.encode()
-        );
+        bytes memory result =
+            wallet.executeQuarkOperation(new YulHelper().getDeployed("GetOwner.sol/GetOwner.json"), abi.encode());
         assertEq(result, abi.encode(0xaa));
     }
 
@@ -42,24 +40,17 @@ contract QuarkWalletTest is Test {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
 
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.QuarkCodeNotFound.selector));
-        wallet.executeQuarkOperation(
-            abi.encode(),
-            abi.encodeWithSignature("x()")
-        );
+        wallet.executeQuarkOperation(abi.encode(), abi.encodeWithSignature("x()"));
     }
 
     function testQuarkOperationRevertsIfCallReverts() public {
         address account = address(0xb0b);
         bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
-        vm.expectRevert(abi.encodeWithSelector(
-            QuarkWallet.QuarkCallError.selector,
-            abi.encodeWithSelector(Reverts.Whoops.selector)
-        ));
-        wallet.executeQuarkOperation(
-            revertsCode,
-            abi.encode()
+        vm.expectRevert(
+            abi.encodeWithSelector(QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(Reverts.Whoops.selector))
         );
+        wallet.executeQuarkOperation(revertsCode, abi.encode());
     }
 
     function testAtomicPing() public {
@@ -69,10 +60,7 @@ contract QuarkWalletTest is Test {
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         vm.expectEmit(false, false, false, true);
         emit Ping(55);
-        wallet.executeQuarkOperation(
-            ping,
-            abi.encode()
-        );
+        wallet.executeQuarkOperation(ping, abi.encode());
     }
 
     function testAtomicIncrementer() public {
@@ -81,10 +69,7 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 0);
         address account = address(0xb0b);
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
-        wallet.executeQuarkOperation(
-            incrementer,
-            abi.encodeWithSignature("incrementCounter(address)", counter)
-        );
+        wallet.executeQuarkOperation(incrementer, abi.encodeWithSignature("incrementCounter(address)", counter));
         assertEq(counter.number(), 3);
     }
 
@@ -98,35 +83,22 @@ contract QuarkWalletTest is Test {
         address account = address(0xb0b);
         QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
         // call once
-        wallet.executeQuarkOperation(
-            maxCounterScript,
-            abi.encodeCall(MaxCounterScript.run, (counter))
-        );
+        wallet.executeQuarkOperation(maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
         assertEq(counter.number(), 1);
         // call twice
-        wallet.executeQuarkOperation(
-            maxCounterScript,
-            abi.encodeCall(MaxCounterScript.run, (counter))
-        );
+        wallet.executeQuarkOperation(maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
         // call thrice
         assertEq(counter.number(), 2);
-        wallet.executeQuarkOperation(
-            maxCounterScript,
-            abi.encodeCall(MaxCounterScript.run, (counter))
-        );
+        wallet.executeQuarkOperation(maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
         assertEq(counter.number(), 3);
 
         // revert because max has been hit
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector)
-          )
+                QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector)
+            )
         );
-        wallet.executeQuarkOperation(
-            maxCounterScript,
-            abi.encodeCall(MaxCounterScript.run, (counter))
-        );
+        wallet.executeQuarkOperation(maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
         assertEq(counter.number(), 3);
 
         vm.stopPrank();
