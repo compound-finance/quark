@@ -15,7 +15,6 @@ contract QuarkWalletFactoryTest is Test {
 
     QuarkWalletFactory public factory;
     Counter public counter;
-    CodeJar public codeJar;
 
     uint256 alicePrivateKey = 0xa11ce;
     address alice; // see setup()
