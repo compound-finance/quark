@@ -135,9 +135,8 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        address walletAddress = factory.walletAddressForAccount(alice);
         assertEq(
-            factory.storageManager().isNonceSet(walletAddress, nonce),
+            factory.storageManager().isNonceSet(factory.walletAddressForAccount(alice), nonce),
             true
         );
     }
@@ -171,9 +170,8 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        address walletAddress = factory.walletAddressForAccount(alice, salt);
         assertEq(
-            factory.storageManager().isNonceSet(walletAddress, nonce),
+            factory.storageManager().isNonceSet(factory.walletAddressForAccount(alice, salt), nonce),
             true
         );
     }
@@ -207,9 +205,8 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        address walletAddress = factory.walletAddressForAccount(alice);
         assertEq(
-            factory.storageManager().isNonceSet(walletAddress, nonce),
+            factory.storageManager().isNonceSet(factory.walletAddressForAccount(alice), nonce),
             true
         );
     }
