@@ -33,11 +33,6 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run Forge format
-        run: |
-          forge fmt --check
-        id: format
-
       - name: Run Forge tests
         run: |
           forge test -vvv
