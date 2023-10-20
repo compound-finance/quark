@@ -22,7 +22,9 @@ contract EIP712Test is Test {
     address bob = address(11); // 0x00...b
     address charlie = address(12); // 0x00...c
 
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)");
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
+        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
+    );
 
     function setUp() public {
         codeJar = new CodeJar();
@@ -40,12 +42,19 @@ contract EIP712Test is Test {
     }
 
     function aliceSignature(QuarkWallet.QuarkOperation memory op) internal view returns (uint8, bytes32, bytes32) {
-        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback));
+        bytes32 structHash = keccak256(
+            abi.encode(
+                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
+            )
+        );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash));
         return vm.sign(alicePrivateKey, digest);
     }
 
-    function incrementCounterOperation(uint256 nonce, uint256 expiry) public returns (QuarkWallet.QuarkOperation memory) {
+    function incrementCounterOperation(uint256 nonce, uint256 expiry)
+        public
+        returns (QuarkWallet.QuarkOperation memory)
+    {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({

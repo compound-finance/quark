@@ -2,9 +2,9 @@
 pragma solidity ^0.8.19;
 
 contract Reverts {
-  error Whoops();
+    error Whoops();
 
-  fallback() external {
-    revert Whoops();
-  }
+    fallback() external {
+        revert Whoops();
+    }
 }

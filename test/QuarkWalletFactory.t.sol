@@ -21,9 +21,12 @@ contract QuarkWalletFactoryTest is Test {
     address alice; // see setup()
     address bob = address(11);
 
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)");
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
+        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
+    );
 
-    bytes32 internal constant QUARK_WALLET_DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 internal constant QUARK_WALLET_DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     constructor() {
         factory = new QuarkWalletFactory();
@@ -53,8 +56,16 @@ contract QuarkWalletFactoryTest is Test {
         return aliceSignature(op, 0);
     }
 
-    function aliceSignature(QuarkWallet.QuarkOperation memory op, bytes32 salt) internal view returns (uint8, bytes32, bytes32) {
-        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback));
+    function aliceSignature(QuarkWallet.QuarkOperation memory op, bytes32 salt)
+        internal
+        view
+        returns (uint8, bytes32, bytes32)
+    {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
+            )
+        );
         bytes32 walletDomainSeparator = domainSeparatorForAccount(alice, salt);
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", walletDomainSeparator, structHash));
         return vm.sign(alicePrivateKey, digest);
@@ -70,22 +81,14 @@ contract QuarkWalletFactoryTest is Test {
 
     function testCreatesWalletAtDeterministicAddress() public {
         vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(
-            alice,
-            factory.walletAddressForAccount(alice),
-            bytes32(0)
-        );
+        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
         address aliceWallet = factory.create(alice);
         assertEq(aliceWallet, factory.walletAddressForAccount(alice));
     }
 
     function testCreateRevertsOnRepeat() public {
         vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(
-            alice,
-            factory.walletAddressForAccount(alice),
-            bytes32(0)
-        );
+        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
         factory.create(alice);
         vm.expectRevert();
         factory.create(alice);
@@ -94,11 +97,7 @@ contract QuarkWalletFactoryTest is Test {
     function testCreateAdditionalWalletWithSalt() public {
         // inital wallet is created
         vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(
-            alice,
-            factory.walletAddressForAccount(alice),
-            bytes32(0)
-        );
+        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
         factory.create(alice);
 
         // it is created with 0 as salt (and therefore reverts on a repeated attempt)
@@ -129,14 +128,10 @@ contract QuarkWalletFactoryTest is Test {
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
-        emit WalletDeploy(
-            alice,
-            factory.walletAddressForAccount(alice),
-            bytes32(0)
-        );
+        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
         factory.createAndExecute(alice, op, v, r, s);
 
-        // operation was executed 
+        // operation was executed
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
@@ -160,7 +155,7 @@ contract QuarkWalletFactoryTest is Test {
 
         bytes32 salt = bytes32("salty salt salt");
 
-        // alice signs the operation 
+        // alice signs the operation
         (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op, salt);
 
         assertEq(counter.number(), 0);
@@ -168,14 +163,10 @@ contract QuarkWalletFactoryTest is Test {
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet (with salt)
-        emit WalletDeploy(
-            alice,
-            factory.walletAddressForAccount(alice, salt),
-            salt
-        );
+        emit WalletDeploy(alice, factory.walletAddressForAccount(alice, salt), salt);
         factory.createAndExecute(alice, salt, op, v, r, s);
 
-        // operation was executed 
+        // operation was executed
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
@@ -204,17 +195,13 @@ contract QuarkWalletFactoryTest is Test {
 
         // the wallet is deployed
         vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(
-            alice,
-            factory.walletAddressForAccount(alice),
-            bytes32(0)
-        );
+        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
         factory.create(alice);
 
         // operation is executed
         factory.createAndExecute(alice, op, v, r, s);
 
-        // operation was executed 
+        // operation was executed
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce

@@ -1,4 +1,4 @@
-name: test
+name: lint
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run Forge tests
+      - name: Run Forge Format
         run: |
-          forge test --fork-url https://node-provider.compound.finance/ethereum-mainnet/d7feeec2618fc844e35c0e847855123434ef03021877a2358160e5a9ae0c9a31 -vvv
-        id: test
+          forge fmt --check
+        id: format

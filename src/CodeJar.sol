@@ -76,15 +76,8 @@ contract CodeJar {
      * @return The create2 address based on running the initCode constructor
      */
     function getCodeAddress(bytes memory initCode) internal view returns (address) {
-        return address(uint160(uint(
-            keccak256(
-                abi.encodePacked(
-                    bytes1(0xff),
-                    address(this),
-                    uint256(0),
-                    keccak256(initCode)
-                )
-            )))
+        return address(
+            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), uint256(0), keccak256(initCode)))))
         );
     }
 

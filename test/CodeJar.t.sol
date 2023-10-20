@@ -10,6 +10,7 @@ import "../src/CodeJar.sol";
 
 contract CodeJarTest is Test {
     event Ping(uint256 value);
+
     error CodeInvalid(address codeAddress);
 
     CodeJar public codeJar;
@@ -43,7 +44,7 @@ contract CodeJarTest is Test {
         address scriptAddress = codeJar.saveCode(hex"11223344");
 
         uint256 gasLeft = gasleft();
-        address scriptAddressNext = codeJar.saveCode(hex"11223344");        
+        address scriptAddressNext = codeJar.saveCode(hex"11223344");
         uint256 gasUsed = gasLeft - gasleft();
         assertEq(scriptAddress, scriptAddressNext);
         assertEq(scriptAddressNext.code, hex"11223344");
@@ -59,8 +60,10 @@ contract CodeJarTest is Test {
         scripts[3] = hex"112233";
         scripts[4] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
         scripts[5] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
-        scripts[6] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
-        scripts[7] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
+        scripts[6] =
+            hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
+        scripts[7] =
+            hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
 
         for (uint8 i = 0; i < scripts.length; i++) {
             assertEq(codeJar.codeExists(scripts[i]), false);

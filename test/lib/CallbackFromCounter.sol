@@ -7,11 +7,11 @@ import "./Counter.sol";
 
 contract CallbackFromCounter {
     function doIncrementAndCallback(Counter counter) public {
-      counter.incrementAndCallback();
+        counter.incrementAndCallback();
     }
 
     function callback() external {
-      Counter counter = Counter(msg.sender);
-      counter.increment(counter.number() * 10);
+        Counter counter = Counter(msg.sender);
+        counter.increment(counter.number() * 10);
     }
 }

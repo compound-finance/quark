@@ -8,8 +8,8 @@ import "./QuarkStorageManager.sol";
 contract QuarkWalletFactory {
     event WalletDeploy(address indexed account, address indexed walletAddress, bytes32 salt);
 
-    /// @notice Major version of the contract 
-    uint public constant VERSION = 1;
+    /// @notice Major version of the contract
+    uint256 public constant VERSION = 1;
 
     /// @notice Address of CodeJar contract
     CodeJar public immutable codeJar;
@@ -63,21 +63,23 @@ contract QuarkWalletFactory {
      * @return address Address of the QuarkWallet for account, salt pair
      */
     function walletAddressForAccount(address account, bytes32 salt) public view returns (address) {
-        return address(uint160(uint(
-            keccak256(
-                abi.encodePacked(
-                    bytes1(0xff),
-                    address(this),
-                    salt,
+        return address(
+            uint160(
+                uint256(
                     keccak256(
                         abi.encodePacked(
-                            type(QuarkWallet).creationCode,
-                            abi.encode(account),
-                            abi.encode(address(codeJar))
+                            bytes1(0xff),
+                            address(this),
+                            salt,
+                            keccak256(
+                                abi.encodePacked(
+                                    type(QuarkWallet).creationCode, abi.encode(account), abi.encode(address(codeJar))
+                                )
+                            )
                         )
                     )
                 )
-            )))
+            )
         );
     }
 
@@ -90,13 +92,10 @@ contract QuarkWalletFactory {
      * @param s EIP-712 Signature `s` value
      * @return bytes Return value of executing the operation
      */
-    function createAndExecute(
-        address account,
-        QuarkWallet.QuarkOperation memory op,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (bytes memory) {
+    function createAndExecute(address account, QuarkWallet.QuarkOperation memory op, uint8 v, bytes32 r, bytes32 s)
+        external
+        returns (bytes memory)
+    {
         return createAndExecute(account, 0, op, v, r, s);
     }
 

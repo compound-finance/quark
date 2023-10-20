@@ -17,10 +17,7 @@ contract YulHelper is Test {
         }
 
         ///@notice check that the deployment was successful
-        require(
-            deployedAddress != address(0),
-            "could not deploy contract"
-        );
+        require(deployedAddress != address(0), "could not deploy contract");
 
         ///@notice return the address that the contract was deployed to
         return deployedAddress;
