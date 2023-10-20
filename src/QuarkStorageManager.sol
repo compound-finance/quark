@@ -101,7 +101,8 @@ contract QuarkStorageManager {
         }
         // otherwise, release the nonce when the wallet finishes executing yieldTarget, and return the result of the call
         acquiredNonce[wallet] = 0;
-        return result;
+        // currently, result is double-encoded. un-encode it.
+        return abi.decode(result, (bytes));
     }
 
     /**
