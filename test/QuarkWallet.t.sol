@@ -36,11 +36,17 @@ contract QuarkWalletTest is Test {
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
 
-    function newBasicOp(QuarkWallet wallet, bytes memory scriptSource) internal returns (QuarkWallet.QuarkOperation memory) {
+    function newBasicOp(QuarkWallet wallet, bytes memory scriptSource)
+        internal
+        returns (QuarkWallet.QuarkOperation memory)
+    {
         return newBasicOp(wallet, scriptSource, abi.encode());
     }
 
-    function newBasicOp(QuarkWallet wallet, bytes memory scriptSource, bytes memory scriptCalldata) internal returns (QuarkWallet.QuarkOperation memory) {
+    function newBasicOp(QuarkWallet wallet, bytes memory scriptSource, bytes memory scriptCalldata)
+        internal
+        returns (QuarkWallet.QuarkOperation memory)
+    {
         return QuarkWallet.QuarkOperation({
             scriptSource: scriptSource,
             scriptCalldata: scriptCalldata,
@@ -88,7 +94,8 @@ contract QuarkWalletTest is Test {
     function testAtomicIncrementer() public {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         assertEq(counter.number(), 0);
-        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, incrementer, abi.encodeWithSignature("incrementCounter(address)", counter));
+        QuarkWallet.QuarkOperation memory op =
+            newBasicOp(aliceWallet, incrementer, abi.encodeWithSignature("incrementCounter(address)", counter));
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 3);
@@ -102,7 +109,8 @@ contract QuarkWalletTest is Test {
 
         // call once
         {
-            QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
+            QuarkWallet.QuarkOperation memory op =
+                newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
             aliceWallet.executeQuarkOperation(op, v, r, s);
         }
@@ -110,7 +118,8 @@ contract QuarkWalletTest is Test {
 
         // call twice
         {
-            QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
+            QuarkWallet.QuarkOperation memory op =
+                newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
             aliceWallet.executeQuarkOperation(op, v, r, s);
         }
@@ -118,7 +127,8 @@ contract QuarkWalletTest is Test {
 
         // call thrice
         {
-            QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
+            QuarkWallet.QuarkOperation memory op =
+                newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
             aliceWallet.executeQuarkOperation(op, v, r, s);
         }
@@ -126,7 +136,8 @@ contract QuarkWalletTest is Test {
 
         // revert because max has been hit
         {
-            QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
+            QuarkWallet.QuarkOperation memory op =
+                newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
             vm.expectRevert(
                 abi.encodeWithSelector(
