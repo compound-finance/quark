@@ -74,7 +74,7 @@ contract CallbacksTest is Test {
         assertEq(counter.number(), 11);
     }
 
-    function testRevertsNestedCallbackScriptIfCallbackAlreadyActive() public {
+    function testAllowNestedCallbacksWhyNot() public {
         bytes memory callbackFromCounter =
             new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
         bytes memory executeOtherScript =
@@ -102,13 +102,8 @@ contract CallbacksTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = signOp(alicePrivateKey, aliceWallet, parentOp);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(QuarkWallet.QuarkCallbackAlreadyActive.selector)
-            )
-        );
         aliceWallet.executeQuarkOperation(parentOp, v, r, s);
+        assertEq(counter.number(), 11);
     }
 
     function testNestedCallWithNoCallbackSucceeds() public {

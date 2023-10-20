@@ -113,12 +113,7 @@ contract QuarkWallet {
         if (isValidSignature(owner, digest, v, r, s)) {
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-            bytes memory result = acquireNonceAndExecuteInternal(op.nonce, scriptAddress, op.scriptCalldata, op.allowCallback);
-            // NOTE: it is safe to set the nonce after executing, because acquiring an exclusive lock on the nonce already protects against re-entrancy.
-            // It evinces a vaguely better sense of "mise en place" to set the nonce after the script is prepared and executed, although it probably does not matter.
-            // One benefit of setting the nonce after: it prevents scripts from detecting whether they are replayable, which discourages them from being needlessly clever.
-            storageManager.setNonce(address(this), op.nonce);
-            return result;
+            return acquireNonceAndExecuteInternal(op.nonce, scriptAddress, op.scriptCalldata, op.allowCallback);
         }
     }
 
@@ -208,6 +203,8 @@ contract QuarkWallet {
         if (!success) {
             revert QuarkCallError(returnData);
         }
+
+        storageManager.setNonce(address(this), storageManager.getAcquiredNonce(address(this)));
 
         return returnData;
     }

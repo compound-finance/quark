@@ -80,10 +80,6 @@ contract QuarkStorageManager {
         if (msg.sender != wallet) {
             revert(); // XXX only the wallet can acquire a nonce
         }
-        // check whether nonce can be acquired
-        if (acquiredNonce[wallet] != 0) {
-            revert(); // XXX there is already a nonce acquired
-        }
         if (isNonceSet(wallet, nonce)) {
             revert(); // XXX the desired nonce is already set
         }
@@ -91,6 +87,7 @@ contract QuarkStorageManager {
             revert(); // XXX nonce=0 is invalid
         }
         // acquire the nonce and yield to the wallet yieldTarget
+        uint256 parentNonce = acquiredNonce[wallet];
         acquiredNonce[wallet] = nonce;
         (bool success, bytes memory result) = wallet.call(yieldTarget);
         // if the call fails, propagate the revert from the wallet
@@ -100,7 +97,7 @@ contract QuarkStorageManager {
             }
         }
         // otherwise, release the nonce when the wallet finishes executing yieldTarget, and return the result of the call
-        acquiredNonce[wallet] = 0;
+        acquiredNonce[wallet] = parentNonce;
         // currently, result is double-encoded. un-encode it.
         return abi.decode(result, (bytes));
     }
