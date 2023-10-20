@@ -21,7 +21,9 @@ contract QuarkWalletFactoryTest is Test {
     address alice; // see setup()
     address bob = address(11);
 
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable,uint256[] requirements)");
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
+        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable,uint256[] requirements)"
+    );
 
     bytes32 internal constant QUARK_WALLET_DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -54,8 +56,23 @@ contract QuarkWalletFactoryTest is Test {
         return aliceSignature(op, 0);
     }
 
-    function aliceSignature(QuarkWallet.QuarkOperation memory op, bytes32 salt) internal view returns (uint8, bytes32, bytes32) {
-        bytes32 structHash = keccak256(abi.encode(QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback, op.isReplayable, op.requirements));
+    function aliceSignature(QuarkWallet.QuarkOperation memory op, bytes32 salt)
+        internal
+        view
+        returns (uint8, bytes32, bytes32)
+    {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                QUARK_OPERATION_TYPEHASH,
+                op.scriptSource,
+                op.scriptCalldata,
+                op.nonce,
+                op.expiry,
+                op.allowCallback,
+                op.isReplayable,
+                op.requirements
+            )
+        );
         bytes32 walletDomainSeparator = domainSeparatorForAccount(alice, salt);
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", walletDomainSeparator, structHash));
         return vm.sign(alicePrivateKey, digest);

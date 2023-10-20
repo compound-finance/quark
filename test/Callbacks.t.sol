@@ -18,7 +18,9 @@ contract CallbacksTest is Test {
     address aliceAccount; // see constructor()
     QuarkWallet public aliceWallet;
 
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256("QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable,uint256[] requirements)");
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
+        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable,uint256[] requirements)"
+    );
 
     constructor() {
         codeJar = new CodeJar();
@@ -32,22 +34,24 @@ contract CallbacksTest is Test {
         aliceWallet = new QuarkWallet(aliceAccount, codeJar);
     }
 
-    function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op) internal view returns (uint8, bytes32, bytes32) {
-        bytes32 structHash = keccak256(abi.encode(
-            QUARK_OPERATION_TYPEHASH,
-            op.scriptSource,
-            op.scriptCalldata,
-            op.nonce,
-            op.expiry,
-            op.allowCallback,
-            op.isReplayable,
-            op.requirements
-        ));
-        bytes32 digest = keccak256(abi.encodePacked(
-            "\x19\x01",
-            wallet.DOMAIN_SEPARATOR(),
-            structHash
-        ));
+    function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op)
+        internal
+        view
+        returns (uint8, bytes32, bytes32)
+    {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                QUARK_OPERATION_TYPEHASH,
+                op.scriptSource,
+                op.scriptCalldata,
+                op.nonce,
+                op.expiry,
+                op.allowCallback,
+                op.isReplayable,
+                op.requirements
+            )
+        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash));
         return vm.sign(privateKey, digest);
     }
 
@@ -98,12 +102,8 @@ contract CallbacksTest is Test {
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
             scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSignature(
-                "run((bytes,bytes,uint256,uint256,bool,bool,uint256[]),uint8,bytes32,bytes32)",
-                nestedOp,
-                v_,
-                r_,
-                s_
-            ),
+                "run((bytes,bytes,uint256,uint256,bool,bool,uint256[]),uint8,bytes32,bytes32)", nestedOp, v_, r_, s_
+                ),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
             allowCallback: true,
@@ -145,12 +145,8 @@ contract CallbacksTest is Test {
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
             scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSignature(
-                "run((bytes,bytes,uint256,uint256,bool,bool,uint256[]),uint8,bytes32,bytes32)",
-                nestedOp,
-                v_,
-                r_,
-                s_
-            ),
+                "run((bytes,bytes,uint256,uint256,bool,bool,uint256[]),uint8,bytes32,bytes32)", nestedOp, v_, r_, s_
+                ),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
             allowCallback: true,
