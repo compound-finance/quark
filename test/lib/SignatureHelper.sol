@@ -33,7 +33,7 @@ contract SignatureHelper is Test {
         return vm.sign(privateKey, digest);
     }
 
-    function structHash(QuarkWallet.QuarkOperation memory op) internal view returns (bytes32) {
+    function structHash(QuarkWallet.QuarkOperation memory op) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 QUARK_OPERATION_TYPEHASH,
