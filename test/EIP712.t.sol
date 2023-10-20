@@ -246,10 +246,20 @@ contract EIP712Test is Test {
         vm.prank(bob);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        // counter has incremented
+        // counter is incremented
         assertEq(counter.number(), 3);
 
         // nonce is NOT spent
+        assertEq(wallet.isSet(nonce), false);
+
+        // bob executes the operation a second time
+        vm.prank(bob);
+        wallet.executeQuarkOperation(op, v, r, s);
+
+        // counter is incremented
+        assertEq(counter.number(), 6);
+
+        // nonce is still not spent
         assertEq(wallet.isSet(nonce), false);
     }
 
