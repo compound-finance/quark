@@ -9,7 +9,7 @@ contract SignatureHelper is Test {
         "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
     );
 
-    function signOp(QuarkWallet wallet, QuarkWallet.QuarkOperation memory op, uint256 privateKey)
+    function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op)
         public
         view
         returns (uint8, bytes32, bytes32)
