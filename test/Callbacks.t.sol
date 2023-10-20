@@ -9,11 +9,13 @@ import { QuarkWallet } from "../src/QuarkWallet.sol";
 import { CodeJar} from "../src/CodeJar.sol";
 import { Counter } from "./lib/Counter.sol";
 import { YulHelper } from "./lib/YulHelper.sol";
+import { QuarkStorageManager } from "../src/QuarkStorageManager.sol";
 
 contract CallbacksTest is Test {
 
     CodeJar public codeJar;
     Counter public counter;
+    QuarkStorageManager public storageManager;
 
     uint256 alicePrivateKey = 0x9810473;
     address aliceAccount; // see constructor()
@@ -25,12 +27,15 @@ contract CallbacksTest is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
+        storageManager = new QuarkStorageManager();
+        console.log("QuarkStorageManager deployed to: %s", address(storageManager));
+
         counter = new Counter();
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
         aliceAccount = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWallet(aliceAccount, codeJar);
+        aliceWallet = new QuarkWallet(aliceAccount, codeJar, storageManager);
     }
 
     function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op) internal view returns (uint8, bytes32, bytes32) {

@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 
 import "../src/CodeJar.sol";
 import "../src/QuarkWallet.sol";
+import "../src/QuarkStorageManager.sol";
 
 import "./lib/Counter.sol";
 import "./lib/MaxCounterScript.sol";
@@ -17,10 +18,14 @@ contract QuarkWalletTest is Test {
 
     CodeJar public codeJar;
     Counter public counter;
+    QuarkStorageManager public storageManager;
 
     constructor() {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
+
+        storageManager = new QuarkStorageManager();
+        console.log("QuarkStorageManager deployed to: %s", address(storageManager));
 
         counter = new Counter();
         counter.setNumber(0);
@@ -29,7 +34,7 @@ contract QuarkWalletTest is Test {
 
     function testExecuteQuarkOperation() public {
         address account = address(0xaa);
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar, storageManager);
         bytes memory result = wallet.executeQuarkOperation(
             new YulHelper().getDeployed("GetOwner.sol/GetOwner.json"),
             abi.encode()
@@ -39,7 +44,7 @@ contract QuarkWalletTest is Test {
 
     function testQuarkOperationRevertsIfCodeNotFound() public {
         address account = address(0xaa);
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar, storageManager);
 
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.QuarkCodeNotFound.selector));
         wallet.executeQuarkOperation(
@@ -51,7 +56,7 @@ contract QuarkWalletTest is Test {
     function testQuarkOperationRevertsIfCallReverts() public {
         address account = address(0xb0b);
         bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar, storageManager);
         vm.expectRevert(abi.encodeWithSelector(
             QuarkWallet.QuarkCallError.selector,
             abi.encodeWithSelector(Reverts.Whoops.selector)
@@ -66,7 +71,7 @@ contract QuarkWalletTest is Test {
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
         // TODO: Check who emitted.
         address account = address(0xb0b);
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar, storageManager);
         vm.expectEmit(false, false, false, true);
         emit Ping(55);
         wallet.executeQuarkOperation(
@@ -80,7 +85,7 @@ contract QuarkWalletTest is Test {
 
         assertEq(counter.number(), 0);
         address account = address(0xb0b);
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar, storageManager);
         wallet.executeQuarkOperation(
             incrementer,
             abi.encodeWithSignature("incrementCounter(address)", counter)
@@ -96,7 +101,7 @@ contract QuarkWalletTest is Test {
         vm.startPrank(address(0xaa));
 
         address account = address(0xb0b);
-        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar);
+        QuarkWallet wallet = new QuarkWallet{salt: 0}(account, codeJar, storageManager);
         // call once
         wallet.executeQuarkOperation(
             maxCounterScript,

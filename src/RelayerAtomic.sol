@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import "./Relayer.sol";
 import "./QuarkScript.sol";
 import "./QuarkWallet.sol";
+import "./QuarkStorageManager.sol";
 
 contract RelayerAtomic is Relayer {
     error QuarkAlreadyActive(address quark);
@@ -91,7 +92,7 @@ contract RelayerAtomic is Relayer {
             quark = quarkAddress;
         } else {
             // The call to `create2` that creates the (temporary) quark wallet.
-            quark = address(new QuarkWallet{salt: 0}(account, codeJar));
+            quark = address(new QuarkWallet{salt: 0}(account, codeJar, new QuarkStorageManager()));
 
             // Ensure that the wallet was created.
             if (uint160(address(quark)) == 0) {
