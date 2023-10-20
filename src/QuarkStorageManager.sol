@@ -65,7 +65,7 @@ contract QuarkStorageManager {
      */
     function nextUnusedNonce(address wallet) external view returns (uint256) {
         uint256 i;
-        for (i = 0; i < type(uint256).max; i++) {
+        for (i = 1; i < type(uint256).max; i++) {
             if (!isNonceSet(wallet, i)) return i;
         }
         revert(); // XXX NoUnusedNonces
