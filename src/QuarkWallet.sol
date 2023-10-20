@@ -157,7 +157,6 @@ contract QuarkWallet {
      */
     function acquireNonceAndExecuteInternal(uint256 nonce, address scriptAddress, bytes memory scriptCalldata, bool allowCallback) internal returns (bytes memory) {
         return storageManager.acquireNonceAndYield(
-            address(this),
             nonce,
             abi.encodeCall(this.executeQuarkOperationInternal, (scriptAddress, scriptCalldata, allowCallback))
         );
@@ -177,11 +176,11 @@ contract QuarkWallet {
 
         // if the script allows callbacks, set it as the current callback
         if (allowCallback) {
-            address callback = storageManager.getProxyTarget(address(this));
+            address callback = storageManager.getProxyTarget();
             if (callback != address(0)) {
                 revert QuarkCallbackAlreadyActive();
             }
-            storageManager.setProxyTarget(address(this), scriptAddress);
+            storageManager.setProxyTarget(scriptAddress);
         }
 
         bool success;
@@ -198,19 +197,22 @@ contract QuarkWallet {
             returndatacopy(add(returnData, 0x20), 0x00, returnSize)
         }
 
-        storageManager.setProxyTarget(address(this), address(0));
+        storageManager.setProxyTarget(address(0));
 
         if (!success) {
             revert QuarkCallError(returnData);
         }
 
-        storageManager.setNonce(address(this), storageManager.getAcquiredNonce(address(this)));
+        // NOTE: it is safe to set the nonce after executing, because acquiring an exclusive lock on the nonce already protects against re-entrancy.
+        // It evinces a vaguely better sense of "mise en place" to set the nonce after the script is prepared and executed, although it probably does not matter.
+        // One benefit of setting the nonce after: it prevents scripts from detecting whether they are replayable, which discourages them from being needlessly clever.
+        storageManager.setNonce(storageManager.getAcquiredNonce());
 
         return returnData;
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
-        address callback = storageManager.getProxyTarget(address(this));
+        address callback = storageManager.getProxyTarget();
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);
             if (!success) {

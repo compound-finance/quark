@@ -12,7 +12,7 @@ contract QuarkWalletHarness is QuarkWallet {
     constructor(address owner, CodeJar codeJar, QuarkStorageManager storageManager) QuarkWallet(owner, codeJar, storageManager) { }
 
     function setNonceExternal(uint256 index) external {
-        storageManager.setNonce(address(this), index);
+        storageManager.setNonce(index);
     }
 }
 
