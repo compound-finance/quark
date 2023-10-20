@@ -27,9 +27,6 @@ contract QuarkWallet {
     /// @notice Address of QuarkStorageManager contract that manages nonces and nonce-namespaced transaction script storage
     QuarkStorageManager public immutable storageManager;
 
-    /// @notice storage slot for storing the `owner` address
-    bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
-
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
         "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
@@ -66,16 +63,6 @@ contract QuarkWallet {
         owner = owner_;
         codeJar = codeJar_;
         storageManager = storageManager_;
-        /*
-         * translation note: we cannot directly access OWNER_SLOT within
-         * an inline assembly block, for seemingly arbitrary reasons;
-         * therefore, we copy the immutable slot addresse into a local
-         * variable that we are allowed to access with impunity.
-         */
-        bytes32 slot = OWNER_SLOT;
-        assembly {
-            sstore(slot, owner_)
-        }
     }
 
     /**
