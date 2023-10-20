@@ -9,6 +9,7 @@ import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
 import {YulHelper} from "./lib/YulHelper.sol";
+import {ExecuteOtherOperation} from "./lib/ExecuteOtherOperation.sol";
 
 contract CallbacksTest is Test {
     CodeJar public codeJar;
@@ -101,9 +102,7 @@ contract CallbacksTest is Test {
         uint256 nonce2 = nonce1 + 1;
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
             scriptSource: executeOtherScript,
-            scriptCalldata: abi.encodeWithSignature(
-                "run((bytes,bytes,uint256,uint256,bool,bool,uint256[]),uint8,bytes32,bytes32)", nestedOp, v_, r_, s_
-                ),
+            scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
             allowCallback: true,
@@ -144,9 +143,7 @@ contract CallbacksTest is Test {
         uint256 nonce2 = nonce1 + 1;
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
             scriptSource: executeOtherScript,
-            scriptCalldata: abi.encodeWithSignature(
-                "run((bytes,bytes,uint256,uint256,bool,bool,uint256[]),uint8,bytes32,bytes32)", nestedOp, v_, r_, s_
-                ),
+            scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
             allowCallback: true,
