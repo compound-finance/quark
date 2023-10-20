@@ -70,7 +70,7 @@ contract EIP712Test is Test {
 
     function testExecuteQuarkOperation() public {
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
 
         uint256 nonce = wallet.nextUnusedNonce();
         uint256 expiry = block.timestamp + 1000;
@@ -91,7 +91,7 @@ contract EIP712Test is Test {
 
     function testRevertsForBadCode() public {
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
 
         uint256 nonce = wallet.nextUnusedNonce();
         uint256 expiry = block.timestamp + 1000;
@@ -114,7 +114,7 @@ contract EIP712Test is Test {
 
     function testRevertsForBadCalldata() public {
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
 
         uint256 nonce = wallet.nextUnusedNonce();
         uint256 expiry = block.timestamp + 1000;
@@ -137,7 +137,7 @@ contract EIP712Test is Test {
 
     function testRevertsForBadExpiry() public {
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
 
         uint256 nonce = wallet.nextUnusedNonce();
         uint256 expiry = block.timestamp + 1000;
@@ -155,12 +155,12 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // alice's nonce is not incremented
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
     }
 
     function testRevertsOnReusedNonce() public {
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
 
         uint256 nonce = wallet.nextUnusedNonce();
         uint256 expiry = block.timestamp + 1000;
@@ -173,7 +173,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(wallet.nextUnusedNonce(), 1);
+        assertEq(wallet.nextUnusedNonce(), 2);
 
         // bob tries to reuse the same signature twice
         vm.expectRevert(QuarkWallet.InvalidNonce.selector);
@@ -184,7 +184,7 @@ contract EIP712Test is Test {
 
     function testRevertsForExpiredSignature() public {
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
 
         uint256 nonce = wallet.nextUnusedNonce();
         uint256 expiry = block.timestamp + 1000;
@@ -201,12 +201,12 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
     }
 
     function testRevertsInvalidS() public {
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
 
         uint256 nonce = wallet.nextUnusedNonce();
         uint256 expiry = block.timestamp + 1000;
@@ -223,6 +223,6 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, invalidS);
 
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextUnusedNonce(), 1);
     }
 }

@@ -54,12 +54,12 @@ contract NonceTest is Test {
     }
 
     function testNextUnusedNonce() public {
-        assertEq(walletHarness.nextUnusedNonce(), 0);
-
-        walletHarness.setNonceExternal(0);
         assertEq(walletHarness.nextUnusedNonce(), 1);
 
         walletHarness.setNonceExternal(1);
         assertEq(walletHarness.nextUnusedNonce(), 2);
+
+        walletHarness.setNonceExternal(2);
+        assertEq(walletHarness.nextUnusedNonce(), 3);
     }
 }
