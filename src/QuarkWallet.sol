@@ -131,6 +131,7 @@ contract QuarkWallet {
             // It evinces a vaguely better sense of "mise en place" to set the nonce after the script is prepared and executed, although it probably does not matter.
             // One benefit of setting the nonce after: it prevents scripts from detecting whether they are replayable, which discourages them from being needlessly clever.
             storageManager.setNonce(address(this), op.nonce);
+            return result;
         }
     }
 
@@ -173,7 +174,7 @@ contract QuarkWallet {
      * @dev Acquire nonce in storage manager and execute operation
      */
     function acquireNonceAndExecuteInternal(uint256 nonce, address scriptAddress, bytes memory scriptCalldata, bool allowCallback) internal returns (bytes memory) {
-        storageManager.acquireNonceAndYield(
+        return storageManager.acquireNonceAndYield(
             address(this),
             nonce,
             abi.encodeCall(this.executeQuarkOperationInternal, (scriptAddress, scriptCalldata, allowCallback))
