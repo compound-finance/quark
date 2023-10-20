@@ -210,12 +210,13 @@ contract QuarkWallet {
             returnSize := returndatasize()
         }
 
-        storageManager.setProxyTarget(address(this), address(0));
-
         bytes memory returnData = new bytes(returnSize);
         assembly {
             returndatacopy(add(returnData, 0x20), 0x00, returnSize)
         }
+
+        storageManager.setProxyTarget(address(this), address(0));
+
         if (!success) {
             revert QuarkCallError(returnData);
         }
