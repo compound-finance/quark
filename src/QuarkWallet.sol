@@ -64,6 +64,7 @@ contract QuarkWallet {
     constructor(address owner_, CodeJar codeJar_) {
         owner = owner_;
         codeJar = codeJar_;
+
         /*
          * translation note: we cannot directly access OWNER_SLOT within
          * an inline assembly block, for seemingly arbitrary reasons;
@@ -108,6 +109,7 @@ contract QuarkWallet {
         for (i = 0; i < type(uint256).max; i++) {
             if (!isSet(i)) return i;
         }
+
         revert NoUnusedNonces();
     }
 
@@ -124,7 +126,7 @@ contract QuarkWallet {
     /**
      * @dev Returns the current active callback script address.
      */
-    function getActiveCallback() internal returns (address) {
+    function getActiveCallback() internal view returns (address) {
         bytes32 slot = ACTIVE_CALLBACK_SLOT;
         address callback;
         assembly {
@@ -174,10 +176,7 @@ contract QuarkWallet {
             setNonce(op.nonce);
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-
-            bytes memory result = executeQuarkOperationInternal(scriptAddress, op.scriptCalldata, op.allowCallback);
-
-            return result;
+            return executeQuarkOperationInternal(scriptAddress, op.scriptCalldata, op.allowCallback);
         }
     }
 
