@@ -92,7 +92,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
             expiry: type(uint256).max,
             allowCallback: true
         });
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Verify that user is now supplying 10 + 1 WETH
@@ -129,7 +129,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
             expiry: type(uint256).max,
             allowCallback: true
         });
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -184,7 +184,7 @@ contract UniswapFlashSwapMultiCallTest is Test {
             expiry: type(uint256).max,
             allowCallback: true
         });
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(wallet, op, alicePK);
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
