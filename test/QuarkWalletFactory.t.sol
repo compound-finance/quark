@@ -111,10 +111,11 @@ contract QuarkWalletFactoryTest is Test {
     function testCreateAndExecuteCreatesWallet() public {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
+        uint256 nonce = factory.storageManager().nextUnusedNonce(factory.walletAddressForAccount(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
-            nonce: 0,
+            nonce: nonce,
             expiry: block.timestamp + 1000,
             allowCallback: false
         });
@@ -136,7 +137,7 @@ contract QuarkWalletFactoryTest is Test {
         // uses up the operation's nonce
         address walletAddress = factory.walletAddressForAccount(alice);
         assertEq(
-            QuarkWallet(walletAddress).storageManager().isNonceSet(walletAddress, 0),
+            factory.storageManager().isNonceSet(walletAddress, nonce),
             true
         );
     }
@@ -144,10 +145,11 @@ contract QuarkWalletFactoryTest is Test {
     function testCreateAndExecuteWithSalt() public {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
+        uint256 nonce = factory.storageManager().nextUnusedNonce(factory.walletAddressForAccount(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
-            nonce: 0,
+            nonce: nonce,
             expiry: block.timestamp + 1000,
             allowCallback: false
         });
@@ -169,9 +171,9 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        address walletAddress = factory.walletAddressForAccount(alice);
+        address walletAddress = factory.walletAddressForAccount(alice, salt);
         assertEq(
-            QuarkWallet(walletAddress).storageManager().isNonceSet(walletAddress, 0),
+            factory.storageManager().isNonceSet(walletAddress, nonce),
             true
         );
     }
@@ -179,10 +181,11 @@ contract QuarkWalletFactoryTest is Test {
     function testExecuteOnExistingWallet() public {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
+        uint256 nonce = factory.storageManager().nextUnusedNonce(factory.walletAddressForAccount(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
-            nonce: 0,
+            nonce: nonce,
             expiry: block.timestamp + 1000,
             allowCallback: false
         });
@@ -206,7 +209,7 @@ contract QuarkWalletFactoryTest is Test {
         // uses up the operation's nonce
         address walletAddress = factory.walletAddressForAccount(alice);
         assertEq(
-            QuarkWallet(walletAddress).storageManager().isNonceSet(walletAddress, 0),
+            factory.storageManager().isNonceSet(walletAddress, nonce),
             true
         );
     }
