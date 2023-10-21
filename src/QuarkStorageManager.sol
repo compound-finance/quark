@@ -27,6 +27,21 @@ contract QuarkStorageManager {
     }
 
     /**
+     * @notice Returns the next unset nonce for a given wallet
+     * @dev Any unset nonce is valid to use, but using this method increases
+     * the likelihood that the nonce you use will be on a bucket that has
+     * already been written to, which costs less gas
+     * @return The next unused nonce
+     */
+    function nextUnusedNonce(address wallet) external view returns (uint256) {
+        uint256 i;
+        for (i = 1; i < type(uint256).max; i++) {
+            if (!isNonceSet(wallet, i)) return i;
+        }
+        revert(); // XXX NoUnusedNonces
+    }
+
+    /**
      * @notice Return the nonce currently acquired by a wallet; revert if none
      * @return Currently acquired nonce
      */
@@ -48,21 +63,6 @@ contract QuarkStorageManager {
         uint256 bucket = nonce >> 8;
         uint256 mask = 1 << (nonce & 0xff);
         nonces[msg.sender][bucket] |= mask;
-    }
-
-    /**
-     * @notice Returns the next unset nonce for a given wallet
-     * @dev Any unset nonce is valid to use, but using this method increases
-     * the likelihood that the nonce you use will be on a bucket that has
-     * already been written to, which costs less gas
-     * @return The next unused nonce
-     */
-    function nextUnusedNonce(address wallet) external view returns (uint256) {
-        uint256 i;
-        for (i = 1; i < type(uint256).max; i++) {
-            if (!isNonceSet(wallet, i)) return i;
-        }
-        revert(); // XXX NoUnusedNonces
     }
 
     /**
