@@ -42,8 +42,8 @@ contract QuarkWallet {
     /// @notice The major version of this contract, for use in DOMAIN_SEPARATOR
     string public constant VERSION = "1";
 
-    /// @notice Bit-packed nonce values
-    mapping(uint256 => uint256) public nonces;
+    bytes32 internal constant CALLBACK_KEY =
+        keccak256("callback.v1.quark");
 
     struct QuarkOperation {
         /* TODO: optimization: allow passing in the address of the script
@@ -101,7 +101,6 @@ contract QuarkWallet {
         returns (bytes memory)
     {
         if (block.timestamp >= op.expiry) revert SignatureExpired();
-        if (storageManager.isNonceSet(address(this), op.nonce)) revert InvalidNonce();
 
         bytes32 structHash = keccak256(
             abi.encode(
@@ -112,11 +111,11 @@ contract QuarkWallet {
 
         if (isValidSignature(owner, digest, v, r, s)) {
             // XXX handle op.scriptAddress without CodeJar
-            address scriptAddress = codeJar.saveCode(op.scriptSource);
-            return storageManager.acquireNonceAndYield(
+            return storageManager.setActiveNonce(
                 op.nonce,
+                true /* !op.isReplayable */,
                 abi.encodeCall(
-                    this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback)
+                    this.executeQuarkOperationWithNonceLock, (codeJar.saveCode(op.scriptSource), op.scriptCalldata, op.allowCallback)
                 )
             );
         }
@@ -151,6 +150,7 @@ contract QuarkWallet {
         public
         returns (bytes memory)
     {
+        require(msg.sender == address(storageManager)); // TODO: Ensure this is a sufficient check
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(scriptAddress)
@@ -161,11 +161,7 @@ contract QuarkWallet {
 
         // if the script allows callbacks, set it as the current callback
         if (allowCallback) {
-            address callback = storageManager.getProxyTarget();
-            if (callback != address(0)) {
-                revert QuarkCallbackAlreadyActive();
-            }
-            storageManager.setProxyTarget(scriptAddress);
+            storageManager.write(CALLBACK_KEY, abi.encode(scriptAddress));
         }
 
         bool success;
@@ -182,25 +178,23 @@ contract QuarkWallet {
             returndatacopy(add(returnData, 0x20), 0x00, returnSize)
         }
 
-        storageManager.setProxyTarget(address(0));
-
         if (!success) {
             revert QuarkCallError(returnData);
         }
 
-        // NOTE: a script may set its own nonce, in which case we do not need to try to do so
-        if (!storageManager.isNonceSet(address(this), storageManager.getAcquiredNonce())) {
-            // NOTE: it is safe to set the nonce after executing, because acquiring an exclusive lock on the nonce already protects against re-entrancy.
-            // It evinces a vaguely better sense of "mise en place" to set the nonce after the script is prepared and executed, although it probably does not matter.
-            // One benefit of setting the nonce after: it prevents scripts from detecting whether they are replayable, which discourages them from being needlessly clever.
-            storageManager.setNonce(storageManager.getAcquiredNonce());
+        if (allowCallback) {
+            storageManager.write(CALLBACK_KEY, hex"");
         }
 
         return returnData;
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
-        address callback = storageManager.getProxyTarget();
+        bytes memory callbackBytes = storageManager.read(CALLBACK_KEY);
+        address callback;
+        if (callbackBytes.length > 0) {
+            callback = abi.decode(callbackBytes, (address));
+        }
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);
             if (!success) {

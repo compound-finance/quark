@@ -14,7 +14,7 @@ contract QuarkWalletHarness is QuarkWallet {
     {}
 
     function setNonceExternal(uint256 index) external {
-        storageManager.setNonce(index);
+        storageManager.setNonce();
     }
 }
 
