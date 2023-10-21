@@ -74,9 +74,7 @@ contract QuarkStorageManager {
         if (isNonceSet(msg.sender, nonce)) {
             revert("already set"); // XXX the desired nonce is already set
         }
-        if (activeNonce[msg.sender] != 0){
-            revert("active already");
-        }
+        uint256 previousNonce = activeNonce[msg.sender];
         activeNonce[msg.sender] = nonce;
         if (doSetNonce) {
             setNonce();
@@ -89,7 +87,7 @@ contract QuarkStorageManager {
             }
         }
         // otherwise, release the nonce when the wallet finishes executing yieldTarget, and return the result of the call
-        activeNonce[msg.sender] = 0;
+        activeNonce[msg.sender] = previousNonce;
         // currently, result is double-encoded. un-encode it.
         return abi.decode(result, (bytes));
     }
