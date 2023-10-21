@@ -115,7 +115,7 @@ contract QuarkWallet {
             address scriptAddress = codeJar.saveCode(op.scriptSource);
             return storageManager.acquireNonceAndYield(
                 op.nonce,
-                abi.encodeCall(this.executeQuarkOperationInternal, (scriptAddress, op.scriptCalldata, op.allowCallback))
+                abi.encodeCall(this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback))
             );
         }
     }
@@ -140,7 +140,7 @@ contract QuarkWallet {
     /**
      * @dev Execute QuarkOperation
      */
-    function executeQuarkOperationInternal(address scriptAddress, bytes memory scriptCalldata, bool allowCallback) public returns (bytes memory) {
+    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback) public returns (bytes memory) {
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(scriptAddress)
