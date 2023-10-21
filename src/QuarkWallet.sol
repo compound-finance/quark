@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import {CodeJar} from "./CodeJar.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -15,6 +15,7 @@ contract QuarkWallet {
     error QuarkCodeNotFound();
     error QuarkNonceReplay(uint256);
     error QuarkReadError();
+    error RequirementNotMet();
     error SignatureExpired();
 
     /// @notice Address of the EOA that controls this wallet
@@ -28,7 +29,7 @@ contract QuarkWallet {
 
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
+        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable,uint256[] requirements)"
     );
 
     /// @dev The EIP-712 typehash for the contract's domain
@@ -57,9 +58,9 @@ contract QuarkWallet {
         uint256 nonce;
         uint256 expiry;
         bool allowCallback;
+        bool isReplayable;
+        uint256[] requirements;
     }
-    // requirements
-    // isReplayable
 
     constructor(address owner_, CodeJar codeJar_) {
         owner = owner_;
@@ -89,7 +90,7 @@ contract QuarkWallet {
     }
 
     /**
-     * @dev Set or unset `nonce`
+     * @dev Set `nonce` as used
      */
     function setNonce(uint256 nonce) internal {
         uint256 bucket = nonce >> 8;
@@ -167,13 +168,25 @@ contract QuarkWallet {
 
         bytes32 structHash = keccak256(
             abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
+                QUARK_OPERATION_TYPEHASH,
+                op.scriptSource,
+                op.scriptCalldata,
+                op.nonce,
+                op.expiry,
+                op.allowCallback,
+                op.isReplayable,
+                op.requirements
             )
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignature(owner, digest, v, r, s)) {
-            setNonce(op.nonce);
+            if (!op.isReplayable) {
+                setNonce(op.nonce);
+            }
+            for (uint256 i; i < op.requirements.length; i++) {
+                if (!isSet(i)) revert RequirementNotMet();
+            }
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
             return executeQuarkOperationInternal(scriptAddress, op.scriptCalldata, op.allowCallback);
