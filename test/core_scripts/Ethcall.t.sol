@@ -26,12 +26,9 @@ contract EthcallTest is Test {
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    SignatureHelper public signatureHelper;
-
     function setUp() public {
         counter = new Counter();
         counter.setNumber(0);
-        signatureHelper = new SignatureHelper();
         factory = new QuarkWalletFactory();
     }
 
@@ -53,7 +50,7 @@ contract EthcallTest is Test {
         });
 
         assertEq(counter.number(), 0);
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 1);
     }
@@ -77,7 +74,7 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IComet(comet).balanceOf(address(wallet)), 0);
@@ -91,11 +88,11 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (v, r, s) = signatureHelper.signOp(alicePK, wallet, op);
+        (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Since there is rouding diff, assert on diff is less than 10 wei
-        assertLt(stdMath.delta(1000e6, IComet(comet).balanceOf(address(wallet))), 2);
+        assertApproxEqAbs(1000e6, IComet(comet).balanceOf(address(wallet)), 2);
     }
 
     // Test Case #3: Withdraw USDC from Comet
@@ -118,7 +115,7 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Supply WETH to Comet
@@ -131,7 +128,7 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (v, r, s) = signatureHelper.signOp(alicePK, wallet, op);
+        (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Withdraw USDC from Comet
@@ -144,9 +141,57 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (v, r, s) = signatureHelper.signOp(alicePK, wallet, op);
+        (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
+    }
+
+    // Test Case #4: Call Error
+    function testEthcallCallError() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
+
+        // Set up some funds for test
+        deal(USDC, address(wallet), 1000e6);
+
+        // Send 2000 USDC to Comet
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSelector(
+                Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.transfer, (comet, 2000e6)), 0
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+
+        console.logBytes(
+            abi.encodeWithSelector(
+                Ethcall.CallError.selector,
+                USDC,
+                abi.encodeWithSelector(
+                    Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.transfer, (comet, 2000e6)), 0
+                ),
+                0,
+                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
+            )
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(
+                    Ethcall.CallError.selector,
+                    USDC,
+                    abi.encodeCall(IERC20.transfer, (comet, 2000e6)),
+                    0,
+                    abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
+                )
+            )
+        );
+        wallet.executeQuarkOperation(op, v, r, s);
     }
 }
