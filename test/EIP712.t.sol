@@ -220,7 +220,7 @@ contract EIP712Test is Test {
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
         op.isReplayable = true;
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // bob calls executeOp with the signed operation
         vm.prank(bob);
@@ -251,7 +251,7 @@ contract EIP712Test is Test {
         uint256 expiry = block.timestamp + 1000;
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        (uint8 v, bytes32 r, bytes32 s) = aliceSignature(op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         uint256[] memory badRequirements = new uint256[](1);
         badRequirements[0] = 123;
         op.requirements = badRequirements;
@@ -272,13 +272,13 @@ contract EIP712Test is Test {
         uint256 expiry = block.timestamp + 1000;
 
         QuarkWallet.QuarkOperation memory firstOp = incrementCounterOperation(nonce, expiry);
-        (uint8 v1, bytes32 r1, bytes32 s1) = aliceSignature(firstOp);
+        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, wallet, firstOp);
 
         QuarkWallet.QuarkOperation memory secondOp = incrementCounterOperation(nonce + 1, expiry);
         uint256[] memory requirements = new uint[](1);
         requirements[0] = firstOp.nonce;
         secondOp.requirements = requirements;
-        (uint8 v2, bytes32 r2, bytes32 s2) = aliceSignature(secondOp);
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, secondOp);
 
         // attempting to execute the second operation first reverts
         vm.expectRevert(QuarkWallet.RequirementNotMet.selector);
