@@ -27,6 +27,13 @@ contract EthcallTest is Test {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     function setUp() public {
+        // Fork setup
+        vm.createSelectFork(
+            string.concat(
+                "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
+            )
+        );
+
         counter = new Counter();
         counter.setNumber(0);
         factory = new QuarkWalletFactory();
