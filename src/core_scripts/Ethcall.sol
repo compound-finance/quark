@@ -15,7 +15,9 @@ contract Ethcall {
     function run(address callContract, bytes calldata callData, uint256 callValue) external {
         (bool success, bytes memory returnData) = callContract.call{value: callValue}(callData);
         if (!success) {
-            revert CallError(callContract, callData, callValue, returnData);
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
         }
     }
 }

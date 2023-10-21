@@ -193,13 +193,7 @@ contract EthcallTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(
-                    Ethcall.CallError.selector,
-                    USDC,
-                    abi.encodeCall(IERC20.transfer, (comet, 2000e6)),
-                    0,
-                    abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
-                )
+                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
             )
         );
         wallet.executeQuarkOperation(op, v, r, s);
