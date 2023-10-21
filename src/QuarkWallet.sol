@@ -183,10 +183,13 @@ contract QuarkWallet {
             revert QuarkCallError(returnData);
         }
 
-        // NOTE: it is safe to set the nonce after executing, because acquiring an exclusive lock on the nonce already protects against re-entrancy.
-        // It evinces a vaguely better sense of "mise en place" to set the nonce after the script is prepared and executed, although it probably does not matter.
-        // One benefit of setting the nonce after: it prevents scripts from detecting whether they are replayable, which discourages them from being needlessly clever.
-        storageManager.setNonce(storageManager.getAcquiredNonce());
+        // NOTE: a script may set its own nonce, in which case we do not need to try to do so
+        if (!storageManager.isNonceSet(address(this), storageManager.getAcquiredNonce())) {
+            // NOTE: it is safe to set the nonce after executing, because acquiring an exclusive lock on the nonce already protects against re-entrancy.
+            // It evinces a vaguely better sense of "mise en place" to set the nonce after the script is prepared and executed, although it probably does not matter.
+            // One benefit of setting the nonce after: it prevents scripts from detecting whether they are replayable, which discourages them from being needlessly clever.
+            storageManager.setNonce(storageManager.getAcquiredNonce());
+        }
 
         return returnData;
     }
