@@ -4,12 +4,14 @@ pragma solidity ^0.8.21;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import { CodeJar } from "../src/CodeJar.sol";
-import { QuarkWallet } from "../src/QuarkWallet.sol";
-import { QuarkStorageManager } from "../src/QuarkStorageManager.sol";
+import {CodeJar} from "../src/CodeJar.sol";
+import {QuarkWallet} from "../src/QuarkWallet.sol";
+import {QuarkStorageManager} from "../src/QuarkStorageManager.sol";
 
 contract QuarkWalletHarness is QuarkWallet {
-    constructor(address owner, CodeJar codeJar, QuarkStorageManager storageManager) QuarkWallet(owner, codeJar, storageManager) { }
+    constructor(address owner, CodeJar codeJar, QuarkStorageManager storageManager)
+        QuarkWallet(owner, codeJar, storageManager)
+    {}
 
     function setNonceExternal(uint256 index) external {
         storageManager.setNonce(index);

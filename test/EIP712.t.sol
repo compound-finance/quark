@@ -4,12 +4,12 @@ import "forge-std/Test.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/console.sol";
 
-import { Test } from "forge-std/Test.sol";
-import { QuarkWallet } from "../src/QuarkWallet.sol";
-import { CodeJar} from "../src/CodeJar.sol";
-import { Counter } from "./lib/Counter.sol";
-import { YulHelper } from "./lib/YulHelper.sol";
-import { QuarkStorageManager } from "../src/QuarkStorageManager.sol";
+import {Test} from "forge-std/Test.sol";
+import {QuarkWallet} from "../src/QuarkWallet.sol";
+import {CodeJar} from "../src/CodeJar.sol";
+import {Counter} from "./lib/Counter.sol";
+import {YulHelper} from "./lib/YulHelper.sol";
+import {QuarkStorageManager} from "../src/QuarkStorageManager.sol";
 
 contract EIP712Test is Test {
     CodeJar public codeJar;

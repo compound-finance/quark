@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import { CodeJar } from "./CodeJar.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { QuarkStorageManager } from "./QuarkStorageManager.sol";
+import {CodeJar} from "./CodeJar.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {QuarkStorageManager} from "./QuarkStorageManager.sol";
 
 contract QuarkWallet {
     error BadSignatory();
@@ -115,7 +115,9 @@ contract QuarkWallet {
             address scriptAddress = codeJar.saveCode(op.scriptSource);
             return storageManager.acquireNonceAndYield(
                 op.nonce,
-                abi.encodeCall(this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback))
+                abi.encodeCall(
+                    this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback)
+                )
             );
         }
     }
@@ -145,7 +147,10 @@ contract QuarkWallet {
      * @param allowCallback Whether the transaction script should allow callbacks from outside contracts
      * @return Result of executing the script, encoded as bytes
      */
-    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback) public returns (bytes memory) {
+    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback)
+        public
+        returns (bytes memory)
+    {
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(scriptAddress)
