@@ -9,6 +9,7 @@ import "forge-std/interfaces/IERC20.sol";
 import "./../../src/QuarkWallet.sol";
 import "./../../src/QuarkWalletFactory.sol";
 import "./../../src/core_scripts/MultiCall.sol";
+import "./../../src/core_scripts/lib/ConditionalChecker.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
@@ -36,6 +37,7 @@ contract MultiCallTest is Test {
         counter.setNumber(0);
     }
 
+    // Tests for run
     function testInvokeCounterTwice() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
@@ -108,5 +110,148 @@ contract MultiCallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
+    }
+
+    // Tests for runWithConditionalCheck
+    function testConditionalCheckSimplePassed() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory multiCall = new YulHelper().getDeployed(
+            "MultiCall.sol/MultiCall.json"
+        );
+
+        // Set up some funds for test
+        deal(WETH, address(wallet), 100 ether);
+        // Compose array of parameters
+        address[] memory callContracts = new address[](5);
+        bytes[] memory callDatas = new bytes[](5);
+        uint256[] memory callValues = new uint256[](5);
+        ConditionalChecker.CheckType[] memory checkTypes = new ConditionalChecker.CheckType[](5);
+        ConditionalChecker.Operator[] memory operators = new ConditionalChecker.Operator[](5);
+        bytes[] memory checkValues = new bytes[](5);
+
+        // Approve Comet to spend WETH
+        callContracts[0] = WETH;
+        callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
+        callValues[0] = 0 wei;
+        checkTypes[0] = ConditionalChecker.CheckType.Bool;
+        operators[0] = ConditionalChecker.Operator.Equal;
+        checkValues[0] = abi.encode(true);
+
+        // Supply WETH to Comet
+        callContracts[1] = comet;
+        callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
+        callValues[1] = 0 wei;
+        checkTypes[1] = ConditionalChecker.CheckType.None;
+        operators[1] = ConditionalChecker.Operator.None;
+        checkValues[1] = hex"";
+
+        // Withdraw USDC from Comet
+        callContracts[2] = comet;
+        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1_000_000_000));
+        callValues[2] = 0 wei;
+        checkTypes[2] = ConditionalChecker.CheckType.None;
+        operators[2] = ConditionalChecker.Operator.None;
+        checkValues[2] = hex"";
+
+        // Condition checks, account is not liquidatable
+        callContracts[3] = comet;
+        callDatas[3] = abi.encodeCall(IComet.isLiquidatable, (address(wallet)));
+        callValues[3] = 0 wei;
+        checkTypes[3] = ConditionalChecker.CheckType.Bool;
+        operators[3] = ConditionalChecker.Operator.Equal;
+        checkValues[3] = abi.encode(false);
+
+        // Condition checks that account borrow balance is 1000
+        callContracts[4] = comet;
+        callDatas[4] = abi.encodeCall(IComet.borrowBalanceOf, (address(wallet)));
+        callValues[4] = 0 wei;
+        checkTypes[4] = ConditionalChecker.CheckType.Uint;
+        operators[4] = ConditionalChecker.Operator.Equal;
+        checkValues[4] = abi.encode(uint256(1000e6));
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
+                MultiCall.runWithConditionalCheck.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkTypes,
+                operators,
+                checkValues
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
+        wallet.executeQuarkOperation(op, v, r, s);
+
+        // When reaches here, meaning all checks are passed
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1_000_000_000);
+    }
+
+    function testConditionalCheckSimpleUnmet() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory multiCall = new YulHelper().getDeployed(
+            "MultiCall.sol/MultiCall.json"
+        );
+
+        // Set up some funds for test
+        deal(WETH, address(wallet), 100 ether);
+        // Compose array of parameters
+        address[] memory callContracts = new address[](2);
+        bytes[] memory callDatas = new bytes[](2);
+        uint256[] memory callValues = new uint256[](2);
+        ConditionalChecker.CheckType[] memory checkTypes = new ConditionalChecker.CheckType[](2);
+        ConditionalChecker.Operator[] memory operators = new ConditionalChecker.Operator[](2);
+        bytes[] memory checkValues = new bytes[](2);
+
+        // Approve Comet to spend WETH
+        callContracts[0] = WETH;
+        callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
+        callValues[0] = 0 wei;
+        checkTypes[0] = ConditionalChecker.CheckType.Bool;
+        operators[0] = ConditionalChecker.Operator.Equal;
+        checkValues[0] = abi.encode(false);
+
+        // Supply WETH to Comet
+        callContracts[1] = comet;
+        callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
+        callValues[1] = 0 wei;
+        checkTypes[1] = ConditionalChecker.CheckType.None;
+        operators[1] = ConditionalChecker.Operator.None;
+        checkValues[1] = hex"";
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: multiCall,
+            scriptCalldata: abi.encodeWithSelector(
+                MultiCall.runWithConditionalCheck.selector,
+                callContracts,
+                callDatas,
+                callValues,
+                checkTypes,
+                operators,
+                checkValues
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(
+                    ConditionalChecker.CheckFailed.selector,
+                    abi.encode(true),
+                    abi.encode(false),
+                    ConditionalChecker.CheckType.Bool,
+                    ConditionalChecker.Operator.Equal
+                )
+            )
+        );
+        wallet.executeQuarkOperation(op, v, r, s);
     }
 }
