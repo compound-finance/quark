@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-contract MultiCall {
+contract Multicall {
     error InvalidInput();
-    error MultiCallError(uint256 callIndex, address callContract, bytes callData, uint256 callValue, bytes err);
+    error MulticallError(uint256 callIndex, address callContract, bytes callData, uint256 callValue, bytes err);
 
     /**
      * @notice Execute multiple calls
@@ -21,7 +21,7 @@ contract MultiCall {
         for (uint256 i = 0; i < callContracts.length; i++) {
             (bool success, bytes memory returnData) = callContracts[i].call{value: callValues[i]}(callDatas[i]);
             if (!success) {
-                revert MultiCallError(i, callContracts[i], callDatas[i], callValues[i], returnData);
+                revert MulticallError(i, callContracts[i], callDatas[i], callValues[i], returnData);
             }
         }
     }
