@@ -20,7 +20,6 @@ contract MulticallTest is Test {
     // For signature to QuarkWallet
     uint256 alicePK = 0xa11ce;
     address alice = vm.addr(alicePK);
-    SignatureHelper public signatureHelper;
 
     // Comet address in mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
@@ -36,7 +35,6 @@ contract MulticallTest is Test {
             )
         );
         factory = new QuarkWalletFactory();
-        signatureHelper = new SignatureHelper();
         counter = new Counter();
         counter.setNumber(0);
     }
@@ -69,7 +67,7 @@ contract MulticallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 15);
@@ -113,7 +111,7 @@ contract MulticallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
@@ -146,7 +144,7 @@ contract MulticallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -199,7 +197,7 @@ contract MulticallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = signatureHelper.signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
