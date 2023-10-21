@@ -113,7 +113,10 @@ contract QuarkWallet {
         if (isValidSignature(owner, digest, v, r, s)) {
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-            return acquireNonceAndExecuteInternal(op.nonce, scriptAddress, op.scriptCalldata, op.allowCallback);
+            return storageManager.acquireNonceAndYield(
+                op.nonce,
+                abi.encodeCall(this.executeQuarkOperationInternal, (scriptAddress, op.scriptCalldata, op.allowCallback))
+            );
         }
     }
 
@@ -150,16 +153,6 @@ contract QuarkWallet {
         address scriptAddress = codeJar.saveCode(scriptSource);
         // XXX add support for allowCallback to the direct path
         return executeQuarkOperationInternal(scriptAddress, scriptCalldata, false);
-    }
-
-    /**
-     * @dev Acquire nonce in storage manager and execute operation
-     */
-    function acquireNonceAndExecuteInternal(uint256 nonce, address scriptAddress, bytes memory scriptCalldata, bool allowCallback) internal returns (bytes memory) {
-        return storageManager.acquireNonceAndYield(
-            nonce,
-            abi.encodeCall(this.executeQuarkOperationInternal, (scriptAddress, scriptCalldata, allowCallback))
-        );
     }
 
     /**
