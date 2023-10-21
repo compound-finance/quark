@@ -190,17 +190,6 @@ contract EthcallTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
 
-        console.logBytes(
-            abi.encodeWithSelector(
-                Ethcall.CallError.selector,
-                USDC,
-                abi.encodeWithSelector(
-                    Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.transfer, (comet, 2000e6)), 0
-                ),
-                0,
-                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
-            )
-        );
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
