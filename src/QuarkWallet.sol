@@ -138,7 +138,12 @@ contract QuarkWallet {
     }
 
     /**
-     * @dev Execute QuarkOperation
+     * @notice Execute a QuarkOperation with its nonce locked and with access to private nonce-scoped storage.
+     * @dev Must be called by storageManager as the yieldTarget of an acquireNonceAndYield call
+     * @param scriptAddress Address of script to execute
+     * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
+     * @param allowCallback Whether the transaction script should allow callbacks from outside contracts
+     * @return Result of executing the script, encoded as bytes
      */
     function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback) public returns (bytes memory) {
         uint256 codeLen;
