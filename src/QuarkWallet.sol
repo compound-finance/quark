@@ -30,7 +30,7 @@ contract QuarkWallet {
 
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable,uint256[] requirements)"
+        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,uint256[] requirements)"
     );
 
     /// @dev The EIP-712 typehash for the contract's domain
@@ -56,7 +56,6 @@ contract QuarkWallet {
         uint256 nonce;
         uint256 expiry;
         bool allowCallback;
-        bool isReplayable;
         uint256[] requirements;
     }
 
@@ -116,7 +115,6 @@ contract QuarkWallet {
                 op.nonce,
                 op.expiry,
                 op.allowCallback,
-                op.isReplayable,
                 op.requirements
             )
         );
@@ -130,12 +128,10 @@ contract QuarkWallet {
             }
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-            bool isReplayable = op.isReplayable;
-            bool allowCallback = op.allowCallback;
             return storageManager.acquireNonceAndYield(
                 op.nonce,
                 abi.encodeCall(
-                    this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, allowCallback, isReplayable)
+                    this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback)
                 )
             );
         }
@@ -166,7 +162,7 @@ contract QuarkWallet {
      * @param allowCallback Whether the transaction script should allow callbacks from outside contracts
      * @return Result of executing the script, encoded as bytes
      */
-    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback, bool isReplayable)
+    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback)
         public
         returns (bytes memory)
     {
@@ -205,10 +201,6 @@ contract QuarkWallet {
 
         if (!success) {
             revert QuarkCallError(returnData);
-        }
-
-        if (!isReplayable) {
-            storageManager.setNonce(storageManager.getAcquiredNonce());
         }
 
         return returnData;

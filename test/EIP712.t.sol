@@ -51,7 +51,6 @@ contract EIP712Test is Test {
             nonce: nonce,
             expiry: expiry,
             allowCallback: false,
-            isReplayable: false,
             requirements: requirements
         });
 
@@ -219,11 +218,20 @@ contract EIP712Test is Test {
     function testNonceIsNotSetForReplayableOperation() public {
         assertEq(counter.number(), 0);
         assertEq(wallet.nextUnusedNonce(), 1);
-uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
 
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        op.isReplayable = true;
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+
+        uint256 nonce = wallet.nextUnusedNonce();
+        uint256[] memory requirements;
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: incrementer,
+            scriptCalldata: abi.encodeWithSignature("incrementCounterReplayable(address)", counter),
+            nonce: nonce,
+            expiry: block.timestamp + 1000,
+            allowCallback: false,
+            requirements: requirements
+        });
+
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // bob calls executeOp with the signed operation

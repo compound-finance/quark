@@ -54,7 +54,6 @@ contract EthcallTest is Test {
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: true,
-            isReplayable: false,
             requirements: new uint256[](0)
         });
 
@@ -82,7 +81,6 @@ contract EthcallTest is Test {
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,
-            isReplayable: false,
             requirements: new uint256[](0)
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
@@ -98,7 +96,6 @@ contract EthcallTest is Test {
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,
-            isReplayable: false,
             requirements: new uint256[](0)
         });
         (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
@@ -127,7 +124,6 @@ contract EthcallTest is Test {
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,
-            isReplayable: false,
             requirements: new uint256[](0)
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
@@ -142,7 +138,6 @@ contract EthcallTest is Test {
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,
-            isReplayable: false,
             requirements: new uint256[](0)
         });
         (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
@@ -157,7 +152,6 @@ contract EthcallTest is Test {
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,
-            isReplayable: false,
             requirements: new uint256[](0)
         });
         (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
@@ -185,7 +179,6 @@ contract EthcallTest is Test {
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,
-            isReplayable: false,
             requirements: new uint256[](0)
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);

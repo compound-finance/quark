@@ -53,16 +53,31 @@ contract QuarkStorageManager {
     }
 
     /**
-     * @notice Set a given wallet nonce as exhausted; this method is only available to the wallet, and when a nonce is acquired, no other nonce can be set until it is released
-     * @param nonce Nonce to set
+     * @notice Set the acquired nonce to either "spent" or "free".
      */
-    function setNonce(uint256 nonce) external {
-        if (acquiredNonce[msg.sender] != 0 && acquiredNonce[msg.sender] != nonce) {
-            revert("not acquired"); // XXX only the currently acquired nonce can be set, if a nonce is currently acquired
+    function setNonce(bool isSpent /* gross */) internal {
+        // spend the nonce; it may be un-spent (?) by the script in order to allow replayability
+        if (acquiredNonce[msg.sender] == 0) {
+            revert("not acquired"); // XXX
         }
+        uint256 nonce = acquiredNonce[msg.sender];
         uint256 bucket = nonce >> 8;
-        uint256 mask = 1 << (nonce & 0xff);
-        nonces[msg.sender][bucket] |= mask;
+        uint256 setMask = (1 << (nonce & 0xff));
+        if (isSpent) {
+            nonces[msg.sender][bucket] |= setMask;
+        } else {
+            nonces[msg.sender][bucket] &= ~setMask;
+        }
+    }
+
+    /**
+     * @notice Un-spend the acquired nonce to allow its reuse; intended for replayable transactions
+     */
+    function unsetNonce() external {
+        if (acquiredNonce[msg.sender] == 0) {
+            revert("not acquired"); // XXX
+        }
+        setNonce(false);
     }
 
     /**
@@ -71,15 +86,14 @@ contract QuarkStorageManager {
      * @dev The wallet is expected to setNonce(..) when the nonce has been exhausted; acquiring a nonce does not necessarily exhaust it
      */
     function acquireNonceAndYield(uint256 nonce, bytes calldata yieldTarget) external returns (bytes memory) {
-        if (isNonceSet(msg.sender, nonce)) {
-            revert("already set"); // XXX the desired nonce is already set
-        }
         if (nonce == 0) {
             revert("invalid nonce=0"); // XXX nonce=0 is invalid
         }
         // acquire the nonce and yield to the wallet yieldTarget
         uint256 acquiredParent = acquiredNonce[msg.sender];
         acquiredNonce[msg.sender] = nonce;
+        // spend the nonce; only if the callee chooses to save it will it get un-set and become replayable
+        setNonce(true);
         (bool success, bytes memory result) = msg.sender.call(yieldTarget);
         // if the call fails, propagate the revert from the wallet
         if (!success) {

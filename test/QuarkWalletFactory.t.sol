@@ -82,7 +82,6 @@ contract QuarkWalletFactoryTest is Test {
             nonce: nonce,
             expiry: block.timestamp + 1000,
             allowCallback: false,
-            isReplayable: false,
             requirements: requirements
         });
 
@@ -116,7 +115,6 @@ contract QuarkWalletFactoryTest is Test {
             nonce: nonce,
             expiry: block.timestamp + 1000,
             allowCallback: false,
-            isReplayable: false,
             requirements: requirements
         });
 
@@ -152,7 +150,6 @@ contract QuarkWalletFactoryTest is Test {
             nonce: nonce,
             expiry: block.timestamp + 1000,
             allowCallback: false,
-            isReplayable: false,
             requirements: requirements
         });
 

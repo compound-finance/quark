@@ -52,7 +52,6 @@ contract CallbacksTest is Test {
             nonce: nonce,
             expiry: block.timestamp + 1000,
             allowCallback: true,
-            isReplayable: false,
             requirements: requirements
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -75,7 +74,6 @@ contract CallbacksTest is Test {
             nonce: nonce1,
             expiry: block.timestamp + 1000,
             allowCallback: true,
-            isReplayable: false,
             requirements: requirements
         });
         (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
@@ -87,7 +85,6 @@ contract CallbacksTest is Test {
             nonce: nonce2,
             expiry: block.timestamp + 1000,
             allowCallback: true,
-            isReplayable: false,
             requirements: requirements
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
@@ -111,7 +108,6 @@ contract CallbacksTest is Test {
             nonce: nonce1,
             expiry: block.timestamp + 1000,
             allowCallback: false,
-            isReplayable: false,
             requirements: requirements
         });
         (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
@@ -123,7 +119,6 @@ contract CallbacksTest is Test {
             nonce: nonce2,
             expiry: block.timestamp + 1000,
             allowCallback: true,
-            isReplayable: false,
             requirements: requirements
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
@@ -143,7 +138,6 @@ contract CallbacksTest is Test {
             nonce: nonce,
             expiry: block.timestamp + 1000,
             allowCallback: true,
-            isReplayable: false,
             requirements: requirements
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -164,7 +158,6 @@ contract CallbacksTest is Test {
             nonce: nonce,
             expiry: block.timestamp + 1000,
             allowCallback: false,
-            isReplayable: false,
             requirements: requirements
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);

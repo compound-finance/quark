@@ -8,40 +8,35 @@ import {CodeJar} from "../src/CodeJar.sol";
 import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {QuarkStorageManager} from "../src/QuarkStorageManager.sol";
 
-contract QuarkWalletHarness is QuarkWallet {
-    constructor(address owner, CodeJar codeJar, QuarkStorageManager storageManager)
-        QuarkWallet(owner, codeJar, storageManager)
-    {}
-
-    function setNonceExternal(uint256 index) external {
-        storageManager.setNonce(index);
+contract QuarkStorageManagerHarness is QuarkStorageManager {
+    function setNonceExternal(uint256 nonce) external {
+        acquiredNonce[msg.sender] = nonce;
+        setNonce(true);
+        acquiredNonce[msg.sender] = 0;
     }
 }
 
 contract NonceTest is Test {
-    QuarkWalletHarness public walletHarness;
-    CodeJar public codeJar;
-    QuarkStorageManager public storageManager;
-
-    address alice = address(10); // 0x00...a
+    QuarkStorageManagerHarness public storageManagerHarness;
 
     function setUp() public {
-        codeJar = new CodeJar();
-        console.log("CodeJar deployed to: %s", address(codeJar));
+        storageManagerHarness = new QuarkStorageManagerHarness();
+        console.log("QuarkStorageManagerHarness deployed to: %s", address(storageManagerHarness));
+    }
 
-        storageManager = new QuarkStorageManager();
-        console.log("QuarkStorageManager deployed to: %s", address(storageManager));
-
-        walletHarness = new QuarkWalletHarness(alice, codeJar, storageManager);
+    function testRevertsForInvalidNonce() public {
+        vm.expectRevert();
+        storageManagerHarness.isNonceSet(address(this), 0);
+        vm.expectRevert();
+        storageManagerHarness.setNonceExternal(0);
     }
 
     function testIsSet() public {
         // nonce is unset by default
-        assertEq(storageManager.isNonceSet(address(walletHarness), 0), false);
-
+        assertEq(storageManagerHarness.isNonceSet(address(this), 1), false);
         // it can be set
-        walletHarness.setNonceExternal(0);
-        assertEq(storageManager.isNonceSet(address(walletHarness), 0), true);
+        storageManagerHarness.setNonceExternal(1);
+        assertEq(storageManagerHarness.isNonceSet(address(this), 1), true);
     }
 
     function testNonLinearNonce() public {
@@ -49,19 +44,19 @@ contract NonceTest is Test {
         // long as it has not been set
         uint256 nonce = 1234567890;
 
-        assertEq(storageManager.isNonceSet(address(walletHarness), nonce), false);
+        assertEq(storageManagerHarness.isNonceSet(address(this), nonce), false);
 
-        walletHarness.setNonceExternal(nonce);
-        assertEq(storageManager.isNonceSet(address(walletHarness), nonce), true);
+        storageManagerHarness.setNonceExternal(nonce);
+        assertEq(storageManagerHarness.isNonceSet(address(this), nonce), true);
     }
 
     function testNextUnusedNonce() public {
-        assertEq(walletHarness.nextUnusedNonce(), 1);
+        assertEq(storageManagerHarness.nextUnusedNonce(address(this)), 1);
 
-        walletHarness.setNonceExternal(1);
-        assertEq(walletHarness.nextUnusedNonce(), 2);
+        storageManagerHarness.setNonceExternal(1);
+        assertEq(storageManagerHarness.nextUnusedNonce(address(this)), 2);
 
-        walletHarness.setNonceExternal(2);
-        assertEq(walletHarness.nextUnusedNonce(), 3);
+        storageManagerHarness.setNonceExternal(2);
+        assertEq(storageManagerHarness.nextUnusedNonce(address(this)), 3);
     }
 }

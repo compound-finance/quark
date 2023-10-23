@@ -58,7 +58,6 @@ contract QuarkWalletTest is Test {
             nonce: wallet.nextUnusedNonce(),
             expiry: block.timestamp + 1000,
             allowCallback: false,
-            isReplayable: false,
             requirements: new uint256[](0)
         });
     }
