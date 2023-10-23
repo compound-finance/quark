@@ -16,6 +16,7 @@ contract QuarkWallet {
     error QuarkCodeNotFound();
     error QuarkNonceReplay(uint256);
     error QuarkReadError();
+    error RequirementNotMet();
     error SignatureExpired();
 
     /// @notice Address of the EOA that controls this wallet
@@ -29,7 +30,7 @@ contract QuarkWallet {
 
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
+        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,bool isReplayable,uint256[] requirements)"
     );
 
     /// @dev The EIP-712 typehash for the contract's domain
@@ -55,9 +56,9 @@ contract QuarkWallet {
         uint256 nonce;
         uint256 expiry;
         bool allowCallback;
+        bool isReplayable;
+        uint256[] requirements;
     }
-    // requirements
-    // isReplayable
 
     constructor(address owner_, CodeJar codeJar_, QuarkStorageManager storageManager_) {
         owner = owner_;
@@ -100,23 +101,41 @@ contract QuarkWallet {
         payable
         returns (bytes memory)
     {
-        if (block.timestamp >= op.expiry) revert SignatureExpired();
-        if (storageManager.isNonceSet(address(this), op.nonce)) revert InvalidNonce();
+        if (block.timestamp >= op.expiry) {
+            revert SignatureExpired();
+        }
+        if (storageManager.isNonceSet(address(this), op.nonce)) {
+            revert InvalidNonce();
+        }
 
         bytes32 structHash = keccak256(
             abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
+                QUARK_OPERATION_TYPEHASH,
+                op.scriptSource,
+                op.scriptCalldata,
+                op.nonce,
+                op.expiry,
+                op.allowCallback,
+                op.isReplayable,
+                op.requirements
             )
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignature(owner, digest, v, r, s)) {
+            for (uint256 i; i < op.requirements.length; i++) {
+                if (!storageManager.isNonceSet(address(this), op.requirements[i])) {
+                    revert RequirementNotMet();
+                }
+            }
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
+            bool isReplayable = op.isReplayable;
+            bool allowCallback = op.allowCallback;
             return storageManager.acquireNonceAndYield(
                 op.nonce,
                 abi.encodeCall(
-                    this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback)
+                    this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, allowCallback, isReplayable)
                 )
             );
         }
@@ -147,7 +166,7 @@ contract QuarkWallet {
      * @param allowCallback Whether the transaction script should allow callbacks from outside contracts
      * @return Result of executing the script, encoded as bytes
      */
-    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback)
+    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback, bool isReplayable)
         public
         returns (bytes memory)
     {
@@ -188,11 +207,7 @@ contract QuarkWallet {
             revert QuarkCallError(returnData);
         }
 
-        // NOTE: a script may set its own nonce, in which case we do not need to try to do so
-        if (!storageManager.isNonceSet(address(this), storageManager.getAcquiredNonce())) {
-            // NOTE: it is safe to set the nonce after executing, because acquiring an exclusive lock on the nonce already protects against re-entrancy.
-            // It evinces a vaguely better sense of "mise en place" to set the nonce after the script is prepared and executed, although it probably does not matter.
-            // One benefit of setting the nonce after: it prevents scripts from detecting whether they are replayable, which discourages them from being needlessly clever.
+        if (!isReplayable) {
             storageManager.setNonce(storageManager.getAcquiredNonce());
         }
 
