@@ -232,7 +232,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
             scriptCalldata: abi.encodeWithSelector(UniswapFlashLoanMultiCall.run.selector, payload),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
-            allowCallback: true, 
+            allowCallback: true,
             isReplayable: false,
             requirements: new uint256[](0)
         });
