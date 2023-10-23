@@ -14,5 +14,4 @@ docs/
 .env
 
 # VSCode files
-remappings.txt
 .vscode/
