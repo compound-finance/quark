@@ -50,7 +50,7 @@ contract QuarkStorageManager {
      */
     function getAcquiredNonce() external view returns (uint256) {
         if (acquiredNonce[msg.sender] == 0) {
-            revert(); // XXX
+            revert("not acquired"); // XXX
         }
         return acquiredNonce[msg.sender];
     }
