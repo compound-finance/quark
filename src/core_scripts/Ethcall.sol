@@ -4,8 +4,6 @@ pragma solidity ^0.8.21;
 import "../QuarkWallet.sol";
 
 contract Ethcall {
-    error CallError(address callContract, bytes callData, uint256 callValue, bytes err);
-
     /**
      * @notice Execute a single call
      * @param callContract Contract to call

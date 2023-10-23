@@ -37,3 +37,5 @@ jobs:
         run: |
           forge test
         id: test
+        env:
+          NODE_PROVIDER_BYPASS_KEY: ${{ secrets.NODE_PROVIDER_BYPASS_KEY }}

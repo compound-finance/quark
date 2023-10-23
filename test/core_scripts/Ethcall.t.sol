@@ -167,7 +167,7 @@ contract EthcallTest is Test {
     }
 
     // Test Case #4: Call Error
-    function testEthcallCallError() public {
+    function testEthcallCallReraiseError() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
