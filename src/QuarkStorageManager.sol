@@ -21,6 +21,9 @@ contract QuarkStorageManager {
      * @return Whether the nonce has been exhausted
      */
     function isNonceSet(address wallet, uint256 nonce) public view returns (bool) {
+        if (nonce == 0) {
+            revert("invalid nonce=0"); // XXX nonce=0 is invalid
+        }
         uint256 bucket = nonce >> 8;
         uint256 mask = 1 << (nonce & 0xff);
         return nonces[wallet][bucket] & mask != 0;
