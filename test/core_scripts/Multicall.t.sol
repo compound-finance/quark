@@ -17,7 +17,6 @@ import "./interfaces/IComet.sol";
 contract MulticallTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
-    // For signature to QuarkWallet
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
 

@@ -18,9 +18,9 @@ import "./interfaces/IComet.sol";
 contract EthcallTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
-    // Need alice info here, for signature to QuarkWallet
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
+
     // Contracts address on mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
