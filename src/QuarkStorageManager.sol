@@ -6,7 +6,7 @@ contract QuarkStorageManager {
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
 
     /// @notice Nonce acquired by a wallet, if any, to execute a script using that nonce
-    mapping(address /* wallet */ => /* nonce */ uint256) internal acquiredNonce;
+    mapping(address /* wallet */ => uint256 /* nonce */) internal acquiredNonce;
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is acquired
     mapping(address /* wallet */ => mapping(uint256 /* nonce */ => bytes /* storage */)) internal namespacedStorage;
