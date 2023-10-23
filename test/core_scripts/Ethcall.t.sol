@@ -19,8 +19,8 @@ contract EthcallTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     // Need alice info here, for signature to QuarkWallet
-    uint256 alicePK = 0xa11ce;
-    address alice = vm.addr(alicePK);
+    uint256 alicePrivateKey = 0xa11ce;
+    address alice = vm.addr(alicePrivateKey);
     // Contracts address on mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -59,7 +59,7 @@ contract EthcallTest is Test {
         });
 
         assertEq(counter.number(), 0);
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 1);
     }
@@ -85,7 +85,7 @@ contract EthcallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IComet(comet).balanceOf(address(wallet)), 0);
@@ -101,7 +101,7 @@ contract EthcallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Since there is rouding diff, assert on diff is less than 10 wei
@@ -130,7 +130,7 @@ contract EthcallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Supply WETH to Comet
@@ -145,7 +145,7 @@ contract EthcallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Withdraw USDC from Comet
@@ -160,7 +160,7 @@ contract EthcallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
@@ -188,7 +188,7 @@ contract EthcallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.expectRevert(
             abi.encodeWithSelector(
