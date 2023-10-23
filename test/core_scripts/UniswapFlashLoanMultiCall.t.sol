@@ -31,6 +31,11 @@ contract UniswapFlashLoanMultiCallTest is Test {
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
     function setUp() public {
+        vm.createSelectFork(
+            string.concat(
+                "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
+            )
+        );
         factory = new QuarkWalletFactory();
     }
 
