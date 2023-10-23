@@ -33,7 +33,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
     function setUp() public {
         vm.createSelectFork(
             string.concat(
-                "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
+                "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("secrets.NODE_PROVIDER_BYPASS_KEY")
             )
         );
         factory = new QuarkWalletFactory();
