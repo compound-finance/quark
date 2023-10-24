@@ -183,7 +183,9 @@ contract QuarkWallet {
             returndatacopy(add(returnData, 0x20), 0x00, returnSize)
         }
 
-        storageManager.write(CALLBACK_KEY, bytes32(uint256(uint160(0))));
+        if (allowCallback) {
+            storageManager.write(CALLBACK_KEY, bytes32(uint256(uint160(0))));
+        }
 
         if (!success) {
             revert QuarkCallError(returnData);
