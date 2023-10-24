@@ -42,7 +42,7 @@ contract UniswapFlashLoanMultiCall is IUniswapV3FlashCallback {
 
     /**
      * @notice Execute multiple calls in a single transaction with flash loan
-     * @param payload UniswapFlashLoanMultiCallPayload struct; contains pool info and MultiCall inputs
+     * @param payload UniswapFlashLoanMultiCallPayload struct; contains token and fee info and MultiCall inputs
      */
     function run(UniswapFlashLoanMultiCallPayload memory payload) external {
         // Reorder token0, token1 to ensure token1 > token0
