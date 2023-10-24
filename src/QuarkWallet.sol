@@ -16,7 +16,6 @@ contract QuarkWallet {
     error QuarkCodeNotFound();
     error QuarkNonceReplay(uint256);
     error QuarkReadError();
-    error RequirementNotMet();
     error SignatureExpired();
 
     /// @notice Address of the EOA that controls this wallet
@@ -33,7 +32,7 @@ contract QuarkWallet {
 
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,uint256[] requirements)"
+        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
     );
 
     /// @dev The EIP-712 typehash for the contract's domain
@@ -59,7 +58,6 @@ contract QuarkWallet {
         uint256 nonce;
         uint256 expiry;
         bool allowCallback;
-        uint256[] requirements;
     }
 
     constructor(address owner_, CodeJar codeJar_, QuarkStorageManager storageManager_) {
@@ -117,18 +115,12 @@ contract QuarkWallet {
                 op.scriptCalldata,
                 op.nonce,
                 op.expiry,
-                op.allowCallback,
-                op.requirements
+                op.allowCallback
             )
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignature(owner, digest, v, r, s)) {
-            for (uint256 i; i < op.requirements.length; i++) {
-                if (!storageManager.isNonceSet(address(this), op.requirements[i])) {
-                    revert RequirementNotMet();
-                }
-            }
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
             return storageManager.acquireNonceAndYield(

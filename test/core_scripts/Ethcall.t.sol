@@ -53,8 +53,7 @@ contract EthcallTest is Test {
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
-            allowCallback: true,
-            requirements: new uint256[](0)
+            allowCallback: true
         });
 
         assertEq(counter.number(), 0);
@@ -80,8 +79,7 @@ contract EthcallTest is Test {
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -95,8 +93,7 @@ contract EthcallTest is Test {
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -123,8 +120,7 @@ contract EthcallTest is Test {
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -137,8 +133,7 @@ contract EthcallTest is Test {
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -151,8 +146,7 @@ contract EthcallTest is Test {
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -178,8 +172,7 @@ contract EthcallTest is Test {
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
 

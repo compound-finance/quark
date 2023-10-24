@@ -81,8 +81,7 @@ contract QuarkWalletFactoryTest is Test {
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: false,
-            requirements: requirements
+            allowCallback: false
         });
 
         // alice signs the operation
@@ -114,8 +113,7 @@ contract QuarkWalletFactoryTest is Test {
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: false,
-            requirements: requirements
+            allowCallback: false
         });
 
         bytes32 salt = bytes32("salty salt salt");
@@ -149,8 +147,7 @@ contract QuarkWalletFactoryTest is Test {
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: false,
-            requirements: requirements
+            allowCallback: false
         });
 
         // alice signs the operation

@@ -51,8 +51,7 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: true,
-            requirements: requirements
+            allowCallback: true
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         aliceWallet.executeQuarkOperation(op, v, r, s);
@@ -73,8 +72,7 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce1,
             expiry: block.timestamp + 1000,
-            allowCallback: true,
-            requirements: requirements
+            allowCallback: true
         });
         (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
@@ -84,8 +82,7 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
-            allowCallback: true,
-            requirements: requirements
+            allowCallback: true
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
@@ -107,8 +104,7 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("run(address)", counter),
             nonce: nonce1,
             expiry: block.timestamp + 1000,
-            allowCallback: false,
-            requirements: requirements
+            allowCallback: false
         });
         (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
@@ -118,8 +114,7 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
             expiry: block.timestamp + 1000,
-            allowCallback: true,
-            requirements: requirements
+            allowCallback: true
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
@@ -137,8 +132,7 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("run(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: true,
-            requirements: requirements
+            allowCallback: true
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -157,8 +151,7 @@ contract CallbacksTest is Test {
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: false,
-            requirements: requirements
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 

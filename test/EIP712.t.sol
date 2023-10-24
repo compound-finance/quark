@@ -11,6 +11,7 @@ import {Counter} from "./lib/Counter.sol";
 import {YulHelper} from "./lib/YulHelper.sol";
 import {QuarkStorageManager} from "../src/QuarkStorageManager.sol";
 import {SignatureHelper} from "./lib/SignatureHelper.sol";
+import {ExecuteWithRequirements} from "./lib/ExecuteWithRequirements.sol";
 
 contract EIP712Test is Test {
     CodeJar public codeJar;
@@ -44,14 +45,12 @@ contract EIP712Test is Test {
     {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: expiry,
-            allowCallback: false,
-            requirements: requirements
+            allowCallback: false
         });
 
         return op;
@@ -216,20 +215,19 @@ contract EIP712Test is Test {
     }
 
     function testNonceIsNotSetForReplayableOperation() public {
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+
         assertEq(counter.number(), 0);
         assertEq(wallet.nextUnusedNonce(), 1);
 
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         uint256 nonce = wallet.nextUnusedNonce();
-        uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounterReplayable(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000,
-            allowCallback: false,
-            requirements: requirements
+            allowCallback: false
         });
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -255,21 +253,38 @@ contract EIP712Test is Test {
         assertEq(storageManager.isNonceSet(address(wallet), nonce), false);
     }
 
+    // TODO: rewrite these tests to use requirements implemented in the script itself
     function testRevertBadRequirements() public {
-        assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 1);
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        address incrementerAddress = codeJar.saveCode(incrementer);
+
+        bytes memory executeWithRequirements = new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
 
         uint256 nonce = wallet.nextUnusedNonce();
         uint256 expiry = block.timestamp + 1000;
 
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: executeWithRequirements,
+            scriptCalldata: abi.encodeCall(
+                ExecuteWithRequirements.runWithRequirements,
+                (new uint256[](0), incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
+            ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: block.timestamp + 1000,
+            allowCallback: false
+        });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-        uint256[] memory badRequirements = new uint256[](1);
-        badRequirements[0] = 123;
-        op.requirements = badRequirements;
 
         // bob calls executeQuarkOperation with the altered requirements
         vm.prank(bob);
+        uint256[] memory badRequirements = new uint256[](1);
+        badRequirements[0] = 123;
+        op.scriptCalldata = abi.encodeCall(
+            ExecuteWithRequirements.runWithRequirements,
+            (badRequirements, incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
+        );
+
+        // bob cannot submit the operation because the signature will not match
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -278,6 +293,11 @@ contract EIP712Test is Test {
     }
 
     function testRequirements() public {
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        address incrementerAddress = codeJar.saveCode(incrementer);
+
+        bytes memory executeWithRequirements = new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
+
         vm.startPrank(bob);
 
         uint256 nonce = wallet.nextUnusedNonce();
@@ -286,21 +306,37 @@ contract EIP712Test is Test {
         QuarkWallet.QuarkOperation memory firstOp = incrementCounterOperation(nonce, expiry);
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, wallet, firstOp);
 
-        QuarkWallet.QuarkOperation memory secondOp = incrementCounterOperation(nonce + 1, expiry);
         uint256[] memory requirements = new uint[](1);
         requirements[0] = firstOp.nonce;
-        secondOp.requirements = requirements;
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, secondOp);
+        QuarkWallet.QuarkOperation memory dependentOp = QuarkWallet.QuarkOperation({
+            scriptSource: executeWithRequirements,
+            scriptCalldata: abi.encodeCall(
+                ExecuteWithRequirements.runWithRequirements,
+                (requirements, incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
+            ),
+            nonce: nonce + 1,
+            expiry: block.timestamp + 1000,
+            allowCallback: false
+        });
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, dependentOp);
 
         // attempting to execute the second operation first reverts
-        vm.expectRevert(QuarkWallet.RequirementNotMet.selector);
-        wallet.executeQuarkOperation(secondOp, v2, r2, s2);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(
+                    ExecuteWithRequirements.RequirementNotMet.selector,
+                    nonce
+                )
+            )
+        );
+        wallet.executeQuarkOperation(dependentOp, v2, r2, s2);
 
         // but once the first operation is executed...
         wallet.executeQuarkOperation(firstOp, v1, r1, s1);
 
         // the second can be executed
-        wallet.executeQuarkOperation(secondOp, v2, r2, s2);
+        wallet.executeQuarkOperation(dependentOp, v2, r2, s2);
 
         vm.stopPrank();
     }
