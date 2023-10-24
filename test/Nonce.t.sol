@@ -10,6 +10,7 @@ import {QuarkStorageManager} from "../src/QuarkStorageManager.sol";
 
 contract QuarkStorageManagerHarness is QuarkStorageManager {
     function setNonceExternal(uint256 nonce) external {
+        // NOTE: intentionally violates invariant in the name of... testing
         acquiredNonce[msg.sender] = nonce;
         setNonce(true);
         acquiredNonce[msg.sender] = 0;
@@ -27,6 +28,7 @@ contract NonceTest is Test {
     function testRevertsForInvalidNonce() public {
         vm.expectRevert();
         storageManagerHarness.isNonceSet(address(this), 0);
+        // NOTE: this is only defense-in-depth -- if this case is triggered, an invariant has been violated because an invalid nonce was acquired
         vm.expectRevert();
         storageManagerHarness.setNonceExternal(0);
     }
