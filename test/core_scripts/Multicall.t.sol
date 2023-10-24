@@ -211,7 +211,7 @@ contract MulticallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
-    function testEmptyInput() public {
+    function testEmptyInputIsValid() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
