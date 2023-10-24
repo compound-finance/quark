@@ -19,7 +19,7 @@ contract UniswapFlashLoanMultiCall is IUniswapV3FlashCallback {
     error MultiCallError(uint256 callIndex, address callContract, bytes callData, uint256 callValue, bytes err);
 
     /// @notice Input for flash loan multicall when interacting with UniswapV3 Pool contract
-    struct FlashLoanInput {
+    struct FlashLoanCallbackPayload {
         uint256 amount0;
         uint256 amount1;
         PoolAddress.PoolKey poolKey;
@@ -59,7 +59,7 @@ contract UniswapFlashLoanMultiCall is IUniswapV3FlashCallback {
             payload.amount0,
             payload.amount1,
             abi.encode(
-                FlashLoanInput({
+                FlashLoanCallbackPayload({
                     amount0: payload.amount0,
                     amount1: payload.amount1,
                     poolKey: PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee),
@@ -75,10 +75,10 @@ contract UniswapFlashLoanMultiCall is IUniswapV3FlashCallback {
      * @notice Callback function for Uniswap flash loan
      * @param fee0 amount of token0 fee to repay to the flash loan pool
      * @param fee1 amount of token1 fee to repay to the flash loan pool
-     * @param data FlashLoanInput encoded to bytes passed from IUniswapV3Pool.flash(); contains a MultiCall to execute before repaying the flash loan
+     * @param data FlashLoanCallbackPayload encoded to bytes passed from IUniswapV3Pool.flash(); contains a MultiCall to execute before repaying the flash loan
      */
     function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {
-        FlashLoanInput memory input = abi.decode(data, (FlashLoanInput));
+        FlashLoanCallbackPayload memory input = abi.decode(data, (FlashLoanCallbackPayload));
         IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(UNISWAP_FACTORY, input.poolKey));
         if (msg.sender != address(pool)) {
             revert InvalidCaller();

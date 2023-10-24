@@ -39,7 +39,6 @@ contract UniswapFlashLoanMultiCallTest is Test {
         factory = new QuarkWalletFactory();
     }
 
-    // Test #1: Using flash loan change comet asset from one to another within Comet
     function testFlashLoanOnBorrowPosition() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashLoanMultiCall = new YulHelper().getDeployed(
@@ -155,7 +154,6 @@ contract UniswapFlashLoanMultiCallTest is Test {
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
     }
 
-    // Test #2: Invalid caller
     function testRevertsForInvalidCaller() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashLoanMultiCall = new YulHelper().getDeployed(
@@ -173,7 +171,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
                 1000e6,
                 1000e6,
                 abi.encode(
-                    UniswapFlashLoanMultiCall.FlashLoanInput({
+                    UniswapFlashLoanMultiCall.FlashLoanCallbackPayload({
                         amount0: 1 ether,
                         amount1: 0,
                         poolKey: PoolAddress.getPoolKey(WETH, USDC, 500),
@@ -199,8 +197,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
-    // Test #3: Not enough to repay flash loan, the transaction shall fail and revert
-    function testRevertsForInsufficientFundsToEnoughToRepayFlashLoan() public {
+    function testRevertsForInsufficientFundsToRepayFlashLoan() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashLoanMultiCall = new YulHelper().getDeployed(
             "UniswapFlashLoanMultiCall.sol/UniswapFlashLoanMultiCall.json"
