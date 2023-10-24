@@ -37,3 +37,14 @@ jobs:
         run: |
           forge fmt --check
         id: format
+
+      - name: Install node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 19
+      
+      - name: Install dependencies
+        run: yarn install --non-interactive --frozen-lockfile
+
+      - name: Vendoza Audit
+        run: yarn vendoza-audit  
