@@ -91,7 +91,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         callDatas[3] = abi.encodeCall(IERC20.approve, (uniswapRouter, 2 ether));
         callValues[3] = 0 wei;
 
-        // Swap 2 WETH to LINK via uniswapRouter
+        // Swap 2 WETH for LINK via uniswapRouter
         callContracts[4] = address(uniswapRouter);
         callDatas[4] = abi.encodeCall(
             ISwapRouter.exactInputSingle,
