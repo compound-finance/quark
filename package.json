@@ -8,6 +8,6 @@
     "vendoza": "^0.0.4"
   },
   "scripts": {
-    "vendoza-audit": "npx vendoza ./manifest.json"
+    "vendoza-audit": "npx vendoza ./src/core_scripts/lib/manifest.json"
   }
 }

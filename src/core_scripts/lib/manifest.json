@@ -1,6 +1,6 @@
 {
     "files": {
-        "src/core_scripts/lib/PoolAddress.sol": {
+        "PoolAddress.sol": {
             "source": {
                 "git": {
                     "repo": "git@github.com:Uniswap/v3-periphery.git",
