@@ -58,21 +58,15 @@ contract QuarkStorageManager {
     }
 
     /**
-     * @notice Set the acquired nonce to either "spent" or "free".
+     * @dev Locate a nonce at a (bucket, mask) bitset position in the public nonces mapping
      */
-    function setNonce(bool isSpent /* gross */ ) internal {
-        // spend the nonce; it may be un-spent (?) by the script in order to allow replayability
-        if (acquiredNonce[msg.sender] == 0) {
-            revert NoNonceAcquired();
+    function locateNonce(uint256 nonce) internal pure returns (uint256 /* bucket */, uint256 /* nonce */) {
+        if (nonce == 0) {
+            revert InvalidNonce(nonce);
         }
-        uint256 nonce = acquiredNonce[msg.sender];
         uint256 bucket = nonce >> 8;
-        uint256 setMask = (1 << (nonce & 0xff));
-        if (isSpent) {
-            nonces[msg.sender][bucket] |= setMask;
-        } else {
-            nonces[msg.sender][bucket] &= ~setMask;
-        }
+        uint256 setMask = 1 << (nonce & 0xff);
+        return (bucket, setMask);
     }
 
     /**
@@ -82,7 +76,8 @@ contract QuarkStorageManager {
         if (acquiredNonce[msg.sender] == 0) {
             revert NoNonceAcquired();
         }
-        setNonce(false);
+        (uint256 bucket, uint256 setMask) = locateNonce(acquiredNonce[msg.sender]);
+        nonces[msg.sender][bucket] &= ~setMask;
     }
 
     /**
@@ -94,11 +89,15 @@ contract QuarkStorageManager {
         if (nonce == 0) {
             revert InvalidNonce(nonce);
         }
+
         // acquire the nonce and yield to the wallet yieldTarget
         uint256 acquiredParent = acquiredNonce[msg.sender];
         acquiredNonce[msg.sender] = nonce;
+
         // spend the nonce; only if the callee chooses to save it will it get un-set and become replayable
-        setNonce(true);
+        (uint256 bucket, uint256 setMask) = locateNonce(nonce);
+        nonces[msg.sender][bucket] |= setMask;
+
         (bool success, bytes memory result) = msg.sender.call(yieldTarget);
         // if the call fails, propagate the revert from the wallet
         if (!success) {
