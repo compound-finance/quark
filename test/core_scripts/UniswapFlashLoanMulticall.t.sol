@@ -243,6 +243,57 @@ contract UniswapFlashLoanMulticallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
+    function testMulticallError() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory uniswapFlashLoanMulticall = new YulHelper().getDeployed(
+            "UniswapFlashLoanMulticall.sol/UniswapFlashLoanMulticall.json"
+        );
+
+        address[] memory callContracts = new address[](1);
+        bytes[] memory callDatas = new bytes[](1);
+        uint256[] memory callValues = new uint256[](1);
+
+        // Send USDC to random address
+        callContracts[0] = address(USDC);
+        callDatas[0] = abi.encodeCall(IERC20.transfer, (address(1), 3000e6));
+        callValues[0] = 0 wei;
+
+        UniswapFlashLoanMulticall.UniswapFlashLoanMulticallPayload memory payload = UniswapFlashLoanMulticall
+            .UniswapFlashLoanMulticallPayload({
+            token0: USDC,
+            token1: DAI,
+            fee: 100,
+            amount0: 1000e6,
+            amount1: 0,
+            callContracts: callContracts,
+            callDatas: callDatas,
+            callValues: callValues
+        });
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: uniswapFlashLoanMulticall,
+            scriptCalldata: abi.encodeWithSelector(UniswapFlashLoanMulticall.run.selector, payload),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: true,
+            isReplayable: false,
+            requirements: new uint256[](0)
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(
+                    UniswapFlashLoanMulticall.MulticallError.selector,
+                    0,
+                    callContracts[0],
+                    abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
+                )
+            )
+        );
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
+
     function testInvalidInput() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashLoanMulticall = new YulHelper().getDeployed(
