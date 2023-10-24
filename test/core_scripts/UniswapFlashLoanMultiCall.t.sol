@@ -200,7 +200,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
     }
 
     // Test #3: Not enough to repay flash loan, the transaction shall fail and revert
-    function testNotEnoughToRepayFlashLoan() public {
+    function testRevertsForInsufficientFundsToEnoughToRepayFlashLoan() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory uniswapFlashLoanMultiCall = new YulHelper().getDeployed(
             "UniswapFlashLoanMultiCall.sol/UniswapFlashLoanMultiCall.json"
