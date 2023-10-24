@@ -18,8 +18,8 @@ import "./interfaces/IComet.sol";
 contract UniswapFlashLoanMultiCallTest is Test {
     QuarkWalletFactory public factory;
     // For signature to QuarkWallet
-    uint256 alicePK = 0xa11ce;
-    address alice = vm.addr(alicePK);
+    uint256 alicePrivateKey = 0xa11ce;
+    address alice = vm.addr(alicePrivateKey);
 
     // Comet address in mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
@@ -145,7 +145,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Verify that user now has no WETH collateral on Comet, but only LINK
@@ -187,7 +187,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -233,7 +233,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
             isReplayable: false,
             requirements: new uint256[](0)
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
