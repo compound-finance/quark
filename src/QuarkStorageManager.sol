@@ -9,7 +9,8 @@ contract QuarkStorageManager {
     mapping(address /* wallet */ => uint256 /* nonce */) internal acquiredNonce;
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is acquired
-    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes /* storage */))) internal nonceKVs;
+    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes /* storage */)))
+        internal nonceKVs;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -55,7 +56,7 @@ contract QuarkStorageManager {
     /**
      * @notice Set the acquired nonce to either "spent" or "free".
      */
-    function setNonce(bool isSpent /* gross */) internal {
+    function setNonce(bool isSpent /* gross */ ) internal {
         // spend the nonce; it may be un-spent (?) by the script in order to allow replayability
         if (acquiredNonce[msg.sender] == 0) {
             revert("not acquired"); // XXX

@@ -220,7 +220,6 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
         assertEq(wallet.nextUnusedNonce(), 1);
 
-
         uint256 nonce = wallet.nextUnusedNonce();
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
@@ -258,7 +257,8 @@ contract EIP712Test is Test {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         address incrementerAddress = codeJar.saveCode(incrementer);
 
-        bytes memory executeWithRequirements = new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
+        bytes memory executeWithRequirements =
+            new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
 
         uint256 nonce = wallet.nextUnusedNonce();
         uint256 expiry = block.timestamp + 1000;
@@ -268,7 +268,7 @@ contract EIP712Test is Test {
             scriptCalldata: abi.encodeCall(
                 ExecuteWithRequirements.runWithRequirements,
                 (new uint256[](0), incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
-            ),
+                ),
             nonce: wallet.nextUnusedNonce(),
             expiry: block.timestamp + 1000,
             allowCallback: false
@@ -296,7 +296,8 @@ contract EIP712Test is Test {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         address incrementerAddress = codeJar.saveCode(incrementer);
 
-        bytes memory executeWithRequirements = new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
+        bytes memory executeWithRequirements =
+            new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
 
         vm.startPrank(bob);
 
@@ -313,7 +314,7 @@ contract EIP712Test is Test {
             scriptCalldata: abi.encodeCall(
                 ExecuteWithRequirements.runWithRequirements,
                 (requirements, incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
-            ),
+                ),
             nonce: nonce + 1,
             expiry: block.timestamp + 1000,
             allowCallback: false
@@ -324,10 +325,7 @@ contract EIP712Test is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(
-                    ExecuteWithRequirements.RequirementNotMet.selector,
-                    nonce
-                )
+                abi.encodeWithSelector(ExecuteWithRequirements.RequirementNotMet.selector, nonce)
             )
         );
         wallet.executeQuarkOperation(dependentOp, v2, r2, s2);

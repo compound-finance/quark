@@ -7,7 +7,10 @@ import "../../src/QuarkStorageManager.sol";
 contract ExecuteWithRequirements {
     error RequirementNotMet(uint256 nonce);
 
-    function runWithRequirements(uint256[] memory requirements, address scriptAddress, bytes calldata scriptCalldata) public returns (bytes memory) {
+    function runWithRequirements(uint256[] memory requirements, address scriptAddress, bytes calldata scriptCalldata)
+        public
+        returns (bytes memory)
+    {
         QuarkWallet wallet = QuarkWallet(address(this));
         QuarkStorageManager storageManager = wallet.storageManager();
         for (uint256 i = 0; i < requirements.length; i++) {
