@@ -245,7 +245,7 @@ contract MulticallTest is Test {
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 0);
     }
 
-    function testReturnDatas() public {
+    function testMulticallShouldReturnCallResults() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multiCall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
