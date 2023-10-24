@@ -32,10 +32,10 @@ contract QuarkStorageManager {
     }
 
     /**
-     * @notice Returns the next unset nonce for a given wallet
-     * @dev Any unset nonce is valid to use, but using this method increases
-     * the likelihood that the nonce you use will be on a bucket that has
-     * already been written to, which costs less gas
+     * @notice Returns the next valid unset nonce for a given wallet (note that 0 is not a valid nonce)
+     * @dev Any unset nonce > 0 is valid to use, but using this method
+     * increases the likelihood that the nonce you use will be in a bucket that
+     * has already been written to, which costs less gas
      * @return The next unused nonce
      */
     function nextUnusedNonce(address wallet) external view returns (uint256) {
