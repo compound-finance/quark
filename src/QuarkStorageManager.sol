@@ -2,6 +2,10 @@
 pragma solidity ^0.8.19;
 
 contract QuarkStorageManager {
+    error InvalidNonce(uint256);
+    error NoNonceAcquired();
+    error NoUnusedNonces();
+
     /// @notice Bit-packed nonce values
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
 
@@ -20,7 +24,7 @@ contract QuarkStorageManager {
      */
     function isNonceSet(address wallet, uint256 nonce) public view returns (bool) {
         if (nonce == 0) {
-            revert("invalid nonce=0"); // XXX nonce=0 is invalid
+            revert InvalidNonce(nonce);
         }
         uint256 bucket = nonce >> 8;
         uint256 mask = 1 << (nonce & 0xff);
@@ -39,7 +43,7 @@ contract QuarkStorageManager {
         for (i = 1; i < type(uint256).max; i++) {
             if (!isNonceSet(wallet, i)) return i;
         }
-        revert(); // XXX NoUnusedNonces
+        revert NoUnusedNonces();
     }
 
     /**
@@ -48,7 +52,7 @@ contract QuarkStorageManager {
      */
     function getAcquiredNonce() external view returns (uint256) {
         if (acquiredNonce[msg.sender] == 0) {
-            revert("not acquired"); // XXX
+            revert NoNonceAcquired();
         }
         return acquiredNonce[msg.sender];
     }
@@ -59,7 +63,7 @@ contract QuarkStorageManager {
     function setNonce(bool isSpent /* gross */ ) internal {
         // spend the nonce; it may be un-spent (?) by the script in order to allow replayability
         if (acquiredNonce[msg.sender] == 0) {
-            revert("not acquired"); // XXX
+            revert NoNonceAcquired();
         }
         uint256 nonce = acquiredNonce[msg.sender];
         uint256 bucket = nonce >> 8;
@@ -76,7 +80,7 @@ contract QuarkStorageManager {
      */
     function unsetNonce() external {
         if (acquiredNonce[msg.sender] == 0) {
-            revert("not acquired"); // XXX
+            revert NoNonceAcquired();
         }
         setNonce(false);
     }
@@ -88,7 +92,7 @@ contract QuarkStorageManager {
      */
     function acquireNonceAndYield(uint256 nonce, bytes calldata yieldTarget) external returns (bytes memory) {
         if (nonce == 0) {
-            revert("invalid nonce=0"); // XXX nonce=0 is invalid
+            revert InvalidNonce(nonce);
         }
         // acquire the nonce and yield to the wallet yieldTarget
         uint256 acquiredParent = acquiredNonce[msg.sender];
@@ -113,7 +117,7 @@ contract QuarkStorageManager {
      */
     function write(bytes32 key, bytes calldata value) external {
         if (acquiredNonce[msg.sender] == 0) {
-            revert(); // XXX storage at a given nonce can only be accessed while the nonce is acquired
+            revert NoNonceAcquired();
         }
         nonceKVs[msg.sender][acquiredNonce[msg.sender]][key] = value;
     }
@@ -124,7 +128,7 @@ contract QuarkStorageManager {
      */
     function read(bytes32 key) external returns (bytes memory) {
         if (acquiredNonce[msg.sender] == 0) {
-            revert(); // XXX storage at a given nonce can only be accessed while the nonce is acquired
+            revert NoNonceAcquired();
         }
         return nonceKVs[msg.sender][acquiredNonce[msg.sender]][key];
     }
