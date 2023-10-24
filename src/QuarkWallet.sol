@@ -166,7 +166,7 @@ contract QuarkWallet {
 
         // if the script allows callbacks, set it as the current callback
         if (allowCallback) {
-            storageManager.write(CALLBACK_KEY, abi.encode(scriptAddress));
+            storageManager.write(CALLBACK_KEY, bytes32(uint256(uint160(scriptAddress))));
         }
 
         bool success;
@@ -183,7 +183,7 @@ contract QuarkWallet {
             returndatacopy(add(returnData, 0x20), 0x00, returnSize)
         }
 
-        storageManager.write(CALLBACK_KEY, abi.encode(0));
+        storageManager.write(CALLBACK_KEY, bytes32(uint256(uint160(0))));
 
         if (!success) {
             revert QuarkCallError(returnData);
@@ -193,10 +193,10 @@ contract QuarkWallet {
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
-        bytes memory callback = storageManager.read(CALLBACK_KEY);
+        bytes32 callback = storageManager.read(CALLBACK_KEY);
         address callbackAddress;
         if (callback.length > 0) {
-            callbackAddress = abi.decode(callback, (address));
+            callbackAddress = address(uint160(uint256(callback)));
         }
 
         if (callbackAddress != address(0)) {

@@ -13,7 +13,7 @@ contract QuarkStorageManager {
     mapping(address /* wallet */ => uint256 /* nonce */) internal acquiredNonce;
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is acquired
-    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes /* storage */)))
+    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
         internal nonceKVs;
 
     /**
@@ -114,7 +114,7 @@ contract QuarkStorageManager {
     /**
      * @notice Write arbitrary bytes to storage namespaced by the currently acquired nonce; reverts if no nonce is currently acquired
      */
-    function write(bytes32 key, bytes calldata value) external {
+    function write(bytes32 key, bytes32 value) external {
         if (acquiredNonce[msg.sender] == 0) {
             revert NoNonceAcquired();
         }
@@ -125,7 +125,7 @@ contract QuarkStorageManager {
      * @notice Read from storage namespaced by the currently acquired nonce; reverts if no nonce is currently acquired
      * @return Value at the nonce storage location, as bytes
      */
-    function read(bytes32 key) external returns (bytes memory) {
+    function read(bytes32 key) external returns (bytes32) {
         if (acquiredNonce[msg.sender] == 0) {
             revert NoNonceAcquired();
         }
