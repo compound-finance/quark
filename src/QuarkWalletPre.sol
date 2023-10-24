@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.19;
 
 import {CodeJar} from "./CodeJar.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {QuarkStorageManager} from "./QuarkStorageManager.sol";
 
-contract QuarkWallet {
+contract QuarkWalletPre {
     error BadSignatory();
     error InvalidNonce();
     error InvalidSignatureS();
@@ -21,14 +20,11 @@ contract QuarkWallet {
     /// @notice Address of the EOA that controls this wallet
     address public immutable owner;
 
-    /// @notice Address of CodeJar contract used to save transaction script source code
-    CodeJar public immutable codeJar;
+    /// @notice storage slot for storing the `owner` address
+    bytes32 public constant OWNER_SLOT = bytes32(keccak256("org.quark.owner"));
 
-    /// @notice Address of QuarkStorageManager contract that manages nonces and nonce-namespaced transaction script storage
-    QuarkStorageManager public immutable storageManager;
-
-    /// @notice Well-known storage location for the currently executing script's callback address (if any)
-    bytes32 internal constant CALLBACK_KEY = keccak256("callback.v1.quark");
+    /// @notice storage slot for storing the active `callback` address
+    bytes32 internal constant ACTIVE_CALLBACK_SLOT = bytes32(keccak256("org.quark.active-callback"));
 
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
@@ -48,6 +44,9 @@ contract QuarkWallet {
     /// @notice Bit-packed nonce values
     mapping(uint256 => uint256) public nonces;
 
+    /// @notice Address of CodeJar contract used to save transaction script source code
+    CodeJar public codeJar;
+
     struct QuarkOperation {
         /* TODO: optimization: allow passing in the address of the script
          * to run, instead of the calldata for defining the script.
@@ -59,11 +58,43 @@ contract QuarkWallet {
         uint256 expiry;
         bool allowCallback;
     }
+    // requirements
+    // isReplayable
 
-    constructor(address owner_, CodeJar codeJar_, QuarkStorageManager storageManager_) {
+    constructor(address owner_, CodeJar codeJar_) {
         owner = owner_;
         codeJar = codeJar_;
-        storageManager = storageManager_;
+
+        /*
+         * translation note: we cannot directly access OWNER_SLOT within
+         * an inline assembly block, for seemingly arbitrary reasons;
+         * therefore, we copy the immutable slot addresse into a local
+         * variable that we are allowed to access with impunity.
+         */
+        bytes32 slot = OWNER_SLOT;
+        assembly {
+            sstore(slot, owner_)
+        }
+    }
+
+    /**
+     * @notice Return whether a nonce has been set
+     * @param nonce The nonce to check
+     * @return Whether the nonce has been set
+     */
+    function isSet(uint256 nonce) public view returns (bool) {
+        uint256 bucket = nonce >> 8;
+        uint256 mask = 1 << (nonce & 0xff);
+        return nonces[bucket] & mask != 0;
+    }
+
+    /**
+     * @dev Set or unset `nonce`
+     */
+    function setNonce(uint256 nonce) internal {
+        uint256 bucket = nonce >> 8;
+        uint256 mask = 1 << (nonce & 0xff);
+        nonces[bucket] |= mask;
     }
 
     /**
@@ -74,7 +105,12 @@ contract QuarkWallet {
      * @return The next unused nonce
      */
     function nextUnusedNonce() external view returns (uint256) {
-        return storageManager.nextUnusedNonce(address(this));
+        uint256 i;
+        for (i = 0; i < type(uint256).max; i++) {
+            if (!isSet(i)) return i;
+        }
+
+        revert NoUnusedNonces();
     }
 
     /**
@@ -85,6 +121,31 @@ contract QuarkWallet {
         return keccak256(
             abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(VERSION)), block.chainid, address(this))
         );
+    }
+
+    /**
+     * @dev Returns the current active callback script address.
+     */
+    function getActiveCallback() internal view returns (address) {
+        bytes32 slot = ACTIVE_CALLBACK_SLOT;
+        address callback;
+        assembly {
+            callback := sload(slot)
+        }
+        return callback;
+    }
+
+    /**
+     * @dev Sets the current active callback script address. This is the
+     *  address of the currently-running transaction script that expects to
+     *  receive a callback, which will be handled by the wallet's fallback
+     *  function.
+     */
+    function setActiveCallback(address callback) internal {
+        bytes32 slot = ACTIVE_CALLBACK_SLOT;
+        assembly {
+            sstore(slot, callback)
+        }
     }
 
     /**
@@ -101,12 +162,8 @@ contract QuarkWallet {
         payable
         returns (bytes memory)
     {
-        if (block.timestamp >= op.expiry) {
-            revert SignatureExpired();
-        }
-        if (storageManager.isNonceSet(address(this), op.nonce)) {
-            revert InvalidNonce();
-        }
+        if (block.timestamp >= op.expiry) revert SignatureExpired();
+        if (isSet(op.nonce)) revert InvalidNonce();
 
         bytes32 structHash = keccak256(
             abi.encode(
@@ -116,14 +173,10 @@ contract QuarkWallet {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignature(owner, digest, v, r, s)) {
+            setNonce(op.nonce);
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-            return storageManager.acquireNonceAndYield(
-                op.nonce,
-                abi.encodeCall(
-                    this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback)
-                )
-            );
+            return executeQuarkOperationInternal(scriptAddress, op.scriptCalldata, op.allowCallback);
         }
     }
 
@@ -145,15 +198,28 @@ contract QuarkWallet {
     }
 
     /**
-     * @notice Execute a QuarkOperation with its nonce locked and with access to private nonce-scoped storage.
-     * @dev Must be called by storageManager as the yieldTarget of an acquireNonceAndYield call
-     * @param scriptAddress Address of script to execute
-     * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
-     * @param allowCallback Whether the transaction script should allow callbacks from outside contracts
-     * @return Result of executing the script, encoded as bytes
+     * @notice Store or lookup the operation script and invoke it with the
+     * given encoded calldata
+     * @param scriptSource Source code of the transaction script to execute
+     * @param scriptCalldata The encoded function selector and arguments to call on the transaction script
+     * @return return value from the executed operation
      */
-    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback)
+    function executeQuarkOperation(bytes calldata scriptSource, bytes calldata scriptCalldata)
         public
+        payable
+        returns (bytes memory)
+    {
+        // XXX authenticate caller
+        address scriptAddress = codeJar.saveCode(scriptSource);
+        // XXX add support for allowCallback to the direct path
+        return executeQuarkOperationInternal(scriptAddress, scriptCalldata, false);
+    }
+
+    /**
+     * @dev Execute QuarkOperation
+     */
+    function executeQuarkOperationInternal(address scriptAddress, bytes memory scriptCalldata, bool allowCallback)
+        internal
         returns (bytes memory)
     {
         uint256 codeLen;
@@ -166,7 +232,11 @@ contract QuarkWallet {
 
         // if the script allows callbacks, set it as the current callback
         if (allowCallback) {
-            storageManager.write(CALLBACK_KEY, bytes32(uint256(uint160(scriptAddress))));
+            address callback = getActiveCallback();
+            if (callback != address(0)) {
+                revert QuarkCallbackAlreadyActive();
+            }
+            setActiveCallback(scriptAddress);
         }
 
         bool success;
@@ -178,15 +248,12 @@ contract QuarkWallet {
             returnSize := returndatasize()
         }
 
+        setActiveCallback(address(0));
+
         bytes memory returnData = new bytes(returnSize);
         assembly {
             returndatacopy(add(returnData, 0x20), 0x00, returnSize)
         }
-
-        if (allowCallback) {
-            storageManager.write(CALLBACK_KEY, bytes32(uint256(0)));
-        }
-
         if (!success) {
             revert QuarkCallError(returnData);
         }
@@ -195,7 +262,7 @@ contract QuarkWallet {
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
-        address callback = address(uint160(uint256(storageManager.read(CALLBACK_KEY))));
+        address callback = getActiveCallback();
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);
             if (!success) {

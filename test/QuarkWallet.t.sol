@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 
 import "../src/CodeJar.sol";
 import "../src/QuarkWallet.sol";
+import "../src/QuarkWalletPre.sol";
 import "../src/QuarkStorageManager.sol";
 
 import "./lib/Counter.sol";
@@ -25,6 +26,7 @@ contract QuarkWalletTest is Test {
     uint256 alicePrivateKey = 0x8675309;
     address aliceAccount = vm.addr(alicePrivateKey);
     QuarkWallet aliceWallet; // see constructor()
+    QuarkWalletPre aliceWalletPre; // see constructor()
 
     constructor() {
         codeJar = new CodeJar();
@@ -39,6 +41,9 @@ contract QuarkWalletTest is Test {
 
         aliceWallet = new QuarkWallet(aliceAccount, codeJar, storageManager);
         console.log("Alice wallet at: %s", address(aliceWallet));
+
+        aliceWalletPre = new QuarkWalletPre(aliceAccount, codeJar);
+        console.log("Alice wallet pre at: %s", address(aliceWalletPre));
     }
 
     function newBasicOp(QuarkWallet wallet, bytes memory scriptSource)
@@ -58,6 +63,19 @@ contract QuarkWalletTest is Test {
             nonce: wallet.nextUnusedNonce(),
             expiry: block.timestamp + 1000,
             allowCallback: false
+        });
+    }
+
+    function toPre(QuarkWallet.QuarkOperation memory op)
+        internal
+        returns (QuarkWalletPre.QuarkOperation memory)
+    {
+        return QuarkWalletPre.QuarkOperation({
+            scriptSource: op.scriptSource,
+            scriptCalldata: op.scriptCalldata,
+            nonce: op.nonce,
+            expiry: op.expiry,
+            allowCallback: op.allowCallback
         });
     }
 
@@ -103,6 +121,16 @@ contract QuarkWalletTest is Test {
             newBasicOp(aliceWallet, incrementer, abi.encodeWithSignature("incrementCounter(address)", counter));
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 3);
+    }
+
+    function testAtomicIncrementerPre() public {
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        assertEq(counter.number(), 0);
+        QuarkWallet.QuarkOperation memory op =
+            newBasicOp(aliceWallet, incrementer, abi.encodeWithSignature("incrementCounter(address)", counter));
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, QuarkWallet(address(aliceWalletPre)), op);
+        aliceWalletPre.executeQuarkOperation(toPre(op), v, r, s);
         assertEq(counter.number(), 3);
     }
 

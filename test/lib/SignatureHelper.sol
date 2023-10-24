@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 import "forge-std/Test.sol";
 import "./../../src/QuarkWallet.sol";
+import "./../../src/QuarkWalletPre.sol";
 
 contract SignatureHelper is Test {
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
@@ -21,6 +22,15 @@ contract SignatureHelper is Test {
         return vm.sign(privateKey, digest);
     }
 
+    function signOpPre(uint256 privateKey, QuarkWalletPre wallet, QuarkWalletPre.QuarkOperation memory op)
+        external
+        view
+        returns (uint8, bytes32, bytes32)
+    {
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHashPre(op)));
+        return vm.sign(privateKey, digest);
+    }
+
     /*
      * @dev for use when you need to sign an operation for a wallet that has not been created yet
      */
@@ -34,6 +44,14 @@ contract SignatureHelper is Test {
     }
 
     function structHash(QuarkWallet.QuarkOperation memory op) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
+            )
+        );
+    }
+
+    function structHashPre(QuarkWalletPre.QuarkOperation memory op) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback

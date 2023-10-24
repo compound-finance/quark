@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {QuarkWallet} from "../src/QuarkWallet.sol";
+import {QuarkWalletPre} from "../src/QuarkWalletPre.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
 import {YulHelper} from "./lib/YulHelper.sol";
@@ -21,6 +22,7 @@ contract CallbacksTest is Test {
     uint256 alicePrivateKey = 0x9810473;
     address aliceAccount; // see constructor()
     QuarkWallet public aliceWallet;
+    QuarkWalletPre public aliceWalletPre;
 
     constructor() {
         codeJar = new CodeJar();
@@ -35,6 +37,7 @@ contract CallbacksTest is Test {
 
         aliceAccount = vm.addr(alicePrivateKey);
         aliceWallet = new QuarkWallet(aliceAccount, codeJar, storageManager);
+        aliceWalletPre = new QuarkWalletPre(aliceAccount, codeJar);
     }
 
     function testCallbackFromCounter() public {
@@ -55,6 +58,28 @@ contract CallbacksTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         aliceWallet.executeQuarkOperation(op, v, r, s);
+
+        assertEq(counter.number(), 11);
+    }
+
+    function testCallbackFromCounterPre() public {
+        assertEq(counter.number(), 0);
+
+        bytes memory callbackFromCounter =
+            new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+
+        uint256 nonce = aliceWalletPre.nextUnusedNonce();
+
+        uint256[] memory requirements;
+        QuarkWalletPre.QuarkOperation memory op = QuarkWalletPre.QuarkOperation({
+            scriptSource: callbackFromCounter,
+            scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
+            nonce: nonce,
+            expiry: block.timestamp + 1000,
+            allowCallback: true
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpPre(alicePrivateKey, aliceWalletPre, op);
+        aliceWalletPre.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 11);
     }
