@@ -14,5 +14,7 @@ docs/
 .env
 
 # VSCode files
-remappings.txt
 .vscode/
+
+# Node modules
+node_modules/

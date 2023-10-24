@@ -35,7 +35,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test --fork-url https://node-provider.compound.finance/ethereum-mainnet/d7feeec2618fc844e35c0e847855123434ef03021877a2358160e5a9ae0c9a31 -vvv
+          forge test
         id: test
         env:
           NODE_PROVIDER_BYPASS_KEY: ${{ secrets.NODE_PROVIDER_BYPASS_KEY }}

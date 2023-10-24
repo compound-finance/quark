@@ -1,0 +1,13 @@
+{
+  "name": "quark",
+  "version": "1.0.0",
+  "repository": "git@github.com:compound-finance/quark.git",
+  "license": "N/A",
+  "private": true,
+  "dependencies": {
+    "vendoza": "^0.0.4"
+  },
+  "scripts": {
+    "vendoza-audit": "npx vendoza ./src/core_scripts/lib/manifest.json"
+  }
+}
