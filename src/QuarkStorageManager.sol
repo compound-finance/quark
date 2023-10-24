@@ -9,10 +9,7 @@ contract QuarkStorageManager {
     mapping(address /* wallet */ => uint256 /* nonce */) internal acquiredNonce;
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is acquired
-    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => bytes /* storage */)) internal namespacedStorage;
-
-    /// @notice Per-wallet-nonce proxy target that the wallet may choose to call in its fallback function, e.g. for callbacks
-    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => address /* target */)) internal proxyTarget;
+    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes /* storage */))) internal nonceKVs;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -111,45 +108,23 @@ contract QuarkStorageManager {
     }
 
     /**
-     * @notice Get the proxy target for the currently acquired nonce, an address the wallet may choose to call in its fallback function
-     * @return Address of the proxy target contract, which may be the null address
-     */
-    function getProxyTarget() external returns (address) {
-        if (acquiredNonce[msg.sender] == 0) {
-            revert(); // XXX the proxy target can only be read for an acquired nonce
-        }
-        return proxyTarget[msg.sender][acquiredNonce[msg.sender]];
-    }
-
-    /**
-     * @notice Set the proxy target for the currently acquired nonce, an address the wallet may choose to call in its fallback function
-     * @param target Address of the proxy target contract
-     */
-    function setProxyTarget(address target) external {
-        if (acquiredNonce[msg.sender] == 0) {
-            revert("not acquired"); // XXX the proxy target can only be set for an acquired nonce
-        }
-        proxyTarget[msg.sender][acquiredNonce[msg.sender]] = target;
-    }
-
-    /**
      * @notice Write arbitrary bytes to storage namespaced by the currently acquired nonce; reverts if no nonce is currently acquired
      */
-    function write(bytes calldata value) external {
+    function write(bytes32 key, bytes calldata value) external {
         if (acquiredNonce[msg.sender] == 0) {
             revert(); // XXX storage at a given nonce can only be accessed while the nonce is acquired
         }
-        namespacedStorage[msg.sender][acquiredNonce[msg.sender]] = value;
+        nonceKVs[msg.sender][acquiredNonce[msg.sender]][key] = value;
     }
 
     /**
      * @notice Read from storage namespaced by the currently acquired nonce; reverts if no nonce is currently acquired
      * @return Value at the nonce storage location, as bytes
      */
-    function read() external returns (bytes memory) {
+    function read(bytes32 key) external returns (bytes memory) {
         if (acquiredNonce[msg.sender] == 0) {
             revert(); // XXX storage at a given nonce can only be accessed while the nonce is acquired
         }
-        return namespacedStorage[msg.sender][acquiredNonce[msg.sender]];
+        return nonceKVs[msg.sender][acquiredNonce[msg.sender]][key];
     }
 }

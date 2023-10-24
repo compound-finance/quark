@@ -28,6 +28,9 @@ contract QuarkWallet {
     /// @notice Address of QuarkStorageManager contract that manages nonces and nonce-namespaced transaction script storage
     QuarkStorageManager public immutable storageManager;
 
+    /// @notice Well-known storage location for the currently executing script's callback address (if any)
+    bytes32 internal constant CALLBACK_KEY = keccak256("callback.v1.quark");
+
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
         "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback,uint256[] requirements)"
@@ -176,11 +179,7 @@ contract QuarkWallet {
 
         // if the script allows callbacks, set it as the current callback
         if (allowCallback) {
-            address callback = storageManager.getProxyTarget();
-            if (callback != address(0)) {
-                revert QuarkCallbackAlreadyActive();
-            }
-            storageManager.setProxyTarget(scriptAddress);
+            storageManager.write(CALLBACK_KEY, abi.encode(scriptAddress));
         }
 
         bool success;
@@ -197,7 +196,7 @@ contract QuarkWallet {
             returndatacopy(add(returnData, 0x20), 0x00, returnSize)
         }
 
-        storageManager.setProxyTarget(address(0));
+        storageManager.write(CALLBACK_KEY, abi.encode(0));
 
         if (!success) {
             revert QuarkCallError(returnData);
@@ -207,9 +206,14 @@ contract QuarkWallet {
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
-        address callback = storageManager.getProxyTarget();
-        if (callback != address(0)) {
-            (bool success, bytes memory result) = callback.delegatecall(data);
+        bytes memory callback = storageManager.read(CALLBACK_KEY);
+        address callbackAddress;
+        if (callback.length > 0) {
+            callbackAddress = abi.decode(callback, (address));
+        }
+
+        if (callbackAddress != address(0)) {
+            (bool success, bytes memory result) = callbackAddress.delegatecall(data);
             if (!success) {
                 assembly {
                     let size := mload(result)
