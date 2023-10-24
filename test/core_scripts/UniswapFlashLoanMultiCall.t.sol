@@ -110,7 +110,7 @@ contract UniswapFlashLoanMultiCallTest is Test {
         );
         callValues[4] = 0 wei;
 
-        // Approve LINK to Comet
+        // Approve Comet for LINK
         callContracts[5] = address(LINK);
         callDatas[5] = abi.encodeCall(IERC20.approve, (comet, type(uint256).max));
         callValues[5] = 0 wei;
