@@ -182,7 +182,7 @@ contract MulticallTest is Test {
         callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1000e6));
         callValues[2] = 0 wei;
 
-        // Send USDC to Stranger : Failed (insufficient balance)
+        // Send USDC to Stranger; will fail (insufficient balance)
         callContracts[3] = address(USDC);
         callDatas[3] = abi.encodeCall(IERC20.transfer, (address(123), 10000e6));
         callValues[3] = 0 wei;
