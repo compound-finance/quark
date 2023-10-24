@@ -233,7 +233,7 @@ contract MulticallTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // Empty array is a valid input as no ops, so no revert
+        // Empty array is a valid input representing a no-op, and it should not revert
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Check on wallet states on balance and make sure all is still 0
