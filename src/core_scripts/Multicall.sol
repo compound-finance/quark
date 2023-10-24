@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 contract Multicall {
     error InvalidInput();
-    error MulticallError(uint256 callIndex, address callContract, bytes callData, uint256 callValue, bytes err);
+    error MulticallError(uint256 callIndex, address callContract, bytes err);
 
     /**
      * @notice Execute multiple calls
@@ -21,7 +21,7 @@ contract Multicall {
         for (uint256 i = 0; i < callContracts.length; i++) {
             (bool success, bytes memory returnData) = callContracts[i].call{value: callValues[i]}(callDatas[i]);
             if (!success) {
-                revert MulticallError(i, callContracts[i], callDatas[i], callValues[i], returnData);
+                revert MulticallError(i, callContracts[i], returnData);
             }
         }
     }
@@ -45,7 +45,7 @@ contract Multicall {
         for (uint256 i = 0; i < callContracts.length; i++) {
             (bool success, bytes memory returnData) = callContracts[i].call{value: callValues[i]}(callDatas[i]);
             if (!success) {
-                revert MulticallError(i, callContracts[i], callDatas[i], callValues[i], returnData);
+                revert MulticallError(i, callContracts[i], returnData);
             }
             returnDatas[i] = returnData;
         }

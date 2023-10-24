@@ -204,8 +204,6 @@ contract MulticallTest is Test {
                     Multicall.MulticallError.selector,
                     3,
                     callContracts[3],
-                    callDatas[3],
-                    callValues[3],
                     abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
                 )
             )
@@ -371,8 +369,6 @@ contract MulticallTest is Test {
                     Multicall.MulticallError.selector,
                     3,
                     callContracts[3],
-                    callDatas[3],
-                    callValues[3],
                     abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
                 )
             )
