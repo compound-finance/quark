@@ -63,10 +63,10 @@ contract QuarkWalletTest is Test {
 
     function testGetOwner() public {
         bytes memory getOwner = new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
-        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, getOwner);
+        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, getOwner, abi.encodeWithSignature("getOwner()"));
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
-        assertEq(result, abi.encode(aliceAccount));
+        assertEq(abi.decode(result, (address)), aliceAccount);
     }
 
     function testQuarkOperationRevertsIfCodeNotFound() public {
