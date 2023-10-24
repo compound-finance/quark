@@ -242,4 +242,51 @@ contract UniswapFlashLoanMultiCallTest is Test {
         );
         wallet.executeQuarkOperation(op, v, r, s);
     }
+
+    function testInvalidInput() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory uniswapFlashLoanMultiCall = new YulHelper().getDeployed(
+            "UniswapFlashLoanMultiCall.sol/UniswapFlashLoanMultiCall.json"
+        );
+
+        address[] memory callContracts = new address[](2);
+        bytes[] memory callDatas = new bytes[](1);
+        uint256[] memory callValues = new uint256[](1);
+
+        callContracts[0] = address(USDC);
+        callDatas[0] = abi.encodeCall(IERC20.transfer, (address(1), 1000e6));
+        callValues[0] = 0 wei;
+
+        callContracts[1] = address(USDC);
+
+        UniswapFlashLoanMultiCall.UniswapFlashLoanMultiCallPayload memory payload = UniswapFlashLoanMultiCall
+            .UniswapFlashLoanMultiCallPayload({
+            token0: USDC,
+            token1: DAI,
+            fee: 100,
+            amount0: 1000e6,
+            amount1: 0,
+            callContracts: callContracts,
+            callDatas: callDatas,
+            callValues: callValues
+        });
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: uniswapFlashLoanMultiCall,
+            scriptCalldata: abi.encodeWithSelector(UniswapFlashLoanMultiCall.run.selector, payload),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: true,
+            isReplayable: false,
+            requirements: new uint256[](0)
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(UniswapFlashLoanMultiCall.InvalidInput.selector)
+            )
+        );
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
 }
