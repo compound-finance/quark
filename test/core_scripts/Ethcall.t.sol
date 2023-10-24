@@ -39,7 +39,6 @@ contract EthcallTest is Test {
         factory = new QuarkWalletFactory();
     }
 
-    // Test Case #1: Invoke Counter contract via signature
     function testEthcallCounter() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
@@ -64,7 +63,6 @@ contract EthcallTest is Test {
         assertEq(counter.number(), 1);
     }
 
-    // Test Case #2: Supply USDC to Comet
     function testEthcallSupplyUSDCToComet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
@@ -108,7 +106,6 @@ contract EthcallTest is Test {
         assertApproxEqAbs(1000e6, IComet(comet).balanceOf(address(wallet)), 2);
     }
 
-    // Test Case #3: Withdraw USDC from Comet
     function testEthcallWithdrawUSDCFromComet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
@@ -166,7 +163,6 @@ contract EthcallTest is Test {
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
 
-    // Test Case #4: Call Error
     function testEthcallCallReraiseError() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
@@ -181,6 +177,65 @@ contract EthcallTest is Test {
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.transfer, (comet, 2000e6)), 0
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: false,
+            isReplayable: false,
+            requirements: new uint256[](0)
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
+            )
+        );
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    function testRunWithReturnEthcallCounter() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
+
+        counter.setNumber(5);
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSelector(
+                Ethcall.runWithReturn.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (1)), 0
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: true,
+            isReplayable: false,
+            requirements: new uint256[](0)
+        });
+
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
+        bytes memory returnData = abi.decode(quarkReturn, (bytes));
+
+        assertEq(abi.decode(returnData, (uint256)), 4);
+        assertEq(counter.number(), 4);
+    }
+
+    function testRunWithReturnEthcallReraiseError() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
+
+        // Set up some funds for test
+        deal(USDC, address(wallet), 1000e6);
+
+        // Send 2000 USDC to Comet
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSelector(
+                Ethcall.runWithReturn.selector, address(USDC), abi.encodeCall(IERC20.transfer, (comet, 2000e6)), 0
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
