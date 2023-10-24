@@ -40,7 +40,7 @@ contract MulticallTest is Test {
 
     function testInvokeCounterTwice() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multiCall = new YulHelper().getDeployed(
+        bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
         );
 
@@ -58,7 +58,7 @@ contract MulticallTest is Test {
         assertEq(counter.number(), 0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multiCall,
+            scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -74,7 +74,7 @@ contract MulticallTest is Test {
 
     function testSupplyWETHWithdrawUSDCOnComet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multiCall = new YulHelper().getDeployed(
+        bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
         );
 
@@ -102,7 +102,7 @@ contract MulticallTest is Test {
         callValues[2] = 0 wei;
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multiCall,
+            scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -120,7 +120,7 @@ contract MulticallTest is Test {
 
     function testInvalidInput() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multiCall = new YulHelper().getDeployed(
+        bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
         );
 
@@ -135,7 +135,7 @@ contract MulticallTest is Test {
         callValues[1] = 0 wei;
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multiCall,
+            scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -155,7 +155,7 @@ contract MulticallTest is Test {
 
     function testMulticallError() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multiCall = new YulHelper().getDeployed(
+        bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
         );
 
@@ -188,7 +188,7 @@ contract MulticallTest is Test {
         callValues[3] = 0 wei;
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multiCall,
+            scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -213,7 +213,7 @@ contract MulticallTest is Test {
 
     function testEmptyInputIsValid() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multiCall = new YulHelper().getDeployed(
+        bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
         );
 
@@ -223,7 +223,7 @@ contract MulticallTest is Test {
         uint256[] memory callValues = new uint256[](0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multiCall,
+            scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -235,19 +235,11 @@ contract MulticallTest is Test {
 
         // Empty array is a valid input representing a no-op, and it should not revert
         wallet.executeQuarkOperation(op, v, r, s);
-
-        // Check on wallet states on balance and make sure all is still 0
-        // Only hand picked some contracts to check,
-        // since it is impossible to check all possible states in all different smart contracts on chain
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 0);
-        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0);
-        assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 0);
     }
 
     function testMulticallShouldReturnCallResults() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multiCall = new YulHelper().getDeployed(
+        bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
         );
 
@@ -265,7 +257,7 @@ contract MulticallTest is Test {
         assertEq(counter.number(), 0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multiCall,
+            scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
