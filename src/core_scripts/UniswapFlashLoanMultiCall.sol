@@ -6,7 +6,7 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
 
-contract UniswapFlashLoanMultiCall is IUniswapV3FlashCallback {
+contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback {
     using SafeERC20 for IERC20;
 
     // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
@@ -16,7 +16,7 @@ contract UniswapFlashLoanMultiCall is IUniswapV3FlashCallback {
     error FailedFlashRepay(address token);
     error InvalidCaller();
     error InvalidInput();
-    error MultiCallError(uint256 callIndex, address callContract, bytes callData, uint256 callValue, bytes err);
+    error MulticallError(uint256 callIndex, address callContract, bytes err);
 
     /// @notice Input for flash loan multicall when interacting with UniswapV3 Pool contract
     struct FlashLoanCallbackPayload {
@@ -28,8 +28,8 @@ contract UniswapFlashLoanMultiCall is IUniswapV3FlashCallback {
         uint256[] callValues;
     }
 
-    /// @notice Payload for UniswapFlashLoanMultiCall
-    struct UniswapFlashLoanMultiCallPayload {
+    /// @notice Payload for UniswapFlashLoanMulticall
+    struct UniswapFlashLoanMulticallPayload {
         address token0;
         address token1;
         uint24 fee;
@@ -42,9 +42,9 @@ contract UniswapFlashLoanMultiCall is IUniswapV3FlashCallback {
 
     /**
      * @notice Execute multiple calls in a single transaction with flash loan
-     * @param payload UniswapFlashLoanMultiCallPayload struct; contains token and fee info and MultiCall inputs
+     * @param payload UniswapFlashLoanMulticallPayload struct; contains token and fee info and MultiCall inputs
      */
-    function run(UniswapFlashLoanMultiCallPayload memory payload) external {
+    function run(UniswapFlashLoanMulticallPayload memory payload) external {
         // Reorder token0, token1 to ensure token1 > token0
         if (payload.token0 > payload.token1) {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
@@ -95,7 +95,7 @@ contract UniswapFlashLoanMultiCall is IUniswapV3FlashCallback {
             (bool success, bytes memory returnData) =
                 input.callContracts[i].call{value: input.callValues[i]}(input.callDatas[i]);
             if (!success) {
-                revert MultiCallError(i, input.callContracts[i], input.callDatas[i], input.callValues[i], returnData);
+                revert MulticallError(i, input.callContracts[i], returnData);
             }
         }
 
