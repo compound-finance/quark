@@ -21,44 +21,49 @@ library ConditionalChecker {
         LessThanOrEqual
     }
 
+    struct Condition {
+        CheckType checkType;
+        Operator operator;
+    }
+
     error CheckFailed(bytes left, bytes right, CheckType cType, Operator op);
     error IncompatibleTypeAndOperator();
     error InvalidOperator();
 
-    function check(bytes memory left, bytes memory right, CheckType cType, Operator op) internal pure {
+    function check(bytes memory left, bytes memory right, Condition memory cond) internal pure {
         bool result;
-        if (op == Operator.Equal) {
+        if (cond.operator == Operator.Equal) {
             result = keccak256(left) == keccak256(right);
-        } else if (op == Operator.NotEqual) {
+        } else if (cond.operator == Operator.NotEqual) {
             result = keccak256(left) != keccak256(right);
-        } else if (op == Operator.GreaterThan) {
-            if (cType == CheckType.Uint) {
+        } else if (cond.operator == Operator.GreaterThan) {
+            if (cond.checkType == CheckType.Uint) {
                 result = abi.decode(left, (uint256)) > abi.decode(right, (uint256));
-            } else if (cType == CheckType.Int) {
+            } else if (cond.checkType == CheckType.Int) {
                 result = abi.decode(left, (int256)) > abi.decode(right, (int256));
             } else {
                 revert IncompatibleTypeAndOperator();
             }
-        } else if (op == Operator.GreaterThanOrEqual) {
-            if (cType == CheckType.Uint) {
+        } else if (cond.operator == Operator.GreaterThanOrEqual) {
+            if (cond.checkType == CheckType.Uint) {
                 result = abi.decode(left, (uint256)) >= abi.decode(right, (uint256));
-            } else if (cType == CheckType.Int) {
+            } else if (cond.checkType == CheckType.Int) {
                 result = abi.decode(left, (int256)) >= abi.decode(right, (int256));
             } else {
                 revert IncompatibleTypeAndOperator();
             }
-        } else if (op == Operator.LessThan) {
-            if (cType == CheckType.Uint) {
+        } else if (cond.operator == Operator.LessThan) {
+            if (cond.checkType == CheckType.Uint) {
                 result = abi.decode(left, (uint256)) < abi.decode(right, (uint256));
-            } else if (cType == CheckType.Int) {
+            } else if (cond.checkType == CheckType.Int) {
                 result = abi.decode(left, (int256)) < abi.decode(right, (int256));
             } else {
                 revert IncompatibleTypeAndOperator();
             }
-        } else if (op == Operator.LessThanOrEqual) {
-            if (cType == CheckType.Uint) {
+        } else if (cond.operator == Operator.LessThanOrEqual) {
+            if (cond.checkType == CheckType.Uint) {
                 result = abi.decode(left, (uint256)) <= abi.decode(right, (uint256));
-            } else if (cType == CheckType.Int) {
+            } else if (cond.checkType == CheckType.Int) {
                 result = abi.decode(left, (int256)) <= abi.decode(right, (int256));
             } else {
                 revert IncompatibleTypeAndOperator();
@@ -69,7 +74,7 @@ library ConditionalChecker {
         }
 
         if (!result) {
-            revert CheckFailed(left, right, cType, op);
+            revert CheckFailed(left, right, cond.checkType, cond.operator);
         }
     }
 }
