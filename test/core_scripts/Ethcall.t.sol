@@ -195,7 +195,7 @@ contract EthcallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
-    function testReturnData() public {
+    function testEthcallShouldReturnCallResult() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
