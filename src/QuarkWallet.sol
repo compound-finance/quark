@@ -185,7 +185,7 @@ contract QuarkWallet {
         }
 
         if (allowCallback) {
-            storageManager.write(CALLBACK_KEY, bytes32(uint256(uint160(0))));
+            storageManager.write(CALLBACK_KEY, bytes32(uint256(0)));
         }
 
         if (!success) {
@@ -196,14 +196,9 @@ contract QuarkWallet {
     }
 
     fallback(bytes calldata data) external returns (bytes memory) {
-        bytes32 callback = storageManager.read(CALLBACK_KEY);
-        address callbackAddress;
-        if (callback.length > 0) {
-            callbackAddress = address(uint160(uint256(callback)));
-        }
-
-        if (callbackAddress != address(0)) {
-            (bool success, bytes memory result) = callbackAddress.delegatecall(data);
+        address callback = address(uint160(uint256(storageManager.read(CALLBACK_KEY))));
+        if (callback != address(0)) {
+            (bool success, bytes memory result) = callback.delegatecall(data);
             if (!success) {
                 assembly {
                     let size := mload(result)
