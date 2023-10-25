@@ -300,4 +300,76 @@ contract UniswapFlashSwapMulticallTest is Test {
         );
         wallet.executeQuarkOperation(op, v, r, s);
     }
+
+    function testTokenOrderInvariant() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory uniswapFlashSwapMulticall = new YulHelper().getDeployed(
+            "UniswapFlashSwapMulticall.sol/UniswapFlashSwapMulticall.json"
+        );
+
+        // Start with 10000 USDC
+        deal(USDC, address(wallet), 10000e6);
+
+        // No ops, this will be pure swap
+        address[] memory callContracts = new address[](0);
+        bytes[] memory callDatas = new bytes[](0);
+        uint256[] memory callValues = new uint256[](0);
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: uniswapFlashSwapMulticall,
+            scriptCalldata: abi.encodeWithSelector(
+                UniswapFlashSwapMulticall.run.selector,
+                UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload({
+                    token0: WETH,
+                    token1: USDC,
+                    fee: 500,
+                    amount0: 1 ether,
+                    amount1: 0,
+                    sqrtPriceLimitX96: uint160(4295128739 + 1),
+                    callContracts: callContracts,
+                    callDatas: callDatas,
+                    callValues: callValues
+                })
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: true,
+            isReplayable: false,
+            requirements: new uint256[](0)
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        wallet.executeQuarkOperation(op, v, r, s);
+
+        // Bought 1 weth for USDC
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 1 ether);
+
+        // Payload swap token0 and token1 order, this will not affect the outcome
+        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
+            scriptSource: uniswapFlashSwapMulticall,
+            scriptCalldata: abi.encodeWithSelector(
+                UniswapFlashSwapMulticall.run.selector,
+                UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload({
+                    token0: USDC,
+                    token1: WETH,
+                    fee: 500,
+                    amount0: 0,
+                    amount1: 1 ether,
+                    sqrtPriceLimitX96: uint160(4295128739 + 1),
+                    callContracts: callContracts,
+                    callDatas: callDatas,
+                    callValues: callValues
+                })
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: true,
+            isReplayable: false,
+            requirements: new uint256[](0)
+        });
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
+        wallet.executeQuarkOperation(op2, v2, r2, s2);
+
+        // Bought 1 weth for USDC
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 2 ether);
+    }
 }
