@@ -97,7 +97,7 @@ contract QuarkStateManager {
         }
 
         // set the nonce active and yield to the wallet callback
-        uint256 parentActiveNonce = activeNonce[msg.sender];
+        uint256 parentNonce = activeNonce[msg.sender];
         activeNonce[msg.sender] = nonce;
 
         // spend the nonce; only if the callee chooses to save it will it get un-set and become replayable
@@ -113,7 +113,7 @@ contract QuarkStateManager {
         }
 
         // release the nonce when the wallet finishes executing callback
-        activeNonce[msg.sender] = parentActiveNonce;
+        activeNonce[msg.sender] = parentNonce;
 
         // otherwise, return the result. currently, result is double-encoded. un-encode it.
         return abi.decode(result, (bytes));
