@@ -18,9 +18,9 @@ import "./interfaces/IComet.sol";
 contract EthcallTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
-    // Need alice info here, for signature to QuarkWallet
-    uint256 alicePK = 0xa11ce;
-    address alice = vm.addr(alicePK);
+    uint256 alicePrivateKey = 0xa11ce;
+    address alice = vm.addr(alicePrivateKey);
+
     // Contracts address on mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -39,7 +39,6 @@ contract EthcallTest is Test {
         factory = new QuarkWalletFactory();
     }
 
-    // Test Case #1: Invoke Counter contract via signature
     function testEthcallCounter() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
@@ -57,12 +56,11 @@ contract EthcallTest is Test {
         });
 
         assertEq(counter.number(), 0);
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 1);
     }
 
-    // Test Case #2: Supply USDC to Comet
     function testEthcallSupplyUSDCToComet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
@@ -81,7 +79,7 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IComet(comet).balanceOf(address(wallet)), 0);
@@ -95,14 +93,13 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Since there is rouding diff, assert on diff is less than 10 wei
         assertApproxEqAbs(1000e6, IComet(comet).balanceOf(address(wallet)), 2);
     }
 
-    // Test Case #3: Withdraw USDC from Comet
     function testEthcallWithdrawUSDCFromComet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
@@ -122,7 +119,7 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Supply WETH to Comet
@@ -135,7 +132,7 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Withdraw USDC from Comet
@@ -148,13 +145,12 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (v, r, s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
 
-    // Test Case #4: Call Error
     function testEthcallCallReraiseError() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
@@ -174,7 +170,7 @@ contract EthcallTest is Test {
             expiry: type(uint256).max,
             allowCallback: false
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePK, wallet, op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -183,5 +179,29 @@ contract EthcallTest is Test {
             )
         );
         wallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    function testEthcallShouldReturnCallResult() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
+
+        counter.setNumber(5);
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSelector(
+                Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (1)), 0
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: true
+        });
+
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
+        bytes memory returnData = abi.decode(quarkReturn, (bytes));
+        assertEq(counter.number(), 4);
+        assertEq(abi.decode(returnData, (uint256)), 4);
     }
 }
