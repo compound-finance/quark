@@ -11,10 +11,10 @@ import {QuarkStorageManager} from "../src/QuarkStorageManager.sol";
 contract QuarkStorageManagerHarness is QuarkStorageManager {
     function setNonceExternal(uint256 nonce) external {
         // NOTE: intentionally violates invariant in the name of... testing
-        acquiredNonce[msg.sender] = nonce;
+        activeNonce[msg.sender] = nonce;
         (uint256 bucket, uint256 setMask) = locateNonce(nonce);
         nonces[msg.sender][bucket] |= setMask;
-        acquiredNonce[msg.sender] = 0;
+        activeNonce[msg.sender] = 0;
     }
 }
 
