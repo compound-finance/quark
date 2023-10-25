@@ -9,7 +9,7 @@ import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
 import {YulHelper} from "./lib/YulHelper.sol";
-import {QuarkStorageManager} from "../src/QuarkStorageManager.sol";
+import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {SignatureHelper} from "./lib/SignatureHelper.sol";
 import {ExecuteWithRequirements} from "./lib/ExecuteWithRequirements.sol";
 
@@ -17,7 +17,7 @@ contract EIP712Test is Test {
     CodeJar public codeJar;
     Counter public counter;
     QuarkWallet public wallet;
-    QuarkStorageManager public storageManager;
+    QuarkStateManager public stateManager;
 
     uint256 alicePrivateKey = 0xa11ce;
     address alice; // see setup()
@@ -28,15 +28,15 @@ contract EIP712Test is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
-        storageManager = new QuarkStorageManager();
-        console.log("QuarkStorageManager deployed to: %s", address(storageManager));
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
         counter = new Counter();
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
         alice = vm.addr(alicePrivateKey);
-        wallet = new QuarkWallet(alice, codeJar, storageManager);
+        wallet = new QuarkWallet(alice, codeJar, stateManager);
     }
 
     function incrementCounterOperation(uint256 nonce, uint256 expiry)
@@ -74,7 +74,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 3);
 
         // nonce is spent
-        assertEq(storageManager.isNonceSet(address(wallet), nonce), true);
+        assertEq(stateManager.isNonceSet(address(wallet), nonce), true);
     }
 
     function testRevertsForBadCode() public {
@@ -97,7 +97,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(storageManager.isNonceSet(address(wallet), nonce), false);
+        assertEq(stateManager.isNonceSet(address(wallet), nonce), false);
     }
 
     function testRevertsForBadCalldata() public {
@@ -120,7 +120,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(storageManager.isNonceSet(address(wallet), nonce), false);
+        assertEq(stateManager.isNonceSet(address(wallet), nonce), false);
     }
 
     function testRevertsForBadExpiry() public {
@@ -239,7 +239,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 3);
 
         // nonce is NOT spent
-        assertEq(storageManager.isNonceSet(address(wallet), nonce), false);
+        assertEq(stateManager.isNonceSet(address(wallet), nonce), false);
 
         // bob executes the operation a second time
         vm.prank(bob);
@@ -249,7 +249,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 6);
 
         // nonce is still not spent
-        assertEq(storageManager.isNonceSet(address(wallet), nonce), false);
+        assertEq(stateManager.isNonceSet(address(wallet), nonce), false);
     }
 
     // TODO: rewrite these tests to use requirements implemented in the script itself

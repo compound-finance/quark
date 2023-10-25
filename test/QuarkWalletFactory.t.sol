@@ -74,7 +74,7 @@ contract QuarkWalletFactoryTest is Test {
     function testCreateAndExecuteCreatesWallet() public {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256 nonce = factory.storageManager().nextUnusedNonce(factory.walletAddressForAccount(alice));
+        uint256 nonce = factory.stateManager().nextUnusedNonce(factory.walletAddressForAccount(alice));
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
@@ -100,13 +100,13 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        assertEq(factory.storageManager().isNonceSet(factory.walletAddressForAccount(alice), nonce), true);
+        assertEq(factory.stateManager().isNonceSet(factory.walletAddressForAccount(alice), nonce), true);
     }
 
     function testCreateAndExecuteWithSalt() public {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256 nonce = factory.storageManager().nextUnusedNonce(factory.walletAddressForAccount(alice));
+        uint256 nonce = factory.stateManager().nextUnusedNonce(factory.walletAddressForAccount(alice));
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
@@ -134,13 +134,13 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        assertEq(factory.storageManager().isNonceSet(factory.walletAddressForAccount(alice, salt), nonce), true);
+        assertEq(factory.stateManager().isNonceSet(factory.walletAddressForAccount(alice, salt), nonce), true);
     }
 
     function testExecuteOnExistingWallet() public {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256 nonce = factory.storageManager().nextUnusedNonce(factory.walletAddressForAccount(alice));
+        uint256 nonce = factory.stateManager().nextUnusedNonce(factory.walletAddressForAccount(alice));
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: incrementer,
@@ -168,6 +168,6 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        assertEq(factory.storageManager().isNonceSet(factory.walletAddressForAccount(alice), nonce), true);
+        assertEq(factory.stateManager().isNonceSet(factory.walletAddressForAccount(alice), nonce), true);
     }
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import "../../src/QuarkWallet.sol";
-import "../../src/QuarkStorageManager.sol";
+import "../../src/QuarkStateManager.sol";
 
 contract ExecuteWithRequirements {
     error RequirementNotMet(uint256 nonce);
@@ -12,9 +12,9 @@ contract ExecuteWithRequirements {
         returns (bytes memory)
     {
         QuarkWallet wallet = QuarkWallet(address(this));
-        QuarkStorageManager storageManager = wallet.storageManager();
+        QuarkStateManager stateManager = wallet.stateManager();
         for (uint256 i = 0; i < requirements.length; i++) {
-            if (!storageManager.isNonceSet(address(wallet), requirements[i])) {
+            if (!stateManager.isNonceSet(address(wallet), requirements[i])) {
                 revert RequirementNotMet(requirements[i]);
             }
         }

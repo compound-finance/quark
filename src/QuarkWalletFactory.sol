@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import "./CodeJar.sol";
 import "./QuarkWallet.sol";
-import "./QuarkStorageManager.sol";
+import "./QuarkStateManager.sol";
 
 contract QuarkWalletFactory {
     event WalletDeploy(address indexed account, address indexed walletAddress, bytes32 salt);
@@ -14,12 +14,12 @@ contract QuarkWalletFactory {
     /// @notice Address of CodeJar contract
     CodeJar public immutable codeJar;
 
-    /// @notice Address of QuarkStorageManager contract
-    QuarkStorageManager public immutable storageManager;
+    /// @notice Address of QuarkStateManager contract
+    QuarkStateManager public immutable stateManager;
 
     constructor() {
         codeJar = new CodeJar();
-        storageManager = new QuarkStorageManager();
+        stateManager = new QuarkStateManager();
     }
 
     /**
@@ -40,7 +40,7 @@ contract QuarkWalletFactory {
      * @return address Address of the newly-created wallet
      */
     function create(address account, bytes32 salt) public returns (address) {
-        address walletAddress = address(new QuarkWallet{salt: salt}(account, codeJar, storageManager));
+        address walletAddress = address(new QuarkWallet{salt: salt}(account, codeJar, stateManager));
         emit WalletDeploy(account, walletAddress, salt);
         return walletAddress;
     }
@@ -76,7 +76,7 @@ contract QuarkWalletFactory {
                                     type(QuarkWallet).creationCode,
                                     abi.encode(account),
                                     abi.encode(address(codeJar)),
-                                    abi.encode(address(storageManager))
+                                    abi.encode(address(stateManager))
                                 )
                             )
                         )

@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "../src/CodeJar.sol";
 import "../src/QuarkWallet.sol";
-import "../src/QuarkStorageManager.sol";
+import "../src/QuarkStateManager.sol";
 
 import "./lib/Counter.sol";
 import "./lib/MaxCounterScript.sol";
@@ -20,7 +20,7 @@ contract QuarkWalletTest is Test {
 
     CodeJar public codeJar;
     Counter public counter;
-    QuarkStorageManager public storageManager;
+    QuarkStateManager public stateManager;
 
     uint256 alicePrivateKey = 0x8675309;
     address aliceAccount = vm.addr(alicePrivateKey);
@@ -34,10 +34,10 @@ contract QuarkWalletTest is Test {
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
-        storageManager = new QuarkStorageManager();
-        console.log("QuarkStorageManager deployed to: %s", address(storageManager));
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
-        aliceWallet = new QuarkWallet(aliceAccount, codeJar, storageManager);
+        aliceWallet = new QuarkWallet(aliceAccount, codeJar, stateManager);
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
 

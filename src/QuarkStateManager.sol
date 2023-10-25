@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-contract QuarkStorageManager {
+contract QuarkStateManager {
     error InvalidNonce(uint256);
     error NoNonceActive();
     error NoUnusedNonces();

@@ -9,14 +9,14 @@ import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
 import {YulHelper} from "./lib/YulHelper.sol";
-import {QuarkStorageManager} from "../src/QuarkStorageManager.sol";
+import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {ExecuteOtherOperation} from "./lib/ExecuteOtherOperation.sol";
 import {SignatureHelper} from "./lib/SignatureHelper.sol";
 
 contract CallbacksTest is Test {
     CodeJar public codeJar;
     Counter public counter;
-    QuarkStorageManager public storageManager;
+    QuarkStateManager public stateManager;
 
     uint256 alicePrivateKey = 0x9810473;
     address aliceAccount; // see constructor()
@@ -26,15 +26,15 @@ contract CallbacksTest is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
-        storageManager = new QuarkStorageManager();
-        console.log("QuarkStorageManager deployed to: %s", address(storageManager));
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
         counter = new Counter();
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
         aliceAccount = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWallet(aliceAccount, codeJar, storageManager);
+        aliceWallet = new QuarkWallet(aliceAccount, codeJar, stateManager);
     }
 
     function testCallbackFromCounter() public {

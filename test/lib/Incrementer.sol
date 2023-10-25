@@ -14,7 +14,7 @@ contract Incrementer {
 
     function incrementCounterReplayable(Counter counter) public {
         incrementCounter(counter);
-        QuarkWallet(msg.sender).storageManager().clearNonce();
+        QuarkWallet(msg.sender).stateManager().clearNonce();
     }
 
     fallback() external {
