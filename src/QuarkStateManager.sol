@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 contract QuarkStateManager {
-    error InvalidNonce(uint256);
+    error InvalidNonce();
     error NoNonceActive();
     error NoUnusedNonces();
     error NonceAlreadySet();
@@ -26,7 +26,7 @@ contract QuarkStateManager {
      */
     function isNonceSet(address wallet, uint256 nonce) public view returns (bool) {
         if (nonce == 0) {
-            revert InvalidNonce(nonce);
+            revert InvalidNonce();
         }
         uint256 bucket = nonce >> 8;
         uint256 mask = 1 << (nonce & 0xff);
@@ -64,7 +64,7 @@ contract QuarkStateManager {
      */
     function getBucket(uint256 nonce) internal pure returns (uint256, /* bucket */ uint256 /* mask */ ) {
         if (nonce == 0) {
-            revert InvalidNonce(nonce);
+            revert InvalidNonce();
         }
         uint256 bucket = nonce >> 8;
         uint256 setMask = 1 << (nonce & 0xff);
@@ -89,7 +89,7 @@ contract QuarkStateManager {
      */
     function setActiveNonceAndCallback(uint256 nonce, bytes calldata callback) external returns (bytes memory) {
         if (nonce == 0) {
-            revert InvalidNonce(nonce);
+            revert InvalidNonce();
         }
 
         if (isNonceSet(msg.sender, nonce)) {
