@@ -71,9 +71,9 @@ contract QuarkStorageManager {
     }
 
     /**
-     * @notice Un-spend the active nonce to allow its reuse; intended for replayable transactions
+     * @notice Un-sets the active nonce to allow its reuse; intended for replayable transactions
      */
-    function unsetNonce() external {
+    function clearNonce() external {
         if (activeNonce[msg.sender] == 0) {
             revert NoNonceActive();
         }
