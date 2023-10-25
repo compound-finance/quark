@@ -5,6 +5,7 @@ contract QuarkStateManager {
     error InvalidNonce(uint256);
     error NoNonceActive();
     error NoUnusedNonces();
+    error NonceAlreadySet();
 
     /// @notice Bit-packed nonce values
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
@@ -89,6 +90,10 @@ contract QuarkStateManager {
     function setActiveNonceAndCallback(uint256 nonce, bytes calldata callback) external returns (bytes memory) {
         if (nonce == 0) {
             revert InvalidNonce(nonce);
+        }
+
+        if (isNonceSet(msg.sender, nonce)) {
+            revert NonceAlreadySet();
         }
 
         // set the nonce active and yield to the wallet callback
