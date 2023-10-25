@@ -3,16 +3,16 @@ pragma solidity ^0.8.19;
 
 contract QuarkStorageManager {
     error InvalidNonce(uint256);
-    error NoNonceAcquired();
+    error NoNonceActive();
     error NoUnusedNonces();
 
     /// @notice Bit-packed nonce values
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
 
-    /// @notice Nonce acquired by a wallet, if any, to execute a script using that nonce
-    mapping(address /* wallet */ => uint256 /* nonce */) internal acquiredNonce;
+    /// @notice Currently active nonce for a wallet, if any, for which storage is accessible
+    mapping(address /* wallet */ => uint256 /* nonce */) internal activeNonce;
 
-    /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is acquired
+    /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
     mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
         internal nonceKVs;
 
@@ -48,14 +48,14 @@ contract QuarkStorageManager {
     }
 
     /**
-     * @notice Return the nonce currently acquired by a wallet; revert if none
-     * @return Currently acquired nonce
+     * @notice Return the nonce currently active for a wallet; revert if none
+     * @return Currently active nonce
      */
-    function getAcquiredNonce() external view returns (uint256) {
-        if (acquiredNonce[msg.sender] == 0) {
-            revert NoNonceAcquired();
+    function getActiveNonce() external view returns (uint256) {
+        if (activeNonce[msg.sender] == 0) {
+            revert NoNonceActive();
         }
-        return acquiredNonce[msg.sender];
+        return activeNonce[msg.sender];
     }
 
     /**
@@ -71,29 +71,29 @@ contract QuarkStorageManager {
     }
 
     /**
-     * @notice Un-spend the acquired nonce to allow its reuse; intended for replayable transactions
+     * @notice Un-spend the active nonce to allow its reuse; intended for replayable transactions
      */
     function unsetNonce() external {
-        if (acquiredNonce[msg.sender] == 0) {
-            revert NoNonceAcquired();
+        if (activeNonce[msg.sender] == 0) {
+            revert NoNonceActive();
         }
-        (uint256 bucket, uint256 setMask) = locateNonce(acquiredNonce[msg.sender]);
+        (uint256 bucket, uint256 setMask) = locateNonce(activeNonce[msg.sender]);
         nonces[msg.sender][bucket] &= ~setMask;
     }
 
     /**
-     * @notice Acquire a wallet nonce and yield control back to the wallet by calling into yieldTarget
-     * @param nonce Nonce to acquire for the transaction
-     * @dev The wallet is expected to setNonce(..) when the nonce has been exhausted; acquiring a nonce does not necessarily exhaust it
+     * @notice Set a wallet nonce as the active nonce and yield control back to the wallet by calling into yieldTarget
+     * @param nonce Nonce to activate for the transaction
+     * @dev The wallet is expected to setNonce(..) when the nonce has been exhausted; activating a nonce does not necessarily exhaust it
      */
-    function acquireNonceAndYield(uint256 nonce, bytes calldata yieldTarget) external returns (bytes memory) {
+    function setActiveNonceAndYield(uint256 nonce, bytes calldata yieldTarget) external returns (bytes memory) {
         if (nonce == 0) {
             revert InvalidNonce(nonce);
         }
 
-        // acquire the nonce and yield to the wallet yieldTarget
-        uint256 acquiredParent = acquiredNonce[msg.sender];
-        acquiredNonce[msg.sender] = nonce;
+        // set the nonce active and yield to the wallet yieldTarget
+        uint256 parentActiveNonce = activeNonce[msg.sender];
+        activeNonce[msg.sender] = nonce;
 
         // spend the nonce; only if the callee chooses to save it will it get un-set and become replayable
         (uint256 bucket, uint256 setMask) = locateNonce(nonce);
@@ -108,30 +108,30 @@ contract QuarkStorageManager {
         }
 
         // release the nonce when the wallet finishes executing yieldTarget
-        acquiredNonce[msg.sender] = acquiredParent;
+        activeNonce[msg.sender] = parentActiveNonce;
 
         // otherwise, return the result. currently, result is double-encoded. un-encode it.
         return abi.decode(result, (bytes));
     }
 
     /**
-     * @notice Write arbitrary bytes to storage namespaced by the currently acquired nonce; reverts if no nonce is currently acquired
+     * @notice Write arbitrary bytes to storage namespaced by the currently active nonce; reverts if no nonce is currently active
      */
     function write(bytes32 key, bytes32 value) external {
-        if (acquiredNonce[msg.sender] == 0) {
-            revert NoNonceAcquired();
+        if (activeNonce[msg.sender] == 0) {
+            revert NoNonceActive();
         }
-        nonceKVs[msg.sender][acquiredNonce[msg.sender]][key] = value;
+        nonceKVs[msg.sender][activeNonce[msg.sender]][key] = value;
     }
 
     /**
-     * @notice Read from storage namespaced by the currently acquired nonce; reverts if no nonce is currently acquired
+     * @notice Read from storage namespaced by the currently active nonce; reverts if no nonce is currently active
      * @return Value at the nonce storage location, as bytes
      */
     function read(bytes32 key) external returns (bytes32) {
-        if (acquiredNonce[msg.sender] == 0) {
-            revert NoNonceAcquired();
+        if (activeNonce[msg.sender] == 0) {
+            revert NoNonceActive();
         }
-        return nonceKVs[msg.sender][acquiredNonce[msg.sender]][key];
+        return nonceKVs[msg.sender][activeNonce[msg.sender]][key];
     }
 }
