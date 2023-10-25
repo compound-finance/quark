@@ -156,6 +156,7 @@ contract QuarkWallet {
         public
         returns (bytes memory)
     {
+        require(msg.sender == address(storageManager));
         uint256 codeLen;
         assembly {
             codeLen := extcodesize(scriptAddress)
