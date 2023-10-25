@@ -12,7 +12,7 @@ contract QuarkStateManagerHarness is QuarkStateManager {
     function setNonceExternal(uint256 nonce) external {
         // NOTE: intentionally violates invariant in the name of... testing
         activeNonce[msg.sender] = nonce;
-        (uint256 bucket, uint256 setMask) = locateNonce(nonce);
+        (uint256 bucket, uint256 setMask) = getBucket(nonce);
         nonces[msg.sender][bucket] |= setMask;
         activeNonce[msg.sender] = 0;
     }

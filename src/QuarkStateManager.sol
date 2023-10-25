@@ -62,7 +62,7 @@ contract QuarkStateManager {
     /**
      * @dev Locate a nonce at a (bucket, mask) bitset position in the public nonces mapping
      */
-    function locateNonce(uint256 nonce) internal pure returns (uint256, /* bucket */ uint256 /* nonce */ ) {
+    function getBucket(uint256 nonce) internal pure returns (uint256, /* bucket */ uint256 /* mask */) {
         if (nonce == 0) {
             revert InvalidNonce(nonce);
         }
@@ -78,7 +78,7 @@ contract QuarkStateManager {
         if (activeNonce[msg.sender] == 0) {
             revert NoNonceActive();
         }
-        (uint256 bucket, uint256 setMask) = locateNonce(activeNonce[msg.sender]);
+        (uint256 bucket, uint256 setMask) = getBucket(activeNonce[msg.sender]);
         nonces[msg.sender][bucket] &= ~setMask;
     }
 
@@ -101,7 +101,7 @@ contract QuarkStateManager {
         activeNonce[msg.sender] = nonce;
 
         // spend the nonce; only if the callee chooses to save it will it get un-set and become replayable
-        (uint256 bucket, uint256 setMask) = locateNonce(nonce);
+        (uint256 bucket, uint256 setMask) = getBucket(nonce);
         nonces[msg.sender][bucket] |= setMask;
 
         (bool success, bytes memory result) = msg.sender.call(callback);
