@@ -62,7 +62,7 @@ contract QuarkStateManager {
     /**
      * @dev Locate a nonce at a (bucket, mask) bitset position in the public nonces mapping
      */
-    function getBucket(uint256 nonce) internal pure returns (uint256, /* bucket */ uint256 /* mask */) {
+    function getBucket(uint256 nonce) internal pure returns (uint256, /* bucket */ uint256 /* mask */ ) {
         if (nonce == 0) {
             revert InvalidNonce(nonce);
         }
