@@ -59,7 +59,7 @@ contract CallbacksTest is Test {
         assertEq(counter.number(), 11);
     }
 
-    function testAllowNestedCallbacksWhyNot() public {
+    function testAllowNestedCallbacks() public {
         bytes memory callbackFromCounter =
             new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
         bytes memory executeOtherScript =
