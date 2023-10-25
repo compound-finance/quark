@@ -61,7 +61,7 @@ contract QuarkStorageManager {
     /**
      * @dev Locate a nonce at a (bucket, mask) bitset position in the public nonces mapping
      */
-    function locateNonce(uint256 nonce) internal pure returns (uint256 /* bucket */, uint256 /* nonce */) {
+    function locateNonce(uint256 nonce) internal pure returns (uint256, /* bucket */ uint256 /* nonce */ ) {
         if (nonce == 0) {
             revert InvalidNonce(nonce);
         }
