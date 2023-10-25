@@ -18,6 +18,7 @@ contract QuarkStorageManager {
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
+     * @dev `0` is not a valid nonce
      * @param wallet Address of the wallet owning the nonce
      * @param nonce Nonce to check
      * @return Whether the nonce has been exhausted
