@@ -340,4 +340,72 @@ contract UniswapFlashLoanMulticallTest is Test {
         );
         wallet.executeQuarkOperation(op, v, r, s);
     }
+
+    function testTokensOrderInvariant() public {
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory uniswapFlashLoanMulticall = new YulHelper().getDeployed(
+            "UniswapFlashLoanMulticall.sol/UniswapFlashLoanMulticall.json"
+        );
+
+        deal(USDC, address(wallet), 10000e6);
+
+        // No ops
+        address[] memory callContracts = new address[](0);
+        bytes[] memory callDatas = new bytes[](0);
+        uint256[] memory callValues = new uint256[](0);
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptSource: uniswapFlashLoanMulticall,
+            scriptCalldata: abi.encodeWithSelector(
+                UniswapFlashLoanMulticall.run.selector,
+                UniswapFlashLoanMulticall.UniswapFlashLoanMulticallPayload({
+                    token0: USDC,
+                    token1: DAI,
+                    fee: 100,
+                    amount0: 10000e6,
+                    amount1: 0,
+                    callContracts: callContracts,
+                    callDatas: callDatas,
+                    callValues: callValues
+                })
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: true,
+            isReplayable: false,
+            requirements: new uint256[](0)
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        wallet.executeQuarkOperation(op, v, r, s);
+
+        // Lose 1 USDC to flash loan fee
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 9999e6);
+
+        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
+            scriptSource: uniswapFlashLoanMulticall,
+            scriptCalldata: abi.encodeWithSelector(
+                UniswapFlashLoanMulticall.run.selector,
+                UniswapFlashLoanMulticall.UniswapFlashLoanMulticallPayload({
+                    token0: DAI,
+                    token1: USDC,
+                    fee: 100,
+                    amount0: 0,
+                    amount1: 10000e6,
+                    callContracts: callContracts,
+                    callDatas: callDatas,
+                    callValues: callValues
+                })
+                ),
+            nonce: wallet.nextUnusedNonce(),
+            expiry: type(uint256).max,
+            allowCallback: true,
+            isReplayable: false,
+            requirements: new uint256[](0)
+        });
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
+        wallet.executeQuarkOperation(op2, v2, r2, s2);
+
+        // Lose 1 USDC to flash loan fee
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 9998e6);
+    }
 }
