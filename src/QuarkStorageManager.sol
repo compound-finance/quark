@@ -82,16 +82,16 @@ contract QuarkStorageManager {
     }
 
     /**
-     * @notice Set a wallet nonce as the active nonce and yield control back to the wallet by calling into yieldTarget
+     * @notice Set a wallet nonce as the active nonce and yield control back to the wallet by calling into callback
      * @param nonce Nonce to activate for the transaction
      * @dev The wallet is expected to setNonce(..) when the nonce has been exhausted; activating a nonce does not necessarily exhaust it
      */
-    function setActiveNonceAndYield(uint256 nonce, bytes calldata yieldTarget) external returns (bytes memory) {
+    function setActiveNonceAndCallback(uint256 nonce, bytes calldata callback) external returns (bytes memory) {
         if (nonce == 0) {
             revert InvalidNonce(nonce);
         }
 
-        // set the nonce active and yield to the wallet yieldTarget
+        // set the nonce active and yield to the wallet callback
         uint256 parentActiveNonce = activeNonce[msg.sender];
         activeNonce[msg.sender] = nonce;
 
@@ -99,7 +99,7 @@ contract QuarkStorageManager {
         (uint256 bucket, uint256 setMask) = locateNonce(nonce);
         nonces[msg.sender][bucket] |= setMask;
 
-        (bool success, bytes memory result) = msg.sender.call(yieldTarget);
+        (bool success, bytes memory result) = msg.sender.call(callback);
         // if the call fails, propagate the revert from the wallet
         if (!success) {
             assembly {
@@ -107,7 +107,7 @@ contract QuarkStorageManager {
             }
         }
 
-        // release the nonce when the wallet finishes executing yieldTarget
+        // release the nonce when the wallet finishes executing callback
         activeNonce[msg.sender] = parentActiveNonce;
 
         // otherwise, return the result. currently, result is double-encoded. un-encode it.

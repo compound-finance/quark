@@ -118,7 +118,7 @@ contract QuarkWallet {
         if (isValidSignature(owner, digest, v, r, s)) {
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
-            return storageManager.setActiveNonceAndYield(
+            return storageManager.setActiveNonceAndCallback(
                 op.nonce,
                 abi.encodeCall(
                     this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback)
