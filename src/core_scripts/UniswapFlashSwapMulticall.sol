@@ -15,7 +15,7 @@ contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback {
     error FailedFlashSwap(address token);
     error InvalidCaller();
     error InvalidInput();
-    error MulticallError(uint256 callIndex, address callContract, bytes callData, uint256 callValue, bytes err);
+    error MulticallError(uint256 callIndex, address callContract, bytes err);
 
     /// @notice Input for flash swap multicall when interacting with UniswapV3 Pool swap function
     struct FlashSwapMulticallInput {
@@ -93,7 +93,7 @@ contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback {
             (bool success, bytes memory returnData) =
                 input.callContracts[i].call{value: input.callValues[i]}(input.callDatas[i]);
             if (!success) {
-                revert MulticallError(i, input.callContracts[i], input.callDatas[i], input.callValues[i], returnData);
+                revert MulticallError(i, input.callContracts[i], returnData);
             }
         }
 
