@@ -66,8 +66,8 @@ contract QuarkWallet {
      * already been written to, which costs less gas
      * @return The next unused nonce
      */
-    function nextUnusedNonce() external view returns (uint256) {
-        return stateManager.nextUnusedNonce(address(this));
+    function nextNonce() external view returns (uint256) {
+        return stateManager.nextNonce(address(this));
     }
 
     /**

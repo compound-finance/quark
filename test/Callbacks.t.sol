@@ -43,7 +43,7 @@ contract CallbacksTest is Test {
         bytes memory callbackFromCounter =
             new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
 
-        uint256 nonce = aliceWallet.nextUnusedNonce();
+        uint256 nonce = aliceWallet.nextNonce();
 
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
@@ -65,7 +65,7 @@ contract CallbacksTest is Test {
         bytes memory executeOtherScript =
             new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
-        uint256 nonce1 = aliceWallet.nextUnusedNonce();
+        uint256 nonce1 = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
             scriptSource: callbackFromCounter,
@@ -97,7 +97,7 @@ contract CallbacksTest is Test {
         bytes memory executeOtherScript =
             new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
-        uint256 nonce1 = aliceWallet.nextUnusedNonce();
+        uint256 nonce1 = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
             scriptSource: counterScript,
@@ -125,7 +125,7 @@ contract CallbacksTest is Test {
     function testAllowCallbackDoesNotRequireGettingCalledBack() public {
         assertEq(counter.number(), 0);
         bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
-        uint256 nonce = aliceWallet.nextUnusedNonce();
+        uint256 nonce = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: counterScript,
@@ -144,7 +144,7 @@ contract CallbacksTest is Test {
         bytes memory callbackFromCounter =
             new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
 
-        uint256 nonce = aliceWallet.nextUnusedNonce();
+        uint256 nonce = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: callbackFromCounter,

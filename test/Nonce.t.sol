@@ -54,12 +54,12 @@ contract NonceTest is Test {
     }
 
     function testNextUnusedNonce() public {
-        assertEq(stateManagerHarness.nextUnusedNonce(address(this)), 1);
+        assertEq(stateManagerHarness.nextNonce(address(this)), 1);
 
         stateManagerHarness.setNonceExternal(1);
-        assertEq(stateManagerHarness.nextUnusedNonce(address(this)), 2);
+        assertEq(stateManagerHarness.nextNonce(address(this)), 2);
 
         stateManagerHarness.setNonceExternal(2);
-        assertEq(stateManagerHarness.nextUnusedNonce(address(this)), 3);
+        assertEq(stateManagerHarness.nextNonce(address(this)), 3);
     }
 }

@@ -55,7 +55,7 @@ contract QuarkWalletTest is Test {
         return QuarkWallet.QuarkOperation({
             scriptSource: scriptSource,
             scriptCalldata: scriptCalldata,
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: block.timestamp + 1000,
             allowCallback: false
         });
