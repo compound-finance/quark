@@ -202,7 +202,7 @@ contract QuarkWallet is IERC1271 {
     /**
      * @notice Checks whether an EIP-1271 signature is valid
      * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
-     * that the signature comes from the owner; If the QuarkWallet is owned by
+     * that the signature comes from the owner; if the QuarkWallet is owned by
      * a smart contract, isValidSignature relays the `isValidSignature` to the
      * smart contract
      * @param hash Hash of the signed data
@@ -228,7 +228,7 @@ contract QuarkWallet is IERC1271 {
 
     /*
      * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
-     * that the signature comes from the owner; If the QuarkWallet is owned by
+     * that the signature comes from the owner; if the QuarkWallet is owned by
      * a smart contract, isValidSignature relays the `isValidSignature` to the
      * smart contract
      */
