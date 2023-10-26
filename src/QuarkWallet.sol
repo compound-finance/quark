@@ -289,4 +289,6 @@ contract QuarkWallet {
             revert NoActiveCallback();
         }
     }
+
+    receive() external payable {}
 }
