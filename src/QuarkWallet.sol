@@ -10,12 +10,8 @@ contract QuarkWallet {
     error InvalidNonce();
     error InvalidSignatureS();
     error NoActiveCallback();
-    error NoUnusedNonces();
-    error QuarkCallbackAlreadyActive();
     error QuarkCallError(bytes);
     error QuarkCodeNotFound();
-    error QuarkNonceReplay(uint256);
-    error QuarkReadError();
     error SignatureExpired();
 
     /// @notice Address of the EOA that controls this wallet
@@ -44,9 +40,6 @@ contract QuarkWallet {
 
     /// @notice The major version of this contract, for use in DOMAIN_SEPARATOR
     string public constant VERSION = "1";
-
-    /// @notice Bit-packed nonce values
-    mapping(uint256 => uint256) public nonces;
 
     struct QuarkOperation {
         /* TODO: optimization: allow passing in the address of the script

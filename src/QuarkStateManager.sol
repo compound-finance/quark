@@ -15,7 +15,7 @@ contract QuarkStateManager {
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
     mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
-        internal nonceKVs;
+        internal walletStorage;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -126,7 +126,7 @@ contract QuarkStateManager {
         if (activeNonce[msg.sender] == 0) {
             revert NoNonceActive();
         }
-        nonceKVs[msg.sender][activeNonce[msg.sender]][key] = value;
+        walletStorage[msg.sender][activeNonce[msg.sender]][key] = value;
     }
 
     /**
@@ -137,6 +137,6 @@ contract QuarkStateManager {
         if (activeNonce[msg.sender] == 0) {
             revert NoNonceActive();
         }
-        return nonceKVs[msg.sender][activeNonce[msg.sender]][key];
+        return walletStorage[msg.sender][activeNonce[msg.sender]][key];
     }
 }
