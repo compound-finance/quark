@@ -11,6 +11,7 @@ contract TerminalScript {
     error AccountNotAtRisk();
 
     function supplyBaseToV3(address comet, uint256 amount) external {
+        IERC20(IComet(comet).baseToken()).approve(comet, amount);
         IComet(comet).supply(IComet(comet).baseToken(), amount);
     }
 
@@ -19,6 +20,7 @@ contract TerminalScript {
     }
 
     function supplyCollateralToV3(address comet, address asset, uint256 amount) external {
+        IERC20(asset).approve(comet, amount);
         IComet(comet).supply(asset, amount);
     }
 
