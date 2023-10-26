@@ -13,23 +13,42 @@ contract TerminalScript {
 
     error TransferFailed(bytes data);
 
+    /**
+     *   @dev Supply an asset to Comet
+     *   @param comet The Comet address
+     *   @param asset The asset address
+     *   @param amount The amount to supply
+     */
     function supplyToComet(address comet, address asset, uint256 amount) external {
         IERC20(asset).safeIncreaseAllowance(comet, amount);
         IComet(comet).supply(asset, amount);
     }
 
+    /**
+     *  @dev Withdraw an asset from Comet
+     *  @param comet The Comet address
+     *  @param asset The asset address
+     *  @param amount The amount to withdraw
+     */
     function withdrawFromComet(address comet, address asset, uint256 amount) external {
         IComet(comet).withdraw(asset, amount);
     }
 
+    /**
+     *  @dev Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
+     * @param uniswapRouter The Uniswap router address
+     * @param tokenFrom The token to swap from
+     * @param amount The token amount to swap
+     * @param amountOutMinimum The minimum amount of target token to receive (revert if return amount is less than this)
+     */
     function swapAssetExactIn(
         address uniswapRouter,
-        address assetFrom,
+        address tokenFrom,
         uint256 amount,
         uint256 amountOutMinimum,
         bytes calldata path
     ) external {
-        IERC20(assetFrom).safeIncreaseAllowance(uniswapRouter, amount);
+        IERC20(tokenFrom).safeIncreaseAllowance(uniswapRouter, amount);
         ISwapRouter(uniswapRouter).exactInput(
             ISwapRouter.ExactInputParams({
                 path: path,
@@ -41,14 +60,21 @@ contract TerminalScript {
         );
     }
 
+    /**
+     * @dev Swap token on Uniswap with Exact Output (i.e. Set output amount and swap with required amount token)
+     * @param uniswapRouter The Uniswap router address
+     * @param tokenFrom The token to swap from
+     * @param amount The target token amount to receive
+     * @param amountInMaximum The maximum amount of input token to spend (revert if input amount is greater than this)
+     */
     function swapAssetExactOut(
         address uniswapRouter,
-        address assetFrom,
+        address tokenFrom,
         uint256 amount,
         uint256 amountInMaximum,
         bytes calldata path
     ) external {
-        IERC20(assetFrom).safeIncreaseAllowance(uniswapRouter, amountInMaximum);
+        IERC20(tokenFrom).safeIncreaseAllowance(uniswapRouter, amountInMaximum);
         ISwapRouter(uniswapRouter).exactOutput(
             ISwapRouter.ExactOutputParams({
                 path: path,
@@ -60,10 +86,21 @@ contract TerminalScript {
         );
     }
 
+    /**
+     * @dev Transfer ERC20 token
+     * @param token The token address
+     * @param recipient The recipient address
+     * @param amount The amount to transfer
+     */
     function transferERC20Token(address token, address recipient, uint256 amount) external {
         IERC20(token).safeTransfer(recipient, amount);
     }
 
+    /**
+     * @dev Transfer native token (i.e. ETH)
+     * @param recipient The recipient address
+     * @param amount The amount to transfer
+     */
     function transferNativeToken(address recipient, uint256 amount) external {
         (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
         if (!success) {
@@ -71,10 +108,21 @@ contract TerminalScript {
         }
     }
 
+    /**
+     * @dev Claim COMP rewards
+     * @param cometRewards The CometRewards address
+     * @param comet The Comet address
+     */
     function claimCOMP(address cometRewards, address comet) external {
         ICometRewards(cometRewards).claim(comet, msg.sender, true);
     }
 
+    /**
+     * @dev Supply multiple assets to Comet
+     * @param comet The Comet address
+     * @param assets The assets to supply
+     * @param amounts The amounts of each asset to supply
+     */
     function supplyMultipleAssetsToComet(address comet, address[] calldata assets, uint256[] calldata amounts)
         external
     {
@@ -84,6 +132,12 @@ contract TerminalScript {
         }
     }
 
+    /**
+     * @dev Withdraw multiple assets from Comet
+     * @param comet The Comet address
+     * @param assets The assets to withdraw
+     * @param amounts The amounts of each asset to withdraw
+     */
     function withdrawMultipleAssetsFromComet(address comet, address[] calldata assets, uint256[] calldata amounts)
         external
     {
