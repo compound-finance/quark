@@ -75,6 +75,6 @@ contract SupplyMultipleCollateralAssetsToV3 is Test {
 
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 10e18);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), USDC), 1000e6);
+        assertApproxEqAbs(IComet(comet).balanceOf(address(wallet)), 1000e6, 1);
     }
 }

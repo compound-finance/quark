@@ -50,7 +50,7 @@ contract SendTokenToExternalAddress is Test {
         assertEq(IERC20(WETH).balanceOf(bob), 0 ether);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(TerminalScript.transferERC20Token.selector, bob, WETH, 10 ether),
+            scriptCalldata: abi.encodeWithSelector(TerminalScript.transferERC20Token.selector, WETH, bob, 10 ether),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,
@@ -78,7 +78,7 @@ contract SendTokenToExternalAddress is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                TerminalScript.transferERC20Token.selector, address(walletBob), WETH, 10 ether
+                TerminalScript.transferERC20Token.selector, WETH, address(walletBob), 10 ether
                 ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
