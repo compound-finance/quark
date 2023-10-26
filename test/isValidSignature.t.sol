@@ -5,6 +5,7 @@ import "forge-std/StdUtils.sol";
 import "forge-std/console.sol";
 
 import {QuarkWallet} from "../src/QuarkWallet.sol";
+import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
 import {EIP1271Signer} from "./lib/EIP1271Signer.sol";
@@ -13,6 +14,7 @@ contract isValidSignatureTest is Test {
     CodeJar public codeJar;
     QuarkWallet aliceWallet;
     QuarkWallet bobWallet;
+    QuarkStateManager public stateManager;
 
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
 
@@ -27,11 +29,14 @@ contract isValidSignatureTest is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+
         alice = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWallet(alice, codeJar);
+        aliceWallet = new QuarkWallet(alice, codeJar, stateManager);
 
         bob = vm.addr(bobPrivateKey);
-        bobWallet = new QuarkWallet(bob, codeJar);
+        bobWallet = new QuarkWallet(bob, codeJar, stateManager);
     }
 
     function createTestSignature(uint256 privateKey, QuarkWallet wallet)
@@ -90,7 +95,7 @@ contract isValidSignatureTest is Test {
     function testReturnsMagicValueForValidSignature() public {
         // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
-        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar);
+        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will approve anything
         (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         assertEq(contractWallet.isValidSignature(bytes32(""), signature), EIP_1271_MAGIC_VALUE);
@@ -99,7 +104,7 @@ contract isValidSignatureTest is Test {
     function testRevertsIfSignerContractReturnsFalse() public {
         // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
-        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar);
+        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will reject everything
         (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         vm.expectRevert(QuarkWallet.InvalidSignature.selector);
