@@ -188,11 +188,7 @@ contract QuarkWallet is IERC1271 {
      * @return bool Whether the address contains code
      */
     function hasCode(address addr) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return size > 0;
+        return addr.code.length > 0;
     }
 
     /**
