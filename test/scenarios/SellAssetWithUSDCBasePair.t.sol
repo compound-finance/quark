@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.21;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -16,9 +14,9 @@ import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 
 /**
- * Scenario test for uesr to purchase assetes from Uniswap V3
+ * Scenario test for uesr to sell assetes from Uniswap V3
  */
-contract BuyAssetWithUSDCBasePair is Test {
+contract SellAssetWithUSDCBasePair is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
@@ -44,24 +42,24 @@ contract BuyAssetWithUSDCBasePair is Test {
     }
 
     // Usually one stop is sufficient for pairs with high liquidity
-    function testBuyAssetOneStopTerminalScript() public {
+    function testSellAssetOneStopTerminalScript() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
-        deal(USDC, address(wallet), 10000e6);
+        deal(WETH, address(wallet), 2 ether);
 
         // ExactIn: Limit the amount of USDC you want to spend and receive as much WETH as possible
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                TerminalScript.buyAssetWithUSDCExactIn.selector,
+                TerminalScript.swapAssetExactIn.selector,
                 uniswapRouter,
-                USDC,
-                2000e6,
+                WETH,
                 1 ether,
-                abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
+                1000e6,
+                abi.encodePacked(WETH, uint24(500), USDC) // Path: WETH - 0.05% -> USDC
             ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -75,19 +73,19 @@ contract BuyAssetWithUSDCBasePair is Test {
 
         uint256 wethBalance = IERC20(WETH).balanceOf(address(wallet));
         uint256 usdcBalance = IERC20(USDC).balanceOf(address(wallet));
-        assertGe(wethBalance, 1 ether);
-        assertEq(usdcBalance, 8000e6);
+        assertEq(wethBalance, 1 ether);
+        assertGe(usdcBalance, 1000e6);
 
         // ExactOut: Limit the amount of WETH you want to receive and spend as much USDC as necessary
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                TerminalScript.buyAssetWithUSDCExactOut.selector,
+                TerminalScript.swapAssetExactOut.selector,
                 uniswapRouter,
-                USDC,
+                WETH,
+                1600e6,
                 1 ether,
-                2000e6,
-                abi.encodePacked(WETH, uint24(500), USDC) // Path: WETH - 0.05% -> USDC
+                abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
             ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -98,29 +96,29 @@ contract BuyAssetWithUSDCBasePair is Test {
 
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
         wallet.executeQuarkOperation(op2, v2, r2, s2);
-        assertEq(IERC20(WETH).balanceOf(address(wallet)), wethBalance + 1 ether);
-        assertGe(IERC20(USDC).balanceOf(address(wallet)), usdcBalance - 2000e6);
+        assertGe(IERC20(WETH).balanceOf(address(wallet)), 0);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), usdcBalance + 1600e6);
     }
 
-    // Lower liquidity asset may require to have two stops (USDC -> ETH -> COMP)
-    function testBuyAssetTwoStopsTerminalScript() public {
+    // Lower liquidity asset may require to have two stops (COMP -> ETH -> USDC)
+    function testSellAssetTwoStopsTerminalScript() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
-        deal(USDC, address(wallet), 10000e6);
+        deal(COMP, address(wallet), 100e18);
 
         // ExactIn: Limit the amount of USDC you want to spend and receive as much COMP as possible
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                TerminalScript.buyAssetWithUSDCExactIn.selector,
+                TerminalScript.swapAssetExactIn.selector,
                 uniswapRouter,
-                USDC,
-                2000e6,
-                40e18,
-                abi.encodePacked(USDC, uint24(500), WETH, uint24(3000), COMP) // Path: USDC - 0.05% -> WETH - 0.3% -> COMP
+                COMP,
+                50e18,
+                1800e6,
+                abi.encodePacked(COMP, uint24(3000), WETH, uint24(500), USDC) // Path: COMP - 0.05% -> WETH - 0.3% -> USDC
             ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -134,19 +132,19 @@ contract BuyAssetWithUSDCBasePair is Test {
 
         uint256 compBalance = IERC20(COMP).balanceOf(address(wallet));
         uint256 usdcBalance = IERC20(USDC).balanceOf(address(wallet));
-        assertGe(compBalance, 40e18);
-        assertEq(usdcBalance, 8000e6);
+        assertEq(compBalance, 50e18);
+        assertGe(usdcBalance, 1800e6);
 
         // ExactOut: Limit the amount of COMP you want to receive and spend as much USDC as necessary
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                TerminalScript.buyAssetWithUSDCExactOut.selector,
+                TerminalScript.swapAssetExactOut.selector,
                 uniswapRouter,
-                USDC,
-                40e18,
-                2000e6,
-                abi.encodePacked(COMP, uint24(3000), WETH, uint24(500), USDC) // Path: COMP - 0.05% -> WETH - 0.3% -> USDC
+                COMP,
+                1500e6,
+                50e18,
+                abi.encodePacked(USDC, uint24(500), WETH, uint24(3000), COMP) // Path: USDC - 0.05% -> WETH - 0.3% -> COMP
             ),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -157,7 +155,7 @@ contract BuyAssetWithUSDCBasePair is Test {
 
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
         wallet.executeQuarkOperation(op2, v2, r2, s2);
-        assertEq(IERC20(COMP).balanceOf(address(wallet)), compBalance + 40e18);
-        assertGe(IERC20(USDC).balanceOf(address(wallet)), usdcBalance - 2000e6);
+        assertGe(IERC20(COMP).balanceOf(address(wallet)), 0);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), usdcBalance + 1500e6);
     }
 }

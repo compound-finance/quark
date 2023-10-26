@@ -5,6 +5,6 @@ import "../../src/QuarkWallet.sol";
 
 contract ExecuteOtherOperation {
     function run(QuarkWallet.QuarkOperation memory op, uint8 v, bytes32 r, bytes32 s) external returns (bytes memory) {
-        return QuarkWallet(msg.sender).executeQuarkOperation(op, v, r, s);
+        return QuarkWallet(payable(msg.sender)).executeQuarkOperation(op, v, r, s);
     }
 }

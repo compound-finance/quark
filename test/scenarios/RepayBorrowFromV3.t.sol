@@ -16,7 +16,7 @@ import "./../lib/Counter.sol";
 /**
  * Scenario test for uesr borrow base asset from Comet v3 market
  */
-contract BorrowFromV3 is Test {
+contract RepayBorrowFromV3 is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
@@ -55,7 +55,7 @@ contract BorrowFromV3 is Test {
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(TerminalScript.supplyBaseToV3.selector, comet, 1000e6),
+            scriptCalldata: abi.encodeWithSelector(TerminalScript.supplyToComet.selector, comet, USDC, 1000e6),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,

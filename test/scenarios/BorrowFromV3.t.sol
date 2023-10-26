@@ -53,7 +53,7 @@ contract BorrowFromV3 is Test {
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(TerminalScript.withdrawBaseFromV3.selector, comet, 100e6),
+            scriptCalldata: abi.encodeWithSelector(TerminalScript.withdrawFromComet.selector, comet, USDC, 100e6),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,

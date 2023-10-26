@@ -54,7 +54,7 @@ contract BuyAssetWithUSDCBasePair is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                TerminalScript.buyAssetWithUSDCExactIn.selector,
+                TerminalScript.swapAssetExactIn.selector,
                 uniswapRouter,
                 USDC,
                 2000e6,
@@ -80,7 +80,7 @@ contract BuyAssetWithUSDCBasePair is Test {
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                TerminalScript.buyAssetWithUSDCExactOut.selector,
+                TerminalScript.swapAssetExactOut.selector,
                 uniswapRouter,
                 USDC,
                 1 ether,
@@ -113,7 +113,7 @@ contract BuyAssetWithUSDCBasePair is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                TerminalScript.buyAssetWithUSDCExactIn.selector,
+                TerminalScript.swapAssetExactIn.selector,
                 uniswapRouter,
                 USDC,
                 2000e6,
@@ -139,7 +139,7 @@ contract BuyAssetWithUSDCBasePair is Test {
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
-                TerminalScript.buyAssetWithUSDCExactOut.selector,
+                TerminalScript.swapAssetExactOut.selector,
                 uniswapRouter,
                 USDC,
                 40e18,
