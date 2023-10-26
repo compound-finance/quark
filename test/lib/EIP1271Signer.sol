@@ -9,7 +9,11 @@ contract EIP1271Signer {
         approveSignature = _approveSignature;
     }
 
-    function isValidSignature(bytes32 /* messageHash */, bytes memory /* signature */) external view returns (bytes4) {
+    function isValidSignature(bytes32, /* messageHash */ bytes memory /* signature */ )
+        external
+        view
+        returns (bytes4)
+    {
         if (approveSignature) {
             return EIP_1271_MAGIC_VALUE;
         } else {
