@@ -62,7 +62,7 @@ contract QuarkStateManager {
     }
 
     /**
-     * @dev Locate a nonce at a (bucket, mask) bitset position in the public nonces mapping
+     * @dev Locate a nonce at a (bucket, mask) bitset position in the nonces mapping
      */
     function getBucket(uint256 nonce) internal pure returns (uint256, /* bucket */ uint256 /* mask */ ) {
         if (nonce == 0) {
@@ -74,7 +74,7 @@ contract QuarkStateManager {
     }
 
     /**
-     * @notice Un-sets the active nonce to allow its reuse; intended for replayable transactions
+     * @notice Clears (un-sets) the active nonce to allow its reuse; allows a script to be replayed
      */
     function clearNonce() external {
         if (activeNonce[msg.sender] == 0) {
@@ -87,7 +87,7 @@ contract QuarkStateManager {
     /**
      * @notice Set a wallet nonce as the active nonce and yield control back to the wallet by calling into callback
      * @param nonce Nonce to activate for the transaction
-     * @dev The wallet is expected to setNonce(..) when the nonce has been exhausted; activating a nonce does not necessarily exhaust it
+     * @dev The script is expected to clearNonce() if it wishes to be replayable
      */
     function setActiveNonceAndCallback(uint256 nonce, bytes calldata callback) external returns (bytes memory) {
         if (nonce == 0) {
