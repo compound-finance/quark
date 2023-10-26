@@ -6,8 +6,9 @@ import "openzeppelin/token/ERC20/IERC20.sol";
 import "./interfaces/IComet.sol";
 import "./interfaces/ICometRewards.sol";
 
-contract TerminalScripts {
+contract TerminalScript {
     error TransferFailed(bytes data);
+    error AccountNotAtRisk();
 
     function supplyBaseToV3(address comet, uint256 amount) external {
         IComet(comet).supply(IComet(comet).baseToken(), amount);
@@ -131,6 +132,4 @@ contract TerminalScripts {
             IComet(comet).withdraw(assets[i], amount[i]);
         }
     }
-
-    function accountProtection() external {}
 }
