@@ -54,7 +54,11 @@ contract isValidSignatureTest is Test {
         bobWallet = new QuarkWallet(bob, codeJar);
     }
 
-    function createTestSignature(uint256 privateKey, QuarkWallet wallet) internal view returns (bytes32, bytes memory) {
+    function createTestSignature(uint256 privateKey, QuarkWallet wallet)
+        internal
+        view
+        returns (bytes32, bytes memory)
+    {
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
@@ -104,7 +108,7 @@ contract isValidSignatureTest is Test {
 
     /* wallet owned by smart contract  */
     function testReturnsMagicValueForValidSignature() public {
-       // QuarkWallet is owned by a smart contract that always approves signatures
+        // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar);
         // signature from bob; doesn't matter because the EIP1271Signer will approve anything
@@ -113,7 +117,7 @@ contract isValidSignatureTest is Test {
     }
 
     function testRevertsIfSignerContractReturnsFalse() public {
-       // QuarkWallet is owned by a smart contract that always rejects signatures
+        // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar);
         // signature from bob; doesn't matter because the EIP1271Signer will reject everything

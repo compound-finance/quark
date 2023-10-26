@@ -232,18 +232,15 @@ contract QuarkWallet is IERC1271 {
      * a smart contract, isValidSignature relays the `isValidSignature` to the
      * smart contract
      */
-    function isValidSignature(
-        address signer,
-        bytes32 digest,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal view returns (bool) {
+    function isValidSignature(address signer, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
+        internal
+        view
+        returns (bool)
+    {
         if (hasCode(signer)) {
             bytes memory signature = abi.encodePacked(r, s, v);
-            (bool success, bytes memory data) = signer.staticcall(
-                abi.encodeWithSelector(EIP_1271_MAGIC_VALUE, digest, signature)
-            );
+            (bool success, bytes memory data) =
+                signer.staticcall(abi.encodeWithSelector(EIP_1271_MAGIC_VALUE, digest, signature));
             if (!success) revert InvalidEIP1271Signature();
             bytes4 returnValue = abi.decode(data, (bytes4));
             return returnValue == EIP_1271_MAGIC_VALUE;
@@ -263,7 +260,9 @@ contract QuarkWallet is IERC1271 {
      */
     function hasCode(address addr) internal view returns (bool) {
         uint256 size;
-        assembly { size := extcodesize(addr) }
+        assembly {
+            size := extcodesize(addr)
+        }
         return size > 0;
     }
 
