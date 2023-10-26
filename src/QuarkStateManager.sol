@@ -94,7 +94,11 @@ contract QuarkStateManager {
             revert InvalidNonce();
         }
 
-        if (isNonceSet(msg.sender, nonce)) {
+        // retrieve the (bucket, mask) pair that addresses the nonce in memory
+        (uint256 bucket, uint256 setMask) = getBucket(nonce);
+
+        // ensure nonce is not already set (NOTE: inlined isNonceSet to avoid reading the nonce twice)
+        if ((nonces[msg.sender][bucket] & setMask) != 0) {
             revert NonceAlreadySet();
         }
 
@@ -102,8 +106,7 @@ contract QuarkStateManager {
         uint256 parentNonce = activeNonce[msg.sender];
         activeNonce[msg.sender] = nonce;
 
-        // spend the nonce; only if the callee chooses to save it will it get un-set and become replayable
-        (uint256 bucket, uint256 setMask) = getBucket(nonce);
+        // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
         nonces[msg.sender][bucket] |= setMask;
 
         (bool success, bytes memory result) = msg.sender.call(callback);
