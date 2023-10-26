@@ -4,30 +4,10 @@ import "forge-std/Test.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/console.sol";
 
-import {Test} from "forge-std/Test.sol";
 import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
-import {YulHelper} from "./lib/YulHelper.sol";
-import {SignatureHelper} from "./lib/SignatureHelper.sol";
-
-contract EIP1271Signer {
-    bytes4 internal constant EIP1271_MAGIC_VALUE = 0x1626ba7e;
-
-    bool public approveSignature;
-
-    constructor(bool _approveSignature) {
-        approveSignature = _approveSignature;
-    }
-
-    function isValidSignature(bytes32 messageHash, bytes memory signature) external view returns (bytes4) {
-        if (approveSignature) {
-            return EIP1271_MAGIC_VALUE;
-        } else {
-            return 0xffffffff;
-        }
-    }
-}
+import {EIP1271Signer} from "./lib/EIP1271Signer.sol";
 
 contract isValidSignatureTest is Test {
     CodeJar public codeJar;

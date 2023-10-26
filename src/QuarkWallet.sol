@@ -123,6 +123,8 @@ contract QuarkWallet is IERC1271 {
                     this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback)
                 )
             );
+        } else {
+            revert InvalidSignature();
         }
     }
 
