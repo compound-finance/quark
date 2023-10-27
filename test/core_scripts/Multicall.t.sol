@@ -103,7 +103,7 @@ contract MulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
+            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,
