@@ -36,7 +36,7 @@ contract TerminalScript {
     }
 
     /**
-     *  @dev Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
+     * @dev Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
      * @param uniswapRouter The Uniswap router address
      * @param tokenFrom The token to swap from
      * @param amount The token amount to swap
