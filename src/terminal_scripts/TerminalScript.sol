@@ -7,6 +7,7 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IComet.sol";
 import "./interfaces/ICometRewards.sol";
 
+// TODO: Will need to add support for E-Comet once E-Comet has been deployed
 contract TerminalScript {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
