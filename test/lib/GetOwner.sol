@@ -5,7 +5,7 @@ import "../../src/QuarkScript.sol";
 import "../../src/QuarkWallet.sol";
 
 contract GetOwner is QuarkScript {
-    fallback(bytes calldata data) external payable returns (bytes memory) {
-        return abi.encode(owner());
+    function getOwner() external returns (address) {
+        return QuarkWallet(address(this)).owner();
     }
 }

@@ -65,11 +65,9 @@ contract MulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -104,11 +102,9 @@ contract MulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -133,11 +129,9 @@ contract MulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -181,11 +175,9 @@ contract MulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
@@ -211,11 +203,9 @@ contract MulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -244,11 +234,9 @@ contract MulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
