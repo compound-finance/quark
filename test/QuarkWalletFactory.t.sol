@@ -72,6 +72,8 @@ contract QuarkWalletFactoryTest is Test {
     }
 
     function testCreateAndExecuteCreatesWallet() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
@@ -90,6 +92,9 @@ contract QuarkWalletFactoryTest is Test {
 
         assertEq(counter.number(), 0);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
@@ -104,6 +109,8 @@ contract QuarkWalletFactoryTest is Test {
     }
 
     function testCreateAndExecuteWithSalt() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
@@ -124,6 +131,8 @@ contract QuarkWalletFactoryTest is Test {
 
         assertEq(counter.number(), 0);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet (with salt)
@@ -138,6 +147,8 @@ contract QuarkWalletFactoryTest is Test {
     }
 
     function testExecuteOnExistingWallet() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
@@ -155,6 +166,9 @@ contract QuarkWalletFactoryTest is Test {
             new SignatureHelper().signOpForAddress(alicePrivateKey, factory.walletAddressForAccount(alice), op);
 
         assertEq(counter.number(), 0);
+
+        // gas: meter create, createAndExecute
+        vm.resumeGasMetering();
 
         // the wallet is deployed
         vm.expectEmit(true, true, true, true);

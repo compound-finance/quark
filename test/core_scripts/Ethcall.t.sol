@@ -40,6 +40,8 @@ contract EthcallTest is Test {
     }
 
     function testEthcallCounter() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
@@ -57,11 +59,16 @@ contract EthcallTest is Test {
 
         assertEq(counter.number(), 0);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 1);
     }
 
     function testEthcallSupplyUSDCToComet() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
@@ -80,9 +87,15 @@ contract EthcallTest is Test {
             allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IComet(comet).balanceOf(address(wallet)), 0);
+
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         // Supply Comet
         op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
@@ -94,6 +107,9 @@ contract EthcallTest is Test {
             allowCallback: false
         });
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Since there is rouding diff, assert on diff is less than 10 wei
@@ -101,6 +117,8 @@ contract EthcallTest is Test {
     }
 
     function testEthcallWithdrawUSDCFromComet() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
@@ -120,8 +138,13 @@ contract EthcallTest is Test {
             allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         // Supply WETH to Comet
         op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
@@ -133,8 +156,13 @@ contract EthcallTest is Test {
             allowCallback: false
         });
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         // Withdraw USDC from Comet
         op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
@@ -146,12 +174,17 @@ contract EthcallTest is Test {
             allowCallback: false
         });
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
 
     function testEthcallCallReraiseError() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
@@ -172,6 +205,8 @@ contract EthcallTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -182,6 +217,8 @@ contract EthcallTest is Test {
     }
 
     function testEthcallShouldReturnCallResult() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
@@ -199,8 +236,12 @@ contract EthcallTest is Test {
         });
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
         bytes memory returnData = abi.decode(quarkReturn, (bytes));
+
         assertEq(counter.number(), 4);
         assertEq(abi.decode(returnData, (uint256)), 4);
     }
