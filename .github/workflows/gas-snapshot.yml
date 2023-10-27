@@ -1,0 +1,54 @@
+name: snapshot gas
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  snapshot-gas:
+    name: Diff against gas snapshot
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Diff gas snapshot against baseline
+        run: |
+          set -euo pipefail
+          # grep -E '^test'  -- skip over test results, just get diffs
+          forge snapshot --diff \
+            | grep -E '^test'   \
+            | tee .gas-snapshot.new
+        env:
+          NODE_PROVIDER_BYPASS_KEY: ${{ secrets.NODE_PROVIDER_BYPASS_KEY }}
+
+      - name: Check diff tolerance
+        run: |
+          set -euo pipefail
+          # 1. skip over diffs of 0 gas (do not fail if no matches)
+          # 2. skip over negative diffs (do not fail if no matches)
+          # 3. remove ANSI color / style escape sequences
+          # 4. extract absolute (not percentage) gas diffs
+          # 5. pluck any diffs that exceed an absolute tolerance threshold
+          #    and exit non-zero (failure) if any such diff is found
+          { grep -Ev 'gas: 0' .gas-snapshot.new || true; }  \
+            | { grep -Ev '\-[0-9]+' || true; }              \
+            | sed -Ee 's/\x1b\[[0-9;]*m//g'                 \
+                  -Ee 's/(.+)\(\) \(gas: ([0-9]+).+/\1 \2/' \
+            | awk '{ if ($2 > ENVIRON["GAS_DIFF_THRESHOLD"]) { print; failures++ } } END { if (failures > 0) { print $failures; exit 1 } else { print "ok." } }'
+        env:
+          # gas diff check should fail if any gas diff exceeds threshold
+          GAS_DIFF_THRESHOLD: 5000
