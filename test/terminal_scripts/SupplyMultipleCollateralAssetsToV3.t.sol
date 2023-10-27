@@ -41,7 +41,7 @@ contract SupplyMultipleCollateralAssetsToV3 is Test {
 
     function testSupplyMultipleCollateralTerminalScript() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -59,7 +59,7 @@ contract SupplyMultipleCollateralAssetsToV3 is Test {
         amounts[2] = 1000e6;
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.supplyMultipleAssetsToComet.selector, comet, assets, amounts
                 ),

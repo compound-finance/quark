@@ -39,14 +39,14 @@ contract SupplyToV3 is Test {
 
     function testSupplyTerminalScript() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
         deal(WETH, address(wallet), 10 ether);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(TerminalScript.supplyToComet.selector, comet, WETH, 10 ether),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,

@@ -40,7 +40,7 @@ contract SendTokenToExternalAddress is Test {
 
     function testTransferERC20TokenToEOA() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -49,7 +49,7 @@ contract SendTokenToExternalAddress is Test {
         assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
         assertEq(IERC20(WETH).balanceOf(bob), 0 ether);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(TerminalScript.transferERC20Token.selector, WETH, bob, 10 ether),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -67,7 +67,7 @@ contract SendTokenToExternalAddress is Test {
     function testTransferERC20TokenToQuarkWallet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         QuarkWallet walletBob = QuarkWallet(factory.create(bob, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -76,7 +76,7 @@ contract SendTokenToExternalAddress is Test {
         assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
         assertEq(IERC20(WETH).balanceOf(bob), 0 ether);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.transferERC20Token.selector, WETH, address(walletBob), 10 ether
                 ),
@@ -95,7 +95,7 @@ contract SendTokenToExternalAddress is Test {
 
     function testTransferNativeTokenToEOA() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -104,7 +104,7 @@ contract SendTokenToExternalAddress is Test {
         assertEq(address(wallet).balance, 10 ether);
         assertEq(bob.balance, 0 ether);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(TerminalScript.transferNativeToken.selector, bob, 10 ether),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
@@ -123,7 +123,7 @@ contract SendTokenToExternalAddress is Test {
     function testTransferNativeTokenToQuarkWallet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         QuarkWallet walletBob = QuarkWallet(factory.create(bob, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -132,7 +132,7 @@ contract SendTokenToExternalAddress is Test {
         assertEq(address(wallet).balance, 10 ether);
         assertEq(address(walletBob).balance, 0 ether);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.transferNativeToken.selector, address(walletBob), 10 ether
                 ),

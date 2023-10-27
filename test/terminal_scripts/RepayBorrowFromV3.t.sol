@@ -40,7 +40,7 @@ contract RepayBorrowFromV3 is Test {
 
     function testRepayBorrowTerminalScript() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -54,7 +54,7 @@ contract RepayBorrowFromV3 is Test {
 
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(TerminalScript.supplyToComet.selector, comet, USDC, 1000e6),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,

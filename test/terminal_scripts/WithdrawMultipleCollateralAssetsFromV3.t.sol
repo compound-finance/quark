@@ -41,7 +41,7 @@ contract BorrowFromV3 is Test {
 
     function testWithdrawTerminalScript() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -79,7 +79,7 @@ contract BorrowFromV3 is Test {
         vm.warp(block.timestamp + 180 days);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.withdrawMultipleAssetsFromComet.selector, comet, assets, amounts
                 ),

@@ -44,7 +44,7 @@ contract SellAssetWithUSDCBasePair is Test {
     // Usually one stop is sufficient for pairs with high liquidity
     function testSellAssetOneStopTerminalScript() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -52,7 +52,7 @@ contract SellAssetWithUSDCBasePair is Test {
 
         // ExactIn: Limit the amount of USDC you want to spend and receive as much WETH as possible
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.swapAssetExactIn.selector,
                 uniswapRouter,
@@ -78,7 +78,7 @@ contract SellAssetWithUSDCBasePair is Test {
 
         // ExactOut: Limit the amount of WETH you want to receive and spend as much USDC as necessary
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.swapAssetExactOut.selector,
                 uniswapRouter,
@@ -103,7 +103,7 @@ contract SellAssetWithUSDCBasePair is Test {
     // Lower liquidity asset may require to have two stops (COMP -> ETH -> USDC)
     function testSellAssetTwoStopsTerminalScript() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -111,7 +111,7 @@ contract SellAssetWithUSDCBasePair is Test {
 
         // ExactIn: Limit the amount of USDC you want to spend and receive as much COMP as possible
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.swapAssetExactIn.selector,
                 uniswapRouter,
@@ -137,7 +137,7 @@ contract SellAssetWithUSDCBasePair is Test {
 
         // ExactOut: Limit the amount of COMP you want to receive and spend as much USDC as necessary
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.swapAssetExactOut.selector,
                 uniswapRouter,

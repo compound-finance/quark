@@ -41,7 +41,7 @@ contract ClaimCOMPOnV3 is Test {
 
     function testClaimCompTerminalScript() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
+        bytes memory terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TerminalScript.json"
         );
 
@@ -58,7 +58,7 @@ contract ClaimCOMPOnV3 is Test {
 
         assertEq(IERC20(COMP).balanceOf(address(wallet)), 0e6);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
+            scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(TerminalScript.claimCOMP.selector, cometReward, comet),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
