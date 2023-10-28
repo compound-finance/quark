@@ -141,46 +141,51 @@ contract QuarkWalletTest is Test {
 
         // call once
         {
+            // gas: do not meter set-up
+            vm.pauseGasMetering();
             QuarkWallet.QuarkOperation memory op =
                 newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
             // gas: meter execute
             vm.resumeGasMetering();
             aliceWallet.executeQuarkOperation(op, v, r, s);
-            vm.pauseGasMetering();
         }
         assertEq(counter.number(), 1);
 
         // call twice
         {
+            // gas: do not meter set-up
+            vm.pauseGasMetering();
             QuarkWallet.QuarkOperation memory op =
                 newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
             // gas: meter execute
             vm.resumeGasMetering();
             aliceWallet.executeQuarkOperation(op, v, r, s);
-            vm.pauseGasMetering();
         }
         assertEq(counter.number(), 2);
 
         // call thrice
         {
+            // gas: do not meter set-up
+            vm.pauseGasMetering();
             QuarkWallet.QuarkOperation memory op =
                 newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
             // gas: meter execute
             vm.resumeGasMetering();
             aliceWallet.executeQuarkOperation(op, v, r, s);
-            vm.pauseGasMetering();
         }
         assertEq(counter.number(), 3);
 
         // revert because max has been hit
         {
+            // gas: do not meter set-up
+            vm.pauseGasMetering();
             QuarkWallet.QuarkOperation memory op =
                 newBasicOp(aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)));
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
-            // gas: it's probably fine to meter reverts
+            // gas: meter execute
             vm.resumeGasMetering();
             vm.expectRevert(
                 abi.encodeWithSelector(
@@ -188,7 +193,6 @@ contract QuarkWalletTest is Test {
                 )
             );
             aliceWallet.executeQuarkOperation(op, v, r, s);
-            vm.pauseGasMetering();
         }
         assertEq(counter.number(), 3);
 
