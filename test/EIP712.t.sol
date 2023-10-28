@@ -177,14 +177,13 @@ contract EIP712Test is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
+
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 3);
         assertEq(wallet.nextNonce(), nonce + 1);
 
         // bob tries to reuse the same signature twice
-        // gas: meter execute
-        vm.resumeGasMetering();
         vm.expectRevert(QuarkWallet.InvalidNonce.selector);
         wallet.executeQuarkOperation(op, v, r, s);
 
