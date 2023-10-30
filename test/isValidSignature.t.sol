@@ -132,5 +132,4 @@ contract isValidSignatureTest is Test {
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         contractWallet.isValidSignature(bytes32(""), signature);
     }
-
 }
