@@ -8,7 +8,7 @@ import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
-import {EIP1271Signer} from "./lib/EIP1271Signer.sol";
+import {EIP1271Signer, EIP1271Reverter} from "./lib/EIP1271Signer.sol";
 
 contract isValidSignatureTest is Test {
     CodeJar public codeJar;
@@ -108,6 +108,16 @@ contract isValidSignatureTest is Test {
         // signature from bob; doesn't matter because the EIP1271Signer will reject everything
         (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         vm.expectRevert(QuarkWallet.InvalidSignature.selector);
+        contractWallet.isValidSignature(bytes32(""), signature);
+    }
+
+    function testRevertsIfSignerContractReverts() public {
+        // QuarkWallet is owned by a smart contract that always reverts
+        EIP1271Reverter signatureApprover = new EIP1271Reverter();
+        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar, stateManager);
+        // signature from bob; doesn't matter because the EIP1271Signer will revert
+        (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        vm.expectRevert(QuarkWallet.InvalidEIP1271Signature.selector);
         contractWallet.isValidSignature(bytes32(""), signature);
     }
 }

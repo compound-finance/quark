@@ -21,3 +21,13 @@ contract EIP1271Signer {
         }
     }
 }
+
+contract EIP1271Reverter {
+    function isValidSignature(bytes32, /* messageHash */ bytes memory /* signature */ )
+        external
+        view
+        returns (bytes4)
+    {
+        revert();
+    }
+}
