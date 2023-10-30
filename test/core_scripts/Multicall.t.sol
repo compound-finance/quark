@@ -84,7 +84,6 @@ contract MulticallTest is Test {
         // Compose array of parameters
         address[] memory callContracts = new address[](3);
         bytes[] memory callDatas = new bytes[](3);
-        uint256[] memory callValues = new uint256[](3);
 
         // Approve Comet to spend USDC
         callContracts[0] = ethcallAddress;
@@ -101,7 +100,7 @@ contract MulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues),
+            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
             allowCallback: false
