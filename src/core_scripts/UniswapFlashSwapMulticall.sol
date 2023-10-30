@@ -20,9 +20,8 @@ contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback {
     /// @notice Input for flash swap multicall when interacting with UniswapV3 Pool swap function
     struct FlashSwapMulticallInput {
         PoolAddress.PoolKey poolKey;
-        address[] callContracts;
-        bytes[] callDatas;
-        uint256[] callValues;
+        address callContract;
+        bytes callData;
     }
 
     /// @notice Payload for UniswapFlashSwapMulticall
@@ -33,9 +32,8 @@ contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback {
         uint256 amount0;
         uint256 amount1;
         uint160 sqrtPriceLimitX96;
-        address[] callContracts;
-        bytes[] callDatas;
-        uint256[] callValues;
+        address callContract;
+        bytes callData;
     }
 
     /**
@@ -61,9 +59,8 @@ contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback {
             abi.encode(
                 FlashSwapMulticallInput({
                     poolKey: PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee),
-                    callContracts: payload.callContracts,
-                    callDatas: payload.callDatas,
-                    callValues: payload.callValues
+                    callContract: payload.callContract,
+                    callData: payload.callData
                 })
             )
         );
@@ -82,18 +79,10 @@ contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback {
             revert InvalidCaller();
         }
 
-        if (
-            input.callContracts.length != input.callDatas.length
-                || input.callContracts.length != input.callValues.length
-        ) {
-            revert InvalidInput();
-        }
-
-        for (uint256 i = 0; i < input.callContracts.length; i++) {
-            (bool success, bytes memory returnData) =
-                input.callContracts[i].call{value: input.callValues[i]}(input.callDatas[i]);
-            if (!success) {
-                revert MulticallError(i, input.callContracts[i], returnData);
+        (bool success, bytes memory returnData) = input.callContract.delegatecall(input.callData);
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
             }
         }
 
