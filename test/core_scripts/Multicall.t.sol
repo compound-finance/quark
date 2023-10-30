@@ -39,6 +39,8 @@ contract MulticallTest is Test {
     }
 
     function testInvokeCounterTwice() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
@@ -65,12 +67,17 @@ contract MulticallTest is Test {
             allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 15);
     }
 
     function testSupplyWETHWithdrawUSDCOnComet() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
@@ -107,6 +114,9 @@ contract MulticallTest is Test {
             allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
@@ -115,6 +125,8 @@ contract MulticallTest is Test {
     }
 
     function testInvalidInput() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
@@ -139,6 +151,8 @@ contract MulticallTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(Multicall.InvalidInput.selector)
@@ -148,6 +162,8 @@ contract MulticallTest is Test {
     }
 
     function testMulticallError() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
@@ -189,6 +205,9 @@ contract MulticallTest is Test {
             allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -204,6 +223,8 @@ contract MulticallTest is Test {
     }
 
     function testEmptyInputIsValid() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
@@ -223,11 +244,15 @@ contract MulticallTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         // Empty array is a valid input representing a no-op, and it should not revert
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
     function testMulticallShouldReturnCallResults() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory multicall = new YulHelper().getDeployed(
             "Multicall.sol/Multicall.json"
@@ -254,6 +279,9 @@ contract MulticallTest is Test {
             allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
         bytes[] memory returnDatas = abi.decode(quarkReturn, (bytes[]));
 
