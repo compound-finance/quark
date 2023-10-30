@@ -35,3 +35,27 @@ Then commit the updated snapshot file:
 ```sh
 $ git add .gas-snapshot && git commit -m "commit new baseline gas snapshot"
 ```
+
+## Deploy
+
+To locally test run the deploy, run the following command:
+
+```sh
+./script/deploy.sh
+```
+
+To actually deploy contracts on-chain, the following env variables need to be set:
+
+```sh
+# Required
+RPC_URL=
+DEPLOYER_PK=
+# Optional for verifying deployed contracts
+ETHERSCAN_KEY=
+```
+
+Once the env variables are defined, run the following command:
+
+```sh
+set -a && source .env && ./script/deploy.sh --broadcast
+```
