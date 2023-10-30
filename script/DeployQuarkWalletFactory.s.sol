@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import { QuarkWalletFactory } from "../src/QuarkWalletFactory.sol";
+import {QuarkWalletFactory} from "../src/QuarkWalletFactory.sol";
 
 // Deploy with:
 // $ set -a && source .env && ./script/deploy.sh --broadcast
