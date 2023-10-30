@@ -9,6 +9,7 @@ import "forge-std/interfaces/IERC20.sol";
 import "./../../src/QuarkWallet.sol";
 import "./../../src/QuarkWalletFactory.sol";
 import "./../../src/core_scripts/Multicall.sol";
+import "./../../src/core_scripts/Ethcall.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
@@ -26,6 +27,12 @@ contract MulticallTest is Test {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     // Uniswap router info on mainnet
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    bytes multicall = new YulHelper().getDeployed(
+            "Multicall.sol/Multicall.json"
+        );
+    bytes ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
 
     function setUp() public {
         vm.createSelectFork(
@@ -36,35 +43,31 @@ contract MulticallTest is Test {
         factory = new QuarkWalletFactory();
         counter = new Counter();
         counter.setNumber(0);
+        factory.codeJar().saveCode(ethcall);
     }
 
     function testInvokeCounterTwice() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multicall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
-        );
-
+        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](2);
-        uint256[] memory callValues = new uint256[](2);
-        callContracts[0] = address(counter);
-        callDatas[0] = abi.encodeWithSignature("increment(uint256)", (20));
-        callValues[0] = 0 wei;
-        callContracts[1] = address(counter);
-        callDatas[1] = abi.encodeWithSignature("decrement(uint256)", (5));
-        callValues[1] = 0 wei;
-
+        callContracts[0] = ethcallAddress;
+        callDatas[0] = abi.encodeWithSelector(
+            Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (20)), 0
+        );
+        callContracts[1] = ethcallAddress;
+        callDatas[1] = abi.encodeWithSelector(
+            Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (5)), 0
+        );
         assertEq(counter.number(), 0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
-            nonce: wallet.nextUnusedNonce(),
+            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -74,41 +77,33 @@ contract MulticallTest is Test {
 
     function testSupplyWETHWithdrawUSDCOnComet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multicall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
-        );
-
+        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
         // Compose array of parameters
         address[] memory callContracts = new address[](3);
         bytes[] memory callDatas = new bytes[](3);
-        uint256[] memory callValues = new uint256[](3);
 
         // Approve Comet to spend USDC
-        callContracts[0] = address(WETH);
-        callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
-        callValues[0] = 0 wei;
-
+        callContracts[0] = ethcallAddress;
+        callDatas[0] =
+            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0);
         // Supply WETH to Comet
-        callContracts[1] = comet;
-        callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
-        callValues[1] = 0 wei;
-
+        callContracts[1] = ethcallAddress;
+        callDatas[1] =
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0);
         // Withdraw USDC from Comet
-        callContracts[2] = comet;
-        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1000e6));
-        callValues[2] = 0 wei;
+        callContracts[2] = ethcallAddress;
+        callDatas[2] =
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
-            nonce: wallet.nextUnusedNonce(),
+            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -120,28 +115,22 @@ contract MulticallTest is Test {
 
     function testInvalidInput() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multicall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
-        );
-
+        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](1);
-        uint256[] memory callValues = new uint256[](2);
-        callContracts[0] = address(counter);
-        callDatas[0] = abi.encodeWithSignature("increment(uint256)", (20));
-        callValues[0] = 0 wei;
+        callContracts[0] = ethcallAddress;
+        callDatas[0] = abi.encodeWithSelector(
+            Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (20)), 0
+        );
         callContracts[1] = address(counter);
-        callValues[1] = 0 wei;
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
-            nonce: wallet.nextUnusedNonce(),
+            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -155,46 +144,39 @@ contract MulticallTest is Test {
 
     function testMulticallError() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multicall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
-        );
-
+        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
         // Compose array of parameters
         address[] memory callContracts = new address[](4);
         bytes[] memory callDatas = new bytes[](4);
-        uint256[] memory callValues = new uint256[](4);
 
         // Approve Comet to spend WETH
-        callContracts[0] = address(WETH);
-        callDatas[0] = abi.encodeCall(IERC20.approve, (comet, 100 ether));
-        callValues[0] = 0 wei;
-
+        callContracts[0] = ethcallAddress;
+        callDatas[0] =
+            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0);
         // Supply WETH to Comet
-        callContracts[1] = comet;
-        callDatas[1] = abi.encodeCall(IComet.supply, (WETH, 100 ether));
-        callValues[1] = 0 wei;
+        callContracts[1] = ethcallAddress;
+        callDatas[1] =
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0);
 
         // Withdraw USDC from Comet
-        callContracts[2] = comet;
-        callDatas[2] = abi.encodeCall(IComet.withdraw, (USDC, 1000e6));
-        callValues[2] = 0 wei;
-
+        callContracts[2] = ethcallAddress;
+        callDatas[2] =
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0);
         // Send USDC to Stranger; will fail (insufficient balance)
-        callContracts[3] = address(USDC);
-        callDatas[3] = abi.encodeCall(IERC20.transfer, (address(123), 10000e6));
-        callValues[3] = 0 wei;
+        callContracts[3] = ethcallAddress;
+        callDatas[3] = abi.encodeWithSelector(
+            Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(123), 10000e6)), 0
+        );
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
-            nonce: wallet.nextUnusedNonce(),
+            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
@@ -213,23 +195,16 @@ contract MulticallTest is Test {
 
     function testEmptyInputIsValid() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multicall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
-        );
-
         // Compose array of parameters
         address[] memory callContracts = new address[](0);
         bytes[] memory callDatas = new bytes[](0);
-        uint256[] memory callValues = new uint256[](0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
-            nonce: wallet.nextUnusedNonce(),
+            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -239,31 +214,28 @@ contract MulticallTest is Test {
 
     function testMulticallShouldReturnCallResults() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multicall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
-        );
-
+        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
+        counter.setNumber(0);
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](2);
-        uint256[] memory callValues = new uint256[](2);
-        callContracts[0] = address(counter);
-        callDatas[0] = abi.encodeWithSignature("increment(uint256)", (20));
-        callValues[0] = 0 wei;
-        callContracts[1] = address(counter);
-        callDatas[1] = abi.encodeWithSignature("decrement(uint256)", (5));
-        callValues[1] = 0 wei;
+        callContracts[0] = ethcallAddress;
+        callDatas[0] = abi.encodeWithSelector(
+            Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (20)), 0
+        );
+        callContracts[1] = ethcallAddress;
+        callDatas[1] = abi.encodeWithSelector(
+            Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (5)), 0
+        );
 
         assertEq(counter.number(), 0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas, callValues, false),
-            nonce: wallet.nextUnusedNonce(),
+            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
@@ -271,7 +243,7 @@ contract MulticallTest is Test {
 
         assertEq(counter.number(), 15);
         assertEq(returnDatas.length, 2);
-        assertEq(returnDatas[0].length, 0);
-        assertEq(abi.decode(returnDatas[1], (uint256)), 15);
+        assertEq(abi.decode(returnDatas[0], (bytes)).length, 0);
+        assertEq(abi.decode(abi.decode(returnDatas[1], (bytes)), (uint256)), 15);
     }
 }
