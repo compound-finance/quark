@@ -56,6 +56,7 @@ contract BuyAssetWithUSDCBasePair is Test {
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.swapAssetExactIn.selector,
                 uniswapRouter,
+                address(wallet),
                 USDC,
                 2000e6,
                 1 ether,
@@ -82,6 +83,7 @@ contract BuyAssetWithUSDCBasePair is Test {
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.swapAssetExactOut.selector,
                 uniswapRouter,
+                address(wallet),
                 USDC,
                 1 ether,
                 2000e6,
@@ -115,6 +117,7 @@ contract BuyAssetWithUSDCBasePair is Test {
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.swapAssetExactIn.selector,
                 uniswapRouter,
+                address(wallet),
                 USDC,
                 2000e6,
                 40e18,
@@ -141,6 +144,7 @@ contract BuyAssetWithUSDCBasePair is Test {
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.swapAssetExactOut.selector,
                 uniswapRouter,
+                address(wallet),
                 USDC,
                 40e18,
                 2000e6,

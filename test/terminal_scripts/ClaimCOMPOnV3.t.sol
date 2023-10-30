@@ -59,7 +59,7 @@ contract ClaimCOMPOnV3 is Test {
         assertEq(IERC20(COMP).balanceOf(address(wallet)), 0e6);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: terminalScript,
-            scriptCalldata: abi.encodeWithSelector(TerminalScript.claimCOMP.selector, cometReward, comet),
+            scriptCalldata: abi.encodeWithSelector(TerminalScript.claimCOMP.selector, cometReward, comet, address(wallet)),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,

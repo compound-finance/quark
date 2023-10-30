@@ -38,12 +38,14 @@ contract TerminalScript {
     /**
      * @dev Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
      * @param uniswapRouter The Uniswap router address
+     * @param recipient The recipient address that will receive the swapped token
      * @param tokenFrom The token to swap from
      * @param amount The token amount to swap
      * @param amountOutMinimum The minimum amount of target token to receive (revert if return amount is less than this)
      */
     function swapAssetExactIn(
         address uniswapRouter,
+        address recipient,
         address tokenFrom,
         uint256 amount,
         uint256 amountOutMinimum,
@@ -53,7 +55,7 @@ contract TerminalScript {
         ISwapRouter(uniswapRouter).exactInput(
             ISwapRouter.ExactInputParams({
                 path: path,
-                recipient: msg.sender,
+                recipient: recipient,
                 deadline: block.timestamp,
                 amountIn: amount,
                 amountOutMinimum: amountOutMinimum
@@ -64,12 +66,14 @@ contract TerminalScript {
     /**
      * @dev Swap token on Uniswap with Exact Output (i.e. Set output amount and swap with required amount token)
      * @param uniswapRouter The Uniswap router address
+     * @param recipient The recipient address that will receive the swapped token
      * @param tokenFrom The token to swap from
      * @param amount The target token amount to receive
      * @param amountInMaximum The maximum amount of input token to spend (revert if input amount is greater than this)
      */
     function swapAssetExactOut(
         address uniswapRouter,
+        address recipient,
         address tokenFrom,
         uint256 amount,
         uint256 amountInMaximum,
@@ -79,7 +83,7 @@ contract TerminalScript {
         ISwapRouter(uniswapRouter).exactOutput(
             ISwapRouter.ExactOutputParams({
                 path: path,
-                recipient: msg.sender,
+                recipient: recipient,
                 deadline: block.timestamp,
                 amountOut: amount,
                 amountInMaximum: amountInMaximum
@@ -113,9 +117,10 @@ contract TerminalScript {
      * @dev Claim COMP rewards
      * @param cometRewards The CometRewards address
      * @param comet The Comet address
+     * @param recipient The recipient address, that will receive the COMP rewards
      */
-    function claimCOMP(address cometRewards, address comet) external {
-        ICometRewards(cometRewards).claim(comet, msg.sender, true);
+    function claimCOMP(address cometRewards, address comet, address recipient) external {
+        ICometRewards(cometRewards).claim(comet, recipient, true);
     }
 
     /**
