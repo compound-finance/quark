@@ -120,4 +120,17 @@ contract isValidSignatureTest is Test {
         vm.expectRevert(QuarkWallet.InvalidEIP1271Signature.selector);
         contractWallet.isValidSignature(bytes32(""), signature);
     }
+
+    function testRevertsForEmptyContract() public {
+        address emptyCodeContract = codeJar.saveCode(hex"");
+        QuarkWallet contractWallet = new QuarkWallet(emptyCodeContract, codeJar, stateManager);
+        // signature from bob; doesn't matter because the empty contract will be treated as an EOA and revert
+        (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        // call reverts with BadSignatory since the empty contract appears to
+        // have no code; request will go down the code path for EIP-712
+        // signatures and will revert as bad signature
+        vm.expectRevert(QuarkWallet.BadSignatory.selector);
+        contractWallet.isValidSignature(bytes32(""), signature);
+    }
+
 }

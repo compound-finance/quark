@@ -159,14 +159,16 @@ contract QuarkWallet is IERC1271 {
      * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
      * that the signature comes from the owner; if the QuarkWallet is owned by
      * a smart contract, isValidSignature relays the `isValidSignature` to the
-     * smart contract
+     * smart contract; if the smart contract that owns the wallet has no code,
+     * the signature will be treated as an EIP-712 signature and revert
      */
     function isValidSignatureInternal(address signer, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
         internal
         view
         returns (bool)
     {
-        if (hasCode(signer)) {
+        // a contract deployed with empty code will be treated as an EOA and will revert
+        if (signer.code.length > 0) {
             bytes memory signature = abi.encodePacked(r, s, v);
             (bool success, bytes memory data) =
                 signer.staticcall(abi.encodeWithSelector(EIP_1271_MAGIC_VALUE, digest, signature));
@@ -180,15 +182,6 @@ contract QuarkWallet is IERC1271 {
             if (recoveredSigner != signer) revert BadSignatory();
             return true;
         }
-    }
-
-    /**
-     * @notice Checks if an address has code deployed to it
-     * @param addr The address to check
-     * @return bool Whether the address contains code
-     */
-    function hasCode(address addr) internal view returns (bool) {
-        return addr.code.length > 0;
     }
 
     /**
