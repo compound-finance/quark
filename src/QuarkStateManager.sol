@@ -18,8 +18,8 @@ contract QuarkStateManager {
     mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
         internal walletStorage;
 
-    /// @notice Per-wallet-nonce script address for preventing replays with changed code
-    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => address /* script */)) nonceScripts;
+    /// @notice Per-wallet-nonce callback hash for preventing replays with changed code
+    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => bytes32 /* callback hash */)) nonceCallback;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -109,15 +109,15 @@ contract QuarkStateManager {
         // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
         nonces[msg.sender][bucket] |= setMask;
 
-        // get the scriptAddress that the callback intends to invoke
-        address scriptAddress = abi.decode(callback[4:], (address));
-        // if the nonce has been used before, check if the script address changed
-        if ((nonceScripts[msg.sender][nonce] != address(0)) && (nonceScripts[msg.sender][nonce] != scriptAddress)) {
-            // if scriptAddress points to the empty code, cancel the nonce
+        // if the nonce has been used before, check if the callback hash matches
+        bytes32 callbackHash = keccak256(callback);
+        if ((nonceCallback[msg.sender][nonce] != bytes32(0)) && (nonceCallback[msg.sender][nonce] != callbackHash)) {
+            // if callback does not match, but scriptAddress points to the empty code, cancel the nonce
+            address scriptAddress = abi.decode(callback[4:], (address));
             if (scriptAddress.code.length == 0) {
                 return hex"";
             }
-            // if it has code but a different address, revert -- you cannot change the script for a replayable nonce
+            // if for any other reason the callback does not match, revert
             revert NonceScriptMismatch();
         }
 
@@ -135,7 +135,7 @@ contract QuarkStateManager {
 
         // if a nonce was cleared, set the nonceScript to lock nonce re-use to the same script address
         if ((nonces[msg.sender][bucket] & setMask) == 0) {
-            nonceScripts[msg.sender][nonce] = scriptAddress;
+            nonceCallback[msg.sender][nonce] = callbackHash;
         }
 
         // release the nonce when the wallet finishes executing callback
