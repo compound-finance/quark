@@ -372,8 +372,7 @@ contract QuarkWalletTest is Test {
         // gas: disable gas metering except while executing operatoins
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        bytes memory getOwner =
-            new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
+        bytes memory getOwner = new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
 
         // 1. use nonce to increment a counter
         QuarkWallet.QuarkOperation memory op1 = newBasicOp(
