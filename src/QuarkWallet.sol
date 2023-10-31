@@ -4,10 +4,13 @@ pragma solidity ^0.8.21;
 import {CodeJar} from "./CodeJar.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {QuarkStateManager} from "./QuarkStateManager.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
-contract QuarkWallet {
+contract QuarkWallet is IERC1271 {
     error BadSignatory();
     error InvalidNonce();
+    error InvalidEIP1271Signature();
+    error InvalidSignature();
     error InvalidSignatureS();
     error NoActiveCallback();
     error QuarkCallError(bytes);
@@ -40,6 +43,9 @@ contract QuarkWallet {
 
     /// @notice The major version of this contract, for use in DOMAIN_SEPARATOR
     string public constant VERSION = "1";
+
+    /// @notice The magic value to return for valid ERC1271 signature
+    bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
 
     struct QuarkOperation {
         /* TODO: optimization: allow passing in the address of the script
@@ -108,7 +114,7 @@ contract QuarkWallet {
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
-        if (isValidSignature(owner, digest, v, r, s)) {
+        if (isValidSignatureInternal(owner, digest, v, r, s)) {
             // XXX handle op.scriptAddress without CodeJar
             address scriptAddress = codeJar.saveCode(op.scriptSource);
             return stateManager.setActiveNonceAndCallback(
@@ -117,24 +123,65 @@ contract QuarkWallet {
                     this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback)
                 )
             );
+        } else {
+            revert InvalidSignature();
         }
     }
 
     /**
-     * @dev Validates EIP-712 signature
+     * @notice Checks whether an EIP-1271 signature is valid
+     * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
+     * that the signature comes from the owner; if the QuarkWallet is owned by
+     * a smart contract, isValidSignature relays the `isValidSignature` to the
+     * smart contract
+     * @param hash Hash of the signed data
+     * @param signature Signature byte array associated with data
+     * @return bytes4 Returns the ERC-1271 "magic value" that indicates that the signature is valid
      */
-    function isValidSignature(address signer, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
+        if (signature.length != 65) revert InvalidSignature();
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := byte(0, mload(add(signature, 0x60)))
+        }
+        if (isValidSignatureInternal(owner, hash, v, r, s)) {
+            return EIP_1271_MAGIC_VALUE;
+        } else {
+            revert InvalidSignature();
+        }
+    }
+
+    /*
+     * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
+     * that the signature comes from the owner; if the QuarkWallet is owned by
+     * a smart contract, isValidSignature relays the `isValidSignature` to the
+     * smart contract; if the smart contract that owns the wallet has no code,
+     * the signature will be treated as an EIP-712 signature and revert
+     */
+    function isValidSignatureInternal(address signer, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
         internal
-        pure
+        view
         returns (bool)
     {
-        (address recoveredSigner, ECDSA.RecoverError recoverError) = ECDSA.tryRecover(digest, v, r, s);
-
-        if (recoverError == ECDSA.RecoverError.InvalidSignatureS) revert InvalidSignatureS();
-        if (recoverError == ECDSA.RecoverError.InvalidSignature) revert BadSignatory();
-        if (recoveredSigner != signer) revert BadSignatory();
-
-        return true;
+        // a contract deployed with empty code will be treated as an EOA and will revert
+        if (signer.code.length > 0) {
+            bytes memory signature = abi.encodePacked(r, s, v);
+            (bool success, bytes memory data) =
+                signer.staticcall(abi.encodeWithSelector(EIP_1271_MAGIC_VALUE, digest, signature));
+            if (!success) revert InvalidEIP1271Signature();
+            bytes4 returnValue = abi.decode(data, (bytes4));
+            return returnValue == EIP_1271_MAGIC_VALUE;
+        } else {
+            (address recoveredSigner, ECDSA.RecoverError recoverError) = ECDSA.tryRecover(digest, v, r, s);
+            if (recoverError == ECDSA.RecoverError.InvalidSignatureS) revert InvalidSignatureS();
+            if (recoverError == ECDSA.RecoverError.InvalidSignature) revert BadSignatory();
+            if (recoveredSigner != signer) revert BadSignatory();
+            return true;
+        }
     }
 
     /**
