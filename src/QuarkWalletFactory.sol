@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 import "./CodeJar.sol";
 import "./QuarkWallet.sol";
+import "./QuarkStateManager.sol";
 
 contract QuarkWalletFactory {
     event WalletDeploy(address indexed account, address indexed walletAddress, bytes32 salt);
@@ -13,8 +14,12 @@ contract QuarkWalletFactory {
     /// @notice Address of CodeJar contract
     CodeJar public immutable codeJar;
 
+    /// @notice Address of QuarkStateManager contract
+    QuarkStateManager public immutable stateManager;
+
     constructor() {
         codeJar = new CodeJar();
+        stateManager = new QuarkStateManager();
     }
 
     /**
@@ -34,8 +39,8 @@ contract QuarkWalletFactory {
      * @param salt Salt value to use during creation of QuarkWallet
      * @return address Address of the newly-created wallet
      */
-    function create(address account, bytes32 salt) public returns (address payable) {
-        address payable walletAddress = payable(address(new QuarkWallet{salt: salt}(account, codeJar)));
+    function create(address account, bytes32 salt) public returns (address) {
+        address payable walletAddress = payable(address(new QuarkWallet{salt: salt}(account, codeJar, stateManager)));
         emit WalletDeploy(account, walletAddress, salt);
         return walletAddress;
     }
@@ -57,7 +62,7 @@ contract QuarkWalletFactory {
      * @param salt Salt value for QuarkWallet
      * @return address Address of the QuarkWallet for account, salt pair
      */
-    function walletAddressForAccount(address account, bytes32 salt) public view returns (address payable) {
+    function walletAddressForAccount(address account, bytes32 salt) public view returns (address) {
         return payable(
             address(
                 uint160(
@@ -71,7 +76,8 @@ contract QuarkWalletFactory {
                                     abi.encodePacked(
                                         type(QuarkWallet).creationCode,
                                         abi.encode(account),
-                                        abi.encode(address(codeJar))
+                                        abi.encode(address(codeJar)),
+                                        abi.encode(address(stateManager))
                                     )
                                 )
                             )
