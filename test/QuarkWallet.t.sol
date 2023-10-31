@@ -368,12 +368,12 @@ contract QuarkWalletTest is Test {
         vm.stopPrank();
     }
 
-    function testRevertsForReusedNonceWithNewScript() public {
+    function testRevertsForReusedNonceWithChangedScript() public {
         // gas: disable gas metering except while executing operatoins
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        bytes memory callbackFromCounter =
-            new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+        bytes memory getOwner =
+            new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
 
         // 1. use nonce to increment a counter
         QuarkWallet.QuarkOperation memory op1 = newBasicOp(
@@ -383,10 +383,10 @@ contract QuarkWalletTest is Test {
 
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             nonce: op1.nonce,
-            scriptSource: callbackFromCounter,
-            scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", address(counter)),
+            scriptSource: getOwner,
+            scriptCalldata: abi.encodeWithSignature("getOwner()"),
             expiry: block.timestamp + 1000,
-            allowCallback: true
+            allowCallback: false
         });
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
 
