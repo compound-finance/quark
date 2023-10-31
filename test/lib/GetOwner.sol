@@ -6,6 +6,6 @@ import "../../src/QuarkWallet.sol";
 
 contract GetOwner is QuarkScript {
     function getOwner() external returns (address) {
-        return QuarkWallet(address(this)).owner();
+        return QuarkWallet(payable(address(this))).owner();
     }
 }

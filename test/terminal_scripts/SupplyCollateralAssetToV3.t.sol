@@ -49,11 +49,9 @@ contract SupplyCollateralAssetToV3 is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(TerminalScript.cometSupply.selector, comet, WETH, 10 ether),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

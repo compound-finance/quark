@@ -62,11 +62,9 @@ contract ClaimCOMPOnV3 is Test {
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.claimRewards.selector, cometReward, comet, address(wallet)
                 ),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

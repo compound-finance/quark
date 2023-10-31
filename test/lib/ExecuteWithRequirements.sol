@@ -11,7 +11,7 @@ contract ExecuteWithRequirements {
         public
         returns (bytes memory)
     {
-        QuarkWallet wallet = QuarkWallet(address(this));
+        QuarkWallet wallet = QuarkWallet(payable(address(this)));
         QuarkStateManager stateManager = wallet.stateManager();
         for (uint256 i = 0; i < requirements.length; i++) {
             if (!stateManager.isNonceSet(address(wallet), requirements[i])) {

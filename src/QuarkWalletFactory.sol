@@ -39,7 +39,7 @@ contract QuarkWalletFactory {
      * @param salt Salt value to use during creation of QuarkWallet
      * @return address Address of the newly-created wallet
      */
-    function create(address account, bytes32 salt) public returns (address) {
+    function create(address account, bytes32 salt) public returns (address payable) {
         address payable walletAddress = payable(address(new QuarkWallet{salt: salt}(account, codeJar, stateManager)));
         emit WalletDeploy(account, walletAddress, salt);
         return walletAddress;
@@ -62,7 +62,7 @@ contract QuarkWalletFactory {
      * @param salt Salt value for QuarkWallet
      * @return address Address of the QuarkWallet for account, salt pair
      */
-    function walletAddressForAccount(address account, bytes32 salt) public view returns (address) {
+    function walletAddressForAccount(address account, bytes32 salt) public view returns (address payable) {
         return payable(
             address(
                 uint160(

@@ -51,11 +51,9 @@ contract SendTokenToExternalAddress is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(TerminalScript.transferERC20Token.selector, WETH, bob, 10 ether),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -80,11 +78,9 @@ contract SendTokenToExternalAddress is Test {
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.transferERC20Token.selector, WETH, address(walletBob), 10 ether
                 ),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -106,11 +102,9 @@ contract SendTokenToExternalAddress is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: terminalScript,
             scriptCalldata: abi.encodeWithSelector(TerminalScript.transferNativeToken.selector, bob, 10 ether),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -136,11 +130,9 @@ contract SendTokenToExternalAddress is Test {
             scriptCalldata: abi.encodeWithSelector(
                 TerminalScript.transferNativeToken.selector, address(walletBob), 10 ether
                 ),
-            nonce: wallet.nextUnusedNonce(),
+            nonce: wallet.nextNonce(),
             expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
+            allowCallback: false
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
