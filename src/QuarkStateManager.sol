@@ -6,6 +6,7 @@ contract QuarkStateManager {
     error NoNonceActive();
     error NoUnusedNonces();
     error NonceAlreadySet();
+    error NonceScriptMismatch();
 
     /// @notice Bit-packed nonce values
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
@@ -16,6 +17,9 @@ contract QuarkStateManager {
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
     mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
         internal walletStorage;
+
+    /// @notice Per-wallet-nonce script address for preventing replays with changed code
+    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => address /* script */)) nonceScripts;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -102,12 +106,26 @@ contract QuarkStateManager {
             revert NonceAlreadySet();
         }
 
+        // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
+        nonces[msg.sender][bucket] |= setMask;
+
+        // get the scriptAddress that the callback intends to invoke
+        address scriptAddress = abi.decode(callback[4:], (address));
+        // if the nonce has not been used before, set its nonceScript to the scriptAddress
+        if (nonceScripts[msg.sender][nonce] == address(0)) {
+            nonceScripts[msg.sender][nonce] = scriptAddress;
+        } else if (nonceScripts[msg.sender][nonce] != scriptAddress) {
+            // if scriptAddress points to the empty code, cancel the nonce
+            if (scriptAddress.code.length == 0) {
+                return hex"";
+            }
+            // if it simply does not match, revert -- you cannot change the script for a replayable nonce
+            revert NonceScriptMismatch();
+        }
+
         // set the nonce active and yield to the wallet callback
         uint256 previousNonce = activeNonce[msg.sender];
         activeNonce[msg.sender] = nonce;
-
-        // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
-        nonces[msg.sender][bucket] |= setMask;
 
         (bool success, bytes memory result) = msg.sender.call(callback);
         // if the call fails, propagate the revert from the wallet

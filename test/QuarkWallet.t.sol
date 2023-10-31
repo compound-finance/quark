@@ -367,4 +367,66 @@ contract QuarkWalletTest is Test {
 
         vm.stopPrank();
     }
+
+    function testRevertsForReusedNonceWithNewScript() public {
+        // gas: disable gas metering except while executing operatoins
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory callbackFromCounter = new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+
+        // 1. use nonce to increment a counter
+        QuarkWallet.QuarkOperation memory op1 = newBasicOp(aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)));
+        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
+
+        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
+            nonce: op1.nonce,
+            scriptSource: callbackFromCounter,
+            scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", address(counter)),
+            expiry: block.timestamp + 1000,
+            allowCallback: true
+        });
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        // incrementer increments the counter thrice
+        assertEq(counter.number(), 3);
+        // when reusing the nonce but changing the script, revert
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceScriptMismatch.selector));
+        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+    }
+
+    function testEmptyScriptCancelsReplayableNonce() public {
+        // gas: disable gas metering except while executing operatoins
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+
+        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)));
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        QuarkWallet.QuarkOperation memory cancelOp = QuarkWallet.QuarkOperation({
+            nonce: op.nonce,
+            scriptSource: hex"",
+            scriptCalldata: hex"",
+            expiry: block.timestamp + 1000,
+            allowCallback: false
+        });
+        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 3);
+        // can replay the same operation...
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 6);
+        // can cancel the replayable nonce...
+        aliceWallet.executeQuarkOperation(cancelOp, cancel_v, cancel_r, cancel_s);
+        // and now you can no longer replay
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
+        // XXX: shouldn't we let the state manager do the nonce checking?
+        // vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
 }
