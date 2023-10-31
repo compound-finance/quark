@@ -77,6 +77,14 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
+     * @notice Cancels this wallet's given nonce, preventing it from being replayed any more
+     * @param nonce Nonce to cancel
+     */
+    function cancelNonce(uint256 nonce) external {
+        return stateManager.cancelNonce(nonce);
+    }
+
+    /**
      * @notice Returns the domain separator used for signing operation
      * @return bytes32 The domain separator
      */

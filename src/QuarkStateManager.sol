@@ -89,6 +89,15 @@ contract QuarkStateManager {
     }
 
     /**
+     * @notice Cancel (set) a given nonce for the calling wallet; prevents a script from being replayed any more
+     * @param nonce Nonce to cancel for the calling wallet
+     */
+    function cancelNonce(uint256 nonce) external {
+        (uint256 bucket, uint256 setMask) = getBucket(nonce);
+        nonces[msg.sender][bucket] |= setMask;
+    }
+
+    /**
      * @notice Set a wallet nonce as the active nonce and yield control back to the wallet by calling into callback
      * @param nonce Nonce to activate for the transaction
      * @dev The script is expected to clearNonce() if it wishes to be replayable
@@ -109,15 +118,9 @@ contract QuarkStateManager {
         // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
         nonces[msg.sender][bucket] |= setMask;
 
-        // if the nonce has been used before, check if the callback hash matches
+        // if the nonce has been used before, check if the callback hash matches, and revert if not
         bytes32 callbackHash = keccak256(callback);
         if ((nonceCallback[msg.sender][nonce] != bytes32(0)) && (nonceCallback[msg.sender][nonce] != callbackHash)) {
-            // if callback does not match, but scriptAddress points to the empty code, cancel the nonce
-            address scriptAddress = abi.decode(callback[4:], (address));
-            if (scriptAddress.code.length == 0) {
-                return hex"";
-            }
-            // if for any other reason the callback does not match, revert
             revert NonceCallbackMismatch();
         }
 

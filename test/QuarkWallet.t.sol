@@ -459,7 +459,7 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
     }
 
-    function testEmptyScriptCancelsReplayableNonce() public {
+    function testRevertsForCanceledNonce() public {
         // gas: disable gas metering except while executing operatoins
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
@@ -469,16 +469,6 @@ contract QuarkWalletTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
-        QuarkWallet.QuarkOperation memory cancelOp = QuarkWallet.QuarkOperation({
-            nonce: op.nonce,
-            scriptSource: hex"",
-            scriptCalldata: hex"",
-            expiry: block.timestamp + 1000,
-            allowCallback: false
-        });
-        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
-
         // gas: meter execute
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
@@ -487,7 +477,7 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 6);
         // can cancel the replayable nonce...
-        aliceWallet.executeQuarkOperation(cancelOp, cancel_v, cancel_r, cancel_s);
+        aliceWallet.cancelNonce(op.nonce);
         // and now you can no longer replay
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
         // XXX: shouldn't we let the state manager do the nonce checking?
