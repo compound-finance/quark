@@ -9,7 +9,7 @@ contract Ethcall {
      * @param callContract Contract to call
      * @param callData Encoded calldata for call
      * @param callValue Value for call
-     * @return returnData Return data from call
+     * @return Return data from call
      */
     function run(address callContract, bytes calldata callData, uint256 callValue) external returns (bytes memory) {
         (bool success, bytes memory returnData) = callContract.call{value: callValue}(callData);
