@@ -57,6 +57,8 @@ contract EIP712Test is Test {
     }
 
     function testExecuteQuarkOperation() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
         uint256 nonce = wallet.nextNonce();
@@ -67,6 +69,8 @@ contract EIP712Test is Test {
 
         // bob calls executeOp with the signed operation
         vm.prank(bob);
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // counter has incremented
@@ -77,6 +81,8 @@ contract EIP712Test is Test {
     }
 
     function testRevertsForBadCode() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
         uint256 nonce = wallet.nextNonce();
@@ -88,6 +94,9 @@ contract EIP712Test is Test {
         // bob calls executeQuarkOperation with the signed op, but he manipulates the code
         op.scriptSource = new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
         vm.prank(bob);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -99,6 +108,8 @@ contract EIP712Test is Test {
     }
 
     function testRevertsForBadCalldata() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
         uint256 nonce = wallet.nextNonce();
@@ -110,6 +121,9 @@ contract EIP712Test is Test {
         // bob calls executeQuarkOperation with the signed op, but he manipulates the calldata
         op.scriptCalldata = abi.encodeWithSignature("decrementCounter(address)", counter);
         vm.prank(bob);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -121,6 +135,8 @@ contract EIP712Test is Test {
     }
 
     function testRevertsForBadExpiry() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
         uint256 nonce = wallet.nextNonce();
@@ -132,6 +148,9 @@ contract EIP712Test is Test {
         // bob calls executeQuarkOperation with the signed op, but he manipulates the expiry
         op.expiry += 1;
         vm.prank(bob);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -143,6 +162,8 @@ contract EIP712Test is Test {
     }
 
     function testRevertsOnReusedNonce() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
         uint256 nonce = wallet.nextNonce();
@@ -153,6 +174,10 @@ contract EIP712Test is Test {
 
         // bob calls executeQuarkOperation with the signature
         vm.startPrank(bob);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 3);
@@ -166,6 +191,8 @@ contract EIP712Test is Test {
     }
 
     function testRevertsForExpiredSignature() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
         uint256 nonce = wallet.nextNonce();
@@ -177,6 +204,8 @@ contract EIP712Test is Test {
         // the expiry block arrives
         vm.warp(expiry);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         // bob calls executeQuarkOperation with the signature after the expiry
         vm.prank(bob);
         vm.expectRevert(QuarkWallet.SignatureExpired.selector);
@@ -187,6 +216,8 @@ contract EIP712Test is Test {
     }
 
     function testRevertsInvalidS() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
         uint256 nonce = wallet.nextNonce();
@@ -198,6 +229,8 @@ contract EIP712Test is Test {
         // 1 greater than the max value of s
         bytes32 invalidS = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1;
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         // bob calls executeQuarkOperation with invalid `s` value
         vm.prank(bob);
         vm.expectRevert(QuarkWallet.InvalidSignatureS.selector);
@@ -208,6 +241,8 @@ contract EIP712Test is Test {
     }
 
     function testNonceIsNotSetForReplayableOperation() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         assertEq(counter.number(), 0);
@@ -223,6 +258,8 @@ contract EIP712Test is Test {
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         // bob calls executeOp with the signed operation
         vm.prank(bob);
         wallet.executeQuarkOperation(op, v, r, s);
@@ -246,6 +283,8 @@ contract EIP712Test is Test {
 
     // TODO: rewrite these tests to use requirements implemented in the script itself
     function testRevertBadRequirements() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         address incrementerAddress = codeJar.saveCode(incrementer);
 
@@ -265,8 +304,7 @@ contract EIP712Test is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // bob calls executeQuarkOperation with the altered requirements
-        vm.prank(bob);
+        // bob alters the requirements
         uint256[] memory badRequirements = new uint256[](1);
         badRequirements[0] = 123;
         op.scriptCalldata = abi.encodeCall(
@@ -274,7 +312,10 @@ contract EIP712Test is Test {
             (badRequirements, incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
         );
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         // bob cannot submit the operation because the signature will not match
+        vm.prank(bob);
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -283,6 +324,8 @@ contract EIP712Test is Test {
     }
 
     function testRequirements() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         address incrementerAddress = codeJar.saveCode(incrementer);
 
@@ -310,6 +353,9 @@ contract EIP712Test is Test {
             allowCallback: false
         });
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, dependentOp);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
 
         // attempting to execute the second operation first reverts
         vm.expectRevert(

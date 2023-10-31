@@ -38,6 +38,8 @@ contract CallbacksTest is Test {
     }
 
     function testCallbackFromCounter() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
         bytes memory callbackFromCounter =
@@ -54,12 +56,16 @@ contract CallbacksTest is Test {
             allowCallback: true
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
-        aliceWallet.executeQuarkOperation(op, v, r, s);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 11);
     }
 
     function testAllowNestedCallbacks() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory callbackFromCounter =
             new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
         bytes memory executeOtherScript =
@@ -86,11 +92,15 @@ contract CallbacksTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(parentOp, v, r, s);
         assertEq(counter.number(), 11);
     }
 
     function testNestedCallWithNoCallbackSucceeds() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
         bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
@@ -118,11 +128,15 @@ contract CallbacksTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(parentOp, v, r, s);
         assertEq(counter.number(), 2);
     }
 
     function testAllowCallbackDoesNotRequireGettingCalledBack() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
         bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
         uint256 nonce = aliceWallet.nextNonce();
@@ -136,11 +150,15 @@ contract CallbacksTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 2);
     }
 
     function testRevertsOnCallbackWhenNoActiveCallback() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory callbackFromCounter =
             new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
 
@@ -155,6 +173,8 @@ contract CallbacksTest is Test {
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
