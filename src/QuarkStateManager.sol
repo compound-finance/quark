@@ -6,7 +6,7 @@ contract QuarkStateManager {
     error NoNonceActive();
     error NoUnusedNonces();
     error NonceAlreadySet();
-    error NonceScriptMismatch();
+    error NonceCallbackMismatch();
 
     /// @notice Bit-packed nonce values
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
@@ -118,7 +118,7 @@ contract QuarkStateManager {
                 return hex"";
             }
             // if for any other reason the callback does not match, revert
-            revert NonceScriptMismatch();
+            revert NonceCallbackMismatch();
         }
 
         // set the nonce active and yield to the wallet callback

@@ -396,7 +396,7 @@ contract QuarkWalletTest is Test {
         // incrementer increments the counter thrice
         assertEq(counter.number(), 3);
         // when reusing the nonce but changing the script, revert
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceScriptMismatch.selector));
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceCallbackMismatch.selector));
         aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
     }
 
