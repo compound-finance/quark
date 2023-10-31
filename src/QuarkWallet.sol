@@ -289,9 +289,6 @@ contract QuarkWallet {
             revert NoActiveCallback();
         }
     }
-}
 
-contract QuarkWalletPayable is QuarkWallet {
-    constructor(address owner_, CodeJar codeJar_) QuarkWallet(owner_, codeJar_) {}
     receive() external payable {}
 }

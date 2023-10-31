@@ -23,7 +23,7 @@ contract QuarkWalletFactory {
      * @param account Address to create a QuarkWallet for
      * @return address Address of the newly-created wallet
      */
-    function create(address account) external returns (address) {
+    function create(address account) external returns (address payable) {
         return create(account, 0);
     }
 
@@ -34,8 +34,8 @@ contract QuarkWalletFactory {
      * @param salt Salt value to use during creation of QuarkWallet
      * @return address Address of the newly-created wallet
      */
-    function create(address account, bytes32 salt) public returns (address) {
-        address walletAddress = address(new QuarkWalletPayable{salt: salt}(account, codeJar));
+    function create(address account, bytes32 salt) public returns (address payable) {
+        address payable walletAddress = payable(address(new QuarkWallet{salt: salt}(account, codeJar)));
         emit WalletDeploy(account, walletAddress, salt);
         return walletAddress;
     }
@@ -46,7 +46,7 @@ contract QuarkWalletFactory {
      * @param account Address to find QuarkWallet address for
      * @return address Address of the QuarkWallet for account
      */
-    function walletAddressForAccount(address account) external view returns (address) {
+    function walletAddressForAccount(address account) external view returns (address payable) {
         return walletAddressForAccount(account, 0);
     }
 
@@ -57,20 +57,22 @@ contract QuarkWalletFactory {
      * @param salt Salt value for QuarkWallet
      * @return address Address of the QuarkWallet for account, salt pair
      */
-    function walletAddressForAccount(address account, bytes32 salt) public view returns (address) {
-        return address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            bytes1(0xff),
-                            address(this),
-                            salt,
-                            keccak256(
-                                abi.encodePacked(
-                                    type(QuarkWalletPayable).creationCode,
-                                    abi.encode(account),
-                                    abi.encode(address(codeJar))
+    function walletAddressForAccount(address account, bytes32 salt) public view returns (address payable) {
+        return payable(
+            address(
+                uint160(
+                    uint256(
+                        keccak256(
+                            abi.encodePacked(
+                                bytes1(0xff),
+                                address(this),
+                                salt,
+                                keccak256(
+                                    abi.encodePacked(
+                                        type(QuarkWallet).creationCode,
+                                        abi.encode(account),
+                                        abi.encode(address(codeJar))
+                                    )
                                 )
                             )
                         )
@@ -115,7 +117,7 @@ contract QuarkWalletFactory {
         bytes32 s
     ) public returns (bytes memory) {
         uint256 walletCodeLen;
-        address walletAddress = walletAddressForAccount(account, salt);
+        address payable walletAddress = walletAddressForAccount(account, salt);
 
         assembly {
             walletCodeLen := extcodesize(walletAddress)
