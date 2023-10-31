@@ -33,6 +33,7 @@ contract MulticallTest is Test {
     bytes ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
         );
+    address ethcallAddress;
 
     function setUp() public {
         vm.createSelectFork(
@@ -43,14 +44,13 @@ contract MulticallTest is Test {
         factory = new QuarkWalletFactory();
         counter = new Counter();
         counter.setNumber(0);
-        factory.codeJar().saveCode(ethcall);
+        ethcallAddress = factory.codeJar().saveCode(ethcall);
     }
 
     function testInvokeCounterTwice() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](2);
@@ -84,7 +84,6 @@ contract MulticallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
@@ -127,7 +126,6 @@ contract MulticallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](1);
@@ -160,7 +158,6 @@ contract MulticallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
@@ -239,7 +236,6 @@ contract MulticallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        address ethcallAddress = wallet.codeJar().saveCode(ethcall);
         counter.setNumber(0);
         // Compose array of parameters
         address[] memory callContracts = new address[](2);

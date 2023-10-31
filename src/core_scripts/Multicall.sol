@@ -6,9 +6,10 @@ contract Multicall {
     error MulticallError(uint256 callIndex, address callContract, bytes err);
 
     /**
-     * @notice Execute multiple calls
+     * @notice Execute multiple delegatecall to contracts in a single transaction
      * @param callContracts Array of contracts to call
      * @param callDatas Array of encoded calldata for each call
+     * @return returnDatas Array of return data from each call
      */
     function run(address[] calldata callContracts, bytes[] calldata callDatas) external returns (bytes[] memory) {
         if (callContracts.length != callDatas.length) {
