@@ -8,7 +8,15 @@ interface IComet {
 
     function supply(address asset, uint256 amount) external;
 
+    function supplyTo(address dst, address asset, uint256 amount) external;
+
+    function supplyFrom(address from, address dst, address asset, uint256 amount) external;
+
     function withdraw(address asset, uint256 amount) external;
+
+    function withdrawTo(address to, address asset, uint256 amount) external;
+
+    function withdrawFrom(address src, address to, address asset, uint256 amount) external;
 
     function balanceOf(address owner) external view returns (uint256);
 

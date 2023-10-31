@@ -48,7 +48,7 @@ contract SupplyCollateralAssetToV3 is Test {
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: terminalScript,
-            scriptCalldata: abi.encodeWithSelector(TerminalScript.supplyToComet.selector, comet, WETH, 10 ether),
+            scriptCalldata: abi.encodeWithSelector(TerminalScript.cometSupply.selector, comet, WETH, 10 ether),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,

@@ -55,7 +55,7 @@ contract BorrowFromV3 is Test {
         assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: terminalScript,
-            scriptCalldata: abi.encodeWithSelector(TerminalScript.withdrawFromComet.selector, comet, WETH, 10 ether),
+            scriptCalldata: abi.encodeWithSelector(TerminalScript.cometWithdraw.selector, comet, WETH, 10 ether),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,

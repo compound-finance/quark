@@ -55,7 +55,7 @@ contract RepayBorrowFromV3 is Test {
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: terminalScript,
-            scriptCalldata: abi.encodeWithSelector(TerminalScript.supplyToComet.selector, comet, USDC, 1000e6),
+            scriptCalldata: abi.encodeWithSelector(TerminalScript.cometSupply.selector, comet, USDC, 1000e6),
             nonce: wallet.nextUnusedNonce(),
             expiry: type(uint256).max,
             allowCallback: false,

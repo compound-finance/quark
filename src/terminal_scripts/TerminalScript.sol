@@ -20,9 +20,34 @@ contract TerminalScript {
      *   @param asset The asset address
      *   @param amount The amount to supply
      */
-    function supplyToComet(address comet, address asset, uint256 amount) external {
-        IERC20(asset).safeIncreaseAllowance(comet, amount);
+    function cometSupply(address comet, address asset, uint256 amount) external {
+        IERC20(asset).forceApprove(comet, amount);
         IComet(comet).supply(asset, amount);
+    }
+
+    /**
+     * @dev Supply an asset to Comet to a specific address
+     * @param comet The Comet address
+     * @param to The recipient address
+     * @param asset The asset address
+     * @param amount The amount to supply
+     */
+    function cometSupplyTo(address comet, address to, address asset, uint256 amount) external {
+        IERC20(asset).forceApprove(comet, amount);
+        IComet(comet).supplyTo(to, asset, amount);
+    }
+
+    /**
+     *   @dev Supply an asset to Comet from one address to another address
+     *   @param comet The Comet address
+     *   @param from The from address
+     *   @param to The to address
+     *   @param asset The asset address
+     *   @param amount The amount to supply
+     */
+    function cometSupplyFrom(address comet, address from, address to, address asset, uint256 amount) external {
+        IERC20(asset).forceApprove(comet, amount);
+        IComet(comet).supplyFrom(from, to, asset, amount);
     }
 
     /**
@@ -31,8 +56,31 @@ contract TerminalScript {
      *  @param asset The asset address
      *  @param amount The amount to withdraw
      */
-    function withdrawFromComet(address comet, address asset, uint256 amount) external {
+    function cometWithdraw(address comet, address asset, uint256 amount) external {
         IComet(comet).withdraw(asset, amount);
+    }
+
+    /**
+     * @dev Withdraw an asset from Comet to a specific address
+     * @param comet The Comet address
+     * @param to The recipient address
+     * @param asset The asset address
+     * @param amount The amount to withdraw
+     */
+    function cometWithdrawTo(address comet, address to, address asset, uint256 amount) external {
+        IComet(comet).withdrawTo(to, asset, amount);
+    }
+
+    /**
+     *   @dev Withdraw an asset from Comet from one address to another address
+     *   @param comet The Comet address
+     *   @param from The from address
+     *   @param to The to address
+     *   @param asset The asset address
+     *   @param amount The amount to withdraw
+     */
+    function cometWithdrawFrom(address comet, address from, address to, address asset, uint256 amount) external {
+        IComet(comet).withdrawFrom(from, to, asset, amount);
     }
 
     /**
@@ -51,7 +99,7 @@ contract TerminalScript {
         uint256 amountOutMinimum,
         bytes calldata path
     ) external {
-        IERC20(tokenFrom).safeIncreaseAllowance(uniswapRouter, amount);
+        IERC20(tokenFrom).forceApprove(uniswapRouter, amount);
         ISwapRouter(uniswapRouter).exactInput(
             ISwapRouter.ExactInputParams({
                 path: path,
@@ -79,7 +127,7 @@ contract TerminalScript {
         uint256 amountInMaximum,
         bytes calldata path
     ) external {
-        IERC20(tokenFrom).safeIncreaseAllowance(uniswapRouter, amountInMaximum);
+        IERC20(tokenFrom).forceApprove(uniswapRouter, amountInMaximum);
         ISwapRouter(uniswapRouter).exactOutput(
             ISwapRouter.ExactOutputParams({
                 path: path,
@@ -114,12 +162,12 @@ contract TerminalScript {
     }
 
     /**
-     * @dev Claim COMP rewards
+     * @dev Claim rewards
      * @param cometRewards The CometRewards address
      * @param comet The Comet address
      * @param recipient The recipient address, that will receive the COMP rewards
      */
-    function claimCOMP(address cometRewards, address comet, address recipient) external {
+    function claimRewards(address cometRewards, address comet, address recipient) external {
         ICometRewards(cometRewards).claim(comet, recipient, true);
     }
 
@@ -133,7 +181,7 @@ contract TerminalScript {
         external
     {
         for (uint256 i = 0; i < assets.length; i++) {
-            IERC20(assets[i]).safeIncreaseAllowance(comet, amounts[i]);
+            IERC20(assets[i]).forceApprove(comet, amounts[i]);
             IComet(comet).supply(assets[i], amounts[i]);
         }
     }
