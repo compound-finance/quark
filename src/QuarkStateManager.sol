@@ -111,15 +111,13 @@ contract QuarkStateManager {
 
         // get the scriptAddress that the callback intends to invoke
         address scriptAddress = abi.decode(callback[4:], (address));
-        // if the nonce has not been used before, set its nonceScript to the scriptAddress
-        if (nonceScripts[msg.sender][nonce] == address(0)) {
-            nonceScripts[msg.sender][nonce] = scriptAddress;
-        } else if (nonceScripts[msg.sender][nonce] != scriptAddress) {
+        // if the nonce has been used before, check if the script address changed
+        if ((nonceScripts[msg.sender][nonce] != address(0)) && (nonceScripts[msg.sender][nonce] != scriptAddress)) {
             // if scriptAddress points to the empty code, cancel the nonce
             if (scriptAddress.code.length == 0) {
                 return hex"";
             }
-            // if it simply does not match, revert -- you cannot change the script for a replayable nonce
+            // if it has code but a different address, revert -- you cannot change the script for a replayable nonce
             revert NonceScriptMismatch();
         }
 
@@ -133,6 +131,11 @@ contract QuarkStateManager {
             assembly {
                 revert(add(result, 0x20), mload(result))
             }
+        }
+
+        // if a nonce was cleared, set the nonceScript to lock nonce re-use to the same script address
+        if ((nonces[msg.sender][bucket] & setMask) == 0) {
+            nonceScripts[msg.sender][nonce] = scriptAddress;
         }
 
         // release the nonce when the wallet finishes executing callback
