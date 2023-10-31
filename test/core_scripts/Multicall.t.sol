@@ -76,8 +76,9 @@ contract MulticallTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
-
+        vm.pauseGasMetering();
         assertEq(counter.number(), 15);
+        vm.resumeGasMetering();
     }
 
     function testSupplyWETHWithdrawUSDCOnComet() public {
@@ -116,10 +117,11 @@ contract MulticallTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
-
+        vm.pauseGasMetering();
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 100 ether);
         assertApproxEqAbs(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6, 2);
+        vm.resumeGasMetering();
     }
 
     function testInvalidInput() public {
@@ -145,12 +147,12 @@ contract MulticallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
-        vm.resumeGasMetering();
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(Multicall.InvalidInput.selector)
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
@@ -194,7 +196,6 @@ contract MulticallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
-        vm.resumeGasMetering();
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -206,6 +207,7 @@ contract MulticallTest is Test {
                 )
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
@@ -263,11 +265,13 @@ contract MulticallTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
+        vm.pauseGasMetering();
         bytes[] memory returnDatas = abi.decode(quarkReturn, (bytes[]));
 
         assertEq(counter.number(), 15);
         assertEq(returnDatas.length, 2);
         assertEq(abi.decode(returnDatas[0], (bytes)).length, 0);
         assertEq(abi.decode(abi.decode(returnDatas[1], (bytes)), (uint256)), 15);
+        vm.resumeGasMetering();
     }
 }
