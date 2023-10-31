@@ -372,10 +372,13 @@ contract QuarkWalletTest is Test {
         // gas: disable gas metering except while executing operatoins
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        bytes memory callbackFromCounter = new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+        bytes memory callbackFromCounter =
+            new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
 
         // 1. use nonce to increment a counter
-        QuarkWallet.QuarkOperation memory op1 = newBasicOp(aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)));
+        QuarkWallet.QuarkOperation memory op1 = newBasicOp(
+            aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter))
+        );
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
@@ -402,7 +405,9 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)));
+        QuarkWallet.QuarkOperation memory op = newBasicOp(
+            aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter))
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         QuarkWallet.QuarkOperation memory cancelOp = QuarkWallet.QuarkOperation({
@@ -412,7 +417,8 @@ contract QuarkWalletTest is Test {
             expiry: block.timestamp + 1000,
             allowCallback: false
         });
-        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
+        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
 
         // gas: meter execute
         vm.resumeGasMetering();
