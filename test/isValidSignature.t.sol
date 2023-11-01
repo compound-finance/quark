@@ -52,18 +52,35 @@ contract isValidSignatureTest is Test {
 
     /* wallet owned by EOA  */
     function testIsValidSignatureForEOAOwner() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
         (bytes32 digest, bytes memory signature) = createTestSignature(alicePrivateKey, aliceWallet);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         assertEq(aliceWallet.isValidSignature(digest, signature), EIP_1271_MAGIC_VALUE);
     }
 
     function testRevertsIfSignatureExceeds65Bytes() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
         (bytes32 digest, bytes memory signature) = createTestSignature(alicePrivateKey, aliceWallet);
         signature = bytes.concat(signature, bytes("1"));
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         vm.expectRevert(QuarkWallet.InvalidSignature.selector);
         aliceWallet.isValidSignature(digest, signature);
     }
 
     function testRevertsForInvalidSignatureS() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", aliceWallet.DOMAIN_SEPARATOR(), structHash));
         (uint8 v, bytes32 r, bytes32 _s) = vm.sign(alicePrivateKey, digest);
@@ -71,61 +88,100 @@ contract isValidSignatureTest is Test {
         // 1 greater than the max value of s
         bytes32 invalidS = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1;
 
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         vm.expectRevert(QuarkWallet.InvalidSignatureS.selector);
         aliceWallet.isValidSignature(digest, abi.encodePacked(r, invalidS, v));
     }
 
     function testRevertsForInvalidSignature() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", aliceWallet.DOMAIN_SEPARATOR(), structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
 
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         aliceWallet.isValidSignature(digest, abi.encodePacked(r, s, v + 1));
     }
 
     function testRevertsForWrongSigner() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
         // signature from bob
         (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         aliceWallet.isValidSignature(digest, signature);
     }
 
     /* wallet owned by smart contract  */
     function testReturnsMagicValueForValidSignature() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
         // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will approve anything
         (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         assertEq(contractWallet.isValidSignature(bytes32(""), signature), EIP_1271_MAGIC_VALUE);
     }
 
     function testRevertsIfSignerContractReturnsFalse() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
         // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will reject everything
         (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         vm.expectRevert(QuarkWallet.InvalidSignature.selector);
         contractWallet.isValidSignature(bytes32(""), signature);
     }
 
     function testRevertsIfSignerContractReverts() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
         // QuarkWallet is owned by a smart contract that always reverts
         EIP1271Reverter signatureApprover = new EIP1271Reverter();
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will revert
         (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         vm.expectRevert(QuarkWallet.InvalidEIP1271Signature.selector);
         contractWallet.isValidSignature(bytes32(""), signature);
     }
 
     function testRevertsForEmptyContract() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
         address emptyCodeContract = codeJar.saveCode(hex"");
         QuarkWallet contractWallet = new QuarkWallet(emptyCodeContract, codeJar, stateManager);
         // signature from bob; doesn't matter because the empty contract will be treated as an EOA and revert
         (bytes32 digest, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         // call reverts with BadSignatory since the empty contract appears to
         // have no code; request will go down the code path for EIP-712
         // signatures and will revert as bad signature
