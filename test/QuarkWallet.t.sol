@@ -82,12 +82,11 @@ contract QuarkWalletTest is Test {
         }
     }
 
-    function testGetOwner() public {
+    function testGetRoleSigner() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory getOwner = new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
-        QuarkWallet.QuarkOperation memory op =
-            newBasicOp(aliceWallet, getOwner, abi.encodeWithSignature("getOwner()"), ScriptType.ScriptSource);
+        bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
+        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, getRole, abi.encodeWithSignature("getSigner()"), ScriptType.ScriptSource);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute

@@ -17,8 +17,8 @@ contract QuarkWallet is IERC1271 {
     error QuarkCodeNotFound();
     error SignatureExpired();
 
-    /// @notice Address of the EOA that controls this wallet
-    address public immutable owner;
+    /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wllet
+    address public immutable signer;
 
     /// @notice Address of CodeJar contract used to save transaction script source code
     CodeJar public immutable codeJar;
@@ -59,8 +59,8 @@ contract QuarkWallet is IERC1271 {
         bool allowCallback;
     }
 
-    constructor(address owner_, CodeJar codeJar_, QuarkStateManager stateManager_) {
-        owner = owner_;
+    constructor(address signer_, CodeJar codeJar_, QuarkStateManager stateManager_) {
+        signer = signer_;
         codeJar = codeJar_;
         stateManager = stateManager_;
     }
@@ -88,7 +88,7 @@ contract QuarkWallet is IERC1271 {
 
     /**
      * @notice Execute a QuarkOperation via signature
-     * @dev Can only be called with signatures from the wallet's owner
+     * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value
@@ -120,7 +120,7 @@ contract QuarkWallet is IERC1271 {
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
-        if (isValidSignatureInternal(owner, digest, v, r, s)) {
+        if (isValidSignatureInternal(signer, digest, v, r, s)) {
             address scriptAddress = op.scriptAddress;
             if (scriptAddress == address(0)) {
                 scriptAddress = codeJar.saveCode(op.scriptSource);
@@ -139,7 +139,7 @@ contract QuarkWallet is IERC1271 {
     /**
      * @notice Checks whether an EIP-1271 signature is valid
      * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
-     * that the signature comes from the owner; if the QuarkWallet is owned by
+     * that the signature comes from the signer; if the QuarkWallet is owned by
      * a smart contract, isValidSignature relays the `isValidSignature` to the
      * smart contract
      * @param hash Hash of the signed data
@@ -156,7 +156,7 @@ contract QuarkWallet is IERC1271 {
             s := mload(add(signature, 0x40))
             v := byte(0, mload(add(signature, 0x60)))
         }
-        if (isValidSignatureInternal(owner, hash, v, r, s)) {
+        if (isValidSignatureInternal(signer, hash, v, r, s)) {
             return EIP_1271_MAGIC_VALUE;
         } else {
             revert InvalidSignature();
@@ -165,21 +165,21 @@ contract QuarkWallet is IERC1271 {
 
     /*
      * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
-     * that the signature comes from the owner; if the QuarkWallet is owned by
+     * that the signature comes from the signer; if the QuarkWallet is owned by
      * a smart contract, isValidSignature relays the `isValidSignature` to the
      * smart contract; if the smart contract that owns the wallet has no code,
      * the signature will be treated as an EIP-712 signature and revert
      */
-    function isValidSignatureInternal(address signer, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
+    function isValidSignatureInternal(address verifier, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
         internal
         view
         returns (bool)
     {
         // a contract deployed with empty code will be treated as an EOA and will revert
-        if (signer.code.length > 0) {
+        if (verifier.code.length > 0) {
             bytes memory signature = abi.encodePacked(r, s, v);
             (bool success, bytes memory data) =
-                signer.staticcall(abi.encodeWithSelector(EIP_1271_MAGIC_VALUE, digest, signature));
+                verifier.staticcall(abi.encodeWithSelector(EIP_1271_MAGIC_VALUE, digest, signature));
             if (!success) revert InvalidEIP1271Signature();
             bytes4 returnValue = abi.decode(data, (bytes4));
             return returnValue == EIP_1271_MAGIC_VALUE;
@@ -187,7 +187,7 @@ contract QuarkWallet is IERC1271 {
             (address recoveredSigner, ECDSA.RecoverError recoverError) = ECDSA.tryRecover(digest, v, r, s);
             if (recoverError == ECDSA.RecoverError.InvalidSignatureS) revert InvalidSignatureS();
             if (recoverError == ECDSA.RecoverError.InvalidSignature) revert BadSignatory();
-            if (recoveredSigner != signer) revert BadSignatory();
+            if (recoveredSigner != verifier) revert BadSignatory();
             return true;
         }
     }
