@@ -43,6 +43,7 @@ contract QuarkWalletTest is Test {
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
         aliceWallet = new QuarkWallet(aliceAccount, codeJar, stateManager);
+        console.log("Alice signer: %s", aliceAccount);
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
 
@@ -507,5 +508,27 @@ contract QuarkWalletTest is Test {
         // XXX: shouldn't we let the state manager do the nonce checking?
         // vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    function testSignerCanDirectExecute() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        assertEq(counter.number(), 0);
+
+        vm.startPrank(aliceAccount);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(
+            aliceWallet.nextNonce(),
+            codeJar.saveCode(incrementer),
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            false
+        );
+
+        vm.stopPrank();
+
+        assertEq(counter.number(), 3);
     }
 }
