@@ -93,7 +93,7 @@ contract EIP712Test is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // bob calls executeQuarkOperation with the signed op, but he manipulates the code
-        op.scriptSource = new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
+        op.scriptSource = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
         vm.prank(bob);
 
         // gas: meter execute
