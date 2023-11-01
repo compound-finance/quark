@@ -136,7 +136,7 @@ contract QuarkStateManager {
             }
         }
 
-        // if a nonce was cleared, set the nonceScript to lock nonce re-use to the same script address
+        // if a nonce was cleared, set the nonceCallback to lock nonce re-use to the same callback hash
         if ((nonces[msg.sender][bucket] & setMask) == 0) {
             nonceCallback[msg.sender][nonce] = callbackHash;
         }
