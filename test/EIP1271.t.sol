@@ -48,6 +48,8 @@ contract EIP1271Test is Test {
     }
 
     function testReturnsMagicValueForValidSignature() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar, stateManager);
@@ -55,13 +57,18 @@ contract EIP1271Test is Test {
         // signature from alice; doesn't matter because the EIP1271Signer will approve anything
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(1);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
-        contractWallet.executeQuarkOperation(op, v, r, s);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        contractWallet.executeQuarkOperation(op, v, r, s);
         // counter has incremented
         assertEq(counter.number(), 3);
     }
 
     function testRevertsIfSignerContractReturnsFalse() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), codeJar, stateManager);
@@ -69,6 +76,9 @@ contract EIP1271Test is Test {
         // signature from alice; doesn't matter because the EIP1271Signer will reject anything
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(1);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
 
         vm.expectRevert(QuarkWallet.InvalidSignature.selector);
         contractWallet.executeQuarkOperation(op, v, r, s);
