@@ -53,6 +53,7 @@ contract QuarkWalletTest is Test {
         return newBasicOp(wallet, scriptSource, abi.encode(), scriptType);
     }
 
+    // TODO: Make this a shared helper to be used by other test files
     function newBasicOp(
         QuarkWallet wallet,
         bytes memory scriptSource,
