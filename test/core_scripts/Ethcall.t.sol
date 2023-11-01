@@ -40,8 +40,6 @@ contract EthcallTest is Test {
 
         counter = new Counter();
         factory = new QuarkWalletFactory();
-        // gas: do not meter in setUp()
-        vm.pauseGasMetering();
         counter.setNumber(0);
         factory.codeJar().saveCode(ethcall);
     }

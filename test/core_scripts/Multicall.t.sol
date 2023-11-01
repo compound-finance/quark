@@ -43,9 +43,6 @@ contract MulticallTest is Test {
         );
         factory = new QuarkWalletFactory();
         counter = new Counter();
-
-        // gas: do not meter in setUp(), sadly current forge implementation does not allow any contract deployment (above) when gas meter is paused
-        vm.pauseGasMetering();
         counter.setNumber(0);
         ethcallAddress = factory.codeJar().saveCode(ethcall);
         factory.codeJar().saveCode(multicall);
