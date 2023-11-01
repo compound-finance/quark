@@ -20,6 +20,9 @@ contract QuarkWallet is IERC1271 {
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wllet
     address public immutable signer;
 
+    /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
+    address public immutable executor;
+
     /// @notice Address of CodeJar contract used to save transaction script source code
     CodeJar public immutable codeJar;
 
@@ -134,6 +137,29 @@ contract QuarkWallet is IERC1271 {
         } else {
             revert InvalidSignature();
         }
+    }
+
+    /**
+     * @notice Execute a QuarkOperation directly
+     * @dev Can only be called by the wallet's signer or executor; also, scriptAddress and scriptSource must match if both provided
+     * @param nonce Nonce for the operation; must be unused
+     * @param scriptAddress Address for the script to execute
+     * @param scriptCalldata Encoded call to invoke on the script
+     * @param allowCallback Whether the script allows callbacks
+     * @return Return value from the executed operation
+     */
+    function executeQuarkOperation(
+        uint256 nonce,
+        address scriptAddress,
+        bytes calldata scriptCalldata,
+        bool allowCallback
+    ) public payable returns (bytes memory) {
+        // only allow the signer or the executor for the wallet to use unsigned execution
+        require(msg.sender == signer || msg.sender == executor);
+        return stateManager.setActiveNonceAndCallback(
+            nonce,
+            abi.encodeCall(this.executeQuarkOperationWithNonceLock, (scriptAddress, scriptCalldata, allowCallback))
+        );
     }
 
     /**
