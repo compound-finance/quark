@@ -1,3 +1,9 @@
+# Quark
+
+## Overview
+
+Quark is a wallet system which allows users to run arbitrary code ("Quark operations") specific to each Ethereum transaction. Think of a Quark wallet as an Ethereum proxy contract that updates itself each transaction. This is accomplished by the Quark wallet making a delegate call to a contract which has the code it wants to run on that invocation. We use Code Jar to deploy these Quark-runnable contracts using create2 to make code reuse efficient. Finally, we have a factory system to create wallets at pre-determined address and a set of Core Scripts which are audited contract codes as a template for Quark operations.
+
 ## Fork tests and NODE_PROVIDER_BYPASS_KEY
 
 Some tests require forking mainnet, e.g. to exercise use-cases like
