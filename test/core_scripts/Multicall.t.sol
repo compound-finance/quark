@@ -66,6 +66,7 @@ contract MulticallTest is Test {
         assertEq(counter.number(), 0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
@@ -105,6 +106,7 @@ contract MulticallTest is Test {
             abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
@@ -135,6 +137,7 @@ contract MulticallTest is Test {
         callContracts[1] = address(counter);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
@@ -184,6 +187,7 @@ contract MulticallTest is Test {
         );
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
@@ -217,6 +221,7 @@ contract MulticallTest is Test {
         bytes[] memory callDatas = new bytes[](0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
@@ -251,6 +256,7 @@ contract MulticallTest is Test {
         assertEq(counter.number(), 0);
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),

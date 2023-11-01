@@ -39,6 +39,7 @@ contract EIP1271Test is Test {
     function incrementCounterOperation(uint256 nonce) public returns (QuarkWallet.QuarkOperation memory) {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         return QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
