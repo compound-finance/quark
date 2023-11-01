@@ -26,6 +26,10 @@ contract EthcallTest is Test {
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
+    bytes ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
+
     function setUp() public {
         // Fork setup
         vm.createSelectFork(
@@ -35,18 +39,17 @@ contract EthcallTest is Test {
         );
 
         counter = new Counter();
-        counter.setNumber(0);
         factory = new QuarkWalletFactory();
+        // gas: do not meter in setUp()
+        vm.pauseGasMetering();
+        counter.setNumber(0);
+        factory.codeJar().saveCode(ethcall);
     }
 
     function testEthcallCounter() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
-
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
@@ -70,9 +73,6 @@ contract EthcallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
 
         // Set up some funds for test
         deal(USDC, address(wallet), 1000e6);
@@ -120,9 +120,6 @@ contract EthcallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
 
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
@@ -186,9 +183,6 @@ contract EthcallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
 
         // Set up some funds for test
         deal(USDC, address(wallet), 1000e6);
@@ -220,9 +214,6 @@ contract EthcallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
 
         counter.setNumber(5);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
