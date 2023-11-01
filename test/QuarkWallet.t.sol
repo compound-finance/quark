@@ -477,6 +477,10 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 6);
         // can cancel the replayable nonce...
+        vm.expectRevert();
+        aliceWallet.cancelNonce(op.nonce);
+        // but only if you are the owner
+        vm.prank(aliceAccount);
         aliceWallet.cancelNonce(op.nonce);
         // and now you can no longer replay
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));

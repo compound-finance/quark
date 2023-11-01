@@ -81,6 +81,7 @@ contract QuarkWallet is IERC1271 {
      * @param nonce Nonce to cancel
      */
     function cancelNonce(uint256 nonce) external {
+        require(msg.sender == owner);
         return stateManager.cancelNonce(nonce);
     }
 
