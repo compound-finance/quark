@@ -8,8 +8,8 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 contract QuarkWallet is IERC1271 {
     error BadSignatory();
-    error InvalidNonce();
     error InvalidEIP1271Signature();
+    error InvalidNonce();
     error InvalidSignature();
     error InvalidSignatureS();
     error NoActiveCallback();
