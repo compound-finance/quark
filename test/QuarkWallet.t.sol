@@ -480,10 +480,10 @@ contract QuarkWalletTest is Test {
 
         // can cancel the replayable nonce...
         vm.pauseGasMetering();
-        QuarkWallet.QuarkOperation memory cancelOtherOp = newBasicOp(
-            aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint256)", op.nonce)
-        );
-        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
+        QuarkWallet.QuarkOperation memory cancelOtherOp =
+            newBasicOp(aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint256)", op.nonce));
+        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(cancelOtherOp, cancel_v, cancel_r, cancel_s);
 
