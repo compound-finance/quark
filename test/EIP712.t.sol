@@ -22,7 +22,6 @@ contract EIP712Test is Test {
     uint256 alicePrivateKey = 0xa11ce;
     address alice; // see setup()
     address bob = address(11); // 0x00...b
-    address charlie = address(12); // 0x00...c
 
     function setUp() public {
         codeJar = new CodeJar();
