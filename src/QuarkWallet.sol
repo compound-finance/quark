@@ -62,8 +62,9 @@ contract QuarkWallet is IERC1271 {
         bool allowCallback;
     }
 
-    constructor(address signer_, CodeJar codeJar_, QuarkStateManager stateManager_) {
+    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
         signer = signer_;
+        executor = executor_;
         codeJar = codeJar_;
         stateManager = stateManager_;
     }

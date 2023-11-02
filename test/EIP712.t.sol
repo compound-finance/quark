@@ -36,7 +36,7 @@ contract EIP712Test is Test {
         console.log("Counter deployed to: %s", address(counter));
 
         alice = vm.addr(alicePrivateKey);
-        wallet = new QuarkWallet(alice, codeJar, stateManager);
+        wallet = new QuarkWallet(alice, address(0), codeJar, stateManager);
     }
 
     function incrementCounterOperation(uint256 nonce, uint256 expiry)

@@ -34,13 +34,17 @@ contract QuarkWalletFactory {
 
     /**
      * @notice Create new QuarkWallet for account, salt pair
-     * @dev Will revert if wallet already exists for account, salt pair
+     * @dev Will revert if wallet already exists for account, salt pair; sets the executor for salted wallets to the wallet with salt=0
      * @param account Address to create a QuarkWallet for
      * @param salt Salt value to use during creation of QuarkWallet
      * @return address Address of the newly-created wallet
      */
     function create(address account, bytes32 salt) public returns (address) {
-        address walletAddress = address(new QuarkWallet{salt: salt}(account, codeJar, stateManager));
+        address executor = address(0);
+        if (salt != 0) {
+            executor = walletAddressForAccount(account, 0);
+        }
+        address walletAddress = address(new QuarkWallet{salt: salt}(account, executor, codeJar, stateManager));
         emit WalletDeploy(account, walletAddress, salt);
         return walletAddress;
     }
@@ -63,6 +67,14 @@ contract QuarkWalletFactory {
      * @return address Address of the QuarkWallet for account, salt pair
      */
     function walletAddressForAccount(address account, bytes32 salt) public view returns (address) {
+        address executor = address(0);
+        if (salt != 0) {
+            executor = walletAddressForAccountInternal(account, address(0), 0);
+        }
+        return walletAddressForAccountInternal(account, executor, salt);
+    }
+
+    function walletAddressForAccountInternal(address account, address executor, bytes32 salt) internal view returns (address) {
         return address(
             uint160(
                 uint256(
@@ -75,6 +87,7 @@ contract QuarkWalletFactory {
                                 abi.encodePacked(
                                     type(QuarkWallet).creationCode,
                                     abi.encode(account),
+                                    abi.encode(executor),
                                     abi.encode(address(codeJar)),
                                     abi.encode(address(stateManager))
                                 )
