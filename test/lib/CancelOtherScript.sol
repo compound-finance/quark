@@ -3,8 +3,8 @@ pragma solidity ^0.8.21;
 
 import "../../src/QuarkWallet.sol";
 
-contract CancelNonce {
+contract CancelOtherScript {
     function run(uint256 nonce) public {
-        return QuarkWallet(msg.sender).stateManager().cancelNonce(nonce);
+        return QuarkWallet(msg.sender).stateManager().setNonce(nonce);
     }
 }

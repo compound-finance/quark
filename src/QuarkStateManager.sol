@@ -89,10 +89,10 @@ contract QuarkStateManager {
     }
 
     /**
-     * @notice Cancel (set) a given nonce for the calling wallet; prevents a script from being replayed any more
-     * @param nonce Nonce to cancel for the calling wallet
+     * @notice Set a given nonce for the calling wallet; effectively cancels any replayable script using that nonce
+     * @param nonce Nonce to set for the calling wallet
      */
-    function cancelNonce(uint256 nonce) external {
+    function setNonce(uint256 nonce) external {
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
         nonces[msg.sender][bucket] |= setMask;
     }
