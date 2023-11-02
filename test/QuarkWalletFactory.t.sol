@@ -214,13 +214,10 @@ contract QuarkWalletFactoryTest is Test {
                 aliceWalletSecondary.nextNonce(),
                 ethcallAddress,
                 abi.encodeWithSignature(
-                    "run(address,bytes,uint256)",
-                    address(counter),
-                    abi.encodeWithSignature("increment(uint256)", 7),
-                    0
+                    "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 7), 0
                 ),
                 false /* allowCallback */
-            ),
+                ),
             nonce: aliceWalletPrimary.nextNonce(),
             expiry: block.timestamp + 1000,
             allowCallback: false

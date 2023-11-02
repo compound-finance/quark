@@ -65,10 +65,7 @@ contract ExecutorTest is Test {
                 bobWallet.nextNonce(),
                 address(ethcallAddress),
                 abi.encodeWithSignature(
-                    "run(address,bytes,uint256)",
-                    address(counter),
-                    abi.encodeWithSignature("increment(uint256)", 5),
-                    0
+                    "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 5), 0
                 ),
                 false /* allowCallback */
             ),
@@ -96,13 +93,10 @@ contract ExecutorTest is Test {
                 bobWallet.nextNonce(),
                 address(ethcallAddress),
                 abi.encodeWithSignature(
-                    "run(address,bytes,uint256)",
-                    address(counter),
-                    abi.encodeWithSignature("increment(uint256)", 3),
-                    0
+                    "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 3), 0
                 ),
                 false /* allowCallback */
-            ),
+                ),
             nonce: aliceWallet.nextNonce(),
             expiry: block.timestamp + 1000,
             allowCallback: false

@@ -74,7 +74,11 @@ contract QuarkWalletFactory {
         return walletAddressForAccountInternal(account, executor, salt);
     }
 
-    function walletAddressForAccountInternal(address account, address executor, bytes32 salt) internal view returns (address) {
+    function walletAddressForAccountInternal(address account, address executor, bytes32 salt)
+        internal
+        view
+        returns (address)
+    {
         return address(
             uint160(
                 uint256(
