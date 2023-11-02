@@ -79,6 +79,7 @@ contract QuarkWalletFactoryTest is Test {
         uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
@@ -116,6 +117,7 @@ contract QuarkWalletFactoryTest is Test {
         uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
@@ -154,6 +156,7 @@ contract QuarkWalletFactoryTest is Test {
         uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,

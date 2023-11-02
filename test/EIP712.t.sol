@@ -46,6 +46,7 @@ contract EIP712Test is Test {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
@@ -249,6 +250,7 @@ contract EIP712Test is Test {
 
         uint256 nonce = wallet.nextNonce();
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounterReplayable(address)", counter),
             nonce: nonce,
@@ -293,6 +295,7 @@ contract EIP712Test is Test {
 
         uint256 nonce = wallet.nextNonce();
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: executeWithRequirements,
             scriptCalldata: abi.encodeCall(
                 ExecuteWithRequirements.runWithRequirements,
@@ -343,6 +346,7 @@ contract EIP712Test is Test {
         uint256[] memory requirements = new uint[](1);
         requirements[0] = firstOp.nonce;
         QuarkWallet.QuarkOperation memory dependentOp = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: executeWithRequirements,
             scriptCalldata: abi.encodeCall(
                 ExecuteWithRequirements.runWithRequirements,

@@ -48,11 +48,11 @@ contract QuarkWallet is IERC1271 {
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
 
     struct QuarkOperation {
-        /* TODO: optimization: allow passing in the address of the script
-         * to run, instead of the calldata for defining the script.
-         */
-        // address scriptAddress;
-        bytes scriptSource;
+        // TODO: potential optimization: re-order struct for more efficient packing
+        // Can be set as address(0) if using `scriptSource`
+        address scriptAddress; // The address of the transaction script to run
+        // Can be set as empty bytes if using `scriptAddress`
+        bytes scriptSource; // The runtime bytecode of the transaction script to run
         bytes scriptCalldata; // selector + arguments encoded as calldata
         uint256 nonce;
         uint256 expiry;
@@ -115,8 +115,10 @@ contract QuarkWallet is IERC1271 {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
 
         if (isValidSignatureInternal(owner, digest, v, r, s)) {
-            // XXX handle op.scriptAddress without CodeJar
-            address scriptAddress = codeJar.saveCode(op.scriptSource);
+            address scriptAddress = op.scriptAddress;
+            if (scriptAddress == address(0)) {
+                scriptAddress = codeJar.saveCode(op.scriptSource);
+            }
             return stateManager.setActiveNonceAndCallback(
                 op.nonce,
                 abi.encodeCall(

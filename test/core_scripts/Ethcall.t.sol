@@ -49,6 +49,7 @@ contract EthcallTest is Test {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (1)), 0
@@ -76,6 +77,7 @@ contract EthcallTest is Test {
         deal(USDC, address(wallet), 1000e6);
         // Approve Comet to spend USDC
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
@@ -96,6 +98,7 @@ contract EthcallTest is Test {
         vm.pauseGasMetering();
         // Supply Comet
         op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector, address(comet), abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0
@@ -124,6 +127,7 @@ contract EthcallTest is Test {
 
         // Approve Comet to spend WETH
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector, address(WETH), abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
@@ -142,6 +146,7 @@ contract EthcallTest is Test {
         vm.pauseGasMetering();
         // Supply WETH to Comet
         op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
@@ -160,6 +165,7 @@ contract EthcallTest is Test {
         vm.pauseGasMetering();
         // Withdraw USDC from Comet
         op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector, address(comet), abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
@@ -187,6 +193,7 @@ contract EthcallTest is Test {
 
         // Send 2000 USDC to Comet
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.transfer, (comet, 2000e6)), 0
@@ -215,6 +222,7 @@ contract EthcallTest is Test {
 
         counter.setNumber(5);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: ethcall,
             scriptCalldata: abi.encodeWithSelector(
                 Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (1)), 0

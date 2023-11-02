@@ -49,6 +49,7 @@ contract CallbacksTest is Test {
 
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: callbackFromCounter,
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce,
@@ -74,6 +75,7 @@ contract CallbacksTest is Test {
         uint256 nonce1 = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: callbackFromCounter,
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce1,
@@ -84,6 +86,7 @@ contract CallbacksTest is Test {
 
         uint256 nonce2 = nonce1 + 1;
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
@@ -110,6 +113,7 @@ contract CallbacksTest is Test {
         uint256 nonce1 = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: counterScript,
             scriptCalldata: abi.encodeWithSignature("run(address)", counter),
             nonce: nonce1,
@@ -120,6 +124,7 @@ contract CallbacksTest is Test {
 
         uint256 nonce2 = nonce1 + 1;
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
@@ -142,6 +147,7 @@ contract CallbacksTest is Test {
         uint256 nonce = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: counterScript,
             scriptCalldata: abi.encodeWithSignature("run(address)", counter),
             nonce: nonce,
@@ -165,6 +171,7 @@ contract CallbacksTest is Test {
         uint256 nonce = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: callbackFromCounter,
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce,
