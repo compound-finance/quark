@@ -376,12 +376,16 @@ contract QuarkWalletTest is Test {
 
         // 1. use nonce to increment a counter
         QuarkWallet.QuarkOperation memory op1 = newBasicOp(
-            aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter))
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
+            ScriptType.ScriptAddress
         );
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             nonce: op1.nonce,
+            scriptAddress: address(0),
             scriptSource: getOwner,
             scriptCalldata: abi.encodeWithSignature("getOwner()"),
             expiry: block.timestamp + 1000,
@@ -406,12 +410,16 @@ contract QuarkWalletTest is Test {
 
         // 1. use nonce to increment a counter
         QuarkWallet.QuarkOperation memory op1 = newBasicOp(
-            aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter))
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
+            ScriptType.ScriptAddress
         );
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             nonce: op1.nonce,
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", address(counter)),
             expiry: block.timestamp + 1000,
@@ -436,12 +444,16 @@ contract QuarkWalletTest is Test {
 
         // 1. use nonce to increment a counter
         QuarkWallet.QuarkOperation memory op1 = newBasicOp(
-            aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter))
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
+            ScriptType.ScriptAddress
         );
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             nonce: op1.nonce,
+            scriptAddress: address(0),
             scriptSource: op1.scriptSource,
             scriptCalldata: op1.scriptCalldata,
             expiry: op1.expiry,
@@ -466,7 +478,10 @@ contract QuarkWalletTest is Test {
         bytes memory cancelOtherScript = new YulHelper().getDeployed("CancelOtherScript.sol/CancelOtherScript.json");
 
         QuarkWallet.QuarkOperation memory op = newBasicOp(
-            aliceWallet, incrementer, abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter))
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -480,8 +495,9 @@ contract QuarkWalletTest is Test {
 
         // can cancel the replayable nonce...
         vm.pauseGasMetering();
-        QuarkWallet.QuarkOperation memory cancelOtherOp =
-            newBasicOp(aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint256)", op.nonce));
+        QuarkWallet.QuarkOperation memory cancelOtherOp = newBasicOp(
+            aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint256)", op.nonce), ScriptType.ScriptAddress
+        );
         (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) =
             new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
         vm.resumeGasMetering();
