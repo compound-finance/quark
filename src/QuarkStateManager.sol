@@ -93,6 +93,7 @@ contract QuarkStateManager {
      * @param nonce Nonce to set for the calling wallet
      */
     function setNonce(uint256 nonce) external {
+        // TODO: should we check whether there exists a nonceCallback?
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
         nonces[msg.sender][bucket] |= setMask;
     }
