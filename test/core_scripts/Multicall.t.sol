@@ -310,9 +310,7 @@ contract MulticallTest is Test {
             "executeQuarkOperation(uint256,address,bytes,bool)",
             walletBNextNonce,
             ethcallAddress,
-            abi.encodeWithSelector(
-                Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 0.5 ether)), 0
-            ),
+            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 0.5 ether)), 0),
             false /* allowCallback */
         );
 
@@ -322,9 +320,7 @@ contract MulticallTest is Test {
             "executeQuarkOperation(uint256,address,bytes,bool)",
             walletBNextNonce + 1,
             ethcallAddress,
-            abi.encodeWithSelector(
-                Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 0.5 ether)), 0
-            ),
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 0.5 ether)), 0),
             false /* allowCallback */
         );
 
