@@ -470,13 +470,6 @@ contract QuarkWalletTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
-        QuarkWallet.QuarkOperation memory cancelOtherOp = newBasicOp(
-            aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint256)", op.nonce)
-        );
-        // XXX: since op is replayable, nextNonce() gives us an invalid nonce.
-        cancelOtherOp.nonce = op.nonce + 1;
-        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
-
         // gas: meter execute
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
@@ -484,8 +477,16 @@ contract QuarkWalletTest is Test {
         // can replay the same operation...
         aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 6);
+
         // can cancel the replayable nonce...
+        vm.pauseGasMetering();
+        QuarkWallet.QuarkOperation memory cancelOtherOp = newBasicOp(
+            aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint256)", op.nonce)
+        );
+        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
+        vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(cancelOtherOp, cancel_v, cancel_r, cancel_s);
+
         // and now you can no longer replay
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
         // XXX: shouldn't we let the state manager do the nonce checking?

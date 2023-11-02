@@ -47,7 +47,7 @@ contract QuarkStateManager {
     function nextNonce(address wallet) external view returns (uint256) {
         uint256 i;
         for (i = 1; i < type(uint256).max; i++) {
-            if (!isNonceSet(wallet, i)) {
+            if (!isNonceSet(wallet, i) && (nonceCallback[wallet][i] == bytes32(0))) {
                 return i;
             }
         }
