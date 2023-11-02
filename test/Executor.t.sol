@@ -1,7 +1,5 @@
 pragma solidity ^0.8.21;
 
-import "forge-std/Test.sol";
-import "forge-std/StdUtils.sol";
 import "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
@@ -11,7 +9,6 @@ import {Counter} from "./lib/Counter.sol";
 import {YulHelper} from "./lib/YulHelper.sol";
 import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {SignatureHelper} from "./lib/SignatureHelper.sol";
-import {ExecuteWithRequirements} from "./lib/ExecuteWithRequirements.sol";
 
 contract ExecutorTest is Test {
     CodeJar public codeJar;
