@@ -87,7 +87,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
-        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, getRole, abi.encodeWithSignature("getSigner()"), ScriptType.ScriptSource);
+        QuarkWallet.QuarkOperation memory op =
+            newBasicOp(aliceWallet, getRole, abi.encodeWithSignature("getSigner()"), ScriptType.ScriptSource);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
