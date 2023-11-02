@@ -41,21 +41,77 @@ contract ExecutorTest is Test {
     }
 
     function testExecutorCanDirectCall() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        address ethcallAddress = codeJar.saveCode(ethcall);
+
         bytes memory executeOnBehalf = new YulHelper().getDeployed("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
+        address executeOnBehalfAddress = codeJar.saveCode(executeOnBehalf);
 
         vm.startPrank(aliceAccount);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        // execute counter.increment(5) as bob from alice's wallet (bob's wallet's executor)
         aliceWallet.executeQuarkOperation(
             aliceWallet.nextNonce(),
-            codeJar.saveCode(executeOnBehalf),
+            executeOnBehalfAddress,
             abi.encodeWithSignature(
                 "run(address,uint256,address,bytes,bool)",
                 address(bobWallet),
                 bobWallet.nextNonce(),
-                address(counter),
-                abi.encodeWithSignature("increment(uint256)", (5)),
+                address(ethcallAddress),
+                abi.encodeWithSignature(
+                    "run(address,bytes,uint256)",
+                    address(counter),
+                    abi.encodeWithSignature("increment(uint256)", 5),
+                    0
+                ),
                 false /* allowCallback */
             ),
             false /* allowCallback */
         );
+
+        assertEq(counter.number(), 5);
+    }
+
+    function testExecutorCanDirectCallBySig() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        address ethcallAddress = codeJar.saveCode(ethcall);
+
+        bytes memory executeOnBehalf = new YulHelper().getDeployed("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
+            scriptSource: executeOnBehalf,
+            scriptCalldata: abi.encodeWithSignature(
+                "run(address,uint256,address,bytes,bool)",
+                address(bobWallet),
+                bobWallet.nextNonce(),
+                address(ethcallAddress),
+                abi.encodeWithSignature(
+                    "run(address,bytes,uint256)",
+                    address(counter),
+                    abi.encodeWithSignature("increment(uint256)", 3),
+                    0
+                ),
+                false /* allowCallback */
+            ),
+            nonce: aliceWallet.nextNonce(),
+            expiry: block.timestamp + 1000,
+            allowCallback: false
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 3);
     }
 }
