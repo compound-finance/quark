@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
+interface IExecutor {
+    function executeScriptWithNonceLock(address scriptAddress, bytes calldata scriptCalldata) external returns (bytes memory);
+}
+
 contract QuarkStateManager {
     error InvalidNonce();
     error NoNonceActive();
@@ -117,7 +121,7 @@ contract QuarkStateManager {
      * @param nonce Nonce to activate for the transaction
      * @dev The script is expected to clearNonce() if it wishes to be replayable
      */
-    function setActiveNonceAndCallback(uint96 nonce, bytes calldata callback) external returns (bytes memory) {
+    function setActiveNonceAndCallback(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata) external returns (bytes memory) {
         if (nonce == 0) {
             revert InvalidNonce();
         }
@@ -141,15 +145,9 @@ contract QuarkStateManager {
 
         // set the nonce-script pair active and yield to the wallet callback
         uint256 previousNonceScript = activeNonceScript[msg.sender];
-        activeNonceScript[msg.sender] = uint256(bytes32(abi.encodePacked(nonce, abi.decode(callback[4:], (address)))));
+        activeNonceScript[msg.sender] = uint256(bytes32(abi.encodePacked(nonce, scriptAddress)));
 
-        (bool success, bytes memory result) = msg.sender.call(callback);
-        // if the call fails, propagate the revert from the wallet
-        if (!success) {
-            assembly {
-                revert(add(result, 0x20), mload(result))
-            }
-        }
+        bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
 
         // if a nonce was cleared, set the nonceCallback to lock nonce re-use to the same callback hash
         if ((nonces[msg.sender][bucket] & setMask) == 0) {
@@ -160,7 +158,7 @@ contract QuarkStateManager {
         activeNonceScript[msg.sender] = previousNonceScript;
 
         // otherwise, return the result. currently, result is double-encoded. un-encode it.
-        return abi.decode(result, (bytes));
+        return result;
     }
 
     /**
