@@ -532,4 +532,23 @@ contract QuarkWalletTest is Test {
 
         assertEq(counter.number(), 3);
     }
+
+    function testDirectExecuteUnauthorized() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        assertEq(counter.number(), 0);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        uint256 nonce = aliceWallet.nextNonce();
+        address target = codeJar.saveCode(incrementer);
+        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
+        vm.expectRevert(
+            abi.encodeWithSelector(QuarkWallet.Unauthorized.selector)
+        );
+        aliceWallet.executeQuarkOperation(nonce, target, call, false);
+
+        assertEq(counter.number(), 0);
+    }
 }
