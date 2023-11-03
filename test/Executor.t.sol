@@ -60,16 +60,14 @@ contract ExecutorTest is Test {
             aliceWallet.nextNonce(),
             executeOnBehalfAddress,
             abi.encodeWithSignature(
-                "run(address,uint96,address,bytes,bool)",
+                "run(address,uint96,address,bytes)",
                 address(bobWallet),
                 bobWallet.nextNonce(),
                 address(ethcallAddress),
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 5), 0
-                ),
-                false /* allowCallback */
-            ),
-            false /* allowCallback */
+                )
+            )
         );
 
         assertEq(counter.number(), 5);
@@ -88,18 +86,16 @@ contract ExecutorTest is Test {
             scriptAddress: address(0),
             scriptSource: executeOnBehalf,
             scriptCalldata: abi.encodeWithSignature(
-                "run(address,uint96,address,bytes,bool)",
+                "run(address,uint96,address,bytes)",
                 address(bobWallet),
                 bobWallet.nextNonce(),
                 address(ethcallAddress),
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 3), 0
-                ),
-                false /* allowCallback */
+                )
                 ),
             nonce: aliceWallet.nextNonce(),
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 

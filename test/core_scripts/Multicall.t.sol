@@ -70,8 +70,7 @@ contract MulticallTest is Test {
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -110,8 +109,7 @@ contract MulticallTest is Test {
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -141,8 +139,7 @@ contract MulticallTest is Test {
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -191,8 +188,7 @@ contract MulticallTest is Test {
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -225,8 +221,7 @@ contract MulticallTest is Test {
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -260,8 +255,7 @@ contract MulticallTest is Test {
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -294,34 +288,31 @@ contract MulticallTest is Test {
         // 1. transfer 0.5 WETH from wallet A to wallet B
         wallets[0] = address(walletA);
         walletCalls[0] = abi.encodeWithSignature(
-            "executeScript(uint96,address,bytes,bool)",
+            "executeScript(uint96,address,bytes)",
             walletA.nextNonce(),
             ethcallAddress,
             abi.encodeWithSelector(
                 Ethcall.run.selector, WETH, abi.encodeCall(IERC20.transfer, (address(walletB), 0.5 ether)), 0
-            ),
-            false /* allowCallback */
+            )
         );
 
         // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
         uint96 walletBNextNonce = walletB.nextNonce();
         wallets[1] = address(walletB);
         walletCalls[1] = abi.encodeWithSignature(
-            "executeScript(uint96,address,bytes,bool)",
+            "executeScript(uint96,address,bytes)",
             walletBNextNonce,
             ethcallAddress,
-            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 0.5 ether)), 0),
-            false /* allowCallback */
+            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 0.5 ether)), 0)
         );
 
         // 3. supply 0.5 WETH from wallet B to Comet cUSDCv3
         wallets[2] = address(walletB);
         walletCalls[2] = abi.encodeWithSignature(
-            "executeScript(uint96,address,bytes,bool)",
+            "executeScript(uint96,address,bytes)",
             walletBNextNonce + 1,
             ethcallAddress,
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 0.5 ether)), 0),
-            false /* allowCallback */
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 0.5 ether)), 0)
         );
 
         // okay, woof, now wrap all that in ethcalls...
@@ -340,8 +331,7 @@ contract MulticallTest is Test {
             scriptSource: multicall,
             scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, targets, calls),
             nonce: primary.nextNonce(),
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, primary, op);
 

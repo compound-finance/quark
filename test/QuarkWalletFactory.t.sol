@@ -83,8 +83,7 @@ contract QuarkWalletFactoryTest is Test {
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
 
         // alice signs the operation
@@ -121,8 +120,7 @@ contract QuarkWalletFactoryTest is Test {
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
 
         bytes32 salt = bytes32("salty salt salt");
@@ -159,8 +157,7 @@ contract QuarkWalletFactoryTest is Test {
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
 
         // alice signs the operation
@@ -209,18 +206,16 @@ contract QuarkWalletFactoryTest is Test {
             scriptAddress: address(0),
             scriptSource: executeOnBehalf,
             scriptCalldata: abi.encodeWithSignature(
-                "run(address,uint96,address,bytes,bool)",
+                "run(address,uint96,address,bytes)",
                 address(aliceWalletSecondary),
                 aliceWalletSecondary.nextNonce(),
                 ethcallAddress,
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 7), 0
-                ),
-                false /* allowCallback */
+                )
                 ),
             nonce: aliceWalletPrimary.nextNonce(),
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWalletPrimary, op);
 
