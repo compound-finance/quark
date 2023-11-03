@@ -12,11 +12,16 @@ contract QuarkStateManager {
     error NonceAlreadySet();
     error NonceScriptMismatch();
 
+    struct NonceScript {
+        uint96 nonce;
+        address scriptAddress;
+    }
+
     /// @notice Bit-packed nonce values
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
 
     /// @notice Currently active nonce-script pair for a wallet, if any, for which storage is accessible
-    mapping(address /* wallet */ => uint256 /* nonce + address */) internal activeNonceScript;
+    mapping(address /* wallet */ => NonceScript) internal activeNonceScript;
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
     mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
@@ -63,11 +68,11 @@ contract QuarkStateManager {
      * @return Currently active nonce
      */
     function getActiveNonce() external view returns (uint96) {
-        if (activeNonceScript[msg.sender] == 0) {
+        if (activeNonceScript[msg.sender].nonce == 0) {
             revert NoNonceActive();
         }
         // the first 12 bytes is the nonce
-        return uint96(bytes12(bytes32(activeNonceScript[msg.sender])));
+        return activeNonceScript[msg.sender].nonce;
     }
 
     /**
@@ -75,11 +80,11 @@ contract QuarkStateManager {
      * @return Currently active script address
      */
     function getActiveScript() external view returns (address) {
-        if (activeNonceScript[msg.sender] == 0) {
+        if (activeNonceScript[msg.sender].nonce == 0) {
             revert NoNonceActive();
         }
         // the last 20 bytes is the address
-        return address(bytes20(bytes32(activeNonceScript[msg.sender]) << 96));
+        return activeNonceScript[msg.sender].scriptAddress;
     }
 
     /**
@@ -98,11 +103,10 @@ contract QuarkStateManager {
      * @notice Clears (un-sets) the active nonce to allow its reuse; allows a script to be replayed
      */
     function clearNonce() external {
-        if (activeNonceScript[msg.sender] == 0) {
+        if (activeNonceScript[msg.sender].nonce == 0) {
             revert NoNonceActive();
         }
-        uint96 nonce = uint96(bytes12(bytes32(activeNonceScript[msg.sender])));
-        (uint256 bucket, uint256 setMask) = getBucket(nonce);
+        (uint256 bucket, uint256 setMask) = getBucket(activeNonceScript[msg.sender].nonce);
         nonces[msg.sender][bucket] &= ~setMask;
     }
 
@@ -143,8 +147,11 @@ contract QuarkStateManager {
         }
 
         // set the nonce-script pair active and yield to the wallet callback
-        uint256 previousNonceScript = activeNonceScript[msg.sender];
-        activeNonceScript[msg.sender] = uint256(bytes32(abi.encodePacked(nonce, scriptAddress)));
+        NonceScript storage previousNonceScript = activeNonceScript[msg.sender];
+        activeNonceScript[msg.sender] = NonceScript({
+            nonce: nonce,
+            scriptAddress: scriptAddress
+        });
 
         bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
 
@@ -164,10 +171,10 @@ contract QuarkStateManager {
      * @notice Write arbitrary bytes to storage namespaced by the currently active nonce; reverts if no nonce is currently active
      */
     function write(bytes32 key, bytes32 value) external {
-        if (activeNonceScript[msg.sender] == 0) {
+        if (activeNonceScript[msg.sender].nonce == 0) {
             revert NoNonceActive();
         }
-        walletStorage[msg.sender][uint96(bytes12(bytes32(activeNonceScript[msg.sender])))][key] = value;
+        walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key] = value;
     }
 
     /**
@@ -175,9 +182,9 @@ contract QuarkStateManager {
      * @return Value at the nonce storage location, as bytes
      */
     function read(bytes32 key) external returns (bytes32) {
-        if (activeNonceScript[msg.sender] == 0) {
+        if (activeNonceScript[msg.sender].nonce == 0) {
             revert NoNonceActive();
         }
-        return walletStorage[msg.sender][uint96(bytes12(bytes32(activeNonceScript[msg.sender])))][key];
+        return walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key];
     }
 }
