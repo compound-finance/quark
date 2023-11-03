@@ -6,7 +6,7 @@ import "../../src/QuarkWallet.sol";
 contract ExecuteOnBehalf {
     function run(
         QuarkWallet targetWallet,
-        uint256 nonce,
+        uint96 nonce,
         address scriptAddress,
         bytes calldata scriptCalldata,
         bool allowCallback

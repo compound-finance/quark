@@ -5,15 +5,15 @@ import "../../src/QuarkWallet.sol";
 import "../../src/QuarkStateManager.sol";
 
 contract ExecuteWithRequirements {
-    error RequirementNotMet(uint256 nonce);
+    error RequirementNotMet(uint96 nonce);
 
-    function runWithRequirements(uint256[] memory requirements, address scriptAddress, bytes calldata scriptCalldata)
+    function runWithRequirements(uint96[] memory requirements, address scriptAddress, bytes calldata scriptCalldata)
         public
         returns (bytes memory)
     {
         QuarkWallet wallet = QuarkWallet(address(this));
         QuarkStateManager stateManager = wallet.stateManager();
-        for (uint256 i = 0; i < requirements.length; i++) {
+        for (uint96 i = 0; i < requirements.length; i++) {
             if (!stateManager.isNonceSet(address(wallet), requirements[i])) {
                 revert RequirementNotMet(requirements[i]);
             }

@@ -294,7 +294,7 @@ contract MulticallTest is Test {
         // 1. transfer 0.5 WETH from wallet A to wallet B
         wallets[0] = address(walletA);
         walletCalls[0] = abi.encodeWithSignature(
-            "executeScript(uint256,address,bytes,bool)",
+            "executeScript(uint96,address,bytes,bool)",
             walletA.nextNonce(),
             ethcallAddress,
             abi.encodeWithSelector(
@@ -304,10 +304,10 @@ contract MulticallTest is Test {
         );
 
         // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
-        uint256 walletBNextNonce = walletB.nextNonce();
+        uint96 walletBNextNonce = walletB.nextNonce();
         wallets[1] = address(walletB);
         walletCalls[1] = abi.encodeWithSignature(
-            "executeScript(uint256,address,bytes,bool)",
+            "executeScript(uint96,address,bytes,bool)",
             walletBNextNonce,
             ethcallAddress,
             abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 0.5 ether)), 0),
@@ -317,7 +317,7 @@ contract MulticallTest is Test {
         // 3. supply 0.5 WETH from wallet B to Comet cUSDCv3
         wallets[2] = address(walletB);
         walletCalls[2] = abi.encodeWithSignature(
-            "executeScript(uint256,address,bytes,bool)",
+            "executeScript(uint96,address,bytes,bool)",
             walletBNextNonce + 1,
             ethcallAddress,
             abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 0.5 ether)), 0),

@@ -60,7 +60,7 @@ contract ExecutorTest is Test {
             aliceWallet.nextNonce(),
             executeOnBehalfAddress,
             abi.encodeWithSignature(
-                "run(address,uint256,address,bytes,bool)",
+                "run(address,uint96,address,bytes,bool)",
                 address(bobWallet),
                 bobWallet.nextNonce(),
                 address(ethcallAddress),
@@ -88,7 +88,7 @@ contract ExecutorTest is Test {
             scriptAddress: address(0),
             scriptSource: executeOnBehalf,
             scriptCalldata: abi.encodeWithSignature(
-                "run(address,uint256,address,bytes,bool)",
+                "run(address,uint96,address,bytes,bool)",
                 address(bobWallet),
                 bobWallet.nextNonce(),
                 address(ethcallAddress),

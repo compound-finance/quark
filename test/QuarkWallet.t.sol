@@ -513,7 +513,7 @@ contract QuarkWalletTest is Test {
         // can cancel the replayable nonce...
         vm.pauseGasMetering();
         QuarkWallet.QuarkOperation memory cancelOtherOp = newBasicOp(
-            aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint256)", op.nonce), ScriptType.ScriptAddress
+            aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint96)", op.nonce), ScriptType.ScriptAddress
         );
         (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) =
             new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
@@ -557,7 +557,7 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        uint256 nonce = aliceWallet.nextNonce();
+        uint96 nonce = aliceWallet.nextNonce();
         address target = codeJar.saveCode(incrementer);
         bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.Unauthorized.selector));
