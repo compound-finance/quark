@@ -76,7 +76,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
@@ -114,7 +114,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
@@ -153,7 +153,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: incrementer,
@@ -209,7 +209,7 @@ contract QuarkWalletFactoryTest is Test {
             scriptAddress: address(0),
             scriptSource: executeOnBehalf,
             scriptCalldata: abi.encodeWithSignature(
-                "run(address,uint256,address,bytes,bool)",
+                "run(address,uint96,address,bytes,bool)",
                 address(aliceWalletSecondary),
                 aliceWalletSecondary.nextNonce(),
                 ethcallAddress,

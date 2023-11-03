@@ -6,7 +6,7 @@ import "./../../src/QuarkWallet.sol";
 
 contract SignatureHelper is Test {
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
+        "QuarkOperation(address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint96 nonce,uint256 expiry,bool allowCallback)"
     );
 
     bytes32 internal constant QUARK_WALLET_DOMAIN_TYPEHASH =

@@ -35,7 +35,7 @@ contract QuarkWallet is IERC1271 {
 
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
+        "QuarkOperation(address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint96 nonce,uint256 expiry,bool allowCallback)"
     );
 
     /// @dev The EIP-712 typehash for the contract's domain
@@ -58,7 +58,7 @@ contract QuarkWallet is IERC1271 {
         // Can be set as empty bytes if using `scriptAddress`
         bytes scriptSource; // The runtime bytecode of the transaction script to run
         bytes scriptCalldata; // selector + arguments encoded as calldata
-        uint256 nonce;
+        uint96 nonce;
         uint256 expiry;
         bool allowCallback;
     }
@@ -77,7 +77,7 @@ contract QuarkWallet is IERC1271 {
      * already been written to, which costs less gas
      * @return The next unused nonce
      */
-    function nextNonce() external view returns (uint256) {
+    function nextNonce() external view returns (uint96) {
         return stateManager.nextNonce(address(this));
     }
 
@@ -150,7 +150,7 @@ contract QuarkWallet is IERC1271 {
      * @param allowCallback Whether the script allows callbacks
      * @return Return value from the executed operation
      */
-    function executeScript(uint256 nonce, address scriptAddress, bytes calldata scriptCalldata, bool allowCallback)
+    function executeScript(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata, bool allowCallback)
         external
         payable
         returns (bytes memory)

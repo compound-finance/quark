@@ -9,12 +9,12 @@ import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 
 contract QuarkStateManagerHarness is QuarkStateManager {
-    function setNonceExternal(uint256 nonce) external {
+    function setNonceExternal(uint96 nonce) external {
         // NOTE: intentionally violates invariant in the name of... testing
-        activeNonce[msg.sender] = nonce;
+        activeNonceScript[msg.sender] = uint256(bytes32(abi.encodePacked(nonce, address(0))));
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
         nonces[msg.sender][bucket] |= setMask;
-        activeNonce[msg.sender] = 0;
+        activeNonceScript[msg.sender] = 0;
     }
 }
 
@@ -45,7 +45,7 @@ contract NonceTest is Test {
     function testNonLinearNonce() public {
         // nonce values are not incremental; you can use a random number as
         // long as it has not been set
-        uint256 nonce = 1234567890;
+        uint96 nonce = 1234567890;
 
         assertEq(stateManagerHarness.isNonceSet(address(this), nonce), false);
 
@@ -54,7 +54,7 @@ contract NonceTest is Test {
     }
 
     function testNextUnusedNonce() public {
-        uint256 nonce1 = stateManagerHarness.nextNonce(address(this));
+        uint96 nonce1 = stateManagerHarness.nextNonce(address(this));
 
         stateManagerHarness.setNonceExternal(nonce1);
         assertEq(stateManagerHarness.nextNonce(address(this)), nonce1 + 1);
