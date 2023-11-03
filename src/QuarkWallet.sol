@@ -55,10 +55,10 @@ contract QuarkWallet is IERC1271 {
         // TODO: potential optimization: re-order struct for more efficient packing
         // Can be set as address(0) if using `scriptSource`
         address scriptAddress; // The address of the transaction script to run
+        uint96 nonce;
         // Can be set as empty bytes if using `scriptAddress`
         bytes scriptSource; // The runtime bytecode of the transaction script to run
         bytes scriptCalldata; // selector + arguments encoded as calldata
-        uint96 nonce;
         uint256 expiry;
     }
 
