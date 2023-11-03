@@ -36,7 +36,13 @@ contract SignatureHelper is Test {
     function structHash(QuarkWallet.QuarkOperation memory op) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptAddress, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
+                QUARK_OPERATION_TYPEHASH,
+                op.scriptAddress,
+                op.scriptSource,
+                op.scriptCalldata,
+                op.nonce,
+                op.expiry,
+                op.allowCallback
             )
         );
     }
