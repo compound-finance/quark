@@ -123,9 +123,7 @@ contract QuarkWallet is IERC1271 {
             if (scriptAddress == address(0)) {
                 scriptAddress = codeJar.saveCode(op.scriptSource);
             }
-            return stateManager.setActiveNonceAndCallback(
-                op.nonce, abi.encodeCall(this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata))
-            );
+            return stateManager.setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
         } else {
             revert InvalidSignature();
         }
@@ -148,9 +146,7 @@ contract QuarkWallet is IERC1271 {
         if (!(msg.sender == signer || msg.sender == executor)) {
             revert Unauthorized();
         }
-        return stateManager.setActiveNonceAndCallback(
-            nonce, abi.encodeCall(this.executeQuarkOperationWithNonceLock, (scriptAddress, scriptCalldata))
-        );
+        return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
     }
 
     /**
@@ -216,7 +212,7 @@ contract QuarkWallet is IERC1271 {
      * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
      * @return Result of executing the script, encoded as bytes
      */
-    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata)
+    function executeScriptWithNonceLock(address scriptAddress, bytes memory scriptCalldata)
         external
         returns (bytes memory)
     {
