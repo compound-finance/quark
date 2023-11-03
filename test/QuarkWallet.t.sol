@@ -413,11 +413,11 @@ contract QuarkWalletTest is Test {
         // incrementer increments the counter thrice
         assertEq(counter.number(), 3);
         // when reusing the nonce but changing the script, revert
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceCallbackMismatch.selector));
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceScriptMismatch.selector));
         aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
     }
 
-    function testRevertsForReusedNonceWithChangedCalldata() public {
+    function testCanReplaySameScriptWithDifferentCall() public {
         // gas: disable gas metering except while executing operatoins
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
@@ -445,9 +445,13 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
         // incrementer increments the counter thrice
         assertEq(counter.number(), 3);
-        // when reusing the nonce but changing the calldata, revert
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceCallbackMismatch.selector));
+        // when reusing the nonce, you can change the call
         aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+        // incrementer increments the counter thrice
+        assertEq(counter.number(), 6);
+        // but now that we did not use a replayable call, it is canceled
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
+        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
     }
 
     function testRevertsForReplayOfCanceledScript() public {

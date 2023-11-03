@@ -10,7 +10,7 @@ contract QuarkStateManager {
     error NoNonceActive();
     error NoUnusedNonces();
     error NonceAlreadySet();
-    error NonceCallbackMismatch();
+    error NonceScriptMismatch();
 
     /// @notice Bit-packed nonce values
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
@@ -22,8 +22,8 @@ contract QuarkStateManager {
     mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
         internal walletStorage;
 
-    /// @notice Per-wallet-nonce callback hash for preventing replays with changed code
-    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => bytes32 /* callback hash */)) nonceCallback;
+    /// @notice Per-wallet-nonce address for preventing replays with changed script address
+    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => address /* address */)) nonceScript;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -51,7 +51,7 @@ contract QuarkStateManager {
     function nextNonce(address wallet) external view returns (uint96) {
         uint96 i;
         for (i = 1; i < type(uint256).max; i++) {
-            if (!isNonceSet(wallet, i) && (nonceCallback[wallet][i] == bytes32(0))) {
+            if (!isNonceSet(wallet, i) && (nonceScript[wallet][i] == address(0))) {
                 return i;
             }
         }
@@ -138,9 +138,8 @@ contract QuarkStateManager {
         nonces[msg.sender][bucket] |= setMask;
 
         // if the nonce has been used before, check if the callback hash matches, and revert if not
-        bytes32 callbackHash = keccak256(callback);
-        if ((nonceCallback[msg.sender][nonce] != bytes32(0)) && (nonceCallback[msg.sender][nonce] != callbackHash)) {
-            revert NonceCallbackMismatch();
+        if ((nonceScript[msg.sender][nonce] != address(0)) && (nonceScript[msg.sender][nonce] != scriptAddress)) {
+            revert NonceScriptMismatch();
         }
 
         // set the nonce-script pair active and yield to the wallet callback
@@ -151,7 +150,7 @@ contract QuarkStateManager {
 
         // if a nonce was cleared, set the nonceCallback to lock nonce re-use to the same callback hash
         if ((nonces[msg.sender][bucket] & setMask) == 0) {
-            nonceCallback[msg.sender][nonce] = callbackHash;
+            nonceScript[msg.sender][nonce] = scriptAddress;
         }
 
         // release the nonce when the wallet finishes executing callback
