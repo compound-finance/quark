@@ -53,8 +53,7 @@ contract CallbacksTest is Test {
             scriptSource: callbackFromCounter,
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: true
+            expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -79,8 +78,7 @@ contract CallbacksTest is Test {
             scriptSource: callbackFromCounter,
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce1,
-            expiry: block.timestamp + 1000,
-            allowCallback: true
+            expiry: block.timestamp + 1000
         });
         (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
@@ -90,8 +88,7 @@ contract CallbacksTest is Test {
             scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
-            expiry: block.timestamp + 1000,
-            allowCallback: true
+            expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
@@ -117,8 +114,7 @@ contract CallbacksTest is Test {
             scriptSource: counterScript,
             scriptCalldata: abi.encodeWithSignature("run(address)", counter),
             nonce: nonce1,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
         (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
@@ -128,8 +124,7 @@ contract CallbacksTest is Test {
             scriptSource: executeOtherScript,
             scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
-            expiry: block.timestamp + 1000,
-            allowCallback: true
+            expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
@@ -139,44 +134,24 @@ contract CallbacksTest is Test {
         assertEq(counter.number(), 2);
     }
 
-    function testAllowCallbackDoesNotRequireGettingCalledBack() public {
-        // gas: do not meter set-up
-        vm.pauseGasMetering();
-        assertEq(counter.number(), 0);
-        bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
-        uint96 nonce = aliceWallet.nextNonce();
-        uint96[] memory requirements;
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: counterScript,
-            scriptCalldata: abi.encodeWithSignature("run(address)", counter),
-            nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: true
-        });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
-
-        // gas: meter execute
-        vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
-        assertEq(counter.number(), 2);
-    }
-
     function testRevertsOnCallbackWhenNoActiveCallback() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory callbackFromCounter =
-            new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
 
         uint96 nonce = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
-            scriptSource: callbackFromCounter,
-            scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
+            scriptSource: ethcall,
+            scriptCalldata: abi.encodeWithSignature(
+                "run(address,bytes,uint256)",
+                address(counter),
+                abi.encodeCall(counter.incrementAndCallback, ()),
+                0 /* value */
+                ),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 

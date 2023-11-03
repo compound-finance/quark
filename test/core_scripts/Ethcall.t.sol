@@ -55,8 +55,7 @@ contract EthcallTest is Test {
                 Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (1)), 0
                 ),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: true
+            expiry: type(uint256).max
         });
 
         assertEq(counter.number(), 0);
@@ -83,8 +82,7 @@ contract EthcallTest is Test {
                 Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
                 ),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -104,8 +102,7 @@ contract EthcallTest is Test {
                 Ethcall.run.selector, address(comet), abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0
                 ),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -133,8 +130,7 @@ contract EthcallTest is Test {
                 Ethcall.run.selector, address(WETH), abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
                 ),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -152,8 +148,7 @@ contract EthcallTest is Test {
                 Ethcall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
                 ),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -171,8 +166,7 @@ contract EthcallTest is Test {
                 Ethcall.run.selector, address(comet), abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
                 ),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -199,8 +193,7 @@ contract EthcallTest is Test {
                 Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.transfer, (comet, 2000e6)), 0
                 ),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
+            expiry: type(uint256).max
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -228,8 +221,7 @@ contract EthcallTest is Test {
                 Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (1)), 0
                 ),
             nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: true
+            expiry: type(uint256).max
         });
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

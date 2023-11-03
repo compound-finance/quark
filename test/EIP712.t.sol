@@ -49,8 +49,7 @@ contract EIP712Test is Test {
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
-            expiry: expiry,
-            allowCallback: false
+            expiry: expiry
         });
 
         return op;
@@ -253,8 +252,7 @@ contract EIP712Test is Test {
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounterReplayable(address)", counter),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -301,8 +299,7 @@ contract EIP712Test is Test {
                 (new uint96[](0), incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
                 ),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
@@ -352,8 +349,7 @@ contract EIP712Test is Test {
                 (requirements, incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
                 ),
             nonce: nonce + 1,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, dependentOp);
 

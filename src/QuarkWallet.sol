@@ -31,7 +31,7 @@ contract QuarkWallet is IERC1271 {
     QuarkStateManager public immutable stateManager;
 
     /// @notice Well-known storage location for the currently executing script's callback address (if any)
-    bytes32 internal constant CALLBACK_KEY = keccak256("callback.v1.quark");
+    bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
 
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
@@ -60,7 +60,6 @@ contract QuarkWallet is IERC1271 {
         bytes scriptCalldata; // selector + arguments encoded as calldata
         uint96 nonce;
         uint256 expiry;
-        bool allowCallback;
     }
 
     constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
@@ -114,13 +113,7 @@ contract QuarkWallet is IERC1271 {
 
         bytes32 structHash = keccak256(
             abi.encode(
-                QUARK_OPERATION_TYPEHASH,
-                op.scriptAddress,
-                op.scriptSource,
-                op.scriptCalldata,
-                op.nonce,
-                op.expiry,
-                op.allowCallback
+                QUARK_OPERATION_TYPEHASH, op.scriptAddress, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry
             )
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
@@ -131,10 +124,7 @@ contract QuarkWallet is IERC1271 {
                 scriptAddress = codeJar.saveCode(op.scriptSource);
             }
             return stateManager.setActiveNonceAndCallback(
-                op.nonce,
-                abi.encodeCall(
-                    this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata, op.allowCallback)
-                )
+                op.nonce, abi.encodeCall(this.executeQuarkOperationWithNonceLock, (scriptAddress, op.scriptCalldata))
             );
         } else {
             revert InvalidSignature();
@@ -147,10 +137,9 @@ contract QuarkWallet is IERC1271 {
      * @param nonce Nonce for the operation; must be unused
      * @param scriptAddress Address for the script to execute
      * @param scriptCalldata Encoded call to invoke on the script
-     * @param allowCallback Whether the script allows callbacks
      * @return Return value from the executed operation
      */
-    function executeScript(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata, bool allowCallback)
+    function executeScript(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
         external
         payable
         returns (bytes memory)
@@ -160,8 +149,7 @@ contract QuarkWallet is IERC1271 {
             revert Unauthorized();
         }
         return stateManager.setActiveNonceAndCallback(
-            nonce,
-            abi.encodeCall(this.executeQuarkOperationWithNonceLock, (scriptAddress, scriptCalldata, allowCallback))
+            nonce, abi.encodeCall(this.executeQuarkOperationWithNonceLock, (scriptAddress, scriptCalldata))
         );
     }
 
@@ -226,10 +214,9 @@ contract QuarkWallet is IERC1271 {
      * @dev Must be called by stateManager as the yieldTarget of an acquireNonceAndYield call
      * @param scriptAddress Address of script to execute
      * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
-     * @param allowCallback Whether the transaction script should allow callbacks from outside contracts
      * @return Result of executing the script, encoded as bytes
      */
-    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback)
+    function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata)
         external
         returns (bytes memory)
     {
@@ -240,11 +227,6 @@ contract QuarkWallet is IERC1271 {
         }
         if (codeLen == 0) {
             revert QuarkCodeNotFound();
-        }
-
-        // if the script allows callbacks, set it as the current callback
-        if (allowCallback) {
-            stateManager.write(CALLBACK_KEY, bytes32(uint256(uint160(scriptAddress))));
         }
 
         bool success;
@@ -259,10 +241,6 @@ contract QuarkWallet is IERC1271 {
         bytes memory returnData = new bytes(returnSize);
         assembly {
             returndatacopy(add(returnData, 0x20), 0x00, returnSize)
-        }
-
-        if (allowCallback) {
-            stateManager.write(CALLBACK_KEY, bytes32(uint256(0)));
         }
 
         if (!success) {
