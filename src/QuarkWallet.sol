@@ -150,12 +150,11 @@ contract QuarkWallet is IERC1271 {
      * @param allowCallback Whether the script allows callbacks
      * @return Return value from the executed operation
      */
-    function executeScript(
-        uint256 nonce,
-        address scriptAddress,
-        bytes calldata scriptCalldata,
-        bool allowCallback
-    ) public payable returns (bytes memory) {
+    function executeScript(uint256 nonce, address scriptAddress, bytes calldata scriptCalldata, bool allowCallback)
+        public
+        payable
+        returns (bytes memory)
+    {
         // only allow the signer or the executor for the wallet to use unsigned execution
         if (!(msg.sender == signer || msg.sender == executor)) {
             revert Unauthorized();

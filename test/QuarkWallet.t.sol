@@ -560,9 +560,7 @@ contract QuarkWalletTest is Test {
         uint256 nonce = aliceWallet.nextNonce();
         address target = codeJar.saveCode(incrementer);
         bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
-        vm.expectRevert(
-            abi.encodeWithSelector(QuarkWallet.Unauthorized.selector)
-        );
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.Unauthorized.selector));
         aliceWallet.executeScript(nonce, target, call, false);
 
         assertEq(counter.number(), 0);
