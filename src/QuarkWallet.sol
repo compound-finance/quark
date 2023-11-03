@@ -16,6 +16,7 @@ contract QuarkWallet is IERC1271 {
     error QuarkCallError(bytes);
     error QuarkCodeNotFound();
     error SignatureExpired();
+    error Unauthorized();
 
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
     address public immutable signer;
@@ -156,7 +157,9 @@ contract QuarkWallet is IERC1271 {
         bool allowCallback
     ) public payable returns (bytes memory) {
         // only allow the signer or the executor for the wallet to use unsigned execution
-        require(msg.sender == signer || msg.sender == executor);
+        if (!(msg.sender == signer || msg.sender == executor)) {
+            revert Unauthorized();
+        }
         return stateManager.setActiveNonceAndCallback(
             nonce,
             abi.encodeCall(this.executeQuarkOperationWithNonceLock, (scriptAddress, scriptCalldata, allowCallback))
