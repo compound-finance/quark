@@ -537,7 +537,7 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(
+        aliceWallet.executeScript(
             aliceWallet.nextNonce(),
             codeJar.saveCode(incrementer),
             abi.encodeWithSignature("incrementCounter(address)", counter),
@@ -563,7 +563,7 @@ contract QuarkWalletTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(QuarkWallet.Unauthorized.selector)
         );
-        aliceWallet.executeQuarkOperation(nonce, target, call, false);
+        aliceWallet.executeScript(nonce, target, call, false);
 
         assertEq(counter.number(), 0);
     }

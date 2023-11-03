@@ -56,7 +56,7 @@ contract ExecutorTest is Test {
         vm.resumeGasMetering();
 
         // execute counter.increment(5) as bob from alice's wallet (bob's wallet's executor)
-        aliceWallet.executeQuarkOperation(
+        aliceWallet.executeScript(
             aliceWallet.nextNonce(),
             executeOnBehalfAddress,
             abi.encodeWithSignature(

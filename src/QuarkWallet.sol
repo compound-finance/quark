@@ -142,7 +142,7 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @notice Execute a QuarkOperation directly
+     * @notice Execute a transaction script directly
      * @dev Can only be called by the wallet's signer or executor
      * @param nonce Nonce for the operation; must be unused
      * @param scriptAddress Address for the script to execute
@@ -150,7 +150,7 @@ contract QuarkWallet is IERC1271 {
      * @param allowCallback Whether the script allows callbacks
      * @return Return value from the executed operation
      */
-    function executeQuarkOperation(
+    function executeScript(
         uint256 nonce,
         address scriptAddress,
         bytes calldata scriptCalldata,

@@ -11,6 +11,6 @@ contract ExecuteOnBehalf {
         bytes calldata scriptCalldata,
         bool allowCallback
     ) public returns (bytes memory) {
-        return targetWallet.executeQuarkOperation(nonce, scriptAddress, scriptCalldata, allowCallback);
+        return targetWallet.executeScript(nonce, scriptAddress, scriptCalldata, allowCallback);
     }
 }
