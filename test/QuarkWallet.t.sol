@@ -389,7 +389,7 @@ contract QuarkWalletTest is Test {
         // gas: disable gas metering except while executing operatoins
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        bytes memory getOwner = new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
+        bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
 
         // 1. use nonce to increment a counter
         QuarkWallet.QuarkOperation memory op1 = newBasicOp(
@@ -403,7 +403,7 @@ contract QuarkWalletTest is Test {
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             nonce: op1.nonce,
             scriptAddress: address(0),
-            scriptSource: getOwner,
+            scriptSource: getRole,
             scriptCalldata: abi.encodeWithSignature("getOwner()"),
             expiry: block.timestamp + 1000,
             allowCallback: false
