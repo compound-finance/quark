@@ -8,4 +8,8 @@ contract GetRole is QuarkScript {
     function getSigner() external returns (address) {
         return QuarkWallet(address(this)).signer();
     }
+
+    function getExecutor() external returns (address) {
+        return QuarkWallet(address(this)).executor();
+    }
 }

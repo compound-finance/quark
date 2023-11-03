@@ -94,7 +94,23 @@ contract QuarkWalletTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
-        assertEq(abi.decode(result, (address)), aliceAccount);
+        assertEq(abi.decode(result, (address)), aliceWallet.signer());
+        assertEq(aliceWallet.signer(), aliceAccount);
+    }
+
+    function testGetRoleExecutor() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
+        QuarkWallet.QuarkOperation memory op =
+            newBasicOp(aliceWallet, getRole, abi.encodeWithSignature("getExecutor()"), ScriptType.ScriptSource);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(abi.decode(result, (address)), aliceWallet.executor());
+        assertEq(aliceWallet.executor(), address(0));
     }
 
     /* ===== Tests using script source ===== */
