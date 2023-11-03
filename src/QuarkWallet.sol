@@ -101,7 +101,7 @@ contract QuarkWallet is IERC1271 {
      * @return return value from the executed operation
      */
     function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
-        public
+        external
         payable
         returns (bytes memory)
     {
@@ -151,7 +151,7 @@ contract QuarkWallet is IERC1271 {
      * @return Return value from the executed operation
      */
     function executeScript(uint256 nonce, address scriptAddress, bytes calldata scriptCalldata, bool allowCallback)
-        public
+        external
         payable
         returns (bytes memory)
     {
@@ -230,7 +230,7 @@ contract QuarkWallet is IERC1271 {
      * @return Result of executing the script, encoded as bytes
      */
     function executeQuarkOperationWithNonceLock(address scriptAddress, bytes memory scriptCalldata, bool allowCallback)
-        public
+        external
         returns (bytes memory)
     {
         require(msg.sender == address(stateManager));
