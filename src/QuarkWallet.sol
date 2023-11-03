@@ -17,7 +17,7 @@ contract QuarkWallet is IERC1271 {
     error QuarkCodeNotFound();
     error SignatureExpired();
 
-    /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wllet
+    /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
     address public immutable signer;
 
     /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
