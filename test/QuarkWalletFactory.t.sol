@@ -226,6 +226,7 @@ contract QuarkWalletFactoryTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
+        assertEq(counter.number(), 0);
         aliceWalletPrimary.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 7);
     }
