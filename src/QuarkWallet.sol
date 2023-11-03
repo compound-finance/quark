@@ -197,16 +197,16 @@ contract QuarkWallet is IERC1271 {
      * smart contract; if the smart contract that owns the wallet has no code,
      * the signature will be treated as an EIP-712 signature and revert
      */
-    function isValidSignatureInternal(address verifier, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
+    function isValidSignatureInternal(address signatory, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
         internal
         view
         returns (bool)
     {
         // a contract deployed with empty code will be treated as an EOA and will revert
-        if (verifier.code.length > 0) {
+        if (signatory.code.length > 0) {
             bytes memory signature = abi.encodePacked(r, s, v);
             (bool success, bytes memory data) =
-                verifier.staticcall(abi.encodeWithSelector(EIP_1271_MAGIC_VALUE, digest, signature));
+                signatory.staticcall(abi.encodeWithSelector(EIP_1271_MAGIC_VALUE, digest, signature));
             if (!success) revert InvalidEIP1271Signature();
             bytes4 returnValue = abi.decode(data, (bytes4));
             return returnValue == EIP_1271_MAGIC_VALUE;
@@ -214,7 +214,7 @@ contract QuarkWallet is IERC1271 {
             (address recoveredSigner, ECDSA.RecoverError recoverError) = ECDSA.tryRecover(digest, v, r, s);
             if (recoverError == ECDSA.RecoverError.InvalidSignatureS) revert InvalidSignatureS();
             if (recoverError == ECDSA.RecoverError.InvalidSignature) revert BadSignatory();
-            if (recoveredSigner != verifier) revert BadSignatory();
+            if (recoveredSigner != signatory) revert BadSignatory();
             return true;
         }
     }
