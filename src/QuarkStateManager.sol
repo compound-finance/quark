@@ -152,7 +152,7 @@ contract QuarkStateManager {
         }
 
         // set the nonce-script pair active and yield to the wallet callback
-        NonceScript storage previousNonceScript = activeNonceScript[msg.sender];
+        NonceScript memory previousNonceScript = activeNonceScript[msg.sender];
         activeNonceScript[msg.sender] = NonceScript({nonce: nonce, scriptAddress: scriptAddress});
 
         bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
