@@ -15,6 +15,8 @@ import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 import "./interfaces/IComet.sol";
 
+import "../lib/QuarkOperationHelper.sol";
+
 contract MulticallTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
@@ -65,13 +67,13 @@ contract MulticallTest is Test {
         );
         assertEq(counter.number(), 0);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            factory.codeJar(),
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
@@ -104,13 +106,13 @@ contract MulticallTest is Test {
         callDatas[2] =
             abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            factory.codeJar(),
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
@@ -134,13 +136,13 @@ contract MulticallTest is Test {
         );
         callContracts[1] = address(counter);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            factory.codeJar(),
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
@@ -183,13 +185,13 @@ contract MulticallTest is Test {
             Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(123), 10000e6)), 0
         );
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            factory.codeJar(),
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
@@ -216,13 +218,13 @@ contract MulticallTest is Test {
         address[] memory callContracts = new address[](0);
         bytes[] memory callDatas = new bytes[](0);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            factory.codeJar(),
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
@@ -250,13 +252,13 @@ contract MulticallTest is Test {
 
         assertEq(counter.number(), 0);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            factory.codeJar(),
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
@@ -326,13 +328,13 @@ contract MulticallTest is Test {
         calls[2] = abi.encodeCall(Ethcall.run, (wallets[2], walletCalls[2], 0));
 
         // set up the primary operation to execute the cross-wallet supply
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, targets, calls),
-            nonce: primary.nextNonce(),
-            expiry: block.timestamp + 1000
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            primary,
+            factory.codeJar(),
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, targets, calls),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, primary, op);
 
         // gas: meter execute
