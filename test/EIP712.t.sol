@@ -44,7 +44,6 @@ contract EIP712Test is Test {
 
         return new QuarkOperationHelper().newBasicOpWithCalldata(
             targetWallet,
-            codeJar,
             incrementer,
             abi.encodeWithSignature("incrementCounter(address)", counter),
             ScriptType.ScriptSource
@@ -223,7 +222,6 @@ contract EIP712Test is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            codeJar,
             incrementer,
             abi.encodeWithSignature("incrementCounterReplayable(address)", counter),
             ScriptType.ScriptSource
@@ -266,7 +264,6 @@ contract EIP712Test is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            codeJar,
             executeWithRequirements,
             abi.encodeCall(
                 ExecuteWithRequirements.runWithRequirements,
@@ -313,7 +310,6 @@ contract EIP712Test is Test {
         requirements[0] = firstOp.nonce;
         QuarkWallet.QuarkOperation memory dependentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            codeJar,
             executeWithRequirements,
             abi.encodeCall(
                 ExecuteWithRequirements.runWithRequirements,

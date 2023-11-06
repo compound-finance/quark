@@ -42,7 +42,6 @@ contract EIP1271Test is Test {
 
         return new QuarkOperationHelper().newBasicOpWithCalldata(
             targetWallet,
-            codeJar,
             incrementer,
             abi.encodeWithSignature("incrementCounter(address)", counter),
             ScriptType.ScriptSource

@@ -46,7 +46,6 @@ contract CallbacksTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
-            codeJar,
             callbackFromCounter,
             abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             ScriptType.ScriptSource
@@ -70,7 +69,6 @@ contract CallbacksTest is Test {
 
         QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
-            codeJar,
             callbackFromCounter,
             abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             ScriptType.ScriptAddress
@@ -80,7 +78,6 @@ contract CallbacksTest is Test {
 
         QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
-            codeJar,
             executeOtherScript,
             abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             ScriptType.ScriptAddress
@@ -107,7 +104,6 @@ contract CallbacksTest is Test {
 
         QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
-            codeJar,
             counterScript,
             abi.encodeWithSignature("run(address)", counter),
             ScriptType.ScriptAddress
@@ -117,7 +113,6 @@ contract CallbacksTest is Test {
 
         QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
-            codeJar,
             executeOtherScript,
             abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             ScriptType.ScriptAddress
@@ -140,7 +135,6 @@ contract CallbacksTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
-            codeJar,
             ethcall,
             abi.encodeWithSignature(
                 "run(address,bytes,uint256)",

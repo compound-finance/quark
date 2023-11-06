@@ -61,11 +61,10 @@ contract BatchExecutorTest is Test {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         QuarkWallet.QuarkOperation memory aliceOp =
-            new QuarkOperationHelper().newBasicOp(aliceWallet, codeJar, ping, ScriptType.ScriptAddress);
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
         (uint8 v0, bytes32 r0, bytes32 s0) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
         QuarkWallet.QuarkOperation memory bobOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             bobWallet,
-            codeJar,
             incrementer,
             abi.encodeWithSignature("incrementCounter(address)", counter),
             ScriptType.ScriptSource
@@ -107,10 +106,10 @@ contract BatchExecutorTest is Test {
         bytes memory reverts = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
 
         QuarkWallet.QuarkOperation memory aliceOp =
-            new QuarkOperationHelper().newBasicOp(aliceWallet, codeJar, ping, ScriptType.ScriptAddress);
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
         (uint8 v0, bytes32 r0, bytes32 s0) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
         QuarkWallet.QuarkOperation memory bobOp =
-            new QuarkOperationHelper().newBasicOp(bobWallet, codeJar, reverts, ScriptType.ScriptSource);
+            new QuarkOperationHelper().newBasicOp(bobWallet, reverts, ScriptType.ScriptSource);
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
 
         // Construct list of operations and signatures

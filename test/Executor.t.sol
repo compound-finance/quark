@@ -85,7 +85,6 @@ contract ExecutorTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
-            codeJar,
             executeOnBehalf,
             abi.encodeWithSignature(
                 "run(address,uint96,address,bytes)",

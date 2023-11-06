@@ -69,7 +69,6 @@ contract MulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            factory.codeJar(),
             multicall,
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
@@ -108,7 +107,6 @@ contract MulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            factory.codeJar(),
             multicall,
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
@@ -138,7 +136,6 @@ contract MulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            factory.codeJar(),
             multicall,
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
@@ -187,7 +184,6 @@ contract MulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            factory.codeJar(),
             multicall,
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
@@ -220,7 +216,6 @@ contract MulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            factory.codeJar(),
             multicall,
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
@@ -254,7 +249,6 @@ contract MulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            factory.codeJar(),
             multicall,
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
@@ -330,7 +324,6 @@ contract MulticallTest is Test {
         // set up the primary operation to execute the cross-wallet supply
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             primary,
-            factory.codeJar(),
             multicall,
             abi.encodeWithSelector(Multicall.run.selector, targets, calls),
             ScriptType.ScriptSource
