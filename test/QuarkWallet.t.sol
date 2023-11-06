@@ -104,7 +104,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptSource);
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptSource);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -119,7 +120,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptSource);
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptSource);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -241,7 +243,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptAddress);
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptAddress);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -256,7 +259,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
