@@ -71,6 +71,8 @@ contract CallbacksTest is Test {
         bytes memory executeOtherScript =
             new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
+        address executeOtherScriptAddress = codeJar.saveCode(executeOtherScript);
+
         uint96 nonce1 = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
@@ -84,8 +86,8 @@ contract CallbacksTest is Test {
 
         uint96 nonce2 = nonce1 + 1;
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: executeOtherScript,
+            scriptAddress: executeOtherScriptAddress,
+            scriptSource: "",
             scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
             expiry: block.timestamp + 1000
@@ -107,6 +109,8 @@ contract CallbacksTest is Test {
         bytes memory executeOtherScript =
             new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
+        address executeOtherScriptAddress = codeJar.saveCode(executeOtherScript);
+
         uint96 nonce1 = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
@@ -120,8 +124,8 @@ contract CallbacksTest is Test {
 
         uint96 nonce2 = nonce1 + 1;
         QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: executeOtherScript,
+            scriptAddress: executeOtherScriptAddress,
+            scriptSource: "",
             scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
             nonce: nonce2,
             expiry: block.timestamp + 1000
