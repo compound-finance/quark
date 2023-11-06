@@ -11,6 +11,7 @@ import {Counter} from "./lib/Counter.sol";
 import {YulHelper} from "./lib/YulHelper.sol";
 import {SignatureHelper} from "./lib/SignatureHelper.sol";
 import {EIP1271Signer} from "./lib/EIP1271Signer.sol";
+import {QuarkOperationHelper, ScriptType} from "./lib/QuarkOperationHelper.sol";
 
 contract EIP1271Test is Test {
     CodeJar public codeJar;
@@ -36,15 +37,19 @@ contract EIP1271Test is Test {
         aliceWallet = new QuarkWallet(alice, address(0), codeJar, stateManager);
     }
 
-    function incrementCounterOperation(uint96 nonce) public returns (QuarkWallet.QuarkOperation memory) {
+    function incrementCounterOperation(QuarkWallet targetWallet)
+        public
+        returns (QuarkWallet.QuarkOperation memory)
+    {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        return QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: incrementer,
-            scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
-            nonce: nonce,
-            expiry: block.timestamp + 1000
-        });
+
+        return new QuarkOperationHelper().newBasicOpWithCalldata(
+            targetWallet,
+            codeJar,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptSource
+        );
     }
 
     function testReturnsMagicValueForValidSignature() public {
@@ -55,7 +60,7 @@ contract EIP1271Test is Test {
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
 
         // signature from alice; doesn't matter because the EIP1271Signer will approve anything
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(1);
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(aliceWallet);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -74,7 +79,7 @@ contract EIP1271Test is Test {
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
 
         // signature from alice; doesn't matter because the EIP1271Signer will reject anything
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(1);
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(aliceWallet);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
