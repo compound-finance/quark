@@ -59,8 +59,6 @@ contract BatchExecutorTest is Test {
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        address pingAddress = codeJar.saveCode(ping);
-        address incrementerAddress = codeJar.saveCode(incrementer);
 
         QuarkWallet.QuarkOperation memory aliceOp =
             new QuarkOperationHelper().newBasicOp(aliceWallet, codeJar, ping, ScriptType.ScriptAddress);
@@ -107,8 +105,6 @@ contract BatchExecutorTest is Test {
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
         bytes memory reverts = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
-        address pingAddress = codeJar.saveCode(ping);
-        address revertsAddress = codeJar.saveCode(reverts);
 
         QuarkWallet.QuarkOperation memory aliceOp =
             new QuarkOperationHelper().newBasicOp(aliceWallet, codeJar, ping, ScriptType.ScriptAddress);
