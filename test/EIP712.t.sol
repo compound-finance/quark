@@ -39,10 +39,7 @@ contract EIP712Test is Test {
         wallet = new QuarkWallet(alice, address(0), codeJar, stateManager);
     }
 
-    function incrementCounterOperation(QuarkWallet targetWallet)
-        public
-        returns (QuarkWallet.QuarkOperation memory)
-    {
+    function incrementCounterOperation(QuarkWallet targetWallet) public returns (QuarkWallet.QuarkOperation memory) {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         return new QuarkOperationHelper().newBasicOpWithCalldata(
