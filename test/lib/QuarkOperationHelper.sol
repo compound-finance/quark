@@ -32,8 +32,7 @@ contract QuarkOperationHelper is Test {
                 scriptSource: "",
                 scriptCalldata: scriptCalldata,
                 nonce: wallet.nextNonce(),
-                expiry: block.timestamp + 1000,
-                allowCallback: false
+                expiry: block.timestamp + 1000
             });
         } else {
             return QuarkWallet.QuarkOperation({
@@ -41,8 +40,7 @@ contract QuarkOperationHelper is Test {
                 scriptSource: scriptSource,
                 scriptCalldata: scriptCalldata,
                 nonce: wallet.nextNonce(),
-                expiry: block.timestamp + 1000,
-                allowCallback: false
+                expiry: block.timestamp + 1000
             });
         }
     }
