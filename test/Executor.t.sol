@@ -9,6 +9,7 @@ import {Counter} from "./lib/Counter.sol";
 import {YulHelper} from "./lib/YulHelper.sol";
 import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {SignatureHelper} from "./lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "./lib/QuarkOperationHelper.sol";
 
 contract ExecutorTest is Test {
     CodeJar public codeJar;
@@ -82,10 +83,11 @@ contract ExecutorTest is Test {
 
         bytes memory executeOnBehalf = new YulHelper().getDeployed("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: executeOnBehalf,
-            scriptCalldata: abi.encodeWithSignature(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            codeJar,
+            executeOnBehalf,
+            abi.encodeWithSignature(
                 "run(address,uint96,address,bytes)",
                 address(bobWallet),
                 bobWallet.nextNonce(),
@@ -93,10 +95,9 @@ contract ExecutorTest is Test {
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 3), 0
                 )
-                ),
-            nonce: aliceWallet.nextNonce(),
-            expiry: block.timestamp + 1000
-        });
+            ),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
