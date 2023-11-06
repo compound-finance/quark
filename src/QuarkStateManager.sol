@@ -125,6 +125,8 @@ contract QuarkStateManager {
     /**
      * @notice Set a wallet nonce as the active nonce and yield control back to the wallet by calling into callback
      * @param nonce Nonce to activate for the transaction
+     * @param scriptAddress Address of script to invoke with nonce lock
+     * @param scriptCalldata Calldata for script call to invoke with nonce lock
      * @dev The script is expected to clearNonce() if it wishes to be replayable
      */
     function setActiveNonceAndCallback(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
