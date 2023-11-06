@@ -146,7 +146,7 @@ contract QuarkStateManager {
         // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
         nonces[msg.sender][bucket] |= setMask;
 
-        // if the nonce has been used before, check if the callback hash matches, and revert if not
+        // if the nonce has been used before, check if the script address matches, and revert if not
         if ((nonceScript[msg.sender][nonce] != address(0)) && (nonceScript[msg.sender][nonce] != scriptAddress)) {
             revert NonceScriptMismatch();
         }
