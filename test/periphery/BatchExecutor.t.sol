@@ -46,10 +46,10 @@ contract BatchExecutorTest is Test {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
-        aliceWallet = new QuarkWallet(aliceAccount, codeJar, stateManager);
+        aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
         console.log("Alice wallet at: %s", address(aliceWallet));
 
-        bobWallet = new QuarkWallet(bobAccount, codeJar, stateManager);
+        bobWallet = new QuarkWallet(bobAccount, address(0), codeJar, stateManager);
         console.log("Bob wallet at: %s", address(bobWallet));
     }
 
