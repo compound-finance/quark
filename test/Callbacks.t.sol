@@ -71,13 +71,14 @@ contract CallbacksTest is Test {
         bytes memory executeOtherScript =
             new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
+        address callbackFromCounterAddress = codeJar.saveCode(callbackFromCounter);
         address executeOtherScriptAddress = codeJar.saveCode(executeOtherScript);
 
         uint96 nonce1 = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: callbackFromCounter,
+            scriptAddress: callbackFromCounterAddress,
+            scriptSource: "",
             scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
             nonce: nonce1,
             expiry: block.timestamp + 1000
@@ -109,13 +110,14 @@ contract CallbacksTest is Test {
         bytes memory executeOtherScript =
             new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
+        address counterScriptAddress = codeJar.saveCode(counterScript);
         address executeOtherScriptAddress = codeJar.saveCode(executeOtherScript);
 
         uint96 nonce1 = aliceWallet.nextNonce();
         uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: counterScript,
+            scriptAddress: counterScriptAddress,
+            scriptSource: "",
             scriptCalldata: abi.encodeWithSignature("run(address)", counter),
             nonce: nonce1,
             expiry: block.timestamp + 1000
