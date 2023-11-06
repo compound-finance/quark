@@ -2,8 +2,8 @@
 pragma solidity ^0.8.21;
 
 import {CodeJar} from "./CodeJar.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {QuarkStateManager} from "./QuarkStateManager.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 contract QuarkWallet is IERC1271 {
