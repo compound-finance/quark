@@ -26,11 +26,11 @@ contract QuarkStateManager {
     mapping(address /* wallet */ => NonceScript) internal activeNonceScript;
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
-    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
+    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
         internal walletStorage;
 
     /// @notice Per-wallet-nonce address for preventing replays with changed script address
-    mapping(address /* wallet */ => mapping(uint256 /* nonce */ => address /* address */)) nonceScript;
+    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => address /* address */)) nonceScript;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -57,7 +57,7 @@ contract QuarkStateManager {
      */
     function nextNonce(address wallet) external view returns (uint96) {
         uint96 i;
-        for (i = 1; i < type(uint256).max; i++) {
+        for (i = 1; i < type(uint96).max; i++) {
             if (!isNonceSet(wallet, i) && (nonceScript[wallet][i] == address(0))) {
                 return i;
             }
