@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
+import "./QuarkWallet.sol";
+
 contract QuarkScript {
+    function allowCallback() internal {
+        QuarkWallet self = QuarkWallet(address(this));
+        self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(self.stateManager().getActiveScript()))));
+    }
+
     function sloadU256(string memory key) internal view returns (uint256) {
         return uint256(sload(key));
     }

@@ -15,6 +15,8 @@ import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 import "./interfaces/IComet.sol";
 
+import "../lib/QuarkOperationHelper.sol";
+
 contract MulticallTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
@@ -45,6 +47,7 @@ contract MulticallTest is Test {
         counter = new Counter();
         counter.setNumber(0);
         ethcallAddress = factory.codeJar().saveCode(ethcall);
+        factory.codeJar().saveCode(multicall);
     }
 
     function testInvokeCounterTwice() public {
@@ -64,19 +67,17 @@ contract MulticallTest is Test {
         );
         assertEq(counter.number(), 0);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
-        vm.pauseGasMetering();
         assertEq(counter.number(), 15);
         vm.resumeGasMetering();
     }
@@ -105,19 +106,17 @@ contract MulticallTest is Test {
         callDatas[2] =
             abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
-        vm.pauseGasMetering();
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 100 ether);
         assertApproxEqAbs(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6, 2);
@@ -137,13 +136,12 @@ contract MulticallTest is Test {
         );
         callContracts[1] = address(counter);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
@@ -186,13 +184,12 @@ contract MulticallTest is Test {
             Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(123), 10000e6)), 0
         );
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
@@ -219,13 +216,12 @@ contract MulticallTest is Test {
         address[] memory callContracts = new address[](0);
         bytes[] memory callDatas = new bytes[](0);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
@@ -253,25 +249,98 @@ contract MulticallTest is Test {
 
         assertEq(counter.number(), 0);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: multicall,
-            scriptCalldata: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
-        vm.pauseGasMetering();
-        bytes[] memory returnDatas = abi.decode(quarkReturn, (bytes[]));
 
+        bytes[] memory returnDatas = abi.decode(quarkReturn, (bytes[]));
         assertEq(counter.number(), 15);
         assertEq(returnDatas.length, 2);
         assertEq(abi.decode(returnDatas[0], (bytes)).length, 0);
         assertEq(abi.decode(abi.decode(returnDatas[1], (bytes)), (uint256)), 15);
+    }
+
+    function testExecutorCanMulticallAcrossSubwallets() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        QuarkWallet primary = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet walletA = QuarkWallet(factory.create(alice, bytes32("a")));
+        QuarkWallet walletB = QuarkWallet(factory.create(alice, bytes32("b")));
+
+        // give sub-wallet A 1 WETH
+        deal(WETH, address(walletA), 1 ether);
+
+        // compose cross-wallet interaction
+        address[] memory wallets = new address[](3);
+        bytes[] memory walletCalls = new bytes[](3);
+
+        // 1. transfer 0.5 WETH from wallet A to wallet B
+        wallets[0] = address(walletA);
+        walletCalls[0] = abi.encodeWithSignature(
+            "executeScript(uint96,address,bytes)",
+            walletA.nextNonce(),
+            ethcallAddress,
+            abi.encodeWithSelector(
+                Ethcall.run.selector, WETH, abi.encodeCall(IERC20.transfer, (address(walletB), 0.5 ether)), 0
+            )
+        );
+
+        // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
+        uint96 walletBNextNonce = walletB.nextNonce();
+        wallets[1] = address(walletB);
+        walletCalls[1] = abi.encodeWithSignature(
+            "executeScript(uint96,address,bytes)",
+            walletBNextNonce,
+            ethcallAddress,
+            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 0.5 ether)), 0)
+        );
+
+        // 3. supply 0.5 WETH from wallet B to Comet cUSDCv3
+        wallets[2] = address(walletB);
+        walletCalls[2] = abi.encodeWithSignature(
+            "executeScript(uint96,address,bytes)",
+            walletBNextNonce + 1,
+            ethcallAddress,
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 0.5 ether)), 0)
+        );
+
+        // okay, woof, now wrap all that in ethcalls...
+        address[] memory targets = new address[](3);
+        targets[0] = ethcallAddress;
+        targets[1] = ethcallAddress;
+        targets[2] = ethcallAddress;
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeCall(Ethcall.run, (wallets[0], walletCalls[0], 0));
+        calls[1] = abi.encodeCall(Ethcall.run, (wallets[1], walletCalls[1], 0));
+        calls[2] = abi.encodeCall(Ethcall.run, (wallets[2], walletCalls[2], 0));
+
+        // set up the primary operation to execute the cross-wallet supply
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            primary,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, targets, calls),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, primary, op);
+
+        // gas: meter execute
         vm.resumeGasMetering();
+
+        primary.executeQuarkOperation(op, v, r, s);
+        // wallet A should still have 0.5 ether...
+        assertEq(IERC20(WETH).balanceOf(address(walletA)), 0.5 ether);
+        // wallet B should have 0 ether...
+        assertEq(IERC20(WETH).balanceOf(address(walletB)), 0 ether);
+        // wallet B should have a supply balance of 0.5 ether
+        assertEq(IComet(comet).collateralBalanceOf(address(walletB), WETH), 0.5 ether);
     }
 }

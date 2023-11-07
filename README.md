@@ -1,3 +1,9 @@
+# Quark
+
+## Overview
+
+Quark is a wallet system which allows users to run arbitrary code ("Quark operations") specific to each Ethereum transaction. Think of a Quark wallet as an Ethereum proxy contract that updates itself each transaction. This is accomplished by the Quark wallet making a delegate call to a contract which has the code it wants to run on that invocation. We use Code Jar to deploy these Quark-runnable contracts using create2 to make code reuse efficient. Finally, we have a factory system to create wallets at pre-determined address and a set of Core Scripts which are audited contract codes as a template for Quark operations.
+
 ## Fork tests and NODE_PROVIDER_BYPASS_KEY
 
 Some tests require forking mainnet, e.g. to exercise use-cases like
@@ -34,4 +40,28 @@ Then commit the updated snapshot file:
 
 ```sh
 $ git add .gas-snapshot && git commit -m "commit new baseline gas snapshot"
+```
+
+## Deploy
+
+To locally test run the deploy, run the following command:
+
+```sh
+./script/deploy.sh
+```
+
+To actually deploy contracts on-chain, the following env variables need to be set:
+
+```sh
+# Required
+RPC_URL=
+DEPLOYER_PK=
+# Optional for verifying deployed contracts
+ETHERSCAN_KEY=
+```
+
+Once the env variables are defined, run the following command:
+
+```sh
+set -a && source .env && ./script/deploy.sh --broadcast
 ```

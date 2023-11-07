@@ -9,8 +9,9 @@ contract CodeJar {
 
     /**
      * @notice Saves the code to Code Jar, no-op if it already exists
-     * @dev This calls it meant to be idemponent and fairly inexpensive on a second call.
-     * @return The address of the contract that matches the input code.
+     * @dev This call is meant to be idemponent and fairly inexpensive on a second call
+     * @param code The runtime bytecode of the code to save
+     * @return The address of the contract that matches the input code
      */
     function saveCode(bytes calldata code) external returns (address) {
         bytes memory initCode = getInitCode(code);
@@ -44,6 +45,7 @@ contract CodeJar {
     /**
      * @notice Checks if code already exists in Code Jar
      * @dev Use `saveCode` to get the address of the contract with that code
+     * @param code The runtime bytecode of the code to check
      * @return True if code already exists in Code Jar
      */
     function codeExists(bytes calldata code) external view returns (bool) {
@@ -82,9 +84,10 @@ contract CodeJar {
     }
 
     /**
-     * @notice Reads the given code from Code Jar.
-     * @dev This should revert if `codeAddress` was not deployed from this contract.
-     * @return The code at `codeAddress` if `codeAddress` was created by this contract.
+     * @notice Reads the given code from Code Jar
+     * @dev This should revert if `codeAddress` was not deployed from this contract
+     * @param codeAddress The address to read the code from
+     * @return The code at `codeAddress` if `codeAddress` was created by this contract
      */
     function readCode(address codeAddress) external view returns (bytes memory) {
         bytes memory code = codeAddress.code;
