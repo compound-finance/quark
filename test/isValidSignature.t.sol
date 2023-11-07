@@ -83,7 +83,7 @@ contract isValidSignatureTest is Test {
 
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", aliceWallet.DOMAIN_SEPARATOR(), structHash));
-        (uint8 v, bytes32 r, /* bytes32 s */) = vm.sign(alicePrivateKey, digest);
+        (uint8 v, bytes32 r, /* bytes32 s */ ) = vm.sign(alicePrivateKey, digest);
 
         // 1 greater than the max value of s
         bytes32 invalidS = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1;
@@ -132,7 +132,7 @@ contract isValidSignatureTest is Test {
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will approve anything
-        (/* bytes32 digest */, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
         vm.resumeGasMetering();
 
@@ -147,7 +147,7 @@ contract isValidSignatureTest is Test {
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will reject everything
-        (/* bytes32 digest */, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
         vm.resumeGasMetering();
 
@@ -163,7 +163,7 @@ contract isValidSignatureTest is Test {
         EIP1271Reverter signatureApprover = new EIP1271Reverter();
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will revert
-        (/* bytes32 digest */, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
         vm.resumeGasMetering();
 
@@ -178,7 +178,7 @@ contract isValidSignatureTest is Test {
         address emptyCodeContract = codeJar.saveCode(hex"");
         QuarkWallet contractWallet = new QuarkWallet(emptyCodeContract, address(0), codeJar, stateManager);
         // signature from bob; doesn't matter because the empty contract will be treated as an EOA and revert
-        (/* bytes32 digest */, bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
+        ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
         vm.resumeGasMetering();
 
