@@ -5,11 +5,11 @@ import "../../src/QuarkScript.sol";
 import "../../src/QuarkWallet.sol";
 
 contract GetRole is QuarkScript {
-    function getSigner() external returns (address) {
+    function getSigner() external view returns (address) {
         return QuarkWallet(address(this)).signer();
     }
 
-    function getExecutor() external returns (address) {
+    function getExecutor() external view returns (address) {
         return QuarkWallet(address(this)).executor();
     }
 }
