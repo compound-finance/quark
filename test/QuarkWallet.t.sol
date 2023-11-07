@@ -14,14 +14,10 @@ import "./lib/Reverts.sol";
 
 import "./lib/YulHelper.sol";
 import "./lib/SignatureHelper.sol";
+import "./lib/QuarkOperationHelper.sol";
 
 contract QuarkWalletTest is Test {
     event Ping(uint256);
-
-    enum ScriptType {
-        ScriptAddress,
-        ScriptSource
-    }
 
     CodeJar public codeJar;
     Counter public counter;
@@ -47,46 +43,16 @@ contract QuarkWalletTest is Test {
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
 
-    function newBasicOp(QuarkWallet wallet, bytes memory scriptSource, ScriptType scriptType)
-        internal
-        returns (QuarkWallet.QuarkOperation memory)
-    {
-        return newBasicOp(wallet, scriptSource, abi.encode(), scriptType);
-    }
-
-    // TODO: Make this a shared helper to be used by other test files
-    function newBasicOp(
-        QuarkWallet wallet,
-        bytes memory scriptSource,
-        bytes memory scriptCalldata,
-        ScriptType scriptType
-    ) internal returns (QuarkWallet.QuarkOperation memory) {
-        address scriptAddress = codeJar.saveCode(scriptSource);
-        if (scriptType == ScriptType.ScriptAddress) {
-            return QuarkWallet.QuarkOperation({
-                scriptAddress: scriptAddress,
-                scriptSource: "",
-                scriptCalldata: scriptCalldata,
-                nonce: wallet.nextNonce(),
-                expiry: block.timestamp + 1000
-            });
-        } else {
-            return QuarkWallet.QuarkOperation({
-                scriptAddress: address(0),
-                scriptSource: scriptSource,
-                scriptCalldata: scriptCalldata,
-                nonce: wallet.nextNonce(),
-                expiry: block.timestamp + 1000
-            });
-        }
-    }
-
     function testGetRoleSigner() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
-        QuarkWallet.QuarkOperation memory op =
-            newBasicOp(aliceWallet, getRole, abi.encodeWithSignature("getSigner()"), ScriptType.ScriptSource);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            getRole,
+            abi.encodeWithSignature("getSigner()"),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -100,8 +66,12 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
-        QuarkWallet.QuarkOperation memory op =
-            newBasicOp(aliceWallet, getRole, abi.encodeWithSignature("getExecutor()"), ScriptType.ScriptSource);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            getRole,
+            abi.encodeWithSignature("getExecutor()"),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -116,8 +86,12 @@ contract QuarkWalletTest is Test {
     function testQuarkOperationWithScriptSourceRevertsIfCodeNotFound() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet.QuarkOperation memory op =
-            newBasicOp(aliceWallet, abi.encode(), abi.encodeWithSignature("x()"), ScriptType.ScriptSource);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            abi.encode(),
+            abi.encodeWithSignature("x()"),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -130,7 +104,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
-        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptSource);
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptSource);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -145,7 +120,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
-        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, ping, ScriptType.ScriptSource);
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptSource);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -161,7 +137,7 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         assertEq(counter.number(), 0);
-        QuarkWallet.QuarkOperation memory op = newBasicOp(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             incrementer,
             abi.encodeWithSignature("incrementCounter(address)", counter),
@@ -187,7 +163,7 @@ contract QuarkWalletTest is Test {
         {
             // gas: do not meter set-up
             vm.pauseGasMetering();
-            QuarkWallet.QuarkOperation memory op = newBasicOp(
+            QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptSource
             );
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -201,7 +177,7 @@ contract QuarkWalletTest is Test {
         {
             // gas: do not meter set-up
             vm.pauseGasMetering();
-            QuarkWallet.QuarkOperation memory op = newBasicOp(
+            QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptSource
             );
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -215,7 +191,7 @@ contract QuarkWalletTest is Test {
         {
             // gas: do not meter set-up
             vm.pauseGasMetering();
-            QuarkWallet.QuarkOperation memory op = newBasicOp(
+            QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptSource
             );
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -229,7 +205,7 @@ contract QuarkWalletTest is Test {
         {
             // gas: do not meter set-up
             vm.pauseGasMetering();
-            QuarkWallet.QuarkOperation memory op = newBasicOp(
+            QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptSource
             );
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -252,8 +228,9 @@ contract QuarkWalletTest is Test {
     function testQuarkOperationWithScriptAddressRevertsIfCodeNotFound() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet.QuarkOperation memory op =
-            newBasicOp(aliceWallet, abi.encode(), abi.encodeWithSignature("x()"), ScriptType.ScriptAddress);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, abi.encode(), abi.encodeWithSignature("x()"), ScriptType.ScriptAddress
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -266,7 +243,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
-        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptAddress);
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptAddress);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -281,7 +259,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
-        QuarkWallet.QuarkOperation memory op = newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -297,7 +276,7 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         assertEq(counter.number(), 0);
-        QuarkWallet.QuarkOperation memory op = newBasicOp(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             incrementer,
             abi.encodeWithSignature("incrementCounter(address)", counter),
@@ -323,7 +302,7 @@ contract QuarkWalletTest is Test {
         {
             // gas: do not meter set-up
             vm.pauseGasMetering();
-            QuarkWallet.QuarkOperation memory op = newBasicOp(
+            QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptAddress
             );
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -337,7 +316,7 @@ contract QuarkWalletTest is Test {
         {
             // gas: do not meter set-up
             vm.pauseGasMetering();
-            QuarkWallet.QuarkOperation memory op = newBasicOp(
+            QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptAddress
             );
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -351,7 +330,7 @@ contract QuarkWalletTest is Test {
         {
             // gas: do not meter set-up
             vm.pauseGasMetering();
-            QuarkWallet.QuarkOperation memory op = newBasicOp(
+            QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptAddress
             );
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -365,7 +344,7 @@ contract QuarkWalletTest is Test {
         {
             // gas: do not meter set-up
             vm.pauseGasMetering();
-            QuarkWallet.QuarkOperation memory op = newBasicOp(
+            QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptAddress
             );
             (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -390,7 +369,7 @@ contract QuarkWalletTest is Test {
         bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
 
         // 1. use nonce to increment a counter
-        QuarkWallet.QuarkOperation memory op1 = newBasicOp(
+        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             incrementer,
             abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
@@ -423,7 +402,7 @@ contract QuarkWalletTest is Test {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         // 1. use nonce to increment a counter
-        QuarkWallet.QuarkOperation memory op1 = newBasicOp(
+        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             incrementer,
             abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
@@ -460,7 +439,7 @@ contract QuarkWalletTest is Test {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         bytes memory cancelOtherScript = new YulHelper().getDeployed("CancelOtherScript.sol/CancelOtherScript.json");
 
-        QuarkWallet.QuarkOperation memory op = newBasicOp(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             incrementer,
             abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
@@ -478,7 +457,7 @@ contract QuarkWalletTest is Test {
 
         // can cancel the replayable nonce...
         vm.pauseGasMetering();
-        QuarkWallet.QuarkOperation memory cancelOtherOp = newBasicOp(
+        QuarkWallet.QuarkOperation memory cancelOtherOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint96)", op.nonce), ScriptType.ScriptAddress
         );
         (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) =

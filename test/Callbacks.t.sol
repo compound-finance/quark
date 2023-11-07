@@ -1,7 +1,5 @@
 pragma solidity ^0.8.21;
 
-import "forge-std/Test.sol";
-import "forge-std/StdUtils.sol";
 import "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
@@ -12,6 +10,7 @@ import {YulHelper} from "./lib/YulHelper.sol";
 import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {ExecuteOtherOperation} from "./lib/ExecuteOtherOperation.sol";
 import {SignatureHelper} from "./lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "./lib/QuarkOperationHelper.sol";
 
 contract CallbacksTest is Test {
     CodeJar public codeJar;
@@ -45,16 +44,13 @@ contract CallbacksTest is Test {
         bytes memory callbackFromCounter =
             new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
 
-        uint96 nonce = aliceWallet.nextNonce();
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            callbackFromCounter,
+            abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
+            ScriptType.ScriptSource
+        );
 
-        uint256[] memory requirements;
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: callbackFromCounter,
-            scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
-            nonce: nonce,
-            expiry: block.timestamp + 1000
-        });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -71,25 +67,24 @@ contract CallbacksTest is Test {
         bytes memory executeOtherScript =
             new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
-        uint96 nonce1 = aliceWallet.nextNonce();
-        uint256[] memory requirements;
-        QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: callbackFromCounter,
-            scriptCalldata: abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
-            nonce: nonce1,
-            expiry: block.timestamp + 1000
-        });
+        QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            callbackFromCounter,
+            abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
+            ScriptType.ScriptAddress
+        );
+
         (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
-        uint96 nonce2 = nonce1 + 1;
-        QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: executeOtherScript,
-            scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
-            nonce: nonce2,
-            expiry: block.timestamp + 1000
-        });
+        QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            executeOtherScript,
+            abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
+            ScriptType.ScriptAddress
+        );
+
+        parentOp.nonce = nestedOp.nonce + 1;
+
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
         // gas: meter execute
@@ -107,25 +102,24 @@ contract CallbacksTest is Test {
         bytes memory executeOtherScript =
             new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
-        uint96 nonce1 = aliceWallet.nextNonce();
-        uint256[] memory requirements;
-        QuarkWallet.QuarkOperation memory nestedOp = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: counterScript,
-            scriptCalldata: abi.encodeWithSignature("run(address)", counter),
-            nonce: nonce1,
-            expiry: block.timestamp + 1000
-        });
+        QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            counterScript,
+            abi.encodeWithSignature("run(address)", counter),
+            ScriptType.ScriptAddress
+        );
+
         (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
-        uint96 nonce2 = nonce1 + 1;
-        QuarkWallet.QuarkOperation memory parentOp = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: executeOtherScript,
-            scriptCalldata: abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
-            nonce: nonce2,
-            expiry: block.timestamp + 1000
-        });
+        QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            executeOtherScript,
+            abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
+            ScriptType.ScriptAddress
+        );
+
+        parentOp.nonce = nestedOp.nonce + 1;
+
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
         // gas: meter execute
@@ -139,20 +133,17 @@ contract CallbacksTest is Test {
         vm.pauseGasMetering();
         bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
 
-        uint96 nonce = aliceWallet.nextNonce();
-        uint256[] memory requirements;
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSignature(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            ethcall,
+            abi.encodeWithSignature(
                 "run(address,bytes,uint256)",
                 address(counter),
                 abi.encodeCall(counter.incrementAndCallback, ()),
                 0 /* value */
-                ),
-            nonce: nonce,
-            expiry: block.timestamp + 1000
-        });
+            ),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
