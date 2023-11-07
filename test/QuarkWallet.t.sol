@@ -166,6 +166,9 @@ contract QuarkWalletTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         // call once
         aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 1);
