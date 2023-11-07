@@ -166,28 +166,48 @@ contract QuarkWalletTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
-        // gas: meter execute
-        vm.resumeGasMetering();
-
         // call once
+        vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
+
+        // gas: do not meter readRawUnsafe
+        vm.pauseGasMetering();
+
         assertEq(counter.number(), 1);
         assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), 1);
+
         // call twice
+        vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
+
+        // gas: do not meter readRawUnsafe
+        vm.pauseGasMetering();
+
         assertEq(counter.number(), 2);
         assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), 2);
+
         // call thrice
+        vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
+
+        // gas: do not meter readRawUnsafe
+        vm.pauseGasMetering();
+
         assertEq(counter.number(), 3);
         assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), 3);
+
         // revert because max has been hit
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector)
             )
         );
+        vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
+
+        // gas: do not meter readRawUnsafe()
+        vm.pauseGasMetering();
+
         assertEq(counter.number(), 3);
         assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), counter.number());
 
@@ -195,6 +215,7 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 4);
         assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), 3);
 
+        vm.resumeGasMetering();
         vm.stopPrank();
     }
 
