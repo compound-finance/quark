@@ -77,7 +77,6 @@ contract QuarkWalletFactoryTest is Test {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
-        uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: incrementer,
@@ -114,7 +113,6 @@ contract QuarkWalletFactoryTest is Test {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
         uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
-        uint256[] memory requirements;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: incrementer,

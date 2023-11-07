@@ -185,7 +185,7 @@ contract QuarkStateManager {
      * @notice Read from storage namespaced by the currently active nonce; reverts if no nonce is currently active
      * @return Value at the nonce storage location, as bytes
      */
-    function read(bytes32 key) external returns (bytes32) {
+    function read(bytes32 key) external view returns (bytes32) {
         if (activeNonceScript[msg.sender].nonce == 0) {
             revert NoNonceActive();
         }
