@@ -9,27 +9,31 @@ contract QuarkScript {
         self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(self.stateManager().getActiveScript()))));
     }
 
-    function sloadU256(string memory key) internal view returns (uint256) {
-        return uint256(sload(key));
+    function allowReplay() internal {
+        return QuarkWallet(address(this)).stateManager().clearNonce();
     }
 
-    function sload(string memory key) internal view returns (bytes32) {
-        return sload(keccak256(bytes(key)));
+    function readU256(string memory key) internal view returns (uint256) {
+        return uint256(read(key));
     }
 
-    function sload(bytes32 key) internal view returns (bytes32 res) {
-        assembly {
-            res := sload(key)
-        }
+    function read(string memory key) internal view returns (bytes32) {
+        return read(keccak256(bytes(key)));
     }
 
-    function sstoreU256(string memory key, uint256 value) internal {
-        return sstore(keccak256(bytes(key)), bytes32(value));
+    function read(bytes32 key) internal view returns (bytes32) {
+        return QuarkWallet(address(this)).stateManager().read(key);
     }
 
-    function sstore(bytes32 key, bytes32 value) internal {
-        assembly {
-            sstore(key, value)
-        }
+    function writeU256(string memory key, uint256 value) internal {
+        return write(key, bytes32(value));
+    }
+
+    function write(string memory key, bytes32 value) internal {
+        return write(keccak256(bytes(key)), value);
+    }
+
+    function write(bytes32 key, bytes32 value) internal {
+        return QuarkWallet(address(this)).stateManager().write(key, value);
     }
 }
