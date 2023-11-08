@@ -79,7 +79,6 @@ contract MulticallTest is Test {
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 15);
-        vm.resumeGasMetering();
     }
 
     function testSupplyWETHWithdrawUSDCOnComet() public {
@@ -120,7 +119,6 @@ contract MulticallTest is Test {
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 100 ether);
         assertApproxEqAbs(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6, 2);
-        vm.resumeGasMetering();
     }
 
     function testInvalidInput() public {
