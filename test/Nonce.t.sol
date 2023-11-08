@@ -7,16 +7,7 @@ import "forge-std/console.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {QuarkStateManager} from "../src/QuarkStateManager.sol";
-
-contract QuarkStateManagerHarness is QuarkStateManager {
-    function setNonceExternal(uint96 nonce) external {
-        // NOTE: intentionally violates invariant in the name of... testing
-        activeNonceScript[msg.sender] = NonceScript({nonce: nonce, scriptAddress: address(0)});
-        (uint256 bucket, uint256 setMask) = getBucket(nonce);
-        nonces[msg.sender][bucket] |= setMask;
-        activeNonceScript[msg.sender] = NonceScript({nonce: 0, scriptAddress: address(0)});
-    }
-}
+import {QuarkStateManagerHarness} from "./lib/QuarkStateManagerHarness.sol";
 
 contract NonceTest is Test {
     QuarkStateManagerHarness public stateManagerHarness;

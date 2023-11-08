@@ -160,14 +160,14 @@ contract QuarkStateManager {
         bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
 
         // if a nonce was cleared, set the nonceScript to lock nonce re-use to the same script address
-        if ((nonces[msg.sender][bucket] & setMask) == 0) {
+        if (nonceScript[msg.sender][nonce] == address(0) && (nonces[msg.sender][bucket] & setMask) == 0) {
             nonceScript[msg.sender][nonce] = scriptAddress;
         }
 
         // release the nonce when the wallet finishes executing callback
         activeNonceScript[msg.sender] = previousNonceScript;
 
-        // otherwise, return the result. currently, result is double-encoded. un-encode it.
+        // otherwise, return the result.
         return result;
     }
 
