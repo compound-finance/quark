@@ -2,8 +2,6 @@
 pragma solidity ^0.8.21;
 
 contract CodeJar {
-    error CodeTooLarge(uint256 sz);
-    error CodeNotFound(address codeAddress);
     error CodeInvalid(address codeAddress);
     error CodeHashMismatch(address codeAddress, bytes32 expected, bytes32 given);
 
