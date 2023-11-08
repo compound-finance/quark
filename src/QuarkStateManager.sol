@@ -167,7 +167,7 @@ contract QuarkStateManager {
         // release the nonce when the wallet finishes executing callback
         activeNonceScript[msg.sender] = previousNonceScript;
 
-        // otherwise, return the result. currently, result is double-encoded. un-encode it.
+        // otherwise, return the result.
         return result;
     }
 
