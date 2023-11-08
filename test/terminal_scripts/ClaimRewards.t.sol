@@ -12,11 +12,12 @@ import "./../../src/terminal_scripts/TerminalScript.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
+import "./../lib/QuarkOperationHelper.sol";
 
 /**
- * Scenario test for uesr borrow base asset from Comet v3 market
+ * Scenario test for uesr to claim COMP rewards
  */
-contract BorrowFromV3 is Test {
+contract ClaimRewardsTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
@@ -24,8 +25,9 @@ contract BorrowFromV3 is Test {
 
     // Contracts address on mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+    address constant cometReward = 0x1B0e765F6224C21223AeA2af16c1C46E38885a40;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
 
     function setUp() public {
         // Fork setup
@@ -38,33 +40,36 @@ contract BorrowFromV3 is Test {
         factory = new QuarkWalletFactory();
     }
 
-    function testWithdrawTerminalScript() public {
+    function testClaimComp() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/TerminalScript.json"
+            "TerminalScript.sol/ClaimRewards.json"
         );
 
-        deal(WETH, address(wallet), 10 ether);
+        deal(USDC, address(wallet), 1_000_000e6);
 
         vm.startPrank(address(wallet));
-        IERC20(WETH).approve(comet, 10 ether);
-        IComet(comet).supply(WETH, 10 ether);
+        IERC20(USDC).approve(comet, 1_000_000e6);
+        IComet(comet).supply(USDC, 1_000_000e6);
         vm.stopPrank();
 
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
-        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: terminalScript,
-            scriptCalldata: abi.encodeWithSelector(TerminalScript.cometWithdraw.selector, comet, WETH, 10 ether),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false
-        });
+        // Fastforward 180 days block to accrue COMP
+        vm.roll(185529607);
+        vm.warp(block.timestamp + 180 days);
 
+        assertEq(IERC20(COMP).balanceOf(address(wallet)), 0e6);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeWithSelector(
+                ClaimRewards.claim.selector, cometReward, comet, address(wallet)
+                ),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
-
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0 ether);
-        assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
+        assertGt(IERC20(COMP).balanceOf(address(wallet)), 0e6);
     }
 }

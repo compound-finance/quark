@@ -8,19 +8,16 @@ import "./interfaces/IComet.sol";
 import "./interfaces/ICometRewards.sol";
 
 // TODO: Will need to add support for E-Comet once E-Comet has been deployed
-contract TerminalScript {
-    // To handle non-standard ERC20 tokens (i.e. USDT)
+contract CometSupplyActions {
     using SafeERC20 for IERC20;
-
-    error TransferFailed(bytes data);
-
     /**
      *   @dev Supply an asset to Comet
      *   @param comet The Comet address
      *   @param asset The asset address
      *   @param amount The amount to supply
      */
-    function cometSupply(address comet, address asset, uint256 amount) external {
+
+    function supply(address comet, address asset, uint256 amount) external {
         IERC20(asset).forceApprove(comet, amount);
         IComet(comet).supply(asset, amount);
     }
@@ -32,7 +29,7 @@ contract TerminalScript {
      * @param asset The asset address
      * @param amount The amount to supply
      */
-    function cometSupplyTo(address comet, address to, address asset, uint256 amount) external {
+    function supplyTo(address comet, address to, address asset, uint256 amount) external {
         IERC20(asset).forceApprove(comet, amount);
         IComet(comet).supplyTo(to, asset, amount);
     }
@@ -45,18 +42,22 @@ contract TerminalScript {
      *   @param asset The asset address
      *   @param amount The amount to supply
      */
-    function cometSupplyFrom(address comet, address from, address to, address asset, uint256 amount) external {
+    function supplyFrom(address comet, address from, address to, address asset, uint256 amount) external {
         IERC20(asset).forceApprove(comet, amount);
         IComet(comet).supplyFrom(from, to, asset, amount);
     }
+}
 
+contract CometWithdrawActions {
+    using SafeERC20 for IERC20;
     /**
      *  @dev Withdraw an asset from Comet
      *  @param comet The Comet address
      *  @param asset The asset address
      *  @param amount The amount to withdraw
      */
-    function cometWithdraw(address comet, address asset, uint256 amount) external {
+
+    function withdraw(address comet, address asset, uint256 amount) external {
         IComet(comet).withdraw(asset, amount);
     }
 
@@ -67,7 +68,7 @@ contract TerminalScript {
      * @param asset The asset address
      * @param amount The amount to withdraw
      */
-    function cometWithdrawTo(address comet, address to, address asset, uint256 amount) external {
+    function withdrawTo(address comet, address to, address asset, uint256 amount) external {
         IComet(comet).withdrawTo(to, asset, amount);
     }
 
@@ -79,10 +80,13 @@ contract TerminalScript {
      *   @param asset The asset address
      *   @param amount The amount to withdraw
      */
-    function cometWithdrawFrom(address comet, address from, address to, address asset, uint256 amount) external {
+    function withdrawFrom(address comet, address from, address to, address asset, uint256 amount) external {
         IComet(comet).withdrawFrom(from, to, asset, amount);
     }
+}
 
+contract SwapActions {
+    using SafeERC20 for IERC20;
     /**
      * @dev Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
      * @param uniswapRouter The Uniswap router address
@@ -91,6 +95,7 @@ contract TerminalScript {
      * @param amount The token amount to swap
      * @param amountOutMinimum The minimum amount of target token to receive (revert if return amount is less than this)
      */
+
     function swapAssetExactIn(
         address uniswapRouter,
         address recipient,
@@ -138,6 +143,12 @@ contract TerminalScript {
             })
         );
     }
+}
+
+contract TransferActions {
+    using SafeERC20 for IERC20;
+
+    error TransferFailed(bytes data);
 
     /**
      * @dev Transfer ERC20 token
@@ -160,16 +171,23 @@ contract TerminalScript {
             revert TransferFailed(data);
         }
     }
+}
 
+contract ClaimRewards {
     /**
      * @dev Claim rewards
      * @param cometRewards The CometRewards address
      * @param comet The Comet address
      * @param recipient The recipient address, that will receive the COMP rewards
      */
-    function claimRewards(address cometRewards, address comet, address recipient) external {
+    function claim(address cometRewards, address comet, address recipient) external {
         ICometRewards(cometRewards).claim(comet, recipient, true);
     }
+}
+
+contract SupplyMultipleAssetsToComet {
+    // To handle non-standard ERC20 tokens (i.e. USDT)
+    using SafeERC20 for IERC20;
 
     /**
      * @dev Supply multiple assets to Comet
@@ -177,14 +195,17 @@ contract TerminalScript {
      * @param assets The assets to supply
      * @param amounts The amounts of each asset to supply
      */
-    function supplyMultipleAssetsToComet(address comet, address[] calldata assets, uint256[] calldata amounts)
-        external
-    {
+    function run(address comet, address[] calldata assets, uint256[] calldata amounts) external {
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i]).forceApprove(comet, amounts[i]);
             IComet(comet).supply(assets[i], amounts[i]);
         }
     }
+}
+
+contract WithdrawMultipleAssetsFromComet {
+    // To handle non-standard ERC20 tokens (i.e. USDT)
+    using SafeERC20 for IERC20;
 
     /**
      * @dev Withdraw multiple assets from Comet
@@ -192,9 +213,37 @@ contract TerminalScript {
      * @param assets The assets to withdraw
      * @param amounts The amounts of each asset to withdraw
      */
-    function withdrawMultipleAssetsFromComet(address comet, address[] calldata assets, uint256[] calldata amounts)
+    function run(address comet, address[] calldata assets, uint256[] calldata amounts) external {
+        for (uint256 i = 0; i < assets.length; i++) {
+            IComet(comet).withdraw(assets[i], amounts[i]);
+        }
+    }
+}
+
+contract SupplyMultipleAssetsAndBorrowOnComet {
+    // To handle non-standard ERC20 tokens (i.e. USDT)
+    using SafeERC20 for IERC20;
+
+    function run(address comet, address[] calldata assets, uint256[] calldata amounts, address usdc, uint256 borrow)
         external
     {
+        for (uint256 i = 0; i < assets.length; i++) {
+            IERC20(assets[i]).forceApprove(comet, amounts[i]);
+            IComet(comet).supply(assets[i], amounts[i]);
+        }
+        IComet(comet).withdraw(usdc, borrow);
+    }
+}
+
+contract RepayAndWithdrawMultipleAssetsOnComet {
+    // To handle non-standard ERC20 tokens (i.e. USDT)
+    using SafeERC20 for IERC20;
+
+    function run(address comet, address[] calldata assets, uint256[] calldata amounts, address usdc, uint256 repay)
+        external
+    {
+        IERC20(usdc).forceApprove(comet, repay);
+        IComet(comet).supply(usdc, repay);
         for (uint256 i = 0; i < assets.length; i++) {
             IComet(comet).withdraw(assets[i], amounts[i]);
         }

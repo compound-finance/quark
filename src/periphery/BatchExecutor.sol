@@ -32,7 +32,7 @@ contract BatchExecutor {
 
         bytes[] memory returnData = new bytes[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) {
-            returnData[i] = QuarkWallet(accounts[i]).executeQuarkOperation(ops[i], v[i], r[i], s[i]);
+            returnData[i] = QuarkWallet(payable(accounts[i])).executeQuarkOperation(ops[i], v[i], r[i], s[i]);
         }
         return returnData;
     }

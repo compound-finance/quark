@@ -33,6 +33,8 @@ interface IComet {
     function baseScale() external view returns (uint256);
 
     function numAssets() external view returns (uint8);
+
+    function allow(address manager, bool isAllowed_) external;
 }
 
 struct AssetInfo {

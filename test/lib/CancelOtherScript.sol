@@ -5,6 +5,6 @@ import "../../src/QuarkWallet.sol";
 
 contract CancelOtherScript {
     function run(uint96 nonce) public {
-        return QuarkWallet(address(this)).stateManager().setNonce(nonce);
+        return QuarkWallet(payable(address(this))).stateManager().setNonce(nonce);
     }
 }

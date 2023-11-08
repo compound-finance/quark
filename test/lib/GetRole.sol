@@ -6,10 +6,10 @@ import "../../src/QuarkWallet.sol";
 
 contract GetRole is QuarkScript {
     function getSigner() external returns (address) {
-        return QuarkWallet(address(this)).signer();
+        return QuarkWallet(payable(address(this))).signer();
     }
 
     function getExecutor() external returns (address) {
-        return QuarkWallet(address(this)).executor();
+        return QuarkWallet(payable(address(this))).executor();
     }
 }

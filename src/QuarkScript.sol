@@ -5,7 +5,7 @@ import "./QuarkWallet.sol";
 
 contract QuarkScript {
     function allowCallback() internal {
-        QuarkWallet self = QuarkWallet(address(this));
+        QuarkWallet self = QuarkWallet(payable(address(this)));
         self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(self.stateManager().getActiveScript()))));
     }
 
