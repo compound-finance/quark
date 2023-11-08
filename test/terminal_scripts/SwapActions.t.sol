@@ -17,7 +17,7 @@ import "./../lib/QuarkOperationHelper.sol";
 /**
  * Scenario test for uesr to purchase assetes from Uniswap V3
  */
-contract SwapActionsTest is Test {
+contract UniswapSwapActionsTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
@@ -31,7 +31,7 @@ contract SwapActionsTest is Test {
     // Uniswap router info on mainnet
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     bytes terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/SwapActions.json"
+            "TerminalScript.sol/UniswapSwapActions.json"
         );
 
     function setUp() public {
@@ -58,7 +58,7 @@ contract SwapActionsTest is Test {
             wallet,
             terminalScript,
             abi.encodeWithSelector(
-                SwapActions.swapAssetExactIn.selector,
+                UniswapSwapActions.swapAssetExactIn.selector,
                 uniswapRouter,
                 address(wallet),
                 USDC,
@@ -84,7 +84,7 @@ contract SwapActionsTest is Test {
             wallet,
             terminalScript,
             abi.encodeWithSelector(
-                SwapActions.swapAssetExactOut.selector,
+                UniswapSwapActions.swapAssetExactOut.selector,
                 uniswapRouter,
                 address(wallet),
                 USDC,
@@ -114,7 +114,7 @@ contract SwapActionsTest is Test {
             wallet,
             terminalScript,
             abi.encodeWithSelector(
-                SwapActions.swapAssetExactIn.selector,
+                UniswapSwapActions.swapAssetExactIn.selector,
                 uniswapRouter,
                 address(wallet),
                 USDC,
@@ -138,7 +138,7 @@ contract SwapActionsTest is Test {
             wallet,
             terminalScript,
             abi.encodeWithSelector(
-                SwapActions.swapAssetExactOut.selector,
+                UniswapSwapActions.swapAssetExactOut.selector,
                 uniswapRouter,
                 address(wallet),
                 USDC,
@@ -167,7 +167,7 @@ contract SwapActionsTest is Test {
             wallet,
             terminalScript,
             abi.encodeWithSelector(
-                SwapActions.swapAssetExactIn.selector,
+                UniswapSwapActions.swapAssetExactIn.selector,
                 uniswapRouter,
                 address(wallet),
                 WETH,
@@ -190,7 +190,7 @@ contract SwapActionsTest is Test {
             wallet,
             terminalScript,
             abi.encodeWithSelector(
-                SwapActions.swapAssetExactOut.selector,
+                UniswapSwapActions.swapAssetExactOut.selector,
                 uniswapRouter,
                 address(wallet),
                 WETH,
@@ -219,7 +219,7 @@ contract SwapActionsTest is Test {
             wallet,
             terminalScript,
             abi.encodeWithSelector(
-                SwapActions.swapAssetExactIn.selector,
+                UniswapSwapActions.swapAssetExactIn.selector,
                 uniswapRouter,
                 address(wallet),
                 COMP,
@@ -242,7 +242,7 @@ contract SwapActionsTest is Test {
             wallet,
             terminalScript,
             abi.encodeWithSelector(
-                SwapActions.swapAssetExactOut.selector,
+                UniswapSwapActions.swapAssetExactOut.selector,
                 uniswapRouter,
                 address(wallet),
                 COMP,

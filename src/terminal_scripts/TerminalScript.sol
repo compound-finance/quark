@@ -86,7 +86,7 @@ contract CometWithdrawActions {
     }
 }
 
-contract SwapActions {
+contract UniswapSwapActions {
     using SafeERC20 for IERC20;
     /**
      * @dev Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
@@ -183,7 +183,7 @@ contract TransferActions is QuarkScript {
     }
 }
 
-contract ClaimRewards {
+contract CometClaimRewards {
     /**
      * @dev Claim rewards
      * @param cometRewards The CometRewards address

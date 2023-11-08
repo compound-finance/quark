@@ -17,7 +17,7 @@ import "./../lib/QuarkOperationHelper.sol";
 /**
  * Scenario test for uesr to claim COMP rewards
  */
-contract ClaimRewardsTest is Test {
+contract CometClaimRewardsTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
@@ -44,7 +44,7 @@ contract ClaimRewardsTest is Test {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/ClaimRewards.json"
+            "TerminalScript.sol/CometClaimRewards.json"
         );
 
         deal(USDC, address(wallet), 1_000_000e6);
@@ -63,7 +63,7 @@ contract ClaimRewardsTest is Test {
             wallet,
             terminalScript,
             abi.encodeWithSelector(
-                ClaimRewards.claim.selector, cometReward, comet, address(wallet)
+                CometClaimRewards.claim.selector, cometReward, comet, address(wallet)
                 ),
             ScriptType.ScriptSource
         );
