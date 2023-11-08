@@ -17,7 +17,7 @@ import "./../lib/QuarkOperationHelper.sol";
 /**
  * Scenario test for uesr borrow base asset from Comet v3 market
  */
-contract SupplyMultipleAssetsAndBorrowOnCometTest is Test {
+contract CometSupplyMultipleAssetsAndBorrowTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
@@ -44,7 +44,7 @@ contract SupplyMultipleAssetsAndBorrowOnCometTest is Test {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/SupplyMultipleAssetsAndBorrowOnComet.json"
+            "TerminalScript.sol/CometSupplyMultipleAssetsAndBorrow.json"
         );
 
         deal(WETH, address(wallet), 10 ether);
@@ -60,7 +60,7 @@ contract SupplyMultipleAssetsAndBorrowOnCometTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeWithSelector(SupplyMultipleAssetsAndBorrowOnComet.run.selector, comet, assets, amounts, USDC, 100e6),
+            abi.encodeWithSelector(CometSupplyMultipleAssetsAndBorrow.run.selector, comet, assets, amounts, USDC, 100e6),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

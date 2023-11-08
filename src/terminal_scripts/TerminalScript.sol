@@ -195,7 +195,7 @@ contract CometClaimRewards {
     }
 }
 
-contract SupplyMultipleAssetsToComet {
+contract CometSupplyMultipleAssets {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
@@ -213,7 +213,7 @@ contract SupplyMultipleAssetsToComet {
     }
 }
 
-contract WithdrawMultipleAssetsFromComet {
+contract CometWithdrawMultipleAssets {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
@@ -230,7 +230,7 @@ contract WithdrawMultipleAssetsFromComet {
     }
 }
 
-contract SupplyMultipleAssetsAndBorrowOnComet {
+contract CometSupplyMultipleAssetsAndBorrow {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
@@ -245,7 +245,7 @@ contract SupplyMultipleAssetsAndBorrowOnComet {
     }
 }
 
-contract RepayAndWithdrawMultipleAssetsOnComet {
+contract CometRepayAndWithdrawMultipleAssets {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 

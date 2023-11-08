@@ -44,7 +44,7 @@ contract SupplyMultipleCollateralAssetsToCometTest is Test {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/SupplyMultipleAssetsToComet.json"
+            "TerminalScript.sol/CometSupplyMultipleAssets.json"
         );
 
         deal(WETH, address(wallet), 10 ether);
@@ -63,7 +63,7 @@ contract SupplyMultipleCollateralAssetsToCometTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeWithSelector(SupplyMultipleAssetsToComet.run.selector, comet, assets, amounts),
+            abi.encodeWithSelector(CometSupplyMultipleAssets.run.selector, comet, assets, amounts),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

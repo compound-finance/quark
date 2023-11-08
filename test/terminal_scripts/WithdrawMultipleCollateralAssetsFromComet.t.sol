@@ -41,7 +41,7 @@ contract WithdrawMultipleCollateralAssetsFromCometTest is Test {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/WithdrawMultipleAssetsFromComet.json"
+            "TerminalScript.sol/CometWithdrawMultipleAssets.json"
         );
 
         deal(WETH, address(wallet), 10 ether);
@@ -81,7 +81,7 @@ contract WithdrawMultipleCollateralAssetsFromCometTest is Test {
             wallet,
             terminalScript,
              abi.encodeWithSelector(
-                WithdrawMultipleAssetsFromComet.run.selector, comet, assets, amounts
+                CometWithdrawMultipleAssets.run.selector, comet, assets, amounts
                 ),
             ScriptType.ScriptSource
         );
