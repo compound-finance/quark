@@ -197,7 +197,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(wallet);
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        (uint8 v, bytes32 r, /* bytes32 s */ ) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // 1 greater than the max value of s
         bytes32 invalidS = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1;
