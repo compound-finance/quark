@@ -4,6 +4,7 @@ pragma solidity ^0.8.21;
 import "v3-periphery/interfaces/ISwapRouter.sol";
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import "./../QuarkScript.sol";
 import "./interfaces/IComet.sol";
 import "./interfaces/ICometRewards.sol";
 
@@ -145,10 +146,14 @@ contract SwapActions {
     }
 }
 
-contract TransferActions {
+contract TransferActions is QuarkScript {
     using SafeERC20 for IERC20;
 
     error TransferFailed(bytes data);
+    error ReentrantCall();
+
+    /// @notice storage location for the re-entrancy guard
+    bytes32 public constant REENTRANCY_FLAG = keccak256("terminal.scripts.reentrancy.guard.v1");
 
     /**
      * @dev Transfer ERC20 token
@@ -166,10 +171,15 @@ contract TransferActions {
      * @param amount The amount to transfer
      */
     function transferNativeToken(address recipient, uint256 amount) external {
+        if (readState(REENTRANCY_FLAG) == bytes32("0")) {
+            revert ReentrantCall();
+        }
+        writeState(REENTRANCY_FLAG, bytes32("1"));
         (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
         if (!success) {
             revert TransferFailed(data);
         }
+        writeState(REENTRANCY_FLAG, bytes32("0"));
     }
 }
 

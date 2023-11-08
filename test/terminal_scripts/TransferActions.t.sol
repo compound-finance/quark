@@ -133,4 +133,6 @@ contract TransferActionsTest is Test {
         assertEq(address(wallet).balance, 0 ether);
         assertEq(address(walletBob).balance, 10 ether);
     }
+
+    function testTransferNativeTokenReentrantBlocked() public {}
 }

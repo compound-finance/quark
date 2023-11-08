@@ -32,4 +32,12 @@ contract QuarkScript {
             sstore(key, value)
         }
     }
+
+    function readState(bytes32 key) internal view returns (bytes32) {
+        return QuarkWallet(payable(address(this))).stateManager().read(key);
+    }
+
+    function writeState(bytes32 key, bytes32 value) internal {
+        QuarkWallet(payable(address(this))).stateManager().write(key, value);
+    }
 }
