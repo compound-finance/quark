@@ -11,7 +11,7 @@ contract QuarkStateManagerHarness is QuarkStateManager {
         activeNonceScript[msg.sender] = NonceScript({nonce: 0, scriptAddress: address(0)});
     }
 
-    function readRawUnsafe(QuarkWallet wallet, uint96 nonce, string memory key) external returns (bytes32) {
+    function readRawUnsafe(QuarkWallet wallet, uint96 nonce, string memory key) external view returns (bytes32) {
         return walletStorage[address(wallet)][nonce][keccak256(bytes(key))];
     }
 }
