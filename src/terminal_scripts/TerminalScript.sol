@@ -11,20 +11,20 @@ import "./interfaces/ICometRewards.sol";
 // TODO: Will need to add support for E-Comet once E-Comet has been deployed
 contract CometSupplyActions {
     using SafeERC20 for IERC20;
+
     /**
-     *   @dev Supply an asset to Comet
+     *   @notice Supply an asset to Comet
      *   @param comet The Comet address
      *   @param asset The asset address
      *   @param amount The amount to supply
      */
-
     function supply(address comet, address asset, uint256 amount) external {
         IERC20(asset).forceApprove(comet, amount);
         IComet(comet).supply(asset, amount);
     }
 
     /**
-     * @dev Supply an asset to Comet to a specific address
+     * @notice Supply an asset to Comet to a specific address
      * @param comet The Comet address
      * @param to The recipient address
      * @param asset The asset address
@@ -36,7 +36,7 @@ contract CometSupplyActions {
     }
 
     /**
-     *   @dev Supply an asset to Comet from one address to another address
+     *   @notice Supply an asset to Comet from one address to another address
      *   @param comet The Comet address
      *   @param from The from address
      *   @param to The to address
@@ -51,19 +51,19 @@ contract CometSupplyActions {
 
 contract CometWithdrawActions {
     using SafeERC20 for IERC20;
+
     /**
-     *  @dev Withdraw an asset from Comet
+     *  @notice Withdraw an asset from Comet
      *  @param comet The Comet address
      *  @param asset The asset address
      *  @param amount The amount to withdraw
      */
-
     function withdraw(address comet, address asset, uint256 amount) external {
         IComet(comet).withdraw(asset, amount);
     }
 
     /**
-     * @dev Withdraw an asset from Comet to a specific address
+     * @notice Withdraw an asset from Comet to a specific address
      * @param comet The Comet address
      * @param to The recipient address
      * @param asset The asset address
@@ -74,7 +74,7 @@ contract CometWithdrawActions {
     }
 
     /**
-     *   @dev Withdraw an asset from Comet from one address to another address
+     *   @notice Withdraw an asset from Comet from one address to another address
      *   @param comet The Comet address
      *   @param from The from address
      *   @param to The to address
@@ -88,15 +88,15 @@ contract CometWithdrawActions {
 
 contract UniswapSwapActions {
     using SafeERC20 for IERC20;
+
     /**
-     * @dev Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
+     * @notice Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
      * @param uniswapRouter The Uniswap router address
      * @param recipient The recipient address that will receive the swapped token
      * @param tokenFrom The token to swap from
      * @param amount The token amount to swap
      * @param amountOutMinimum The minimum amount of target token to receive (revert if return amount is less than this)
      */
-
     function swapAssetExactIn(
         address uniswapRouter,
         address recipient,
@@ -118,7 +118,7 @@ contract UniswapSwapActions {
     }
 
     /**
-     * @dev Swap token on Uniswap with Exact Output (i.e. Set output amount and swap with required amount token)
+     * @notice Swap token on Uniswap with Exact Output (i.e. Set output amount and swap with required amount token)
      * @param uniswapRouter The Uniswap router address
      * @param recipient The recipient address that will receive the swapped token
      * @param tokenFrom The token to swap from
@@ -156,7 +156,7 @@ contract TransferActions is QuarkScript {
     bytes32 public constant REENTRANCY_FLAG = keccak256("terminal.scripts.reentrancy.guard.v1");
 
     /**
-     * @dev Transfer ERC20 token
+     * @notice Transfer ERC20 token
      * @param token The token address
      * @param recipient The recipient address
      * @param amount The amount to transfer
@@ -166,7 +166,7 @@ contract TransferActions is QuarkScript {
     }
 
     /**
-     * @dev Transfer native token (i.e. ETH)
+     * @notice Transfer native token (i.e. ETH)
      * @param recipient The recipient address
      * @param amount The amount to transfer
      */
@@ -185,7 +185,7 @@ contract TransferActions is QuarkScript {
 
 contract CometClaimRewards {
     /**
-     * @dev Claim rewards
+     * @notice Claim rewards
      * @param cometRewards The CometRewards address
      * @param comet The Comet address
      * @param recipient The recipient address, that will receive the COMP rewards
@@ -200,7 +200,7 @@ contract CometSupplyMultipleAssets {
     using SafeERC20 for IERC20;
 
     /**
-     * @dev Supply multiple assets to Comet
+     * @notice Supply multiple assets to Comet
      * @param comet The Comet address
      * @param assets The assets to supply
      * @param amounts The amounts of each asset to supply
@@ -218,7 +218,7 @@ contract CometWithdrawMultipleAssets {
     using SafeERC20 for IERC20;
 
     /**
-     * @dev Withdraw multiple assets from Comet
+     * @notice Withdraw multiple assets from Comet
      * @param comet The Comet address
      * @param assets The assets to withdraw
      * @param amounts The amounts of each asset to withdraw
