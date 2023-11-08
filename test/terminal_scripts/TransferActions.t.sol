@@ -17,6 +17,7 @@ import "./../lib/QuarkOperationHelper.sol";
 /**
  * Scenario test for uesr borrow base asset from Comet v3 market
  */
+
 contract TransferActionsTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
@@ -133,6 +134,4 @@ contract TransferActionsTest is Test {
         assertEq(address(wallet).balance, 0 ether);
         assertEq(address(walletBob).balance, 10 ether);
     }
-
-    function testTransferNativeTokenReentrantBlocked() public {}
 }

@@ -171,15 +171,15 @@ contract TransferActions is QuarkScript {
      * @param amount The amount to transfer
      */
     function transferNativeToken(address recipient, uint256 amount) external {
-        if (readState(REENTRANCY_FLAG) == bytes32("0")) {
+        if (readState(REENTRANCY_FLAG) == bytes32(uint256(1))) {
             revert ReentrantCall();
         }
-        writeState(REENTRANCY_FLAG, bytes32("1"));
+        writeState(REENTRANCY_FLAG, bytes32(uint256(1)));
         (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
         if (!success) {
             revert TransferFailed(data);
         }
-        writeState(REENTRANCY_FLAG, bytes32("0"));
+        writeState(REENTRANCY_FLAG, bytes32(uint256(0)));
     }
 }
 
