@@ -59,12 +59,14 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactIn.selector,
-                uniswapRouter,
-                address(wallet),
-                USDC,
-                2000e6,
-                1 ether,
-                abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
+                UniswapSwapActions.SwapParamsExactIn({
+                    uniswapRouter: uniswapRouter,
+                    recipient: address(wallet),
+                    tokenFrom: USDC,
+                    amount: 2000e6,
+                    amountOutMinimum: 1 ether,
+                    path: abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
+                })
             ),
             ScriptType.ScriptSource
         );
@@ -85,12 +87,14 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
-                uniswapRouter,
-                address(wallet),
-                USDC,
-                1 ether,
-                2000e6,
-                abi.encodePacked(WETH, uint24(500), USDC) // Path: WETH - 0.05% -> USDC
+                UniswapSwapActions.SwapPramsExactOut({
+                    uniswapRouter: uniswapRouter,
+                    recipient: address(wallet),
+                    tokenFrom: USDC,
+                    amount: 1 ether,
+                    amountInMaximum: 2000e6,
+                    path: abi.encodePacked(WETH, uint24(500), USDC) // Path: WETH - 0.05% -> USDC
+                })
             ),
             ScriptType.ScriptSource
         );
@@ -115,12 +119,14 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactIn.selector,
-                uniswapRouter,
-                address(wallet),
-                USDC,
-                2000e6,
-                40e18,
-                abi.encodePacked(USDC, uint24(500), WETH, uint24(3000), COMP) // Path: USDC - 0.05% -> WETH - 0.3% -> COMP
+                UniswapSwapActions.SwapParamsExactIn({
+                    uniswapRouter: uniswapRouter,
+                    recipient: address(wallet),
+                    tokenFrom: USDC,
+                    amount: 2000e6,
+                    amountOutMinimum: 40e18,
+                    path: abi.encodePacked(USDC, uint24(500), WETH, uint24(3000), COMP) // Path: USDC - 0.05% -> WETH - 0.3% -> COMP
+                })
             ),
             ScriptType.ScriptSource
         );
@@ -139,12 +145,14 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
-                uniswapRouter,
-                address(wallet),
-                USDC,
-                40e18,
-                2000e6,
-                abi.encodePacked(COMP, uint24(3000), WETH, uint24(500), USDC) // Path: COMP - 0.05% -> WETH - 0.3% -> USDC
+                UniswapSwapActions.SwapPramsExactOut({
+                    uniswapRouter: uniswapRouter,
+                    recipient: address(wallet),
+                    tokenFrom: USDC,
+                    amount: 40e18,
+                    amountInMaximum: 2000e6,
+                    path: abi.encodePacked(COMP, uint24(3000), WETH, uint24(500), USDC) // Path: COMP - 0.05% -> WETH - 0.3% -> USDC
+                })
             ),
             ScriptType.ScriptSource
         );
@@ -168,12 +176,14 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactIn.selector,
-                uniswapRouter,
-                address(wallet),
-                WETH,
-                1 ether,
-                1000e6,
-                abi.encodePacked(WETH, uint24(500), USDC) // Path: WETH - 0.05% -> USDC
+                UniswapSwapActions.SwapParamsExactIn({
+                    uniswapRouter: uniswapRouter,
+                    recipient: address(wallet),
+                    tokenFrom: WETH,
+                    amount: 1 ether,
+                    amountOutMinimum: 1000e6,
+                    path: abi.encodePacked(WETH, uint24(500), USDC) // Path: WETH - 0.05% -> USDC
+                })
             ),
             ScriptType.ScriptSource
         );
@@ -191,12 +201,14 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
-                uniswapRouter,
-                address(wallet),
-                WETH,
-                1600e6,
-                1 ether,
-                abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
+                UniswapSwapActions.SwapPramsExactOut({
+                    uniswapRouter: uniswapRouter,
+                    recipient: address(wallet),
+                    tokenFrom: WETH,
+                    amount: 1600e6,
+                    amountInMaximum: 1 ether,
+                    path: abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
+                })
             ),
             ScriptType.ScriptSource
         );
@@ -220,12 +232,14 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactIn.selector,
-                uniswapRouter,
-                address(wallet),
-                COMP,
-                50e18,
-                1800e6,
-                abi.encodePacked(COMP, uint24(3000), WETH, uint24(500), USDC) // Path: COMP - 0.05% -> WETH - 0.3% -> USDC
+                UniswapSwapActions.SwapParamsExactIn({
+                    uniswapRouter: uniswapRouter,
+                    recipient: address(wallet),
+                    tokenFrom: COMP,
+                    amount: 50e18,
+                    amountOutMinimum: 1800e6,
+                    path: abi.encodePacked(COMP, uint24(3000), WETH, uint24(500), USDC) // Path: COMP - 0.05% -> WETH - 0.3% -> USDC
+                })
             ),
             ScriptType.ScriptSource
         );
@@ -243,12 +257,14 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
-                uniswapRouter,
-                address(wallet),
-                COMP,
-                1500e6,
-                50e18,
-                abi.encodePacked(USDC, uint24(500), WETH, uint24(3000), COMP) // Path: USDC - 0.05% -> WETH - 0.3% -> COMP
+                UniswapSwapActions.SwapPramsExactOut({
+                    uniswapRouter: uniswapRouter,
+                    recipient: address(wallet),
+                    tokenFrom: COMP,
+                    amount: 1500e6,
+                    amountInMaximum: 50e18,
+                    path: abi.encodePacked(USDC, uint24(500), WETH, uint24(3000), COMP) // Path: USDC - 0.05% -> WETH - 0.3% -> COMP
+                })
             ),
             ScriptType.ScriptSource
         );

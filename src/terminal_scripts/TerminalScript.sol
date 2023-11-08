@@ -47,6 +47,19 @@ contract CometSupplyActions {
         IERC20(asset).forceApprove(comet, amount);
         IComet(comet).supplyFrom(from, to, asset, amount);
     }
+
+    /**
+     * @notice Supply multiple assets to Comet
+     * @param comet The Comet address
+     * @param assets The assets to supply
+     * @param amounts The amounts of each asset to supply
+     */
+    function supplyMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
+        for (uint256 i = 0; i < assets.length; i++) {
+            IERC20(assets[i]).forceApprove(comet, amounts[i]);
+            IComet(comet).supply(assets[i], amounts[i]);
+        }
+    }
 }
 
 contract CometWithdrawActions {
@@ -89,58 +102,66 @@ contract CometWithdrawActions {
 contract UniswapSwapActions {
     using SafeERC20 for IERC20;
 
+    struct SwapParamsExactIn {
+        // Uniswap router address
+        address uniswapRouter;
+        // Recipient address that will receive the swapped token
+        address recipient;
+        // Token to swap from
+        address tokenFrom;
+        // Amount of token to swap
+        uint256 amount;
+        // Minimum amount of target token to receive (revert if return amount is less than this)
+        uint256 amountOutMinimum;
+        // Path of the swap
+        bytes path;
+    }
+
+    struct SwapPramsExactOut {
+        // Uniswap router address
+        address uniswapRouter;
+        // Recipient address that will receive the swapped token
+        address recipient;
+        // Token to swap from
+        address tokenFrom;
+        // Amount of token to swap
+        uint256 amount;
+        // Maximum amount of input token to spend (revert if input amount is greater than this)
+        uint256 amountInMaximum;
+        // Path of the swap
+        bytes path;
+    }
     /**
      * @notice Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
-     * @param uniswapRouter The Uniswap router address
-     * @param recipient The recipient address that will receive the swapped token
-     * @param tokenFrom The token to swap from
-     * @param amount The token amount to swap
-     * @param amountOutMinimum The minimum amount of target token to receive (revert if return amount is less than this)
+     * @param params SwapParamsExactIn struct
      */
-    function swapAssetExactIn(
-        address uniswapRouter,
-        address recipient,
-        address tokenFrom,
-        uint256 amount,
-        uint256 amountOutMinimum,
-        bytes calldata path
-    ) external {
-        IERC20(tokenFrom).forceApprove(uniswapRouter, amount);
-        ISwapRouter(uniswapRouter).exactInput(
+
+    function swapAssetExactIn(SwapParamsExactIn calldata params) external {
+        IERC20(params.tokenFrom).forceApprove(params.uniswapRouter, params.amount);
+        ISwapRouter(params.uniswapRouter).exactInput(
             ISwapRouter.ExactInputParams({
-                path: path,
-                recipient: recipient,
+                path: params.path,
+                recipient: params.recipient,
                 deadline: block.timestamp,
-                amountIn: amount,
-                amountOutMinimum: amountOutMinimum
+                amountIn: params.amount,
+                amountOutMinimum: params.amountOutMinimum
             })
         );
     }
 
     /**
      * @notice Swap token on Uniswap with Exact Output (i.e. Set output amount and swap with required amount token)
-     * @param uniswapRouter The Uniswap router address
-     * @param recipient The recipient address that will receive the swapped token
-     * @param tokenFrom The token to swap from
-     * @param amount The target token amount to receive
-     * @param amountInMaximum The maximum amount of input token to spend (revert if input amount is greater than this)
+     * @param params SwapPramsExactOut struct
      */
-    function swapAssetExactOut(
-        address uniswapRouter,
-        address recipient,
-        address tokenFrom,
-        uint256 amount,
-        uint256 amountInMaximum,
-        bytes calldata path
-    ) external {
-        IERC20(tokenFrom).forceApprove(uniswapRouter, amountInMaximum);
-        ISwapRouter(uniswapRouter).exactOutput(
+    function swapAssetExactOut(SwapPramsExactOut calldata params) external {
+        IERC20(params.tokenFrom).forceApprove(params.uniswapRouter, params.amountInMaximum);
+        ISwapRouter(params.uniswapRouter).exactOutput(
             ISwapRouter.ExactOutputParams({
-                path: path,
-                recipient: recipient,
+                path: params.path,
+                recipient: params.recipient,
                 deadline: block.timestamp,
-                amountOut: amount,
-                amountInMaximum: amountInMaximum
+                amountOut: params.amount,
+                amountInMaximum: params.amountInMaximum
             })
         );
     }
