@@ -14,7 +14,7 @@ import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
 
-contract WithdrawMultipleCollateralAssetsFromComet is Test {
+contract WithdrawMultipleCollateralAssetsFromCometTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;

@@ -17,7 +17,7 @@ import "./../lib/QuarkOperationHelper.sol";
 /**
  * Scenario test for uesr borrow base asset from Comet v3 market
  */
-contract SupplyMultipleCollateralAssetsToComet is Test {
+contract SupplyMultipleCollateralAssetsToCometTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
