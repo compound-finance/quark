@@ -7,30 +7,29 @@ import "forge-std/console.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {QuarkStateManager} from "../src/QuarkStateManager.sol";
-import {QuarkStateManagerHarness} from "./lib/QuarkStateManagerHarness.sol";
 
 contract NonceTest is Test {
-    QuarkStateManagerHarness public stateManagerHarness;
+    QuarkStateManager public stateManager;
 
     function setUp() public {
-        stateManagerHarness = new QuarkStateManagerHarness();
-        console.log("QuarkStateManagerHarness deployed to: %s", address(stateManagerHarness));
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
     }
 
     function testRevertsForInvalidNonce() public {
         vm.expectRevert();
-        stateManagerHarness.isNonceSet(address(this), 0);
+        stateManager.isNonceSet(address(this), 0);
         // NOTE: this is only defense-in-depth -- if this case is triggered, an invariant has been violated because an invalid nonce was acquired
         vm.expectRevert();
-        stateManagerHarness.setNonceExternal(0);
+        stateManager.setNonce(0);
     }
 
     function testIsSet() public {
         // nonce is unset by default
-        assertEq(stateManagerHarness.isNonceSet(address(this), 1), false);
+        assertEq(stateManager.isNonceSet(address(this), 1), false);
         // it can be set
-        stateManagerHarness.setNonceExternal(1);
-        assertEq(stateManagerHarness.isNonceSet(address(this), 1), true);
+        stateManager.setNonce(1);
+        assertEq(stateManager.isNonceSet(address(this), 1), true);
     }
 
     function testNonLinearNonce() public {
@@ -38,19 +37,19 @@ contract NonceTest is Test {
         // long as it has not been set
         uint96 nonce = 1234567890;
 
-        assertEq(stateManagerHarness.isNonceSet(address(this), nonce), false);
+        assertEq(stateManager.isNonceSet(address(this), nonce), false);
 
-        stateManagerHarness.setNonceExternal(nonce);
-        assertEq(stateManagerHarness.isNonceSet(address(this), nonce), true);
+        stateManager.setNonce(nonce);
+        assertEq(stateManager.isNonceSet(address(this), nonce), true);
     }
 
     function testNextUnusedNonce() public {
-        uint96 nonce1 = stateManagerHarness.nextNonce(address(this));
+        uint96 nonce1 = stateManager.nextNonce(address(this));
 
-        stateManagerHarness.setNonceExternal(nonce1);
-        assertEq(stateManagerHarness.nextNonce(address(this)), nonce1 + 1);
+        stateManager.setNonce(nonce1);
+        assertEq(stateManager.nextNonce(address(this)), nonce1 + 1);
 
-        stateManagerHarness.setNonceExternal(nonce1 + 1);
-        assertEq(stateManagerHarness.nextNonce(address(this)), nonce1 + 2);
+        stateManager.setNonce(nonce1 + 1);
+        assertEq(stateManager.nextNonce(address(this)), nonce1 + 2);
     }
 }
