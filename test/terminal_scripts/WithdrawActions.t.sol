@@ -27,6 +27,10 @@ contract WithdrawActionsTest is Test {
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+    bytes terminalScript = new YulHelper().getDeployed(
+            "TerminalScript.sol/CometWithdrawActions.json"
+        );
 
     function setUp() public {
         // Fork setup
@@ -42,10 +46,6 @@ contract WithdrawActionsTest is Test {
     function testWithdraw() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/CometWithdrawActions.json"
-        );
-
         deal(WETH, address(wallet), 10 ether);
 
         vm.startPrank(address(wallet));
@@ -74,10 +74,6 @@ contract WithdrawActionsTest is Test {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         QuarkWallet wallet2 = QuarkWallet(factory.create(alice, bytes32("1")));
-        bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/CometWithdrawActions.json"
-        );
-
         deal(WETH, address(wallet), 10 ether);
 
         vm.startPrank(address(wallet));
@@ -106,10 +102,6 @@ contract WithdrawActionsTest is Test {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         QuarkWallet wallet2 = QuarkWallet(factory.create(alice, bytes32("1")));
-        bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/CometWithdrawActions.json"
-        );
-
         deal(WETH, address(wallet2), 10 ether);
 
         vm.startPrank(address(wallet2));
@@ -139,10 +131,6 @@ contract WithdrawActionsTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/CometWithdrawActions.json"
-        );
-
         deal(WETH, address(wallet), 10 ether);
 
         vm.startPrank(address(wallet));
@@ -166,5 +154,60 @@ contract WithdrawActionsTest is Test {
         assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 100e6);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
+    }
+
+    function testWithdrawMultipleAssets() public {
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+
+        deal(WETH, address(wallet), 10 ether);
+        deal(LINK, address(wallet), 1000e18);
+        deal(USDC, address(wallet), 1000e6);
+
+        vm.startPrank(address(wallet));
+        IERC20(WETH).approve(comet, 10 ether);
+        IComet(comet).supply(WETH, 10 ether);
+        IERC20(LINK).approve(comet, 1000e18);
+        IComet(comet).supply(LINK, 1000e18);
+        IERC20(USDC).approve(comet, 1000e6);
+        IComet(comet).supply(USDC, 1000e6);
+        vm.stopPrank();
+
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 1000e18);
+        assertEq(IERC20(LINK).balanceOf(address(wallet)), 0e18);
+        assertApproxEqAbs(IComet(comet).balanceOf(address(wallet)), 1000e6, 1); // Comet math issue (lost 1 wei after deposit)
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 0e6);
+
+        address[] memory assets = new address[](3);
+        uint256[] memory amounts = new uint256[](3);
+        assets[0] = WETH;
+        assets[1] = LINK;
+        assets[2] = USDC;
+        amounts[0] = 10 ether;
+        amounts[1] = 1000e18;
+        amounts[2] = 1000e6;
+
+        // Fastforward 180 days
+        vm.roll(185529607);
+        vm.warp(block.timestamp + 180 days);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+             abi.encodeWithSelector(
+                CometWithdrawActions.withdrawMultipleAssets.selector, comet, assets, amounts
+                ),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0 ether);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 0e18);
+        assertEq(IERC20(LINK).balanceOf(address(wallet)), 1000e18);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
 }

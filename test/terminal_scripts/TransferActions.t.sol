@@ -13,6 +13,7 @@ import "./../lib/YulHelper.sol";
 import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
+import "./../lib/EvilReceiver.sol";
 
 /**
  * Scenario test for uesr borrow base asset from Comet v3 market
@@ -114,11 +115,7 @@ contract TransferActionsTest is Test {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         QuarkWallet walletBob = QuarkWallet(factory.create(bob, 0));
-
         deal(address(wallet), 10 ether);
-
-        assertEq(address(wallet).balance, 10 ether);
-        assertEq(address(walletBob).balance, 0 ether);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
@@ -128,10 +125,66 @@ contract TransferActionsTest is Test {
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(walletBob).balance, 0 ether);
         wallet.executeQuarkOperation(op, v, r, s);
-
         // assert on native ETH balance
         assertEq(address(wallet).balance, 0 ether);
         assertEq(address(walletBob).balance, 10 ether);
+    }
+
+    function testTranferReentrancyAttack() public {
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        EvilReceiver evilReceiver = new EvilReceiver();
+        evilReceiver.setAttack(
+            EvilReceiver.ReentryAttack(EvilReceiver.AttackType.REINVOKE_TRANSFER, address(evilReceiver), 1 ether, 2)
+        );
+        deal(address(wallet), 10 ether);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeWithSelector(
+                TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether
+                ),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(evilReceiver).balance, 0 ether);
+        vm.expectRevert();
+        wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(evilReceiver).balance, 0 ether);
+    }
+
+    function testTransferReentranctAttackWithStolenSignature() public {
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        EvilReceiver evilReceiver = new EvilReceiver();
+        evilReceiver.setAttack(
+            EvilReceiver.ReentryAttack(EvilReceiver.AttackType.STOLEN_SIGNATURE, address(evilReceiver), 1 ether, 2)
+        );
+        deal(address(wallet), 10 ether);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeWithSelector(
+                TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether
+                ),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        evilReceiver.stealSignature(EvilReceiver.StolenSignature(op, v, r, s));
+
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(evilReceiver).balance, 0 ether);
+        // Not replayable signature will blocked by QuarkWallet during executeQuarkOperation
+        vm.expectRevert();
+        wallet.executeQuarkOperation(op, v, r, s);
+        // assert on native ETH balance
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(evilReceiver).balance, 0 ether);
     }
 }

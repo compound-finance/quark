@@ -97,19 +97,27 @@ contract CometWithdrawActions {
     function withdrawFrom(address comet, address from, address to, address asset, uint256 amount) external {
         IComet(comet).withdrawFrom(from, to, asset, amount);
     }
+
+    /**
+     * @notice Withdraw multiple assets from Comet
+     * @param comet The Comet address
+     * @param assets The assets to withdraw
+     * @param amounts The amounts of each asset to withdraw
+     */
+    function withdrawMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
+        for (uint256 i = 0; i < assets.length; i++) {
+            IComet(comet).withdraw(assets[i], amounts[i]);
+        }
+    }
 }
 
 contract UniswapSwapActions {
     using SafeERC20 for IERC20;
 
     struct SwapParamsExactIn {
-        // Uniswap router address
         address uniswapRouter;
-        // Recipient address that will receive the swapped token
         address recipient;
-        // Token to swap from
         address tokenFrom;
-        // Amount of token to swap
         uint256 amount;
         // Minimum amount of target token to receive (revert if return amount is less than this)
         uint256 amountOutMinimum;
@@ -117,25 +125,21 @@ contract UniswapSwapActions {
         bytes path;
     }
 
-    struct SwapPramsExactOut {
-        // Uniswap router address
+    struct SwapParamsExactOut {
         address uniswapRouter;
-        // Recipient address that will receive the swapped token
         address recipient;
-        // Token to swap from
         address tokenFrom;
-        // Amount of token to swap
         uint256 amount;
         // Maximum amount of input token to spend (revert if input amount is greater than this)
         uint256 amountInMaximum;
         // Path of the swap
         bytes path;
     }
+
     /**
      * @notice Swap token on Uniswap with Exact Input (i.e. Set input amount and swap for target token)
      * @param params SwapParamsExactIn struct
      */
-
     function swapAssetExactIn(SwapParamsExactIn calldata params) external {
         IERC20(params.tokenFrom).forceApprove(params.uniswapRouter, params.amount);
         ISwapRouter(params.uniswapRouter).exactInput(
@@ -150,10 +154,10 @@ contract UniswapSwapActions {
     }
 
     /**
-     * @notice Swap token on Uniswap with Exact Output (i.e. Set output amount and swap with required amount token)
-     * @param params SwapPramsExactOut struct
+     * @notice Swap token on Uniswap with Exact Output (i.e. Set output amount and swap with required amount of input token)
+     * @param params SwapParamsExactOut struct
      */
-    function swapAssetExactOut(SwapPramsExactOut calldata params) external {
+    function swapAssetExactOut(SwapParamsExactOut calldata params) external {
         IERC20(params.tokenFrom).forceApprove(params.uniswapRouter, params.amountInMaximum);
         ISwapRouter(params.uniswapRouter).exactOutput(
             ISwapRouter.ExactOutputParams({
@@ -213,41 +217,6 @@ contract CometClaimRewards {
      */
     function claim(address cometRewards, address comet, address recipient) external {
         ICometRewards(cometRewards).claim(comet, recipient, true);
-    }
-}
-
-contract CometSupplyMultipleAssets {
-    // To handle non-standard ERC20 tokens (i.e. USDT)
-    using SafeERC20 for IERC20;
-
-    /**
-     * @notice Supply multiple assets to Comet
-     * @param comet The Comet address
-     * @param assets The assets to supply
-     * @param amounts The amounts of each asset to supply
-     */
-    function run(address comet, address[] calldata assets, uint256[] calldata amounts) external {
-        for (uint256 i = 0; i < assets.length; i++) {
-            IERC20(assets[i]).forceApprove(comet, amounts[i]);
-            IComet(comet).supply(assets[i], amounts[i]);
-        }
-    }
-}
-
-contract CometWithdrawMultipleAssets {
-    // To handle non-standard ERC20 tokens (i.e. USDT)
-    using SafeERC20 for IERC20;
-
-    /**
-     * @notice Withdraw multiple assets from Comet
-     * @param comet The Comet address
-     * @param assets The assets to withdraw
-     * @param amounts The amounts of each asset to withdraw
-     */
-    function run(address comet, address[] calldata assets, uint256[] calldata amounts) external {
-        for (uint256 i = 0; i < assets.length; i++) {
-            IComet(comet).withdraw(assets[i], amounts[i]);
-        }
     }
 }
 

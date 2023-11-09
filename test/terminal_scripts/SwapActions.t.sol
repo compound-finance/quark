@@ -87,7 +87,7 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
-                UniswapSwapActions.SwapPramsExactOut({
+                UniswapSwapActions.SwapParamsExactOut({
                     uniswapRouter: uniswapRouter,
                     recipient: address(wallet),
                     tokenFrom: USDC,
@@ -145,7 +145,7 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
-                UniswapSwapActions.SwapPramsExactOut({
+                UniswapSwapActions.SwapParamsExactOut({
                     uniswapRouter: uniswapRouter,
                     recipient: address(wallet),
                     tokenFrom: USDC,
@@ -201,7 +201,7 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
-                UniswapSwapActions.SwapPramsExactOut({
+                UniswapSwapActions.SwapParamsExactOut({
                     uniswapRouter: uniswapRouter,
                     recipient: address(wallet),
                     tokenFrom: WETH,
@@ -257,7 +257,7 @@ contract UniswapSwapActionsTest is Test {
             terminalScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
-                UniswapSwapActions.SwapPramsExactOut({
+                UniswapSwapActions.SwapParamsExactOut({
                     uniswapRouter: uniswapRouter,
                     recipient: address(wallet),
                     tokenFrom: COMP,
