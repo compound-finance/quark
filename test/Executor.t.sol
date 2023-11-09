@@ -56,7 +56,7 @@ contract ExecutorTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
 
-        // execute counter.increment(5) as bob from alice's wallet (bob's wallet's executor)
+        // execute counter.increment(5) as bob from alice's wallet (that is, from bob's wallet's executor)
         aliceWallet.executeScript(
             aliceWallet.nextNonce(),
             executeOnBehalfAddress,
