@@ -16,9 +16,8 @@ import "./../lib/QuarkOperationHelper.sol";
 import "./../lib/EvilReceiver.sol";
 
 /**
- * Scenario test for user borrow base asset from Comet v3 market
+ * Tests for transferring assets
  */
-
 contract TransferActionsTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;

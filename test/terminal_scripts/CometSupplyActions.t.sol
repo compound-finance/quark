@@ -15,7 +15,7 @@ import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
 
 /**
- * Scenario test for user borrow base asset from Comet v3 market
+ * Tests for supplying assets to Comet
  */
 contract SupplyActionsTest is Test {
     QuarkWalletFactory public factory;
