@@ -127,6 +127,7 @@ contract TransferActionsTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         assertEq(address(wallet).balance, 10 ether);
         assertEq(address(walletBob).balance, 0 ether);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         // assert on native ETH balance
         assertEq(address(wallet).balance, 0 ether);
@@ -153,6 +154,7 @@ contract TransferActionsTest is Test {
 
         assertEq(address(wallet).balance, 10 ether);
         assertEq(address(evilReceiver).balance, 0 ether);
+        vm.resumeGasMetering();
         vm.expectRevert();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(address(wallet).balance, 10 ether);
@@ -180,6 +182,7 @@ contract TransferActionsTest is Test {
 
         assertEq(address(wallet).balance, 10 ether);
         assertEq(address(evilReceiver).balance, 0 ether);
+        vm.resumeGasMetering();
         // Not replayable signature will blocked by QuarkWallet during executeQuarkOperation
         vm.expectRevert();
         wallet.executeQuarkOperation(op, v, r, s);
