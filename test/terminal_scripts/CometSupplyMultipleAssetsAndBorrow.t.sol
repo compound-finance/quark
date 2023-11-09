@@ -64,6 +64,8 @@ contract CometSupplyMultipleAssetsAndBorrowTest is Test {
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
+        assertEq(IERC20(LINK).balanceOf(address(wallet)), 10e18);
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);

@@ -15,7 +15,7 @@ import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
 
 /**
- * Scenario test for uesr borrow base asset from Comet v3 market
+ * Scenario test for user borrow base asset from Comet v3 market
  */
 contract CometRepayAndWithdrawMultipleAssetsTest is Test {
     QuarkWalletFactory public factory;
@@ -63,10 +63,6 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
         assets[1] = LINK;
         amounts[0] = 10 ether;
         amounts[1] = 10e18;
-        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0);
-        assertEq(IERC20(LINK).balanceOf(address(wallet)), 0);
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 100e6);
-
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
@@ -74,6 +70,9 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0);
+        assertEq(IERC20(LINK).balanceOf(address(wallet)), 0);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 100e6);
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);

@@ -58,7 +58,6 @@ contract CometClaimRewardsTest is Test {
         vm.roll(185529607);
         vm.warp(block.timestamp + 180 days);
 
-        assertEq(IERC20(COMP).balanceOf(address(wallet)), 0e6);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
@@ -68,6 +67,7 @@ contract CometClaimRewardsTest is Test {
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        assertEq(IERC20(COMP).balanceOf(address(wallet)), 0e6);
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertGt(IERC20(COMP).balanceOf(address(wallet)), 0e6);

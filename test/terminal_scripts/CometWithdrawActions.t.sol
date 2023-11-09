@@ -173,13 +173,6 @@ contract WithdrawActionsTest is Test {
         IComet(comet).supply(USDC, 1000e6);
         vm.stopPrank();
 
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
-        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 1000e18);
-        assertEq(IERC20(LINK).balanceOf(address(wallet)), 0e18);
-        assertApproxEqAbs(IComet(comet).balanceOf(address(wallet)), 1000e6, 1); // Comet math issue (lost 1 wei after deposit)
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 0e6);
-
         address[] memory assets = new address[](3);
         uint256[] memory amounts = new uint256[](3);
         assets[0] = WETH;
@@ -189,10 +182,15 @@ contract WithdrawActionsTest is Test {
         amounts[1] = 1000e18;
         amounts[2] = 1000e6;
 
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 1000e18);
+        assertApproxEqAbs(IComet(comet).balanceOf(address(wallet)), 1000e6, 1); // Comet math issue (lost 1 wei after deposit)
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
+        assertEq(IERC20(LINK).balanceOf(address(wallet)), 0e18);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 0e6);
         // Fastforward 180 days
         vm.roll(185529607);
         vm.warp(block.timestamp + 180 days);
-
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
@@ -205,8 +203,8 @@ contract WithdrawActionsTest is Test {
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0 ether);
-        assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 0e18);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
         assertEq(IERC20(LINK).balanceOf(address(wallet)), 1000e18);
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
