@@ -261,4 +261,6 @@ contract QuarkWallet is IERC1271 {
             revert NoActiveCallback();
         }
     }
+
+    receive() external payable {}
 }

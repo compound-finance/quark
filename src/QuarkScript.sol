@@ -5,12 +5,12 @@ import "./QuarkWallet.sol";
 
 contract QuarkScript {
     function allowCallback() internal {
-        QuarkWallet self = QuarkWallet(address(this));
+        QuarkWallet self = QuarkWallet(payable(address(this)));
         self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(self.stateManager().getActiveScript()))));
     }
 
     function allowReplay() internal {
-        return QuarkWallet(address(this)).stateManager().clearNonce();
+        return QuarkWallet(payable(address(this))).stateManager().clearNonce();
     }
 
     function readU256(string memory key) internal view returns (uint256) {
@@ -22,7 +22,7 @@ contract QuarkScript {
     }
 
     function read(bytes32 key) internal view returns (bytes32) {
-        return QuarkWallet(address(this)).stateManager().read(key);
+        return QuarkWallet(payable(address(this))).stateManager().read(key);
     }
 
     function writeU256(string memory key, uint256 value) internal {
@@ -34,6 +34,6 @@ contract QuarkScript {
     }
 
     function write(bytes32 key, bytes32 value) internal {
-        return QuarkWallet(address(this)).stateManager().write(key, value);
+        return QuarkWallet(payable(address(this))).stateManager().write(key, value);
     }
 }

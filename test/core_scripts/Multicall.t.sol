@@ -143,12 +143,12 @@ contract MulticallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
-        vm.resumeGasMetering();
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(Multicall.InvalidInput.selector)
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
@@ -191,7 +191,6 @@ contract MulticallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
-        vm.resumeGasMetering();
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -203,6 +202,7 @@ contract MulticallTest is Test {
                 )
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
