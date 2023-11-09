@@ -33,6 +33,8 @@ contract QuarkWalletFactoryTest is Test {
         alice = vm.addr(alicePrivateKey);
     }
 
+    /* ===== sanity checks ===== */
+
     function testVersion() public {
         assertEq(factory.VERSION(), 1);
     }
@@ -41,19 +43,16 @@ contract QuarkWalletFactoryTest is Test {
         assertNotEq(address(factory.codeJar()), address(0));
     }
 
+    // TODO: testCreatesStateManager()
+    // TODO: 
+
+    /* ===== wallet creation tests ===== */
+
     function testCreatesWalletAtDeterministicAddress() public {
         vm.expectEmit(true, true, true, true);
         emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
         address aliceWallet = factory.create(alice);
         assertEq(aliceWallet, factory.walletAddressForAccount(alice));
-    }
-
-    function testCreateRevertsOnRepeat() public {
-        vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
-        factory.create(alice);
-        vm.expectRevert();
-        factory.create(alice);
     }
 
     function testCreateAdditionalWalletWithSalt() public {
@@ -70,6 +69,16 @@ contract QuarkWalletFactoryTest is Test {
         address aliceSaltWallet = factory.create(alice, bytes32("1"));
         assertEq(aliceSaltWallet, factory.walletAddressForAccount(alice, bytes32("1")));
     }
+
+    function testCreateRevertsOnRepeat() public {
+        vm.expectEmit(true, true, true, true);
+        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
+        factory.create(alice);
+        vm.expectRevert();
+        factory.create(alice);
+    }
+
+    /* ===== create and execute tests ===== */
 
     function testCreateAndExecuteCreatesWallet() public {
         // gas: do not meter set-up
@@ -181,6 +190,8 @@ contract QuarkWalletFactoryTest is Test {
         // uses up the operation's nonce
         assertEq(factory.stateManager().isNonceSet(factory.walletAddressForAccount(alice), nonce), true);
     }
+
+    /* ===== default wallet executor role tests ===== */
 
     function testDefaultWalletHasNoExecutor() public {
         QuarkWallet aliceWallet = QuarkWallet(factory.create(alice));
