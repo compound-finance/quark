@@ -149,7 +149,10 @@ contract QuarkStateManager {
         nonces[msg.sender][bucket] |= setMask;
 
         // if the nonce has been used before, check if the script address matches, and revert if not
-        if ((nonceScriptAddress[msg.sender][nonce] != address(0)) && (nonceScriptAddress[msg.sender][nonce] != scriptAddress)) {
+        if (
+            (nonceScriptAddress[msg.sender][nonce] != address(0))
+                && (nonceScriptAddress[msg.sender][nonce] != scriptAddress)
+        ) {
             revert NonceScriptMismatch();
         }
 
