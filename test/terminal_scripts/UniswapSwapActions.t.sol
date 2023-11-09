@@ -15,7 +15,7 @@ import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
 
 /**
- * Scenario test for uesr to purchase assetes from Uniswap V3
+ * Scenario test for user to purchase assets from Uniswap V3
  */
 contract UniswapSwapActionsTest is Test {
     QuarkWalletFactory public factory;
@@ -170,7 +170,7 @@ contract UniswapSwapActionsTest is Test {
 
         deal(WETH, address(wallet), 2 ether);
 
-        // ExactIn: Limit the amount of USDC you want to spend and receive as much WETH as possible
+        // ExactIn: Limit the amount of WETH you want to spend and receive as much USDC as possible
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
@@ -195,7 +195,7 @@ contract UniswapSwapActionsTest is Test {
         assertEq(wethBalance, 1 ether);
         assertGe(usdcBalance, 1000e6);
         vm.pauseGasMetering();
-        // ExactOut: Limit the amount of WETH you want to receive and spend as much USDC as necessary
+        // ExactOut: Limit the amount of USDC you want to receive and spend as much WETH as necessary
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
@@ -226,7 +226,7 @@ contract UniswapSwapActionsTest is Test {
 
         deal(COMP, address(wallet), 100e18);
 
-        // ExactIn: Limit the amount of USDC you want to spend and receive as much COMP as possible
+        // ExactIn: Limit the amount of COMP you want to spend and spend as much USDC as possible
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
@@ -251,7 +251,7 @@ contract UniswapSwapActionsTest is Test {
         assertEq(compBalance, 50e18);
         assertGe(usdcBalance, 1800e6);
         vm.pauseGasMetering();
-        // ExactOut: Limit the amount of COMP you want to receive and spend as much USDC as necessary
+        // ExactOut: Limit the amount of USDC you want to spend and spend as much COMP as necessary
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,

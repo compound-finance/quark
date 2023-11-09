@@ -16,7 +16,7 @@ import "./../lib/QuarkOperationHelper.sol";
 import "./../lib/EvilReceiver.sol";
 
 /**
- * Scenario test for uesr borrow base asset from Comet v3 market
+ * Scenario test for user borrow base asset from Comet v3 market
  */
 
 contract TransferActionsTest is Test {

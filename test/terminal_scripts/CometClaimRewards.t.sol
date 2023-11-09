@@ -15,7 +15,7 @@ import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
 
 /**
- * Scenario test for uesr to claim COMP rewards
+ * Scenario test for user to claim COMP rewards
  */
 contract CometClaimRewardsTest is Test {
     QuarkWalletFactory public factory;
@@ -61,9 +61,9 @@ contract CometClaimRewardsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeWithSelector(
-                CometClaimRewards.claim.selector, cometReward, comet, address(wallet)
-                ),
+            abi.encodeCall(
+                CometClaimRewards.claim, (cometReward, comet, address(wallet))
+            ),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

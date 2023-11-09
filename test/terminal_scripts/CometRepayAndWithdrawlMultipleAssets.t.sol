@@ -66,7 +66,7 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeWithSelector(CometRepayAndWithdrawMultipleAssets.run.selector, comet, assets, amounts, USDC, 100e6),
+            abi.encodeCall(CometRepayAndWithdrawMultipleAssets.run, (comet, assets, amounts, USDC, 100e6)),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
