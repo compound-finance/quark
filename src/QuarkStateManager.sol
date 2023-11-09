@@ -30,7 +30,7 @@ contract QuarkStateManager {
         internal walletStorage;
 
     /// @notice Per-wallet-nonce address for preventing replays with changed script address
-    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => address /* address */)) nonceScript;
+    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => address /* address */)) nonceScriptAddress;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -58,7 +58,7 @@ contract QuarkStateManager {
     function nextNonce(address wallet) external view returns (uint96) {
         uint96 i;
         for (i = 1; i < type(uint96).max; i++) {
-            if (!isNonceSet(wallet, i) && (nonceScript[wallet][i] == address(0))) {
+            if (!isNonceSet(wallet, i) && (nonceScriptAddress[wallet][i] == address(0))) {
                 return i;
             }
         }
@@ -117,7 +117,7 @@ contract QuarkStateManager {
      * @param nonce Nonce to set for the calling wallet
      */
     function setNonce(uint96 nonce) external {
-        // TODO: should we check whether there exists a nonceScript?
+        // TODO: should we check whether there exists a nonceScriptAddress?
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
         nonces[msg.sender][bucket] |= setMask;
     }
@@ -149,7 +149,7 @@ contract QuarkStateManager {
         nonces[msg.sender][bucket] |= setMask;
 
         // if the nonce has been used before, check if the script address matches, and revert if not
-        if ((nonceScript[msg.sender][nonce] != address(0)) && (nonceScript[msg.sender][nonce] != scriptAddress)) {
+        if ((nonceScriptAddress[msg.sender][nonce] != address(0)) && (nonceScriptAddress[msg.sender][nonce] != scriptAddress)) {
             revert NonceScriptMismatch();
         }
 
@@ -159,9 +159,9 @@ contract QuarkStateManager {
 
         bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
 
-        // if a nonce was cleared, set the nonceScript to lock nonce re-use to the same script address
-        if (nonceScript[msg.sender][nonce] == address(0) && (nonces[msg.sender][bucket] & setMask) == 0) {
-            nonceScript[msg.sender][nonce] = scriptAddress;
+        // if a nonce was cleared, set the nonceScriptAddress to lock nonce re-use to the same script address
+        if (nonceScriptAddress[msg.sender][nonce] == address(0) && (nonces[msg.sender][bucket] & setMask) == 0) {
+            nonceScriptAddress[msg.sender][nonce] = scriptAddress;
         }
 
         // release the nonce when the wallet finishes executing callback
