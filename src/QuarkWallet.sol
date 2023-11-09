@@ -9,7 +9,6 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 contract QuarkWallet is IERC1271 {
     error BadSignatory();
     error InvalidEIP1271Signature();
-    error InvalidNonce();
     error InvalidSignature();
     error InvalidSignatureS();
     error NoActiveCallback();
@@ -106,9 +105,6 @@ contract QuarkWallet is IERC1271 {
     {
         if (block.timestamp >= op.expiry) {
             revert SignatureExpired();
-        }
-        if (stateManager.isNonceSet(address(this), op.nonce)) {
-            revert InvalidNonce();
         }
 
         bytes32 structHash = keccak256(
