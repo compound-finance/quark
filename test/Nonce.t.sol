@@ -20,7 +20,7 @@ contract NonceTest is Test {
         vm.expectRevert();
         stateManager.isNonceSet(address(this), 0);
         // NOTE: this is only defense-in-depth -- if this case is triggered, an invariant has been violated because an invalid nonce was acquired
-        vm.expectRevert();
+        vm.expectRevert(QuarkStateManager.InvalidNonce.selector);
         stateManager.setNonce(0);
     }
 

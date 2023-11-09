@@ -155,7 +155,7 @@ contract EIP712Test is Test {
         assertEq(wallet.nextNonce(), op.nonce + 1);
 
         // submitter tries to reuse the same signature twice, for a non-replayable operation
-        vm.expectRevert(QuarkWallet.InvalidNonce.selector);
+        vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
         wallet.executeQuarkOperation(op, v, r, s);
     }
 

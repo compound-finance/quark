@@ -125,7 +125,7 @@ contract QuarkWalletTest is Test {
         // incrementer increments the counter thrice
         assertEq(counter.number(), 6);
         // but now that we did not use a replayable call, it is canceled
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
         aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
     }
 
@@ -196,7 +196,7 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperation(cancelOtherOp, cancel_v, cancel_r, cancel_s);
 
         // and now you can no longer replay
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
