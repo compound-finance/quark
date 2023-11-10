@@ -133,7 +133,7 @@ contract TransferActionsTest is Test {
         assertEq(address(walletBob).balance, 10 ether);
     }
 
-    function testTranferReentrancyAttack() public {
+    function testTransferReentrancyAttack() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         EvilReceiver evilReceiver = new EvilReceiver();
@@ -153,7 +153,6 @@ contract TransferActionsTest is Test {
 
         assertEq(address(wallet).balance, 10 ether);
         assertEq(address(evilReceiver).balance, 0 ether);
-        vm.resumeGasMetering();
         // Reentering into the QuarkWallet fails due to there being no active callback
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -164,6 +163,7 @@ contract TransferActionsTest is Test {
                 )
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(address(wallet).balance, 10 ether);
         assertEq(address(evilReceiver).balance, 0 ether);
