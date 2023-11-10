@@ -163,7 +163,8 @@ contract TransferActionsTest is Test {
                     abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
                 )
             )
-        );        wallet.executeQuarkOperation(op, v, r, s);
+        );
+        wallet.executeQuarkOperation(op, v, r, s);
         assertEq(address(wallet).balance, 10 ether);
         assertEq(address(evilReceiver).balance, 0 ether);
     }
