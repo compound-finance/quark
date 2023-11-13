@@ -77,12 +77,14 @@ contract EIP712Test is Test {
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(wallet);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // submitter calls executeQuarkOperation with the signed op, but they manipulate the code
-        op.scriptSource = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
-        vm.expectRevert(QuarkWallet.BadSignatory.selector);
+        // bad actor modifies script source to selfdestruct the wallet
+        op.scriptSource = hex"6000ff";
 
         // gas: meter execute
         vm.resumeGasMetering();
+
+        // submitter calls executeQuarkOperation with the signed op, but they manipulate the code
+        vm.expectRevert(QuarkWallet.BadSignatory.selector);
         wallet.executeQuarkOperation(op, v, r, s);
 
         // counter is unchanged
