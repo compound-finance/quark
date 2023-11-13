@@ -120,8 +120,9 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
         uint256 ethToSend = 3.2 ether;
         aliceAccount.call{value: ethToSend}("");
+        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
-        uint96 nonce = aliceWallet.nextNonce();
+        uint96 nonce = aliceWalletExecutable.nextNonce();
         address scriptAddress = codeJar.saveCode(getMessageDetails);
         bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
 
@@ -129,14 +130,14 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeScript{value: ethToSend}(nonce, scriptAddress, call);
+        bytes memory result = aliceWalletExecutable.executeScript{value: ethToSend}(nonce, scriptAddress, call);
 
         vm.stopPrank();
 
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
-        assertEq(msgSender, address(aliceWallet));
+        assertEq(msgSender, address(aliceWalletExecutable));
         assertEq(msgValue, ethToSend);
-        assertEq(address(aliceWallet).balance, ethToSend);
+        assertEq(address(aliceWalletExecutable).balance, ethToSend);
     }
 
     /* ===== replayability tests ===== */
@@ -251,39 +252,52 @@ contract QuarkWalletTest is Test {
 
     /* ===== direct execution path tests ===== */
 
-    function testSignerCanDirectExecute() public {
+    function testRevertsForDirectExecuteByNonExecutorSigner() public {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        uint96 nonce = aliceWallet.nextNonce();
-        address scriptAddress = codeJar.saveCode(incrementer);
-        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
         assertEq(counter.number(), 0);
 
-        vm.startPrank(aliceAccount);
+        // act as the signer for the wallet
+        vm.startPrank(aliceWallet.signer());
 
-        // gas: meter execute
-        vm.resumeGasMetering();
-        aliceWallet.executeScript(nonce, scriptAddress, call);
-
-        vm.stopPrank();
-
-        assertEq(counter.number(), 3);
-    }
-
-    function testRevertsForUnauthorizedDirectExecute() public {
-        // gas: disable metering except while executing operations
-        vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        // pre-compute execution parameters so that the revert is expected from the right call
         uint96 nonce = aliceWallet.nextNonce();
         address target = codeJar.saveCode(incrementer);
         bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
-        assertEq(counter.number(), 0);
 
         // gas: meter execute
         vm.resumeGasMetering();
+
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.Unauthorized.selector));
         aliceWallet.executeScript(nonce, target, call);
+
+        vm.stopPrank();
+
+        assertEq(counter.number(), 0);
+    }
+
+    function testRevertsForUnauthorizedDirectExecuteByRandomAddress() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        assertEq(counter.number(), 0);
+
+        // pre-compute execution parameters so that the revert is expected from the right call
+        uint96 nonce = aliceWallet.nextNonce();
+        address target = codeJar.saveCode(incrementer);
+        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
+
+        // some arbitrary address cannot execute scripts directly on alice's wallet
+        vm.startPrank(address(0xf00f00b47b47));
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.Unauthorized.selector));
+        aliceWallet.executeScript(nonce, target, call);
+
+        vm.stopPrank();
 
         assertEq(counter.number(), 0);
     }

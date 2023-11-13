@@ -147,8 +147,8 @@ contract QuarkWallet is IERC1271 {
         payable
         returns (bytes memory)
     {
-        // only allow the signer or the executor for the wallet to use unsigned execution
-        if (!(msg.sender == signer || msg.sender == executor)) {
+        // only allow the executor for the wallet to use unsigned execution
+        if (msg.sender != executor) {
             revert Unauthorized();
         }
         return stateManager.setActiveNonceAndCallback{value: msg.value}(nonce, scriptAddress, scriptCalldata);
