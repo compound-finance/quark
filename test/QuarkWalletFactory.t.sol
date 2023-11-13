@@ -190,6 +190,74 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(factory.stateManager().isNonceSet(factory.walletAddressForAccount(alice), nonce), true);
     }
 
+    /* ===== msg.value and msg.sender tests ===== */
+
+    function testCreateAndExecuteSetsMsgSenderAndValue() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        uint256 ethToSend = 3.2 ether;
+        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        address aliceWallet = factory.walletAddressForAccount(alice);
+        uint96 nonce = factory.stateManager().nextNonce(aliceWallet);
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
+            scriptSource: getMessageDetails,
+            scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
+            nonce: nonce,
+            expiry: block.timestamp + 1000
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        // operation is executed
+        vm.expectEmit(true, true, true, true);
+        // it creates a wallet
+        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
+        bytes memory result = factory.createAndExecute{value: ethToSend}(alice, op, v, r, s);
+
+        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
+        assertEq(msgSender, address(aliceWallet));
+        assertEq(msgValue, ethToSend);
+        assertEq(address(aliceWallet).balance, ethToSend);
+
+        // uses up the operation's nonce
+        assertEq(factory.stateManager().isNonceSet(factory.walletAddressForAccount(alice), nonce), true);
+    }
+
+    function testCreateAndExecuteWithSaltSetsMsgSenderAndValue() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        uint256 ethToSend = 3.2 ether;
+        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes32 salt = bytes32("salty salt salt");
+        address aliceWallet = factory.walletAddressForAccount(alice, salt);
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice, salt));
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
+            scriptSource: getMessageDetails,
+            scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
+            nonce: nonce,
+            expiry: block.timestamp + 1000
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
+
+        // operation is executed
+        vm.expectEmit(true, true, true, true);
+        // it creates a wallet
+        emit WalletDeploy(alice, aliceWallet, salt);
+        bytes memory result = factory.createAndExecute{value: ethToSend}(alice, salt, op, v, r, s);
+
+        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
+        assertEq(msgSender, address(aliceWallet));
+        assertEq(msgValue, ethToSend);
+        assertEq(address(aliceWallet).balance, ethToSend);
+
+        // uses up the operation's nonce
+        assertEq(factory.stateManager().isNonceSet(aliceWallet, nonce), true);
+    }
+
     /* ===== default wallet executor role tests ===== */
 
     function testDefaultWalletHasNoExecutor() public {
