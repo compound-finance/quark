@@ -30,7 +30,7 @@ contract QuarkWallet is IERC1271 {
     /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
     QuarkStateManager public immutable stateManager;
 
-    /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
+    /// @notice Well-known storage location for the currently executing script's callback address (if any)
     bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
 
     /// @dev The EIP-712 typehash for authorizing an operation
@@ -207,7 +207,7 @@ contract QuarkWallet is IERC1271 {
 
     /**
      * @notice Execute a QuarkOperation with its nonce locked and with access to private nonce-scoped storage.
-     * @dev Can only be called by stateManager during setActiveNonceAndCallback()
+     * @dev Must be called by stateManager as the yieldTarget of an acquireNonceAndYield call
      * @param scriptAddress Address of script to execute
      * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
      * @return Result of executing the script, encoded as bytes
