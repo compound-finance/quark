@@ -197,7 +197,7 @@ contract TransferActionsTest is Test {
                 QuarkWallet.QuarkCallError.selector,
                 abi.encodeWithSelector(
                     TransferActions.TransferFailed.selector,
-                    abi.encodeWithSelector(QuarkStateManager.InvalidNonce.selector)
+                    abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector)
                 )
             )
         );
