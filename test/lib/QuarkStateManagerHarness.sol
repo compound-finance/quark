@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+pragma solidity ^0.8.21;
+
 import {QuarkWallet} from "../../src/QuarkWallet.sol";
 import {QuarkStateManager} from "../../src/QuarkStateManager.sol";
 
