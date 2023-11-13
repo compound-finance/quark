@@ -365,7 +365,7 @@ contract QuarkWalletTest is Test {
         _testAtomicMaxCounter(ScriptType.ScriptAddress);
     }
 
-    function _testQuarkOperationRevertsIfCodeNotFound(ScriptType scriptType) internal {
+    function _testNoopScriptIsValid(ScriptType scriptType) internal {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -375,16 +375,17 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.QuarkCodeNotFound.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
+        // expect the nonce to be spent by the no-op script
+        assertEq(stateManager.isNonceSet(address(aliceWallet), op.nonce), true);
     }
 
-    function testQuarkOperationWithScriptSourceRevertsIfCodeNotFound() public {
-        _testQuarkOperationRevertsIfCodeNotFound(ScriptType.ScriptSource);
+    function testNoopScriptIsValidForScriptSource() public {
+        _testNoopScriptIsValid(ScriptType.ScriptSource);
     }
 
-    function testQuarkOperationWithScriptAddressRevertsIfCodeNotFound() public {
-        _testQuarkOperationRevertsIfCodeNotFound(ScriptType.ScriptAddress);
+    function testNoopScriptIsValidForScriptAddress() public {
+        _testNoopScriptIsValid(ScriptType.ScriptAddress);
     }
 
     function _testQuarkOperationRevertsIfCallReverts(ScriptType scriptType) internal {

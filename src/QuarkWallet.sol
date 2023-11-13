@@ -13,7 +13,6 @@ contract QuarkWallet is IERC1271 {
     error InvalidSignatureS();
     error NoActiveCallback();
     error QuarkCallError(bytes);
-    error QuarkCodeNotFound();
     error SignatureExpired();
     error Unauthorized();
 
@@ -224,13 +223,6 @@ contract QuarkWallet is IERC1271 {
         returns (bytes memory)
     {
         require(msg.sender == address(stateManager));
-        uint256 codeLen;
-        assembly {
-            codeLen := extcodesize(scriptAddress)
-        }
-        if (codeLen == 0) {
-            revert QuarkCodeNotFound();
-        }
 
         bool success;
         uint256 returnSize;
