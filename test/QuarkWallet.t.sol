@@ -44,14 +44,6 @@ contract QuarkWalletTest is Test {
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
 
-    /* ===== immutable getters tests ===== */
-
-    // TODO: read signer() directly
-    // TODO: read executor() directly
-    // TODO: read codeJar() directly
-    // TODO: read stateManager() directly
-
-    // TODO: remove these? We don't really need to test whether a script can get the immutable; the above tests are sufficient and simpler.
     function testGetRoleSigner() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -90,90 +82,67 @@ contract QuarkWalletTest is Test {
         assertEq(aliceWallet.executor(), address(0));
     }
 
-    /* ===== replayability tests ===== */
+    /* ===== Tests using script source ===== */
 
-    function testCanReplaySameScriptWithDifferentCall() public {
-        // gas: disable gas metering except while executing operatoins
+    function testQuarkOperationWithScriptSourceRevertsIfCodeNotFound() public {
+        // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-
-        // 1. use nonce to increment a counter
-        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
-            incrementer,
-            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
-            ScriptType.ScriptAddress
+            abi.encode(),
+            abi.encodeWithSignature("x()"),
+            ScriptType.ScriptSource
         );
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
-
-        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
-            nonce: op1.nonce,
-            scriptAddress: address(0),
-            scriptSource: incrementer,
-            scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", address(counter)),
-            expiry: block.timestamp + 1000
-        });
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
-        // incrementer increments the counter thrice
-        assertEq(counter.number(), 3);
-        // when reusing the nonce, you can change the call
-        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
-        // incrementer increments the counter thrice
-        assertEq(counter.number(), 6);
-        // but now that we did not use a replayable call, it is canceled
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.QuarkCodeNotFound.selector));
+        aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
-    function testRevertsForReusedNonceWithChangedScript() public {
-        // gas: disable gas metering except while executing operatoins
+    function testQuarkOperationWithScriptSourceRevertsIfCallReverts() public {
+        // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
-
-        // 1. use nonce to increment a counter
-        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet,
-            incrementer,
-            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
-            ScriptType.ScriptAddress
-        );
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
-
-        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
-            nonce: op1.nonce,
-            scriptAddress: address(0),
-            scriptSource: getRole,
-            scriptCalldata: abi.encodeWithSignature("getOwner()"),
-            expiry: block.timestamp + 1000
-        });
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
+        bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptSource);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
-        // incrementer increments the counter thrice
-        assertEq(counter.number(), 3);
-        // when reusing the nonce but changing the script, revert
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceScriptMismatch.selector));
-        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+        vm.expectRevert(
+            abi.encodeWithSelector(QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(Reverts.Whoops.selector))
+        );
+        aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
-    function testRevertsForReplayOfCanceledScript() public {
-        // gas: disable gas metering except while executing operatoins
+    function testAtomicPingWithScriptSource() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptSource);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        // TODO: Check who emitted.
+        vm.expectEmit(false, false, false, true);
+        emit Ping(55);
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    function testAtomicIncrementerWithScriptSource() public {
+        // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        bytes memory cancelOtherScript = new YulHelper().getDeployed("CancelOtherScript.sol/CancelOtherScript.json");
-
+        assertEq(counter.number(), 0);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             incrementer,
-            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
-            ScriptType.ScriptAddress
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -181,68 +150,9 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 3);
-        // can replay the same operation...
-        aliceWallet.executeQuarkOperation(op, v, r, s);
-        assertEq(counter.number(), 6);
-
-        // can cancel the replayable nonce...
-        vm.pauseGasMetering();
-        QuarkWallet.QuarkOperation memory cancelOtherOp = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint96)", op.nonce), ScriptType.ScriptAddress
-        );
-        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
-        vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(cancelOtherOp, cancel_v, cancel_r, cancel_s);
-
-        // and now you can no longer replay
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
-        aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
-    /* ===== direct execution path tests ===== */
-
-    function testSignerCanDirectExecute() public {
-        // gas: disable metering except while executing operations
-        vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        assertEq(counter.number(), 0);
-
-        vm.startPrank(aliceAccount);
-
-        // gas: meter execute
-        vm.resumeGasMetering();
-        aliceWallet.executeScript(
-            aliceWallet.nextNonce(),
-            codeJar.saveCode(incrementer),
-            abi.encodeWithSignature("incrementCounter(address)", counter)
-        );
-
-        vm.stopPrank();
-
-        assertEq(counter.number(), 3);
-    }
-
-    function testRevertsForUnauthorizedDirectExecute() public {
-        // gas: disable metering except while executing operations
-        vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        assertEq(counter.number(), 0);
-
-        // gas: meter execute
-        vm.resumeGasMetering();
-        uint96 nonce = aliceWallet.nextNonce();
-        address target = codeJar.saveCode(incrementer);
-        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.Unauthorized.selector));
-        aliceWallet.executeScript(nonce, target, call);
-
-        assertEq(counter.number(), 0);
-    }
-
-    /* ===== basic operation tests, run twice for ScriptType equivalency ===== */
-
-    function _testAtomicMaxCounter(ScriptType scriptType) internal {
+    function _testAtomicMaxCounterWithScriptType(ScriptType scriptType) internal {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
 
@@ -310,18 +220,16 @@ contract QuarkWalletTest is Test {
     }
 
     function testAtomicMaxCounterScriptWithScriptSource() public {
-        _testAtomicMaxCounter(ScriptType.ScriptSource);
+        _testAtomicMaxCounterWithScriptType(ScriptType.ScriptSource);
     }
 
-    function testAtomicMaxCounterScriptWithScriptAddress() public {
-        _testAtomicMaxCounter(ScriptType.ScriptAddress);
-    }
+    /* ===== Tests using script address ===== */
 
-    function _testQuarkOperationRevertsIfCodeNotFound(ScriptType scriptType) internal {
+    function testQuarkOperationWithScriptAddressRevertsIfCodeNotFound() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, abi.encode(), abi.encodeWithSignature("x()"), scriptType
+            aliceWallet, abi.encode(), abi.encodeWithSignature("x()"), ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -331,21 +239,12 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
-    function testQuarkOperationWithScriptSourceRevertsIfCodeNotFound() public {
-        _testQuarkOperationRevertsIfCodeNotFound(ScriptType.ScriptSource);
-    }
-
-    function testQuarkOperationWithScriptAddressRevertsIfCodeNotFound() public {
-        _testQuarkOperationRevertsIfCodeNotFound(ScriptType.ScriptAddress);
-    }
-
-    function _testQuarkOperationRevertsIfCallReverts(ScriptType scriptType) internal {
+    function testQuarkOperationWithScriptAddressRevertsIfCallReverts() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(
-            aliceWallet, revertsCode, scriptType
-        );
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptAddress);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -356,21 +255,12 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
-    function testQuarkOperationWithScriptSourceRevertsIfCallReverts() public {
-        _testQuarkOperationRevertsIfCallReverts(ScriptType.ScriptSource);
-    }
-
-    function testQuarkOperationWithScriptAddressRevertsIfCallReverts() public {
-        _testQuarkOperationRevertsIfCallReverts(ScriptType.ScriptAddress);
-    }
-
-    function _testAtomicPing(ScriptType scriptType) internal {
+    function testAtomicPingWithScriptAddress() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(
-            aliceWallet, ping, scriptType
-        );
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -381,15 +271,7 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
-    function testAtomicPingWithScriptSource() public {
-        _testAtomicPing(ScriptType.ScriptSource);
-    }
-
-    function testAtomicPingWithScriptAddress() public {
-        _testAtomicPing(ScriptType.ScriptAddress);
-    }
-
-    function _testAtomicIncrementer(ScriptType scriptType) internal {
+    function testAtomicIncrementerWithScriptAddress() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
@@ -398,7 +280,7 @@ contract QuarkWalletTest is Test {
             aliceWallet,
             incrementer,
             abi.encodeWithSignature("incrementCounter(address)", counter),
-            scriptType
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -408,11 +290,155 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 3);
     }
 
-    function testAtomicIncrementerWithScriptSource() public {
-        _testAtomicIncrementer(ScriptType.ScriptSource);
+    function testAtomicMaxCounterScriptWithScriptAddress() public {
+        _testAtomicMaxCounterWithScriptType(ScriptType.ScriptAddress);
     }
 
-    function testAtomicIncrementerWithScriptAddress() public {
-        _testAtomicIncrementer(ScriptType.ScriptAddress);
+    function testRevertsForReusedNonceWithChangedScript() public {
+        // gas: disable gas metering except while executing operatoins
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
+
+        // 1. use nonce to increment a counter
+        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
+            ScriptType.ScriptAddress
+        );
+        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
+
+        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
+            nonce: op1.nonce,
+            scriptAddress: address(0),
+            scriptSource: getRole,
+            scriptCalldata: abi.encodeWithSignature("getOwner()"),
+            expiry: block.timestamp + 1000
+        });
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        // incrementer increments the counter thrice
+        assertEq(counter.number(), 3);
+        // when reusing the nonce but changing the script, revert
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceScriptMismatch.selector));
+        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+    }
+
+    function testCanReplaySameScriptWithDifferentCall() public {
+        // gas: disable gas metering except while executing operatoins
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+
+        // 1. use nonce to increment a counter
+        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
+            ScriptType.ScriptAddress
+        );
+        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
+
+        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
+            nonce: op1.nonce,
+            scriptAddress: address(0),
+            scriptSource: incrementer,
+            scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", address(counter)),
+            expiry: block.timestamp + 1000
+        });
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        // incrementer increments the counter thrice
+        assertEq(counter.number(), 3);
+        // when reusing the nonce, you can change the call
+        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+        // incrementer increments the counter thrice
+        assertEq(counter.number(), 6);
+        // but now that we did not use a replayable call, it is canceled
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
+        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+    }
+
+    function testRevertsForReplayOfCanceledScript() public {
+        // gas: disable gas metering except while executing operatoins
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory cancelOtherScript = new YulHelper().getDeployed("CancelOtherScript.sol/CancelOtherScript.json");
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounterReplayable(address)", address(counter)),
+            ScriptType.ScriptAddress
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 3);
+        // can replay the same operation...
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 6);
+
+        // can cancel the replayable nonce...
+        vm.pauseGasMetering();
+        QuarkWallet.QuarkOperation memory cancelOtherOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, cancelOtherScript, abi.encodeWithSignature("run(uint96)", op.nonce), ScriptType.ScriptAddress
+        );
+        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(cancelOtherOp, cancel_v, cancel_r, cancel_s);
+
+        // and now you can no longer replay
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidNonce.selector));
+        // XXX: shouldn't we let the state manager do the nonce checking?
+        // vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    function testSignerCanDirectExecute() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        assertEq(counter.number(), 0);
+
+        vm.startPrank(aliceAccount);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeScript(
+            aliceWallet.nextNonce(),
+            codeJar.saveCode(incrementer),
+            abi.encodeWithSignature("incrementCounter(address)", counter)
+        );
+
+        vm.stopPrank();
+
+        assertEq(counter.number(), 3);
+    }
+
+    function testDirectExecuteUnauthorized() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        assertEq(counter.number(), 0);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        uint96 nonce = aliceWallet.nextNonce();
+        address target = codeJar.saveCode(incrementer);
+        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.Unauthorized.selector));
+        aliceWallet.executeScript(nonce, target, call);
+
+        assertEq(counter.number(), 0);
     }
 }
