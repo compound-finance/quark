@@ -351,7 +351,7 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 0);
     }
 
-    /* ===== basic operation tests, run twice for ScriptType equivalency ===== */
+    /* ===== basic operation tests, all run via both ScriptTypes ===== */
 
     function _testAtomicMaxCounter(ScriptType scriptType) internal {
         // gas: disable metering except while executing operations
