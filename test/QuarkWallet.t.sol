@@ -46,48 +46,20 @@ contract QuarkWalletTest is Test {
 
     /* ===== immutable getters tests ===== */
 
-    // TODO: read signer() directly
-    // TODO: read executor() directly
-    // TODO: read codeJar() directly
-    // TODO: read stateManager() directly
-
-    // TODO: remove these? We don't really need to test whether a script can get the immutable; the above tests are sufficient and simpler.
-    function testGetRoleSigner() public {
-        // gas: do not meter set-up
-        vm.pauseGasMetering();
-        bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet,
-            getRole,
-            abi.encodeWithSignature("getSigner()"),
-            ScriptType.ScriptSource
-        );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
-
-        // gas: meter execute
-        vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
-        assertEq(abi.decode(result, (address)), aliceWallet.signer());
+    function testGetSigner() public {
         assertEq(aliceWallet.signer(), aliceAccount);
     }
 
-    function testGetRoleExecutor() public {
-        // gas: do not meter set-up
-        vm.pauseGasMetering();
-        bytes memory getRole = new YulHelper().getDeployed("GetRole.sol/GetRole.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet,
-            getRole,
-            abi.encodeWithSignature("getExecutor()"),
-            ScriptType.ScriptSource
-        );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
-
-        // gas: meter execute
-        vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
-        assertEq(abi.decode(result, (address)), aliceWallet.executor());
+    function testGetExecutor() public {
         assertEq(aliceWallet.executor(), address(0));
+    }
+
+    function testGetCodeJar() public {
+        assertEq(address(aliceWallet.codeJar()), address(codeJar));
+    }
+
+    function testGetStateManager() public {
+        assertEq(address(aliceWallet.stateManager()), address(stateManager));
     }
 
     /* ===== msg.value and msg.sender tests ===== */
