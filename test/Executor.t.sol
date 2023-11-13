@@ -34,9 +34,11 @@ contract ExecutorTest is Test {
         counter = new Counter();
         console.log("Counter deployed to: %s", address(counter));
 
-        aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
+        // alice sets her EOA to be her wallet's executor
+        aliceWallet = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
         console.log("aliceWallet at: %s", address(aliceWallet));
 
+        // bob sets alice's wallet as his wallet's executor
         bobWallet = new QuarkWallet(bobAccount, address(aliceWallet), codeJar, stateManager);
         console.log("bobWallet at: %s", address(bobWallet));
     }
