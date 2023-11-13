@@ -31,6 +31,7 @@ contract CodeJarTest is Test {
         assertEq(destructingAddress.code, destructingCode);
         (bool success,) = destructingAddress.call(hex"");
         assertEq(success, true);
+        // Selfdestruct state changes do not take effect until after setUp
         assertEq(destructingAddress.code, destructingCode);
     }
 
@@ -122,6 +123,16 @@ contract CodeJarTest is Test {
         bytes32[] memory script = new bytes32[](10000);
         bytes memory code = abi.encodePacked(script);
         codeJar.saveCode(code);
+    }
+
+    function testCodeJarDeployConstructor() public {
+        // This is the initCode used in CodeJar. It's a constructor code that returns "0xabcd".
+        bytes memory contructorByteCode = abi.encodePacked(hex"63", hex"00000002", hex"80600e6000396000f3", hex"abcd");
+        address scriptAddress = codeJar.saveCode(contructorByteCode);
+
+        (bool success, bytes memory returnData) = scriptAddress.call(hex"");
+
+        assertEq(returnData, hex"abcd");
     }
 
     // Note: cannot test code too large, as overflow impossible to test
