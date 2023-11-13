@@ -15,6 +15,7 @@ contract CodeJarTest is Test {
 
     CodeJar public codeJar;
     address destructingAddress;
+    bytes destructingCode = hex"5fff"; // PUSH0 [5F]; SELFDESTRUCT [FF]
 
     constructor() {
         codeJar = new CodeJar();
@@ -22,14 +23,23 @@ contract CodeJarTest is Test {
     }
 
     function setUp() public {
-        // TODO: Only on certain tests?
+        // This setUp is only used for `testCodeJarSelfDestruct`. To test the state changes
+        // from a selfdestruct in forge, the selfdestruct must be done in the setUp.
+        // See: https://github.com/foundry-rs/foundry/issues/1543
 
-        // PUSH0 [5F]; SELFDESTRUCT [FF]
-        destructingAddress = codeJar.saveCode(hex"5fff");
-        assertEq(destructingAddress.code, hex"5fff");
+        destructingAddress = codeJar.saveCode(destructingCode);
+        assertEq(destructingAddress.code, destructingCode);
         (bool success,) = destructingAddress.call(hex"");
         assertEq(success, true);
-        assertEq(destructingAddress.code, hex"5fff");
+        assertEq(destructingAddress.code, destructingCode);
+    }
+
+    function testCodeJarSelfDestruct() public {
+        assertEq(destructingAddress.code, hex"");
+        assertEq(destructingAddress.codehash, 0);
+        assertEq(destructingAddress, codeJar.saveCode(destructingCode));
+        assertEq(destructingAddress.code, destructingCode);
+        assertEq(destructingAddress.codehash, keccak256(destructingCode));
     }
 
     function testCodeJarFirstDeploy() public {
@@ -106,14 +116,6 @@ contract CodeJarTest is Test {
         assertEq(counter.number(), 0);
         counter.increment();
         assertEq(counter.number(), 1);
-    }
-
-    function testCodeJarSelfDestruct() public {
-        assertEq(destructingAddress.code, hex"");
-        assertEq(destructingAddress.codehash, 0);
-        assertEq(destructingAddress, codeJar.saveCode(hex"5fff"));
-        assertEq(destructingAddress.code, hex"5fff");
-        assertEq(destructingAddress.codehash, keccak256(hex"5fff"));
     }
 
     function testCodeJarLarge() public {
