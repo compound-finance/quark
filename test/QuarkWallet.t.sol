@@ -140,6 +140,55 @@ contract QuarkWalletTest is Test {
         assertEq(address(aliceWalletExecutable).balance, ethToSend);
     }
 
+    /* ===== general invariant tests ===== */
+
+    function testAllowAllNullNoopScript() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            nonce: aliceWallet.nextNonce(),
+            scriptAddress: address(0),
+            scriptSource: bytes(""),
+            scriptCalldata: bytes(""),
+            expiry: block.timestamp + 1000
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        // operation containing no script or calldata is allowed
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(stateManager.isNonceSet(address(aliceWallet), op.nonce), true);
+
+        // direct execution of the null script with no calldata is allowed
+        uint96 nonce = aliceWallet.nextNonce();
+        vm.prank(aliceWallet.executor());
+        aliceWallet.executeScript(nonce, address(0), bytes(""));
+        assertEq(stateManager.isNonceSet(address(aliceWallet), nonce), true);
+    }
+
+    function testRevertsForOperationWithAddressAndSource() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            nonce: aliceWallet.nextNonce(),
+            scriptAddress: address(0xc0c0),
+            scriptSource: bytes("f00f00"),
+            scriptCalldata: bytes("feefee"),
+            expiry: block.timestamp + 1000
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.AmbiguousScript.selector));
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
+
     /* ===== replayability tests ===== */
 
     function testCanReplaySameScriptWithDifferentCall() public {
