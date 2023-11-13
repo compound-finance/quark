@@ -70,7 +70,6 @@ contract CodeJarTest is Test {
             address codeAddress = codeJar.saveCode(scripts[i]);
             assertEq(codeAddress.code, scripts[i]);
             assertEq(codeJar.codeExists(scripts[i]), true);
-            assertEq(codeJar.readCode(codeAddress), scripts[i]);
         }
     }
 
@@ -93,10 +92,10 @@ contract CodeJarTest is Test {
 
         address zeroDeploy = codeJar.saveCode(hex"");
         assertEq(zeroDeploy.codehash, keccak256(hex""));
-        assertEq(codeJar.readCode(zeroDeploy), hex"");
+        assertEq(zeroDeploy.code, hex"");
 
         address nonZeroDeploy = codeJar.saveCode(hex"00");
-        assertEq(codeJar.readCode(nonZeroDeploy), hex"00");
+        assertEq(nonZeroDeploy.code, hex"00");
     }
 
     function testCodeJarCounter() public {
@@ -121,14 +120,6 @@ contract CodeJarTest is Test {
         bytes32[] memory script = new bytes32[](10000);
         bytes memory code = abi.encodePacked(script);
         codeJar.saveCode(code);
-    }
-
-    function testCodeJarReadNonExistent() public {
-        vm.expectRevert(abi.encodeWithSelector(CodeInvalid.selector, address(0x55)));
-        codeJar.readCode(address(0x55));
-
-        vm.expectRevert(abi.encodeWithSelector(CodeInvalid.selector, address(codeJar)));
-        codeJar.readCode(address(codeJar));
     }
 
     // Note: cannot test code too large, as overflow impossible to test
