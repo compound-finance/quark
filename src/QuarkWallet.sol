@@ -119,7 +119,7 @@ contract QuarkWallet is IERC1271 {
             if (scriptAddress == address(0)) {
                 scriptAddress = codeJar.saveCode(op.scriptSource);
             }
-            return stateManager.setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
+            return stateManager.setActiveNonceAndCallback{value: msg.value}(op.nonce, scriptAddress, op.scriptCalldata);
         } else {
             revert InvalidSignature();
         }
@@ -142,7 +142,7 @@ contract QuarkWallet is IERC1271 {
         if (!(msg.sender == signer || msg.sender == executor)) {
             revert Unauthorized();
         }
-        return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
+        return stateManager.setActiveNonceAndCallback{value: msg.value}(nonce, scriptAddress, scriptCalldata);
     }
 
     /**
@@ -210,6 +210,7 @@ contract QuarkWallet is IERC1271 {
      */
     function executeScriptWithNonceLock(address scriptAddress, bytes memory scriptCalldata)
         external
+        payable
         returns (bytes memory)
     {
         require(msg.sender == address(stateManager));
@@ -225,8 +226,8 @@ contract QuarkWallet is IERC1271 {
         uint256 returnSize;
         uint256 scriptCalldataLen = scriptCalldata.length;
         assembly {
-            success :=
-                callcode(gas(), scriptAddress, 0, /* value */ add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
+            // CALLCODE is used to preserve the QuarkWallet as the `msg.sender`
+            success := callcode(gas(), scriptAddress, callvalue(), add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
         }
 

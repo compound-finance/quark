@@ -90,6 +90,56 @@ contract QuarkWalletTest is Test {
         assertEq(aliceWallet.executor(), address(0));
     }
 
+    /* ===== msg.value and msg.sender tests ===== */
+
+    function testSetsMsgSenderAndValue() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        uint256 ethToSend = 3.2 ether;
+        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            getMessageDetails,
+            abi.encodeWithSignature("getMsgSenderAndValue()"),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        bytes memory result = aliceWallet.executeQuarkOperation{value: ethToSend}(op, v, r, s);
+
+        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
+        assertEq(msgSender, address(aliceWallet));
+        assertEq(msgValue, ethToSend);
+        assertEq(address(aliceWallet).balance, ethToSend);
+    }
+
+    function testSetsMsgSenderAndValueDuringDirectExecute() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        uint256 ethToSend = 3.2 ether;
+        aliceAccount.call{value: ethToSend}("");
+        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+
+        vm.startPrank(aliceAccount);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        bytes memory result = aliceWallet.executeScript{value: ethToSend}(
+            aliceWallet.nextNonce(),
+            codeJar.saveCode(getMessageDetails),
+            abi.encodeWithSignature("getMsgSenderAndValue()")
+        );
+
+        vm.stopPrank();
+
+        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
+        assertEq(msgSender, address(aliceWallet));
+        assertEq(msgValue, ethToSend);
+        assertEq(address(aliceWallet).balance, ethToSend);
+    }
+
     /* ===== replayability tests ===== */
 
     function testCanReplaySameScriptWithDifferentCall() public {

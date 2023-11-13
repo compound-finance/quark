@@ -106,6 +106,7 @@ contract QuarkWalletFactory {
         );
     }
 
+    // TODO: make payable?
     /**
      * @notice Create a wallet for account (and default salt) if it does not exist, then execute operation
      * @param account Account to deploy QuarkWallet for and then execute operation with
