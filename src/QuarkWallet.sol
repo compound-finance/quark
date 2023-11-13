@@ -7,6 +7,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 contract QuarkWallet is IERC1271 {
+    error AmbiguousScript();
     error BadSignatory();
     error InvalidEIP1271Signature();
     error InvalidSignature();
@@ -114,6 +115,14 @@ contract QuarkWallet is IERC1271 {
     {
         if (block.timestamp >= op.expiry) {
             revert SignatureExpired();
+        }
+
+        /*
+         * At most one of scriptAddress or scriptSource may be provided;
+         * specifying both adds cost (ie. wasted bytecode) for no benefit.
+         */
+        if ((op.scriptAddress != address(0)) && (op.scriptSource.length > 0)) {
+            revert AmbiguousScript();
         }
 
         bytes32 structHash = keccak256(
