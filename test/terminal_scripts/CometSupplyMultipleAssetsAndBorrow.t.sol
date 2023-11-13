@@ -15,7 +15,7 @@ import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
 
 /**
- * Scenario test for user borrow base asset from Comet v3 market
+ * Tests for supplying and borrowing multiple assets from Comet
  */
 contract CometSupplyMultipleAssetsAndBorrowTest is Test {
     QuarkWalletFactory public factory;
@@ -66,6 +66,8 @@ contract CometSupplyMultipleAssetsAndBorrowTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
         assertEq(IERC20(LINK).balanceOf(address(wallet)), 10e18);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 0e6);
+
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);

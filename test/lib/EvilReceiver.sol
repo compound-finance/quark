@@ -43,7 +43,7 @@ contract EvilReceiver {
             count++;
             if (attack.attackType == AttackType.REINVOKE_TRANSFER) {
                 // Simply cast the address to Terminal script and call the Transfer function
-                TransferActions(address(this)).transferNativeToken(attack.destination, attack.amount);
+                TransferActions(msg.sender).transferNativeToken(attack.destination, attack.amount);
             }
 
             if (attack.attackType == AttackType.STOLEN_SIGNATURE) {

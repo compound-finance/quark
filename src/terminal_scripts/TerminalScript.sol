@@ -224,14 +224,18 @@ contract CometSupplyMultipleAssetsAndBorrow {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
-    function run(address comet, address[] calldata assets, uint256[] calldata amounts, address usdc, uint256 borrow)
-        external
-    {
+    function run(
+        address comet,
+        address[] calldata assets,
+        uint256[] calldata amounts,
+        address baseAsset,
+        uint256 borrow
+    ) external {
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i]).forceApprove(comet, amounts[i]);
             IComet(comet).supply(assets[i], amounts[i]);
         }
-        IComet(comet).withdraw(usdc, borrow);
+        IComet(comet).withdraw(baseAsset, borrow);
     }
 }
 
@@ -239,11 +243,11 @@ contract CometRepayAndWithdrawMultipleAssets {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
-    function run(address comet, address[] calldata assets, uint256[] calldata amounts, address usdc, uint256 repay)
+    function run(address comet, address[] calldata assets, uint256[] calldata amounts, address baseAsset, uint256 repay)
         external
     {
-        IERC20(usdc).forceApprove(comet, repay);
-        IComet(comet).supply(usdc, repay);
+        IERC20(baseAsset).forceApprove(comet, repay);
+        IComet(comet).supply(baseAsset, repay);
         for (uint256 i = 0; i < assets.length; i++) {
             IComet(comet).withdraw(assets[i], amounts[i]);
         }

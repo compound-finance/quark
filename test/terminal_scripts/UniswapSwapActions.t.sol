@@ -15,7 +15,7 @@ import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
 
 /**
- * Scenario test for user to purchase assets from Uniswap V3
+ * Tests for purchasing assets from Uniswap V3
  */
 contract UniswapSwapActionsTest is Test {
     QuarkWalletFactory public factory;

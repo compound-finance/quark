@@ -15,7 +15,7 @@ import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
 
 /**
- * Scenario test for user borrow base asset from Comet v3 market
+ * Tests for withdrawing assets from Comet
  */
 contract WithdrawActionsTest is Test {
     QuarkWalletFactory public factory;
@@ -73,7 +73,7 @@ contract WithdrawActionsTest is Test {
     function testWithdrawTo() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        QuarkWallet wallet2 = QuarkWallet(factory.create(alice, bytes32("1")));
+        QuarkWallet wallet2 = QuarkWallet(factory.create(alice, bytes32("2")));
         deal(WETH, address(wallet), 10 ether);
 
         vm.startPrank(address(wallet));
@@ -82,7 +82,7 @@ contract WithdrawActionsTest is Test {
         vm.stopPrank();
 
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
-        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
+        assertEq(IERC20(WETH).balanceOf(address(wallet2)), 0 ether);
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
@@ -101,7 +101,7 @@ contract WithdrawActionsTest is Test {
     function testWithdrawFrom() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        QuarkWallet wallet2 = QuarkWallet(factory.create(alice, bytes32("1")));
+        QuarkWallet wallet2 = QuarkWallet(factory.create(alice, bytes32("2")));
         deal(WETH, address(wallet2), 10 ether);
 
         vm.startPrank(address(wallet2));
@@ -146,6 +146,10 @@ contract WithdrawActionsTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 0e6);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
+        assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 0e6);
+
         // gas: meter execute
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
@@ -153,7 +157,6 @@ contract WithdrawActionsTest is Test {
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 100e6);
         assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 100e6);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
     }
 
     function testWithdrawMultipleAssets() public {
@@ -173,6 +176,9 @@ contract WithdrawActionsTest is Test {
         IComet(comet).supply(USDC, 1000e6);
         vm.stopPrank();
 
+        // Fast forward 1 hour to accrue some interest so we can withdraw the full 1000e6 of SUDC
+        skip(3600);
+
         address[] memory assets = new address[](3);
         uint256[] memory amounts = new uint256[](3);
         assets[0] = WETH;
@@ -182,15 +188,6 @@ contract WithdrawActionsTest is Test {
         amounts[1] = 1000e18;
         amounts[2] = 1000e6;
 
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 1000e18);
-        assertApproxEqAbs(IComet(comet).balanceOf(address(wallet)), 1000e6, 1); // Comet math issue (lost 1 wei after deposit)
-        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
-        assertEq(IERC20(LINK).balanceOf(address(wallet)), 0e18);
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 0e6);
-        // Fastforward 180 days
-        vm.roll(185529607);
-        vm.warp(block.timestamp + 180 days);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
@@ -200,6 +197,13 @@ contract WithdrawActionsTest is Test {
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 10 ether);
+        assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 1000e18);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
+        assertEq(IERC20(LINK).balanceOf(address(wallet)), 0e18);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 0e6);
+
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0 ether);

@@ -15,7 +15,7 @@ import "./../lib/Counter.sol";
 import "./../lib/QuarkOperationHelper.sol";
 
 /**
- * Scenario test for user to claim COMP rewards
+ * Tests for claiming COMP rewards
  */
 contract CometClaimRewardsTest is Test {
     QuarkWalletFactory public factory;
@@ -55,7 +55,6 @@ contract CometClaimRewardsTest is Test {
         vm.stopPrank();
 
         // Fastforward 180 days block to accrue COMP
-        vm.roll(185529607);
         vm.warp(block.timestamp + 180 days);
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
