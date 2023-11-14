@@ -33,7 +33,7 @@ contract QuarkWallet is IERC1271 {
 
     /// @dev The EIP-712 typehash for authorizing an operation
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint96 nonce,uint256 expiry)"
+        "QuarkOperation(uint96 nonce,address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 expiry)"
     );
 
     /// @dev The EIP-712 typehash for the contract's domain
