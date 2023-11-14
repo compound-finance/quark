@@ -172,6 +172,13 @@ contract QuarkWallet is IERC1271 {
      * @return bytes4 Returns the ERC-1271 "magic value" that indicates that the signature is valid
      */
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
+        /*
+         * Code taken directly from OpenZeppelin ECDSA.tryRecover; see:
+         * https://github.com/OpenZeppelin/openzeppelin-contracts/blob/HEAD/contracts/utils/cryptography/ECDSA.sol#L64-L68
+         *
+         * This is effectively an optimized variant of the Reference Implementation; see:
+         * https://eips.ethereum.org/EIPS/eip-1271#reference-implementation
+         */
         if (signature.length != 65) revert InvalidSignature();
         bytes32 r;
         bytes32 s;
