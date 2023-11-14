@@ -211,7 +211,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         uint256 ethToSend = 3.2 ether;
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
-        address aliceWallet = factory.walletAddressForAccount(alice);
+        address aliceWallet = factory.walletAddressForSigner(alice);
         uint96 nonce = factory.stateManager().nextNonce(aliceWallet);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
@@ -228,7 +228,7 @@ contract QuarkWalletFactoryTest is Test {
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
-        emit WalletDeploy(alice, aliceWallet, bytes32(0));
+        emit WalletDeploy(alice, alice, aliceWallet, bytes32(0));
         bytes memory result = factory.createAndExecute{value: ethToSend}(alice, op, v, r, s);
 
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
@@ -246,8 +246,8 @@ contract QuarkWalletFactoryTest is Test {
         uint256 ethToSend = 3.2 ether;
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         bytes32 salt = bytes32("salty salt salt");
-        address aliceWallet = factory.walletAddressForAccount(alice, salt);
-        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice, salt));
+        address aliceWallet = factory.walletAddressForSigner(alice, salt);
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForSigner(alice, salt));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: getMessageDetails,
@@ -263,7 +263,7 @@ contract QuarkWalletFactoryTest is Test {
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
-        emit WalletDeploy(alice, aliceWallet, salt);
+        emit WalletDeploy(alice, factory.walletAddressForSigner(alice), aliceWallet, salt);
         bytes memory result = factory.createAndExecute{value: ethToSend}(alice, salt, op, v, r, s);
 
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
