@@ -195,7 +195,7 @@ contract EIP712Test is Test {
         bytes32 invalidS = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1;
 
         // submitter calls executeQuarkOperation with invalid `s` value
-        vm.expectRevert(QuarkWallet.InvalidSignatureS.selector);
+        vm.expectRevert(QuarkWallet.InvalidSignature.selector);
 
         // gas: meter execute
         vm.resumeGasMetering();

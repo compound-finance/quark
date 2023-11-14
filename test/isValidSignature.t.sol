@@ -77,7 +77,7 @@ contract isValidSignatureTest is Test {
         aliceWallet.isValidSignature(digest, signature);
     }
 
-    function testRevertsForInvalidSignatureS() public {
+    function testRevertsInvalidS() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
@@ -91,7 +91,7 @@ contract isValidSignatureTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
 
-        vm.expectRevert(QuarkWallet.InvalidSignatureS.selector);
+        vm.expectRevert(QuarkWallet.InvalidSignature.selector);
         aliceWallet.isValidSignature(digest, abi.encodePacked(r, invalidS, v));
     }
 
@@ -139,7 +139,7 @@ contract isValidSignatureTest is Test {
         assertEq(contractWallet.isValidSignature(bytes32(""), signature), EIP_1271_MAGIC_VALUE);
     }
 
-    function testRevertsIfSignerContractReturnsFalse() public {
+    function testRevertsIfSignerContractDoesNotReturnMagic() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
@@ -151,7 +151,7 @@ contract isValidSignatureTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
 
-        vm.expectRevert(QuarkWallet.InvalidSignature.selector);
+        vm.expectRevert(QuarkWallet.InvalidEIP1271Signature.selector);
         contractWallet.isValidSignature(bytes32(""), signature);
     }
 
