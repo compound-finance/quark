@@ -6,7 +6,7 @@ import "./QuarkWallet.sol";
 import "./QuarkStateManager.sol";
 
 contract QuarkWalletFactory {
-    event WalletDeploy(address indexed signer, address indexed executor, address indexed walletAddress, bytes32 salt);
+    event WalletDeploy(address indexed signer, address indexed executor, address walletAddress, bytes32 salt);
 
     /// @notice Major version of the contract
     uint256 public constant VERSION = 1;
@@ -50,8 +50,8 @@ contract QuarkWalletFactory {
         if (salt != DEFAULT_SALT) {
             executor = walletAddressForSigner(signer, DEFAULT_SALT);
         } else {
-            // If salt is DEFAULT_SALT, then the wallet is the executor, so its executor is address(0)
-            executor = address(0);
+            // If salt is DEFAULT_SALT, then the wallet is the executor, so its executor is signer
+            executor = signer;
         }
         address payable walletAddress =
             payable(address(new QuarkWallet{salt: salt}(signer, executor, codeJar, stateManager)));
@@ -79,10 +79,10 @@ contract QuarkWalletFactory {
     function walletAddressForSigner(address signer, bytes32 salt) public view returns (address payable) {
         address executor;
         if (salt != DEFAULT_SALT) {
-            executor = walletAddressForSignerInternal(signer, address(0), DEFAULT_SALT);
+            executor = walletAddressForSignerInternal(signer, signer, DEFAULT_SALT);
         } else {
-            // If salt is DEFAULT_SALT, then the wallet is the executor, so its executor is address(0)
-            executor = address(0);
+            // If salt is DEFAULT_SALT, then the wallet is the executor, so its executor is signer
+            executor = signer;
         }
         return walletAddressForSignerInternal(signer, executor, salt);
     }
