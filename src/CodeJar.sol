@@ -25,7 +25,6 @@ contract CodeJar {
             }
 
             // Posit: these cannot fail and are purely defense-in-depth
-            require(codeCreateAddress != address(0));
             require(codeCreateAddress == codeAddress);
 
             return codeAddress;
@@ -79,26 +78,5 @@ contract CodeJar {
         return address(
             uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), uint256(0), keccak256(initCode)))))
         );
-    }
-
-    /**
-     * @notice Reads the given code from Code Jar
-     * @dev This should revert if `codeAddress` was not deployed from this contract
-     * @param codeAddress The address to read the code from
-     * @return The code at `codeAddress` if `codeAddress` was created by this contract
-     */
-    function readCode(address codeAddress) external view returns (bytes memory) {
-        bytes memory code = codeAddress.code;
-
-        // Check that address where that given code would have been created by this contract
-        bytes memory initCode = getInitCode(code);
-
-        // Revert if the code doesn't match where we should have deployed it.
-        // This is to prevent using this contract to read random contract codes.
-        if (getCodeAddress(initCode) != codeAddress) {
-            revert CodeInvalid(codeAddress);
-        }
-
-        return code;
     }
 }
