@@ -42,7 +42,7 @@ contract QuarkWallet is IERC1271 {
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     /// @notice Name of contract, for use in DOMAIN_SEPARATOR
-    string public constant name = "Quark Wallet";
+    string public constant NAME = "Quark Wallet";
 
     /// @notice The major version of this contract, for use in DOMAIN_SEPARATOR
     string public constant VERSION = "1";
@@ -93,7 +93,7 @@ contract QuarkWallet is IERC1271 {
      */
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
         return keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes(VERSION)), block.chainid, address(this))
+            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this))
         );
     }
 
