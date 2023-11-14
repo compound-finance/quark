@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "forge-std/Test.sol";
@@ -33,6 +33,8 @@ contract QuarkWalletFactoryTest is Test {
         alice = vm.addr(alicePrivateKey);
     }
 
+    /* ===== sanity checks ===== */
+
     function testVersion() public {
         assertEq(factory.VERSION(), 1);
     }
@@ -41,19 +43,15 @@ contract QuarkWalletFactoryTest is Test {
         assertNotEq(address(factory.codeJar()), address(0));
     }
 
+    // TODO: testCreatesStateManager()
+
+    /* ===== wallet creation tests ===== */
+
     function testCreatesWalletAtDeterministicAddress() public {
         vm.expectEmit(true, true, true, true);
         emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
         address aliceWallet = factory.create(alice);
         assertEq(aliceWallet, factory.walletAddressForAccount(alice));
-    }
-
-    function testCreateRevertsOnRepeat() public {
-        vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
-        factory.create(alice);
-        vm.expectRevert();
-        factory.create(alice);
     }
 
     function testCreateAdditionalWalletWithSalt() public {
@@ -71,17 +69,28 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(aliceSaltWallet, factory.walletAddressForAccount(alice, bytes32("1")));
     }
 
+    function testCreateRevertsOnRepeat() public {
+        vm.expectEmit(true, true, true, true);
+        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
+        factory.create(alice);
+        vm.expectRevert();
+        factory.create(alice);
+    }
+
+    /* ===== create and execute tests ===== */
+
     function testCreateAndExecuteCreatesWallet() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
-        uint256[] memory requirements;
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
 
         // alice signs the operation
@@ -89,6 +98,9 @@ contract QuarkWalletFactoryTest is Test {
             new SignatureHelper().signOpForAddress(alicePrivateKey, factory.walletAddressForAccount(alice), op);
 
         assertEq(counter.number(), 0);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
 
         // operation is executed
         vm.expectEmit(true, true, true, true);
@@ -104,16 +116,17 @@ contract QuarkWalletFactoryTest is Test {
     }
 
     function testCreateAndExecuteWithSalt() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
-        uint256[] memory requirements;
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
 
         bytes32 salt = bytes32("salty salt salt");
@@ -124,6 +137,8 @@ contract QuarkWalletFactoryTest is Test {
 
         assertEq(counter.number(), 0);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet (with salt)
@@ -138,16 +153,17 @@ contract QuarkWalletFactoryTest is Test {
     }
 
     function testExecuteOnExistingWallet() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
-        uint256[] memory requirements;
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
             scriptSource: incrementer,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
-            expiry: block.timestamp + 1000,
-            allowCallback: false
+            expiry: block.timestamp + 1000
         });
 
         // alice signs the operation
@@ -155,6 +171,9 @@ contract QuarkWalletFactoryTest is Test {
             new SignatureHelper().signOpForAddress(alicePrivateKey, factory.walletAddressForAccount(alice), op);
 
         assertEq(counter.number(), 0);
+
+        // gas: meter create, createAndExecute
+        vm.resumeGasMetering();
 
         // the wallet is deployed
         vm.expectEmit(true, true, true, true);
@@ -169,5 +188,120 @@ contract QuarkWalletFactoryTest is Test {
 
         // uses up the operation's nonce
         assertEq(factory.stateManager().isNonceSet(factory.walletAddressForAccount(alice), nonce), true);
+    }
+
+    /* ===== msg.value and msg.sender tests ===== */
+
+    function testCreateAndExecuteSetsMsgSenderAndValue() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        uint256 ethToSend = 3.2 ether;
+        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        address aliceWallet = factory.walletAddressForAccount(alice);
+        uint96 nonce = factory.stateManager().nextNonce(aliceWallet);
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
+            scriptSource: getMessageDetails,
+            scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
+            nonce: nonce,
+            expiry: block.timestamp + 1000
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        // operation is executed
+        vm.expectEmit(true, true, true, true);
+        // it creates a wallet
+        emit WalletDeploy(alice, aliceWallet, bytes32(0));
+        bytes memory result = factory.createAndExecute{value: ethToSend}(alice, op, v, r, s);
+
+        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
+        assertEq(msgSender, address(aliceWallet));
+        assertEq(msgValue, ethToSend);
+        assertEq(address(aliceWallet).balance, ethToSend);
+
+        // uses up the operation's nonce
+        assertEq(factory.stateManager().isNonceSet(aliceWallet, nonce), true);
+    }
+
+    function testCreateAndExecuteWithSaltSetsMsgSenderAndValue() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        uint256 ethToSend = 3.2 ether;
+        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes32 salt = bytes32("salty salt salt");
+        address aliceWallet = factory.walletAddressForAccount(alice, salt);
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForAccount(alice, salt));
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
+            scriptSource: getMessageDetails,
+            scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
+            nonce: nonce,
+            expiry: block.timestamp + 1000
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        // operation is executed
+        vm.expectEmit(true, true, true, true);
+        // it creates a wallet
+        emit WalletDeploy(alice, aliceWallet, salt);
+        bytes memory result = factory.createAndExecute{value: ethToSend}(alice, salt, op, v, r, s);
+
+        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
+        assertEq(msgSender, address(aliceWallet));
+        assertEq(msgValue, ethToSend);
+        assertEq(address(aliceWallet).balance, ethToSend);
+
+        // uses up the operation's nonce
+        assertEq(factory.stateManager().isNonceSet(aliceWallet, nonce), true);
+    }
+
+    /* ===== default wallet executor role tests ===== */
+
+    function testDefaultWalletHasNoExecutor() public {
+        QuarkWallet aliceWallet = QuarkWallet(factory.create(alice));
+        assertEq(aliceWallet.executor(), address(0));
+    }
+
+    function testDefaultWalletIsSubwalletExecutor() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        address ethcallAddress = factory.codeJar().saveCode(ethcall);
+
+        bytes memory executeOnBehalf = new YulHelper().getDeployed("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
+
+        // construct a primary wallet with one sub-wallet
+        QuarkWallet aliceWalletPrimary = QuarkWallet(factory.create(alice));
+        QuarkWallet aliceWalletSecondary = QuarkWallet(factory.create(alice, bytes32("1")));
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: address(0),
+            scriptSource: executeOnBehalf,
+            scriptCalldata: abi.encodeWithSignature(
+                "run(address,uint96,address,bytes)",
+                address(aliceWalletSecondary),
+                aliceWalletSecondary.nextNonce(),
+                ethcallAddress,
+                abi.encodeWithSignature(
+                    "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 7), 0
+                )
+                ),
+            nonce: aliceWalletPrimary.nextNonce(),
+            expiry: block.timestamp + 1000
+        });
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWalletPrimary, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        assertEq(counter.number(), 0);
+        aliceWalletPrimary.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 7);
     }
 }

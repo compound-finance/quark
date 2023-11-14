@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "./CodeJar.sol";
@@ -28,19 +28,24 @@ contract QuarkWalletFactory {
      * @param account Address to create a QuarkWallet for
      * @return address Address of the newly-created wallet
      */
-    function create(address account) external returns (address) {
+    function create(address account) external returns (address payable) {
         return create(account, 0);
     }
 
     /**
      * @notice Create new QuarkWallet for account, salt pair
-     * @dev Will revert if wallet already exists for account, salt pair
+     * @dev Will revert if wallet already exists for account, salt pair; sets the executor for salted wallets to the wallet with salt=0
      * @param account Address to create a QuarkWallet for
      * @param salt Salt value to use during creation of QuarkWallet
      * @return address Address of the newly-created wallet
      */
-    function create(address account, bytes32 salt) public returns (address) {
-        address walletAddress = address(new QuarkWallet{salt: salt}(account, codeJar, stateManager));
+    function create(address account, bytes32 salt) public returns (address payable) {
+        address executor = address(0);
+        if (salt != 0) {
+            executor = walletAddressForAccount(account, 0);
+        }
+        address payable walletAddress =
+            payable(address(new QuarkWallet{salt: salt}(account, executor, codeJar, stateManager)));
         emit WalletDeploy(account, walletAddress, salt);
         return walletAddress;
     }
@@ -51,7 +56,7 @@ contract QuarkWalletFactory {
      * @param account Address to find QuarkWallet address for
      * @return address Address of the QuarkWallet for account
      */
-    function walletAddressForAccount(address account) external view returns (address) {
+    function walletAddressForAccount(address account) external view returns (address payable) {
         return walletAddressForAccount(account, 0);
     }
 
@@ -62,21 +67,36 @@ contract QuarkWalletFactory {
      * @param salt Salt value for QuarkWallet
      * @return address Address of the QuarkWallet for account, salt pair
      */
-    function walletAddressForAccount(address account, bytes32 salt) public view returns (address) {
-        return address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            bytes1(0xff),
-                            address(this),
-                            salt,
-                            keccak256(
-                                abi.encodePacked(
-                                    type(QuarkWallet).creationCode,
-                                    abi.encode(account),
-                                    abi.encode(address(codeJar)),
-                                    abi.encode(address(stateManager))
+    function walletAddressForAccount(address account, bytes32 salt) public view returns (address payable) {
+        address payable executor = payable(address(0));
+        if (salt != 0) {
+            executor = walletAddressForAccountInternal(account, address(0), 0);
+        }
+        return walletAddressForAccountInternal(account, executor, salt);
+    }
+
+    function walletAddressForAccountInternal(address account, address executor, bytes32 salt)
+        internal
+        view
+        returns (address payable)
+    {
+        return payable(
+            address(
+                uint160(
+                    uint256(
+                        keccak256(
+                            abi.encodePacked(
+                                bytes1(0xff),
+                                address(this),
+                                salt,
+                                keccak256(
+                                    abi.encodePacked(
+                                        type(QuarkWallet).creationCode,
+                                        abi.encode(account),
+                                        abi.encode(executor),
+                                        abi.encode(address(codeJar)),
+                                        abi.encode(address(stateManager))
+                                    )
                                 )
                             )
                         )
@@ -97,6 +117,7 @@ contract QuarkWalletFactory {
      */
     function createAndExecute(address account, QuarkWallet.QuarkOperation memory op, uint8 v, bytes32 r, bytes32 s)
         external
+        payable
         returns (bytes memory)
     {
         return createAndExecute(account, 0, op, v, r, s);
@@ -119,9 +140,9 @@ contract QuarkWalletFactory {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public returns (bytes memory) {
+    ) public payable returns (bytes memory) {
         uint256 walletCodeLen;
-        address walletAddress = walletAddressForAccount(account, salt);
+        address payable walletAddress = walletAddressForAccount(account, salt);
 
         assembly {
             walletCodeLen := extcodesize(walletAddress)
@@ -130,6 +151,6 @@ contract QuarkWalletFactory {
             create(account, salt);
         }
 
-        return QuarkWallet(walletAddress).executeQuarkOperation(op, v, r, s);
+        return QuarkWallet(walletAddress).executeQuarkOperation{value: msg.value}(op, v, r, s);
     }
 }

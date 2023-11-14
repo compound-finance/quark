@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "forge-std/Test.sol";
@@ -6,7 +6,7 @@ import "./../../src/QuarkWallet.sol";
 
 contract SignatureHelper is Test {
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes scriptSource,bytes scriptCalldata,uint256 nonce,uint256 expiry,bool allowCallback)"
+        "QuarkOperation(uint96 nonce,address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 expiry)"
     );
 
     bytes32 internal constant QUARK_WALLET_DOMAIN_TYPEHASH =
@@ -36,7 +36,7 @@ contract SignatureHelper is Test {
     function structHash(QuarkWallet.QuarkOperation memory op) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry, op.allowCallback
+                QUARK_OPERATION_TYPEHASH, op.scriptAddress, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry
             )
         );
     }

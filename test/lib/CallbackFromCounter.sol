@@ -1,12 +1,14 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "forge-std/console.sol";
 
 import "./Counter.sol";
+import "../../src/QuarkScript.sol";
 
-contract CallbackFromCounter {
+contract CallbackFromCounter is QuarkScript {
     function doIncrementAndCallback(Counter counter) public {
+        allowCallback();
         counter.incrementAndCallback();
     }
 

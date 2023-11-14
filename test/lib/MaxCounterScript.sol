@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "../../src/QuarkScript.sol";
@@ -7,16 +7,17 @@ import "./Counter.sol";
 contract MaxCounterScript is QuarkScript {
     error EnoughAlready();
 
-    string constant maxCountVar = "quark.org.MaxCounterScript.maxCount";
-
     function run(Counter c) external returns (bytes memory) {
         c.increment();
-        uint256 count = sloadU256(maxCountVar);
+        uint256 count = readU256("count");
+
         if (count >= 3) {
             revert EnoughAlready();
         }
 
-        sstoreU256(maxCountVar, count + 1);
+        writeU256("count", count + 1);
+        allowReplay();
+
         return hex"";
     }
 }
