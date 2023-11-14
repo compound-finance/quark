@@ -55,17 +55,15 @@ contract QuarkWallet is IERC1271 {
         uint96 nonce;
         /**
          * @notice The address of the transaction script to run
-         * @dev Can be set as address(0) when `scriptSource` is non-empty
+         * @dev Should be set as address(0) when `scriptSource` is non-empty
          */
         address scriptAddress;
         /**
          * @notice The runtime bytecode of the transaction script to run
-         * @dev Can be set to empty bytes when `scriptAddress` is non-zero
+         * @dev Should be set to empty bytes when `scriptAddress` is non-zero
          */
         bytes scriptSource;
-        /**
-         * @notice Encoded function selector + arguments to invoke on the script contract
-         */
+        /// @notice Encoded function selector + arguments to invoke on the script contract
         bytes scriptCalldata;
         /// @notice Expiration time for the signature corresponding to this operation
         uint256 expiry;
