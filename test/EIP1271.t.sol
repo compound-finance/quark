@@ -67,7 +67,7 @@ contract EIP1271Test is Test {
         assertEq(counter.number(), 3);
     }
 
-    function testRevertsIfSignerContractReturnsFalse() public {
+    function testRevertsIfSignerContractDoesNotReturnMagic() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         // QuarkWallet is owned by a smart contract that always rejects signatures
@@ -81,7 +81,7 @@ contract EIP1271Test is Test {
         // gas: meter execute
         vm.resumeGasMetering();
 
-        vm.expectRevert(QuarkWallet.InvalidSignature.selector);
+        vm.expectRevert(QuarkWallet.InvalidEIP1271Signature.selector);
         contractWallet.executeQuarkOperation(op, v, r, s);
 
         // counter has not incremented
