@@ -15,7 +15,7 @@ contract CodeJarTest is Test {
 
     CodeJar public codeJar;
     address destructingAddress;
-    bytes destructingCode = hex"5fff"; // PUSH0 [5F]; SELFDESTRUCT [FF]
+    bytes destructingCode = hex"6000ff"; // PUSH1 [60]; 0 [00]; SELFDESTRUCT [FF]
 
     constructor() {
         codeJar = new CodeJar();
