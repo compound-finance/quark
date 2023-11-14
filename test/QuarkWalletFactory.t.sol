@@ -214,7 +214,7 @@ contract QuarkWalletFactoryTest is Test {
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
-        emit WalletDeploy(alice, factory.walletAddressForAccount(alice), bytes32(0));
+        emit WalletDeploy(alice, aliceWallet, bytes32(0));
         bytes memory result = factory.createAndExecute{value: ethToSend}(alice, op, v, r, s);
 
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
@@ -223,7 +223,7 @@ contract QuarkWalletFactoryTest is Test {
         assertEq(address(aliceWallet).balance, ethToSend);
 
         // uses up the operation's nonce
-        assertEq(factory.stateManager().isNonceSet(factory.walletAddressForAccount(alice), nonce), true);
+        assertEq(factory.stateManager().isNonceSet(aliceWallet, nonce), true);
     }
 
     function testCreateAndExecuteWithSaltSetsMsgSenderAndValue() public {
@@ -242,6 +242,9 @@ contract QuarkWalletFactoryTest is Test {
             expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
 
         // operation is executed
         vm.expectEmit(true, true, true, true);

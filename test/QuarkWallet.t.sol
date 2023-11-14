@@ -121,16 +121,15 @@ contract QuarkWalletTest is Test {
         uint256 ethToSend = 3.2 ether;
         aliceAccount.call{value: ethToSend}("");
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        uint96 nonce = aliceWallet.nextNonce();
+        address scriptAddress = codeJar.saveCode(getMessageDetails);
+        bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
 
         vm.startPrank(aliceAccount);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeScript{value: ethToSend}(
-            aliceWallet.nextNonce(),
-            codeJar.saveCode(getMessageDetails),
-            abi.encodeWithSignature("getMsgSenderAndValue()")
-        );
+        bytes memory result = aliceWallet.executeScript{value: ethToSend}(nonce, scriptAddress, call);
 
         vm.stopPrank();
 
@@ -256,17 +255,16 @@ contract QuarkWalletTest is Test {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        uint96 nonce = aliceWallet.nextNonce();
+        address scriptAddress = codeJar.saveCode(incrementer);
+        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
         assertEq(counter.number(), 0);
 
         vm.startPrank(aliceAccount);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeScript(
-            aliceWallet.nextNonce(),
-            codeJar.saveCode(incrementer),
-            abi.encodeWithSignature("incrementCounter(address)", counter)
-        );
+        aliceWallet.executeScript(nonce, scriptAddress, call);
 
         vm.stopPrank();
 
@@ -277,13 +275,13 @@ contract QuarkWalletTest is Test {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        uint96 nonce = aliceWallet.nextNonce();
+        address target = codeJar.saveCode(incrementer);
+        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
         assertEq(counter.number(), 0);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        uint96 nonce = aliceWallet.nextNonce();
-        address target = codeJar.saveCode(incrementer);
-        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.Unauthorized.selector));
         aliceWallet.executeScript(nonce, target, call);
 
