@@ -50,7 +50,7 @@ contract QuarkWalletFactoryTest is Test {
     function testCreatesWalletAtDeterministicAddress() public {
         // Non-salted
         vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(alice, alice, factory.walletAddressForSigner(alice), bytes32(0));
+        emit WalletDeploy(alice, address(0), factory.walletAddressForSigner(alice), bytes32(0));
         address aliceWallet = factory.create(alice);
         assertEq(aliceWallet, factory.walletAddressForSigner(alice));
 
@@ -69,7 +69,7 @@ contract QuarkWalletFactoryTest is Test {
     function testCreateAdditionalWalletWithSalt() public {
         // inital wallet is created
         vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(alice, alice, factory.walletAddressForSigner(alice), bytes32(0));
+        emit WalletDeploy(alice, address(0), factory.walletAddressForSigner(alice), bytes32(0));
         factory.create(alice);
 
         // it is created with 0 as salt (and therefore reverts on a repeated attempt)
@@ -83,7 +83,7 @@ contract QuarkWalletFactoryTest is Test {
 
     function testCreateRevertsOnRepeat() public {
         vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(alice, alice, factory.walletAddressForSigner(alice), bytes32(0));
+        emit WalletDeploy(alice, address(0), factory.walletAddressForSigner(alice), bytes32(0));
         factory.create(alice);
         vm.expectRevert();
         factory.create(alice);
@@ -117,7 +117,7 @@ contract QuarkWalletFactoryTest is Test {
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
-        emit WalletDeploy(alice, alice, factory.walletAddressForSigner(alice), bytes32(0));
+        emit WalletDeploy(alice, address(0), factory.walletAddressForSigner(alice), bytes32(0));
         factory.createAndExecute(alice, op, v, r, s);
 
         // operation was executed
@@ -191,7 +191,7 @@ contract QuarkWalletFactoryTest is Test {
 
         // the wallet is deployed
         vm.expectEmit(true, true, true, true);
-        emit WalletDeploy(alice, alice, factory.walletAddressForSigner(alice), bytes32(0));
+        emit WalletDeploy(alice, address(0), factory.walletAddressForSigner(alice), bytes32(0));
         factory.create(alice);
 
         // operation is executed
@@ -228,7 +228,7 @@ contract QuarkWalletFactoryTest is Test {
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
-        emit WalletDeploy(alice, alice, aliceWallet, bytes32(0));
+        emit WalletDeploy(alice, address(0), aliceWallet, bytes32(0));
         bytes memory result = factory.createAndExecute{value: ethToSend}(alice, op, v, r, s);
 
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
@@ -279,7 +279,7 @@ contract QuarkWalletFactoryTest is Test {
 
     function testDefaultWalletHasNoExecutor() public {
         QuarkWallet aliceWallet = QuarkWallet(factory.create(alice));
-        assertEq(aliceWallet.executor(), alice);
+        assertEq(aliceWallet.executor(), address(0));
     }
 
     function testDefaultWalletIsSubwalletExecutor() public {
