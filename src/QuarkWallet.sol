@@ -179,7 +179,9 @@ contract QuarkWallet is IERC1271 {
          * This is effectively an optimized variant of the Reference Implementation; see:
          * https://eips.ethereum.org/EIPS/eip-1271#reference-implementation
          */
-        if (signature.length != 65) revert InvalidSignature();
+        if (signature.length != 65) {
+            revert InvalidSignature();
+        }
         bytes32 r;
         bytes32 s;
         uint8 v;
