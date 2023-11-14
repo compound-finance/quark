@@ -20,9 +20,6 @@ contract QuarkWalletFactory {
     /// @notice Address of QuarkStateManager contract
     QuarkStateManager public immutable stateManager;
 
-    error NotExecutor();
-    error ExecutorCantBeSubWallet();
-
     constructor() {
         codeJar = new CodeJar();
         stateManager = new QuarkStateManager();
