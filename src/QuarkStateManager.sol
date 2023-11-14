@@ -4,6 +4,7 @@ pragma solidity ^0.8.21;
 interface IExecutor {
     function executeScriptWithNonceLock(address scriptAddress, bytes calldata scriptCalldata)
         external
+        payable
         returns (bytes memory);
 }
 
@@ -131,6 +132,7 @@ contract QuarkStateManager {
      */
     function setActiveNonceAndCallback(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
         external
+        payable
         returns (bytes memory)
     {
         if (nonce == 0) {
@@ -160,7 +162,8 @@ contract QuarkStateManager {
         NonceScript memory previousNonceScript = activeNonceScript[msg.sender];
         activeNonceScript[msg.sender] = NonceScript({nonce: nonce, scriptAddress: scriptAddress});
 
-        bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
+        bytes memory result =
+            IExecutor(msg.sender).executeScriptWithNonceLock{value: msg.value}(scriptAddress, scriptCalldata);
 
         // if a nonce was cleared, set the nonceScriptAddress to lock nonce re-use to the same script address
         if (nonceScriptAddress[msg.sender][nonce] == address(0) && (nonces[msg.sender][bucket] & setMask) == 0) {
