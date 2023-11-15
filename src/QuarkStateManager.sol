@@ -44,9 +44,15 @@ contract QuarkStateManager {
         if (nonce == 0) {
             revert InvalidNonce();
         }
-        uint256 bucket = nonce >> 8;
-        uint256 mask = 1 << (nonce & 0xff);
-        return nonces[wallet][bucket] & mask != 0;
+        (uint256 bucket, uint mask) = getBucket(nonce);
+        return isNonceSetInternal(wallet, bucket, mask);
+    }
+
+    /**
+     * @dev Returns if a given nonce is set for a wallet, using the nonce's bucket and mask
+     */
+    function isNonceSetInternal(address wallet, uint256 bucket, uint256 mask) internal view returns (bool) {
+        return (nonces[wallet][bucket] & mask) != 0;
     }
 
     /**
@@ -108,7 +114,14 @@ contract QuarkStateManager {
     function setNonce(uint96 nonce) external {
         // TODO: should we check whether there exists a nonceScriptAddress?
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
-        nonces[msg.sender][bucket] |= setMask;
+        setNonceInternal(msg.sender, bucket, setMask);
+    }
+
+    /**
+     * @dev Set a nonce for a wallet, using the nonce's bucket and mask
+     */
+    function setNonceInternal(address wallet, uint256 bucket, uint256 setMask) internal {
+        nonces[wallet][bucket] |= setMask;
     }
 
     /**
@@ -130,13 +143,13 @@ contract QuarkStateManager {
         // retrieve the (bucket, mask) pair that addresses the nonce in memory
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
 
-        // ensure nonce is not already set (NOTE: inlined isNonceSet to avoid reading the nonce twice)
-        if ((nonces[msg.sender][bucket] & setMask) != 0) {
+        // ensure nonce is not already set
+        if (isNonceSetInternal(msg.sender, bucket, setMask)) {
             revert NonceAlreadySet();
         }
 
         // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
-        nonces[msg.sender][bucket] |= setMask;
+        setNonceInternal(msg.sender, bucket, setMask);
 
         // if the nonce has been used before, check if the script address matches, and revert if not
         if (
