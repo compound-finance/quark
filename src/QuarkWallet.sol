@@ -274,6 +274,7 @@ contract QuarkWallet is IERC1271 {
                     revert(add(result, 0x20), size)
                 }
             }
+            stateManager.write(CALLBACK_KEY, bytes32(0));
             return result;
         } else {
             revert NoActiveCallback();
