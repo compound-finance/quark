@@ -23,8 +23,8 @@ contract MulticallTest is Test {
     address alice = vm.addr(alicePrivateKey);
 
     // Comet address in mainnet
-    address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
-    address constant cometWETH = 0xA17581A9E3356d9A858b789D68B4d866e593aE94;
+    address constant cUSDCv3 = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+    address constant cWETHv3 = 0xA17581A9E3356d9A858b789D68B4d866e593aE94;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     // Uniswap router info on mainnet
@@ -79,11 +79,17 @@ contract MulticallTest is Test {
         bytes[] memory callDatas = new bytes[](2);
         callContracts[0] = ethcallAddress;
         callDatas[0] = abi.encodeWithSelector(
-            Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (20)), 0
+            Ethcall.run.selector,
+            address(counter),
+            abi.encodeWithSignature("increment(uint256)", (20)),
+            0 // value
         );
         callContracts[1] = ethcallAddress;
         callDatas[1] = abi.encodeWithSelector(
-            Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (5)), 0
+            Ethcall.run.selector,
+            address(counter),
+            abi.encodeWithSignature("decrement(uint256)", (5)),
+            0 // value
         );
         assertEq(counter.number(), 0);
 
@@ -114,16 +120,28 @@ contract MulticallTest is Test {
 
         // Approve Comet to spend USDC
         callContracts[0] = ethcallAddress;
-        callDatas[0] =
-            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0);
+        callDatas[0] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            WETH,
+            abi.encodeCall(IERC20.approve, (cUSDCv3, 100 ether)),
+            0 // value
+        );
         // Supply WETH to Comet
         callContracts[1] = ethcallAddress;
-        callDatas[1] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0);
+        callDatas[1] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            cUSDCv3,
+            abi.encodeCall(IComet.supply, (WETH, 100 ether)),
+            0 // value
+        );
         // Withdraw USDC from Comet
         callContracts[2] = ethcallAddress;
-        callDatas[2] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0);
+        callDatas[2] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            cUSDCv3,
+            abi.encodeCall(IComet.withdraw, (USDC, 1000e6)),
+            0 // value
+        );
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
@@ -137,8 +155,8 @@ contract MulticallTest is Test {
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 100 ether);
-        assertApproxEqAbs(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6, 2);
+        assertEq(IComet(cUSDCv3).collateralBalanceOf(address(wallet), WETH), 100 ether);
+        assertApproxEqAbs(IComet(cUSDCv3).borrowBalanceOf(address(wallet)), 1000e6, 2);
     }
 
     function testInvalidInput() public {
@@ -150,7 +168,10 @@ contract MulticallTest is Test {
         bytes[] memory callDatas = new bytes[](1);
         callContracts[0] = ethcallAddress;
         callDatas[0] = abi.encodeWithSelector(
-            Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (20)), 0
+            Ethcall.run.selector,
+            address(counter),
+            abi.encodeWithSignature("increment(uint256)", (20)),
+            0 // value
         );
         callContracts[1] = address(counter);
 
@@ -185,21 +206,36 @@ contract MulticallTest is Test {
 
         // Approve Comet to spend WETH
         callContracts[0] = ethcallAddress;
-        callDatas[0] =
-            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0);
+        callDatas[0] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            WETH,
+            abi.encodeCall(IERC20.approve, (cUSDCv3, 100 ether)),
+            0 // value
+        );
         // Supply WETH to Comet
         callContracts[1] = ethcallAddress;
-        callDatas[1] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0);
+        callDatas[1] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            cUSDCv3,
+            abi.encodeCall(IComet.supply, (WETH, 100 ether)),
+            0 // value
+        );
 
         // Withdraw USDC from Comet
         callContracts[2] = ethcallAddress;
-        callDatas[2] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0);
+        callDatas[2] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            cUSDCv3,
+            abi.encodeCall(IComet.withdraw, (USDC, 1000e6)),
+            0 // value
+        );
         // Send USDC to Stranger; will fail (insufficient balance)
         callContracts[3] = ethcallAddress;
         callDatas[3] = abi.encodeWithSelector(
-            Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(123), 10000e6)), 0
+            Ethcall.run.selector,
+            USDC,
+            abi.encodeCall(IERC20.transfer, (address(123), 10_000e6)),
+            0 // value
         );
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -258,11 +294,17 @@ contract MulticallTest is Test {
         bytes[] memory callDatas = new bytes[](2);
         callContracts[0] = ethcallAddress;
         callDatas[0] = abi.encodeWithSelector(
-            Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (20)), 0
+            Ethcall.run.selector,
+            address(counter),
+            abi.encodeWithSignature("increment(uint256)", (20)),
+            0 // value
         );
         callContracts[1] = ethcallAddress;
         callDatas[1] = abi.encodeWithSelector(
-            Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (5)), 0
+            Ethcall.run.selector,
+            address(counter),
+            abi.encodeWithSignature("decrement(uint256)", (5)),
+            0 // value
         );
 
         assertEq(counter.number(), 0);
@@ -308,7 +350,10 @@ contract MulticallTest is Test {
             walletA.nextNonce(),
             ethcallAddress,
             abi.encodeWithSelector(
-                Ethcall.run.selector, WETH, abi.encodeCall(IERC20.transfer, (address(walletB), 0.5 ether)), 0
+                Ethcall.run.selector,
+                WETH,
+                abi.encodeCall(IERC20.transfer, (address(walletB), 0.5 ether)),
+                0 // value
             )
         );
 
@@ -319,7 +364,12 @@ contract MulticallTest is Test {
             "executeScript(uint96,address,bytes)",
             walletBNextNonce,
             ethcallAddress,
-            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 0.5 ether)), 0)
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                WETH,
+                abi.encodeCall(IERC20.approve, (cUSDCv3, 0.5 ether)),
+                0 // value
+            )
         );
 
         // 3. supply 0.5 WETH from wallet B to Comet cUSDCv3
@@ -328,7 +378,12 @@ contract MulticallTest is Test {
             "executeScript(uint96,address,bytes)",
             walletBNextNonce + 1,
             ethcallAddress,
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 0.5 ether)), 0)
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                cUSDCv3,
+                abi.encodeCall(IComet.supply, (WETH, 0.5 ether)),
+                0 // value
+            )
         );
 
         // okay, woof, now wrap all that in ethcalls...
@@ -337,9 +392,30 @@ contract MulticallTest is Test {
         targets[1] = ethcallAddress;
         targets[2] = ethcallAddress;
         bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeCall(Ethcall.run, (wallets[0], walletCalls[0], 0));
-        calls[1] = abi.encodeCall(Ethcall.run, (wallets[1], walletCalls[1], 0));
-        calls[2] = abi.encodeCall(Ethcall.run, (wallets[2], walletCalls[2], 0));
+        calls[0] = abi.encodeCall(
+            Ethcall.run,
+            (
+                wallets[0],
+                walletCalls[0],
+                0 // value
+            )
+        );
+        calls[1] = abi.encodeCall(
+            Ethcall.run,
+            (
+                wallets[1],
+                walletCalls[1],
+                0 // value
+            )
+        );
+        calls[2] = abi.encodeCall(
+            Ethcall.run,
+            (
+                wallets[2],
+                walletCalls[2],
+                0 // value
+            )
+        );
 
         // set up the primary operation to execute the cross-wallet supply
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -359,7 +435,7 @@ contract MulticallTest is Test {
         // wallet B should have 0 ether...
         assertEq(IERC20(WETH).balanceOf(address(walletB)), 0 ether);
         // wallet B should have a supply balance of 0.5 ether
-        assertEq(IComet(comet).collateralBalanceOf(address(walletB), WETH), 0.5 ether);
+        assertEq(IComet(cUSDCv3).collateralBalanceOf(address(walletB), WETH), 0.5 ether);
     }
 
     // It's a proof of concept that user can create and execute on new subwallet with the help of Multicall without needing to do in two transactions
@@ -378,16 +454,16 @@ contract MulticallTest is Test {
         bytes[] memory callDatas = new bytes[](5);
 
         callContracts[0] = terminalCometSupplyScriptAddress;
-        callDatas[0] = abi.encodeCall(CometSupplyActions.supply, (comet, WETH, 100 ether));
+        callDatas[0] = abi.encodeCall(CometSupplyActions.supply, (cUSDCv3, WETH, 100 ether));
         callContracts[1] = terminalCometWithdrawScriptAddress;
-        callDatas[1] = abi.encodeCall(CometWithdrawActions.withdrawTo, (comet, subWallet1, USDC, 10000e6));
+        callDatas[1] = abi.encodeCall(CometWithdrawActions.withdrawTo, (cUSDCv3, subWallet1, USDC, 10_000e6));
 
         callContracts[2] = ethcallAddress;
         callDatas[2] = abi.encodeWithSelector(
             Ethcall.run.selector,
             address(factory),
             abi.encodeWithSignature("create(address,bytes32)", alice, bytes32("1")),
-            0
+            0 // value
         );
 
         callContracts[3] = ethcallAddress;
@@ -414,7 +490,7 @@ contract MulticallTest is Test {
                         )
                 )
             ),
-            0
+            0 // value
         );
 
         callContracts[4] = ethcallAddress;
@@ -426,10 +502,10 @@ contract MulticallTest is Test {
                 (
                     nonce + 1,
                     terminalCometSupplyScriptAddress,
-                    abi.encodeCall(CometSupplyActions.supply, (cometWETH, WETH, 2 ether))
+                    abi.encodeCall(CometSupplyActions.supply, (cWETHv3, WETH, 2 ether))
                 )
             ),
-            0
+            0 // value
         );
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -442,8 +518,8 @@ contract MulticallTest is Test {
 
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
-        assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 100 ether);
-        assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 10000e6);
-        assertApproxEqAbs(IComet(cometWETH).balanceOf(address(subWallet1)), 2 ether, 1);
+        assertEq(IComet(cUSDCv3).collateralBalanceOf(address(wallet), WETH), 100 ether);
+        assertEq(IComet(cUSDCv3).borrowBalanceOf(address(wallet)), 10_000e6);
+        assertApproxEqAbs(IComet(cWETHv3).balanceOf(address(subWallet1)), 2 ether, 1);
     }
 }
