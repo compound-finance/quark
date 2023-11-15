@@ -23,15 +23,15 @@ contract QuarkStateManager {
     /// @notice Bit-packed nonce values
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
 
+    /// @notice Per-wallet-nonce address for preventing replays with changed script address
+    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => address /* address */)) public nonceScriptAddress;
+
     /// @notice Currently active nonce-script pair for a wallet, if any, for which storage is accessible
     mapping(address /* wallet */ => NonceScript) internal activeNonceScript;
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
     mapping(address /* wallet */ => mapping(uint96 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
         internal walletStorage;
-
-    /// @notice Per-wallet-nonce address for preventing replays with changed script address
-    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => address /* address */)) nonceScriptAddress;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -64,18 +64,6 @@ contract QuarkStateManager {
             }
         }
         revert NoUnusedNonces();
-    }
-
-    /**
-     * @notice Return the nonce currently active for a wallet; revert if none
-     * @return Currently active nonce
-     */
-    function getActiveNonce() external view returns (uint96) {
-        if (activeNonceScript[msg.sender].nonce == 0) {
-            revert NoNonceActive();
-        }
-        // the first 12 bytes is the nonce
-        return activeNonceScript[msg.sender].nonce;
     }
 
     /**
