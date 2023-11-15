@@ -364,7 +364,7 @@ contract MulticallTest is Test {
     // It's a proof of concept that user can create and execute on new subwallet with the help of Multicall without needing to do in two transactions
     function testCreateSubWalletAndExecute() public {
         vm.pauseGasMetering();
-        // User will borrow USDC fomr Comet from primary wallet, and supply to subwallet
+        // User will borrow USDC from Comet in the primary wallet and supply to a subwallet
         QuarkWallet wallet = QuarkWallet(factory.create(alice));
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
