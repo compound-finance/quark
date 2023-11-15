@@ -49,6 +49,7 @@ contract MulticallTest is Test {
         );
 
     address ethcallAddress;
+    address multicallAddress;
     address terminalCometSupplyScriptAddress;
     address terminalCometWithdrawScriptAddress;
     address terminalUniswapSwapScriptAddress;
@@ -63,7 +64,7 @@ contract MulticallTest is Test {
         counter = new Counter();
         counter.setNumber(0);
         ethcallAddress = factory.codeJar().saveCode(ethcall);
-        factory.codeJar().saveCode(multicall);
+        multicallAddress = factory.codeJar().saveCode(multicall);
         terminalCometSupplyScriptAddress = factory.codeJar().saveCode(terminalCometSupplyScript);
         terminalCometWithdrawScriptAddress = factory.codeJar().saveCode(terminalCometWithdrawScript);
         terminalUniswapSwapScriptAddress = factory.codeJar().saveCode(terminalUniswapSwapScript);
@@ -369,8 +370,8 @@ contract MulticallTest is Test {
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
-        address wallet_salt_1 = factory.walletAddressForSignerWithSalt(alice, bytes32("1"));
-        uint96 nonce = factory.stateManager().nextNonce(wallet_salt_1);
+        address subWallet1 = factory.walletAddressForSignerWithSalt(alice, bytes32("1"));
+        uint96 nonce = factory.stateManager().nextNonce(subWallet1);
         // Steps: Wallet#1: Supply WETH to Comet -> Borrow USDC from Comet(USDC) to subwallet -> Create subwallet
         // -> Swap USDC to WETH on Uniswap -> Supply WETH to Comet(WETH)
         address[] memory callContracts = new address[](5);
@@ -379,7 +380,7 @@ contract MulticallTest is Test {
         callContracts[0] = terminalCometSupplyScriptAddress;
         callDatas[0] = abi.encodeCall(CometSupplyActions.supply, (comet, WETH, 100 ether));
         callContracts[1] = terminalCometWithdrawScriptAddress;
-        callDatas[1] = abi.encodeCall(CometWithdrawActions.withdrawTo, (comet, wallet_salt_1, USDC, 10000e6));
+        callDatas[1] = abi.encodeCall(CometWithdrawActions.withdrawTo, (comet, subWallet1, USDC, 10000e6));
 
         callContracts[2] = ethcallAddress;
         callDatas[2] = abi.encodeWithSelector(
@@ -392,7 +393,7 @@ contract MulticallTest is Test {
         callContracts[3] = ethcallAddress;
         callDatas[3] = abi.encodeWithSelector(
             Ethcall.run.selector,
-            wallet_salt_1,
+            subWallet1,
             abi.encodeCall(
                 QuarkWallet.executeScript,
                 (
@@ -403,10 +404,10 @@ contract MulticallTest is Test {
                         (
                             UniswapSwapActions.SwapParamsExactIn({
                                 uniswapRouter: uniswapRouter,
-                                recipient: wallet_salt_1,
+                                recipient: subWallet1,
                                 tokenFrom: USDC,
                                 amount: 5000e6,
-                                amountOutMinimum: 1 ether,
+                                amountOutMinimum: 2 ether,
                                 path: abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
                             })
                         )
@@ -419,7 +420,7 @@ contract MulticallTest is Test {
         callContracts[4] = ethcallAddress;
         callDatas[4] = abi.encodeWithSelector(
             Ethcall.run.selector,
-            wallet_salt_1,
+            subWallet1,
             abi.encodeCall(
                 QuarkWallet.executeScript,
                 (
@@ -435,13 +436,14 @@ contract MulticallTest is Test {
             wallet,
             multicall,
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-            ScriptType.ScriptSource
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 100 ether);
-        assertApproxEqAbs(IComet(cometWETH).balanceOf(address(wallet_salt_1)), 2 ether, 1);
+        assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 10000e6);
+        assertApproxEqAbs(IComet(cometWETH).balanceOf(address(subWallet1)), 2 ether, 1);
     }
 }
