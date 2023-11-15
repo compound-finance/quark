@@ -44,7 +44,7 @@ contract QuarkStateManager {
         if (nonce == 0) {
             revert InvalidNonce();
         }
-        (uint256 bucket, uint mask) = getBucket(nonce);
+        (uint256 bucket, uint256 mask) = getBucket(nonce);
         return isNonceSetInternal(wallet, bucket, mask);
     }
 
