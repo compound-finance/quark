@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.21;
+pragma solidity 0.8.19;
 
 import {CodeJar} from "./CodeJar.sol";
 import {QuarkStateManager} from "./QuarkStateManager.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
+import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
 
 contract QuarkWallet is IERC1271 {
     error AmbiguousScript();
