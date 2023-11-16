@@ -2,6 +2,7 @@
 pragma solidity ^0.8.21;
 
 import "./lib/PoolAddress.sol";
+import "./lib/UniswapFactoryAddress.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
@@ -9,10 +10,6 @@ import "../QuarkScript.sol";
 
 contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
     using SafeERC20 for IERC20;
-
-    // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
-    // TODO: Need to find a way to make this configurable for other chains, but not too freely adjustable in callback
-    address constant UNISWAP_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
 
     error FailedFlashRepay(address token);
     error InvalidCaller();
@@ -51,7 +48,7 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
         }
         IUniswapV3Pool(
             PoolAddress.computeAddress(
-                UNISWAP_FACTORY, PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee)
+                UniswapFactoryAddress.getAddress(), PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee)
             )
         ).flash(
             address(this),
@@ -77,7 +74,8 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
      */
     function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {
         FlashLoanCallbackPayload memory input = abi.decode(data, (FlashLoanCallbackPayload));
-        IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(UNISWAP_FACTORY, input.poolKey));
+        IUniswapV3Pool pool =
+            IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), input.poolKey));
         if (msg.sender != address(pool)) {
             revert InvalidCaller();
         }
