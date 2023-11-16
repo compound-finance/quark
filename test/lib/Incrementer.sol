@@ -1,13 +1,20 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "./Counter.sol";
+
+import "../../src/QuarkWallet.sol";
 
 contract Incrementer {
     function incrementCounter(Counter counter) public {
         Counter(counter).increment();
         Counter(counter).increment();
         Counter(counter).increment();
+    }
+
+    function incrementCounterReplayable(Counter counter) public {
+        incrementCounter(counter);
+        QuarkWallet(payable(address(this))).stateManager().clearNonce();
     }
 
     fallback() external {

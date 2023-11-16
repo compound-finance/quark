@@ -5,8 +5,9 @@ import "./lib/PoolAddress.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
+import "../QuarkScript.sol";
 
-contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback {
+contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback, QuarkScript {
     using SafeERC20 for IERC20;
 
     // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
@@ -23,9 +24,8 @@ contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback {
         uint256 amount0;
         uint256 amount1;
         PoolAddress.PoolKey poolKey;
-        address[] callContracts;
-        bytes[] callDatas;
-        uint256[] callValues;
+        address callContract;
+        bytes callData;
     }
 
     /// @notice Payload for UniswapFlashLoanMulticall
@@ -35,9 +35,8 @@ contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback {
         uint24 fee;
         uint256 amount0;
         uint256 amount1;
-        address[] callContracts;
-        bytes[] callDatas;
-        uint256[] callValues;
+        address callContract;
+        bytes callData;
     }
 
     /**
@@ -45,6 +44,7 @@ contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback {
      * @param payload UniswapFlashLoanMulticallPayload struct; contains token and fee info and MultiCall inputs
      */
     function run(UniswapFlashLoanMulticallPayload memory payload) external {
+        allowCallback();
         // Reorder token0, token1 to ensure token1 > token0
         if (payload.token0 > payload.token1) {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
@@ -63,9 +63,8 @@ contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback {
                     amount0: payload.amount0,
                     amount1: payload.amount1,
                     poolKey: PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee),
-                    callContracts: payload.callContracts,
-                    callDatas: payload.callDatas,
-                    callValues: payload.callValues
+                    callContract: payload.callContract,
+                    callData: payload.callData
                 })
             )
         );
@@ -84,18 +83,10 @@ contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback {
             revert InvalidCaller();
         }
 
-        if (
-            input.callContracts.length != input.callDatas.length
-                || input.callContracts.length != input.callValues.length
-        ) {
-            revert InvalidInput();
-        }
-
-        for (uint256 i = 0; i < input.callContracts.length; i++) {
-            (bool success, bytes memory returnData) =
-                input.callContracts[i].call{value: input.callValues[i]}(input.callDatas[i]);
-            if (!success) {
-                revert MulticallError(i, input.callContracts[i], returnData);
+        (bool success, bytes memory returnData) = input.callContract.delegatecall(input.callData);
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
             }
         }
 

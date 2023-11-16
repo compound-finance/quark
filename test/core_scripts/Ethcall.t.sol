@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "forge-std/Test.sol";
@@ -15,6 +15,8 @@ import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 import "./interfaces/IComet.sol";
 
+import "../lib/QuarkOperationHelper.sol";
+
 contract EthcallTest is Test {
     QuarkWalletFactory public factory;
     Counter public counter;
@@ -26,6 +28,10 @@ contract EthcallTest is Test {
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
+    bytes ethcall = new YulHelper().getDeployed(
+            "Ethcall.sol/Ethcall.json"
+        );
+
     function setUp() public {
         // Fork setup
         vm.createSelectFork(
@@ -35,71 +41,72 @@ contract EthcallTest is Test {
         );
 
         counter = new Counter();
-        counter.setNumber(0);
         factory = new QuarkWalletFactory();
+        counter.setNumber(0);
+        factory.codeJar().saveCode(ethcall);
     }
 
     function testEthcallCounter() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
-
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            ethcall,
+            abi.encodeWithSelector(
                 Ethcall.run.selector, address(counter), abi.encodeWithSignature("increment(uint256)", (1)), 0
-                ),
-            nonce: wallet.nextUnusedNonce(),
-            expiry: type(uint256).max,
-            allowCallback: true,
-            isReplayable: false,
-            requirements: new uint256[](0)
-        });
+            ),
+            ScriptType.ScriptSource
+        );
 
         assertEq(counter.number(), 0);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
         assertEq(counter.number(), 1);
     }
 
     function testEthcallSupplyUSDCToComet() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
 
         // Set up some funds for test
         deal(USDC, address(wallet), 1000e6);
         // Approve Comet to spend USDC
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            ethcall,
+            abi.encodeWithSelector(
                 Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
-                ),
-            nonce: wallet.nextUnusedNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
-        });
+            ),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IComet(comet).balanceOf(address(wallet)), 0);
+
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         // Supply Comet
-        op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(
+        op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            ethcall,
+            abi.encodeWithSelector(
                 Ethcall.run.selector, address(comet), abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0
-                ),
-            nonce: wallet.nextUnusedNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
-        });
+            ),
+            ScriptType.ScriptSource
+        );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Since there is rouding diff, assert on diff is less than 10 wei
@@ -107,85 +114,86 @@ contract EthcallTest is Test {
     }
 
     function testEthcallWithdrawUSDCFromComet() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
 
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
         // Approve Comet to spend WETH
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            ethcall,
+            abi.encodeWithSelector(
                 Ethcall.run.selector, address(WETH), abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0
-                ),
-            nonce: wallet.nextUnusedNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
-        });
+            ),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         // Supply WETH to Comet
-        op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(
+        op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            ethcall,
+            abi.encodeWithSelector(
                 Ethcall.run.selector, address(comet), abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0
-                ),
-            nonce: wallet.nextUnusedNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
-        });
+            ),
+            ScriptType.ScriptSource
+        );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         // Withdraw USDC from Comet
-        op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(
+        op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            ethcall,
+            abi.encodeWithSelector(
                 Ethcall.run.selector, address(comet), abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0
-                ),
-            nonce: wallet.nextUnusedNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
-        });
+            ),
+            ScriptType.ScriptSource
+        );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
 
     function testEthcallCallReraiseError() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
 
         // Set up some funds for test
         deal(USDC, address(wallet), 1000e6);
 
         // Send 2000 USDC to Comet
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            ethcall,
+            abi.encodeWithSelector(
                 Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.transfer, (comet, 2000e6)), 0
-                ),
-            nonce: wallet.nextUnusedNonce(),
-            expiry: type(uint256).max,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: new uint256[](0)
-        });
+            ),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
+        // gas: meter execute
+        vm.resumeGasMetering();
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkWallet.QuarkCallError.selector,
@@ -196,27 +204,27 @@ contract EthcallTest is Test {
     }
 
     function testEthcallShouldReturnCallResult() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
 
         counter.setNumber(5);
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: ethcall,
-            scriptCalldata: abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            ethcall,
+            abi.encodeWithSelector(
                 Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (1)), 0
-                ),
-            nonce: wallet.nextUnusedNonce(),
-            expiry: type(uint256).max,
-            allowCallback: true,
-            isReplayable: false,
-            requirements: new uint256[](0)
-        });
+            ),
+            ScriptType.ScriptSource
+        );
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
         bytes memory returnData = abi.decode(quarkReturn, (bytes));
+
         assertEq(counter.number(), 4);
         assertEq(abi.decode(returnData, (uint256)), 4);
     }

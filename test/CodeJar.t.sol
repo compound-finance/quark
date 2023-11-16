@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "forge-std/Test.sol";
@@ -15,6 +15,7 @@ contract CodeJarTest is Test {
 
     CodeJar public codeJar;
     address destructingAddress;
+    bytes destructingCode = hex"6000ff"; // PUSH1 [60]; 0 [00]; SELFDESTRUCT [FF]
 
     constructor() {
         codeJar = new CodeJar();
@@ -22,14 +23,24 @@ contract CodeJarTest is Test {
     }
 
     function setUp() public {
-        // TODO: Only on certain tests?
+        // This setUp is only used for `testCodeJarSelfDestruct`. To test the state changes
+        // from a selfdestruct in forge, the selfdestruct must be done in the setUp.
+        // See: https://github.com/foundry-rs/foundry/issues/1543
 
-        // PUSH0 [5F]; SELFDESTRUCT [FF]
-        destructingAddress = codeJar.saveCode(hex"5fff");
-        assertEq(destructingAddress.code, hex"5fff");
+        destructingAddress = codeJar.saveCode(destructingCode);
+        assertEq(destructingAddress.code, destructingCode);
         (bool success,) = destructingAddress.call(hex"");
         assertEq(success, true);
-        assertEq(destructingAddress.code, hex"5fff");
+        // Selfdestruct state changes do not take effect until after setUp
+        assertEq(destructingAddress.code, destructingCode);
+    }
+
+    function testCodeJarSelfDestruct() public {
+        assertEq(destructingAddress.code, hex"");
+        assertEq(destructingAddress.codehash, 0);
+        assertEq(destructingAddress, codeJar.saveCode(destructingCode));
+        assertEq(destructingAddress.code, destructingCode);
+        assertEq(destructingAddress.codehash, keccak256(destructingCode));
     }
 
     function testCodeJarFirstDeploy() public {
@@ -70,7 +81,6 @@ contract CodeJarTest is Test {
             address codeAddress = codeJar.saveCode(scripts[i]);
             assertEq(codeAddress.code, scripts[i]);
             assertEq(codeJar.codeExists(scripts[i]), true);
-            assertEq(codeJar.readCode(codeAddress), scripts[i]);
         }
     }
 
@@ -93,10 +103,10 @@ contract CodeJarTest is Test {
 
         address zeroDeploy = codeJar.saveCode(hex"");
         assertEq(zeroDeploy.codehash, keccak256(hex""));
-        assertEq(codeJar.readCode(zeroDeploy), hex"");
+        assertEq(zeroDeploy.code, hex"");
 
         address nonZeroDeploy = codeJar.saveCode(hex"00");
-        assertEq(codeJar.readCode(nonZeroDeploy), hex"00");
+        assertEq(nonZeroDeploy.code, hex"00");
     }
 
     function testCodeJarCounter() public {
@@ -109,26 +119,20 @@ contract CodeJarTest is Test {
         assertEq(counter.number(), 1);
     }
 
-    function testCodeJarSelfDestruct() public {
-        assertEq(destructingAddress.code, hex"");
-        assertEq(destructingAddress.codehash, 0);
-        assertEq(destructingAddress, codeJar.saveCode(hex"5fff"));
-        assertEq(destructingAddress.code, hex"5fff");
-        assertEq(destructingAddress.codehash, keccak256(hex"5fff"));
-    }
-
     function testCodeJarLarge() public {
         bytes32[] memory script = new bytes32[](10000);
         bytes memory code = abi.encodePacked(script);
         codeJar.saveCode(code);
     }
 
-    function testCodeJarReadNonExistent() public {
-        vm.expectRevert(abi.encodeWithSelector(CodeInvalid.selector, address(0x55)));
-        codeJar.readCode(address(0x55));
+    function testCodeJarDeployConstructor() public {
+        // This is the initCode used in CodeJar. It's a constructor code that returns "0xabcd".
+        bytes memory contructorByteCode = abi.encodePacked(hex"63", hex"00000002", hex"80600e6000396000f3", hex"abcd");
+        address scriptAddress = codeJar.saveCode(contructorByteCode);
 
-        vm.expectRevert(abi.encodeWithSelector(CodeInvalid.selector, address(codeJar)));
-        codeJar.readCode(address(codeJar));
+        (bool success, bytes memory returnData) = scriptAddress.call(hex"");
+
+        assertEq(returnData, hex"abcd");
     }
 
     // Note: cannot test code too large, as overflow impossible to test

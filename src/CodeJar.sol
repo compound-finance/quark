@@ -1,16 +1,15 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 contract CodeJar {
-    error CodeTooLarge(uint256 sz);
-    error CodeNotFound(address codeAddress);
     error CodeInvalid(address codeAddress);
     error CodeHashMismatch(address codeAddress, bytes32 expected, bytes32 given);
 
     /**
      * @notice Saves the code to Code Jar, no-op if it already exists
-     * @dev This calls it meant to be idemponent and fairly inexpensive on a second call.
-     * @return The address of the contract that matches the input code.
+     * @dev This call is meant to be idemponent and fairly inexpensive on a second call
+     * @param code The runtime bytecode of the code to save
+     * @return The address of the contract that matches the input code
      */
     function saveCode(bytes calldata code) external returns (address) {
         bytes memory initCode = getInitCode(code);
@@ -26,7 +25,6 @@ contract CodeJar {
             }
 
             // Posit: these cannot fail and are purely defense-in-depth
-            require(codeCreateAddress != address(0));
             require(codeCreateAddress == codeAddress);
 
             return codeAddress;
@@ -44,6 +42,7 @@ contract CodeJar {
     /**
      * @notice Checks if code already exists in Code Jar
      * @dev Use `saveCode` to get the address of the contract with that code
+     * @param code The runtime bytecode of the code to check
      * @return True if code already exists in Code Jar
      */
     function codeExists(bytes calldata code) external view returns (bool) {
@@ -79,25 +78,5 @@ contract CodeJar {
         return address(
             uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), uint256(0), keccak256(initCode)))))
         );
-    }
-
-    /**
-     * @notice Reads the given code from Code Jar.
-     * @dev This should revert if `codeAddress` was not deployed from this contract.
-     * @return The code at `codeAddress` if `codeAddress` was created by this contract.
-     */
-    function readCode(address codeAddress) external view returns (bytes memory) {
-        bytes memory code = codeAddress.code;
-
-        // Check that address where that given code would have been created by this contract
-        bytes memory initCode = getInitCode(code);
-
-        // Revert if the code doesn't match where we should have deployed it.
-        // This is to prevent using this contract to read random contract codes.
-        if (getCodeAddress(initCode) != codeAddress) {
-            revert CodeInvalid(codeAddress);
-        }
-
-        return code;
     }
 }

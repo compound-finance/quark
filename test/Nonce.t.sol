@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "forge-std/Test.sol";
@@ -6,55 +6,50 @@ import "forge-std/console.sol";
 
 import {CodeJar} from "../src/CodeJar.sol";
 import {QuarkWallet} from "../src/QuarkWallet.sol";
-
-contract QuarkWalletHarness is QuarkWallet {
-    constructor(address owner, CodeJar codeJar) QuarkWallet(owner, codeJar) {}
-
-    function setNonceExternal(uint256 index) external {
-        setNonce(index);
-    }
-}
+import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 
 contract NonceTest is Test {
-    QuarkWalletHarness public walletHarness;
-    CodeJar public codeJar;
-
-    address alice = address(10); // 0x00...a
+    QuarkStateManager public stateManager;
 
     function setUp() public {
-        codeJar = new CodeJar();
-        console.log("CodeJar deployed to: %s", address(codeJar));
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+    }
 
-        walletHarness = new QuarkWalletHarness(alice, codeJar);
+    function testRevertsForInvalidNonce() public {
+        vm.expectRevert();
+        stateManager.isNonceSet(address(this), 0);
+        // NOTE: this is only defense-in-depth -- if this case is triggered, an invariant has been violated because an invalid nonce was acquired
+        vm.expectRevert(QuarkStateManager.InvalidNonce.selector);
+        stateManager.setNonce(0);
     }
 
     function testIsSet() public {
         // nonce is unset by default
-        assertEq(walletHarness.isSet(0), false);
-
+        assertEq(stateManager.isNonceSet(address(this), 1), false);
         // it can be set
-        walletHarness.setNonceExternal(0);
-        assertEq(walletHarness.isSet(0), true);
+        stateManager.setNonce(1);
+        assertEq(stateManager.isNonceSet(address(this), 1), true);
     }
 
     function testNonLinearNonce() public {
         // nonce values are not incremental; you can use a random number as
         // long as it has not been set
-        uint256 nonce = 1234567890;
+        uint96 nonce = 1234567890;
 
-        assertEq(walletHarness.isSet(nonce), false);
+        assertEq(stateManager.isNonceSet(address(this), nonce), false);
 
-        walletHarness.setNonceExternal(nonce);
-        assertEq(walletHarness.isSet(nonce), true);
+        stateManager.setNonce(nonce);
+        assertEq(stateManager.isNonceSet(address(this), nonce), true);
     }
 
     function testNextUnusedNonce() public {
-        assertEq(walletHarness.nextUnusedNonce(), 0);
+        uint96 nonce1 = stateManager.nextNonce(address(this));
 
-        walletHarness.setNonceExternal(0);
-        assertEq(walletHarness.nextUnusedNonce(), 1);
+        stateManager.setNonce(nonce1);
+        assertEq(stateManager.nextNonce(address(this)), nonce1 + 1);
 
-        walletHarness.setNonceExternal(1);
-        assertEq(walletHarness.nextUnusedNonce(), 2);
+        stateManager.setNonce(nonce1 + 1);
+        assertEq(stateManager.nextNonce(address(this)), nonce1 + 2);
     }
 }

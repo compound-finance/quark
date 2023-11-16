@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.21;
 
 import "../QuarkWallet.sol";
@@ -9,6 +9,7 @@ contract Ethcall {
      * @param callContract Contract to call
      * @param callData Encoded calldata for call
      * @param callValue Value for call
+     * @return Return data from call
      */
     function run(address callContract, bytes calldata callData, uint256 callValue) external returns (bytes memory) {
         (bool success, bytes memory returnData) = callContract.call{value: callValue}(callData);

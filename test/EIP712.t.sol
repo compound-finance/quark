@@ -9,84 +9,81 @@ import {QuarkWallet} from "../src/QuarkWallet.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
 import {YulHelper} from "./lib/YulHelper.sol";
+import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {SignatureHelper} from "./lib/SignatureHelper.sol";
+import {ExecuteWithRequirements} from "./lib/ExecuteWithRequirements.sol";
+import {QuarkOperationHelper, ScriptType} from "./lib/QuarkOperationHelper.sol";
 
 contract EIP712Test is Test {
     CodeJar public codeJar;
     Counter public counter;
     QuarkWallet public wallet;
+    QuarkStateManager public stateManager;
 
     uint256 alicePrivateKey = 0xa11ce;
     address alice; // see setup()
     address bob = address(11); // 0x00...b
-    address charlie = address(12); // 0x00...c
 
     function setUp() public {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
+
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
         counter = new Counter();
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
         alice = vm.addr(alicePrivateKey);
-        wallet = new QuarkWallet(alice, codeJar);
+        wallet = new QuarkWallet(alice, address(0), codeJar, stateManager);
     }
 
-    function incrementCounterOperation(uint256 nonce, uint256 expiry)
-        public
-        returns (QuarkWallet.QuarkOperation memory)
-    {
+    function incrementCounterOperation(QuarkWallet targetWallet) public returns (QuarkWallet.QuarkOperation memory) {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint256[] memory requirements;
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: incrementer,
-            scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
-            nonce: nonce,
-            expiry: expiry,
-            allowCallback: false,
-            isReplayable: false,
-            requirements: requirements
-        });
-
-        return op;
+        return new QuarkOperationHelper().newBasicOpWithCalldata(
+            targetWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptSource
+        );
     }
 
     function testExecuteQuarkOperation() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
-
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(wallet);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // bob calls executeOp with the signed operation
-        vm.prank(bob);
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // counter has incremented
         assertEq(counter.number(), 3);
 
         // nonce is spent
-        assertEq(wallet.isSet(nonce), true);
+        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), true);
     }
 
     function testRevertsForBadCode() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
-
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(wallet);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // bob calls executeQuarkOperation with the signed op, but he manipulates the code
-        op.scriptSource = new YulHelper().getDeployed("GetOwner.sol/GetOwner.json");
-        vm.prank(bob);
+        // bad actor modifies script source to selfdestruct the wallet
+        op.scriptSource = hex"6000ff";
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        // submitter calls executeQuarkOperation with the signed op, but they manipulate the code
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -94,202 +91,242 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(wallet.isSet(nonce), false);
+        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
     }
 
     function testRevertsForBadCalldata() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
-
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(wallet);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // bob calls executeQuarkOperation with the signed op, but he manipulates the calldata
+        // submitter calls executeQuarkOperation with the signed op, but they manipulate the calldata
         op.scriptCalldata = abi.encodeWithSignature("decrementCounter(address)", counter);
-        vm.prank(bob);
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // counter is unchanged
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(wallet.isSet(nonce), false);
+        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
     }
 
     function testRevertsForBadExpiry() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
-
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(wallet);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // bob calls executeQuarkOperation with the signed op, but he manipulates the expiry
+        // submitter calls executeQuarkOperation with the signed op, but they manipulate the expiry
         op.expiry += 1;
-        vm.prank(bob);
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // counter is unchanged
         assertEq(counter.number(), 0);
 
         // alice's nonce is not incremented
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextNonce(), op.nonce);
     }
 
     function testRevertsOnReusedNonce() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
-
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(wallet);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // bob calls executeQuarkOperation with the signature
-        vm.startPrank(bob);
+        // gas: meter execute
+        vm.resumeGasMetering();
+
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(wallet.nextUnusedNonce(), 1);
+        assertEq(wallet.nextNonce(), op.nonce + 1);
 
-        // bob tries to reuse the same signature twice
-        vm.expectRevert(QuarkWallet.InvalidNonce.selector);
+        // submitter tries to reuse the same signature twice, for a non-replayable operation
+        vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
         wallet.executeQuarkOperation(op, v, r, s);
-
-        vm.stopPrank();
     }
 
     function testRevertsForExpiredSignature() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
-
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(wallet);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // the expiry block arrives
-        vm.warp(expiry);
+        vm.warp(op.expiry);
 
-        // bob calls executeQuarkOperation with the signature after the expiry
-        vm.prank(bob);
+        // submitter calls executeQuarkOperation with an expired signature
         vm.expectRevert(QuarkWallet.SignatureExpired.selector);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextNonce(), op.nonce);
     }
 
     function testRevertsInvalidS() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
-
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(wallet);
+        (uint8 v, bytes32 r, /* bytes32 s */ ) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // 1 greater than the max value of s
         bytes32 invalidS = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1;
 
-        // bob calls executeQuarkOperation with invalid `s` value
-        vm.prank(bob);
-        vm.expectRevert(QuarkWallet.InvalidSignatureS.selector);
+        // submitter calls executeQuarkOperation with invalid `s` value
+        vm.expectRevert(QuarkWallet.InvalidSignature.selector);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, invalidS);
 
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextNonce(), op.nonce);
     }
 
     function testNonceIsNotSetForReplayableOperation() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounterReplayable(address)", counter),
+            ScriptType.ScriptSource
+        );
 
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
-        op.isReplayable = true;
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // bob calls executeOp with the signed operation
-        vm.prank(bob);
+        // submitter calls executeQuarkOperation with the signed operation
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // counter is incremented
         assertEq(counter.number(), 3);
 
-        // nonce is NOT spent
-        assertEq(wallet.isSet(nonce), false);
+        // nonce is NOT spent; the operation is replayable
+        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
 
-        // bob executes the operation a second time
-        vm.prank(bob);
+        // submitter executes the operation a second time
         wallet.executeQuarkOperation(op, v, r, s);
 
         // counter is incremented
         assertEq(counter.number(), 6);
 
         // nonce is still not spent
-        assertEq(wallet.isSet(nonce), false);
+        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
     }
 
     function testRevertBadRequirements() public {
-        assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory executeWithRequirements =
+            new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
+        address incrementerAddress = codeJar.saveCode(incrementer);
 
-        QuarkWallet.QuarkOperation memory op = incrementCounterOperation(nonce, expiry);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            executeWithRequirements,
+            abi.encodeCall(
+                ExecuteWithRequirements.runWithRequirements,
+                (new uint96[](0), incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
+            ),
+            ScriptType.ScriptSource
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-        uint256[] memory badRequirements = new uint256[](1);
-        badRequirements[0] = 123;
-        op.requirements = badRequirements;
 
-        // bob calls executeQuarkOperation with the altered requirements
-        vm.prank(bob);
+        // submitter alters the requirements
+        uint96[] memory badRequirements = new uint96[](1);
+        badRequirements[0] = 123;
+        op.scriptCalldata = abi.encodeCall(
+            ExecuteWithRequirements.runWithRequirements,
+            (badRequirements, incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
+        );
+
+        // submitter cannot execute the operation because the signature will not match
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(wallet.nextUnusedNonce(), 0);
+        assertEq(wallet.nextNonce(), op.nonce);
     }
 
     function testRequirements() public {
-        vm.startPrank(bob);
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory executeWithRequirements =
+            new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
 
-        uint256 nonce = wallet.nextUnusedNonce();
-        uint256 expiry = block.timestamp + 1000;
+        address incrementerAddress = codeJar.saveCode(incrementer);
 
-        QuarkWallet.QuarkOperation memory firstOp = incrementCounterOperation(nonce, expiry);
+        QuarkWallet.QuarkOperation memory firstOp = incrementCounterOperation(wallet);
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, wallet, firstOp);
 
-        QuarkWallet.QuarkOperation memory secondOp = incrementCounterOperation(nonce + 1, expiry);
-        uint256[] memory requirements = new uint[](1);
+        uint96[] memory requirements = new uint96[](1);
         requirements[0] = firstOp.nonce;
-        secondOp.requirements = requirements;
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, secondOp);
+        QuarkWallet.QuarkOperation memory dependentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            executeWithRequirements,
+            abi.encodeCall(
+                ExecuteWithRequirements.runWithRequirements,
+                (requirements, incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
+            ),
+            ScriptType.ScriptSource
+        );
+
+        dependentOp.nonce = firstOp.nonce + 1;
+
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, dependentOp);
 
         // attempting to execute the second operation first reverts
-        vm.expectRevert(QuarkWallet.RequirementNotMet.selector);
-        wallet.executeQuarkOperation(secondOp, v2, r2, s2);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkWallet.QuarkCallError.selector,
+                abi.encodeWithSelector(ExecuteWithRequirements.RequirementNotMet.selector, firstOp.nonce)
+            )
+        );
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(dependentOp, v2, r2, s2);
 
         // but once the first operation is executed...
         wallet.executeQuarkOperation(firstOp, v1, r1, s1);
-
+        assertEq(counter.number(), 3);
         // the second can be executed
-        wallet.executeQuarkOperation(secondOp, v2, r2, s2);
-
-        vm.stopPrank();
+        wallet.executeQuarkOperation(dependentOp, v2, r2, s2);
+        // and its effect can be observed
+        assertEq(counter.number(), 6);
     }
 }
