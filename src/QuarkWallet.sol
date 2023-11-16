@@ -22,9 +22,6 @@ library QuarkWalletMetadata {
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
-    /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
-    bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
-
     /**
      * @notice Returns the domain separator used for signing an operation with this version of QuarkWallet
      * @return bytes32 The domain separator
@@ -85,7 +82,7 @@ contract QuarkWallet is IERC1271 {
     string public constant VERSION = QuarkWalletMetadata.VERSION;
 
     /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
-    bytes32 public constant CALLBACK_KEY = QuarkWalletMetadata.CALLBACK_KEY;
+    bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
 
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
