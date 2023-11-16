@@ -114,14 +114,14 @@ contract QuarkStateManager {
     function setNonce(uint96 nonce) external {
         // TODO: should we check whether there exists a nonceScriptAddress?
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
-        setNonceInternal(msg.sender, bucket, setMask);
+        setNonceInternal(bucket, setMask);
     }
 
     /**
-     * @dev Set a nonce for a wallet, using the nonce's bucket and mask
+     * @dev Set a nonce for the msg.sender, using the nonce's bucket and mask
      */
-    function setNonceInternal(address wallet, uint256 bucket, uint256 setMask) internal {
-        nonces[wallet][bucket] |= setMask;
+    function setNonceInternal(uint256 bucket, uint256 setMask) internal {
+        nonces[msg.sender][bucket] |= setMask;
     }
 
     /**
@@ -149,7 +149,7 @@ contract QuarkStateManager {
         }
 
         // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
-        setNonceInternal(msg.sender, bucket, setMask);
+        setNonceInternal(bucket, setMask);
 
         // if the nonce has been used before, check if the script address matches, and revert if not
         if (
