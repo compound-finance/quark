@@ -17,6 +17,8 @@ import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
 import "./interfaces/IComet.sol";
 
+import "../lib/QuarkOperationHelper.sol";
+
 contract UniswapFlashSwapMulticallTest is Test {
     QuarkWalletFactory public factory;
     // For signature to QuarkWallet
@@ -103,13 +105,12 @@ contract UniswapFlashSwapMulticallTest is Test {
             callData: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)
         });
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: uniswapFlashSwapMulticall,
-            scriptCalldata: abi.encodeWithSelector(UniswapFlashSwapMulticall.run.selector, payload),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: true
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            uniswapFlashSwapMulticall,
+             abi.encodeWithSelector(UniswapFlashSwapMulticall.run.selector, payload),
+            ScriptType.ScriptAddress
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -127,9 +128,10 @@ contract UniswapFlashSwapMulticallTest is Test {
         deal(USDC, address(wallet), 1000e6);
 
         // Try to invoke callback directly, expect revert with invalid caller
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: uniswapFlashSwapMulticall,
-            scriptCalldata: abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            uniswapFlashSwapMulticall,
+            abi.encodeWithSelector(
                 UniswapFlashSwapMulticall.uniswapV3SwapCallback.selector,
                 1000e6,
                 1000e6,
@@ -140,11 +142,9 @@ contract UniswapFlashSwapMulticallTest is Test {
                         callData: hex""
                     })
                 )
-                ),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: true
-        });
+            ),
+            ScriptType.ScriptAddress
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -190,13 +190,12 @@ contract UniswapFlashSwapMulticallTest is Test {
             callData: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)
         });
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: uniswapFlashSwapMulticall,
-            scriptCalldata: abi.encodeWithSelector(UniswapFlashSwapMulticall.run.selector, payload),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: true
-        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            uniswapFlashSwapMulticall,
+            abi.encodeWithSelector(UniswapFlashSwapMulticall.run.selector, payload),
+            ScriptType.ScriptAddress
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -216,9 +215,10 @@ contract UniswapFlashSwapMulticallTest is Test {
         // Start with 10000 USDC
         deal(USDC, address(wallet), 10000e6);
 
-        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptSource: uniswapFlashSwapMulticall,
-            scriptCalldata: abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            uniswapFlashSwapMulticall,
+            abi.encodeWithSelector(
                 UniswapFlashSwapMulticall.run.selector,
                 UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload({
                     token0: WETH,
@@ -232,11 +232,9 @@ contract UniswapFlashSwapMulticallTest is Test {
                         Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
                         )
                 })
-                ),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: true
-        });
+            ),
+            ScriptType.ScriptAddress
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -244,9 +242,10 @@ contract UniswapFlashSwapMulticallTest is Test {
         assertEq(IERC20(WETH).balanceOf(address(wallet)), 1 ether);
 
         // Payload swap token0 and token1 order, this will not affect the outcome
-        QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
-            scriptSource: uniswapFlashSwapMulticall,
-            scriptCalldata: abi.encodeWithSelector(
+        QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            uniswapFlashSwapMulticall,
+            abi.encodeWithSelector(
                 UniswapFlashSwapMulticall.run.selector,
                 UniswapFlashSwapMulticall.UniswapFlashSwapMulticallPayload({
                     token0: USDC,
@@ -260,11 +259,9 @@ contract UniswapFlashSwapMulticallTest is Test {
                         Ethcall.run.selector, address(USDC), abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
                         )
                 })
-                ),
-            nonce: wallet.nextNonce(),
-            expiry: type(uint256).max,
-            allowCallback: true
-        });
+            ),
+            ScriptType.ScriptAddress
+        );
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
         wallet.executeQuarkOperation(op2, v2, r2, s2);
 
