@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.21;
+pragma solidity 0.8.19;
 
 library UniswapFactoryAddress {
     address internal constant MAINNET = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
