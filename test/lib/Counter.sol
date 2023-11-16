@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 interface HasCallback {
-    function callback() external;
+    function callback() external payable;
 }
 
 contract Counter {
@@ -25,8 +25,8 @@ contract Counter {
         return number;
     }
 
-    function incrementAndCallback() public {
+    function incrementAndCallback() public payable {
         number++;
-        return HasCallback(msg.sender).callback();
+        return HasCallback(msg.sender).callback{value: msg.value}();
     }
 }
