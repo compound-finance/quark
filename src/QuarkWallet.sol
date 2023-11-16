@@ -264,7 +264,7 @@ contract QuarkWallet is IERC1271 {
         return returnData;
     }
 
-    fallback(bytes calldata data) external returns (bytes memory) {
+    fallback(bytes calldata data) external payable returns (bytes memory) {
         address callback = address(uint160(uint256(stateManager.read(CALLBACK_KEY))));
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);
