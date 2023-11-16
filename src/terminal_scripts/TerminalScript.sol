@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.21;
+pragma solidity 0.8.19;
 
 import "v3-periphery/interfaces/ISwapRouter.sol";
 import "openzeppelin/token/ERC20/IERC20.sol";

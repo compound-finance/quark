@@ -20,7 +20,7 @@ else
   etherscan_args=""
 fi
 
-forge script \
+forge script --via-ir \
     $rpc_args \
     $wallet_args \
     $etherscan_args \
