@@ -6,6 +6,56 @@ import {QuarkStateManager} from "./QuarkStateManager.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
+library QuarkWalletMetadata {
+    /// @notice QuarkWallet contract name
+    string public constant NAME = "Quark Wallet";
+
+    /// @notice QuarkWallet contract major version
+    string public constant VERSION = "1";
+
+    /// @notice The EIP-712 typehash for authorizing an operation for this version of QuarkWallet
+    bytes32 public constant QUARK_OPERATION_TYPEHASH = keccak256(
+        "QuarkOperation(uint96 nonce,address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 expiry)"
+    );
+
+    /// @notice The EIP-712 domain typehash for this version of QuarkWallet
+    bytes32 public constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+    /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
+    bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
+
+    /**
+     * @notice Returns the domain separator used for signing an operation with this version of QuarkWallet
+     * @return bytes32 The domain separator
+     */
+    function DOMAIN_SEPARATOR(address wallet) public view returns (bytes32) {
+        return keccak256(
+            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, wallet)
+        );
+    }
+
+    /**
+     * @notice Returns the struct hash used for signing the given operation with this version of QuarkWallet
+     * @return bytes32 The struct hash for the given operation
+     */
+    function STRUCT_HASH(QuarkWallet.QuarkOperation memory op) public pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                QUARK_OPERATION_TYPEHASH, op.scriptAddress, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry
+            )
+        );
+    }
+
+    /**
+     * @notice Returns the EIP-712 digest for signing the given operation with this version of QuarkWallet
+     * @return bytes32 The digest for the given operation
+     */
+    function DIGEST(address wallet, QuarkWallet.QuarkOperation memory op) public view returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(wallet), STRUCT_HASH(op)));
+    }
+}
+
 contract QuarkWallet is IERC1271 {
     error AmbiguousScript();
     error BadSignatory();
@@ -28,27 +78,19 @@ contract QuarkWallet is IERC1271 {
     /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
     QuarkStateManager public immutable stateManager;
 
+    /// @notice Name of contract
+    string public constant NAME = QuarkWalletMetadata.NAME;
+
+    /// @notice The major version of this contract
+    string public constant VERSION = QuarkWalletMetadata.VERSION;
+
     /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
-    bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
-
-    /// @dev The EIP-712 typehash for authorizing an operation
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(uint96 nonce,address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 expiry)"
-    );
-
-    /// @dev The EIP-712 typehash for the contract's domain
-    bytes32 internal constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-
-    /// @notice Name of contract, for use in DOMAIN_SEPARATOR
-    string public constant NAME = "Quark Wallet";
-
-    /// @notice The major version of this contract, for use in DOMAIN_SEPARATOR
-    string public constant VERSION = "1";
+    bytes32 public constant CALLBACK_KEY = QuarkWalletMetadata.CALLBACK_KEY;
 
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
 
+    /// @notice The structure of a signed operation to execute in the context of this wallet
     struct QuarkOperation {
         /// @notice Nonce identifier for the operation
         uint96 nonce;
@@ -73,27 +115,6 @@ contract QuarkWallet is IERC1271 {
         executor = executor_;
         codeJar = codeJar_;
         stateManager = stateManager_;
-    }
-
-    /**
-     * @notice Returns the next unset nonce for this wallet
-     * @dev Any unset nonce is valid to use, but using this method increases
-     * the likelihood that the nonce you use will be on a bucket that has
-     * already been written to, which costs less gas
-     * @return The next unused nonce
-     */
-    function nextNonce() external view returns (uint96) {
-        return stateManager.nextNonce(address(this));
-    }
-
-    /**
-     * @notice Returns the domain separator used for signing operation
-     * @return bytes32 The domain separator
-     */
-    function DOMAIN_SEPARATOR() public view returns (bytes32) {
-        return keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this))
-        );
     }
 
     /**
@@ -122,12 +143,7 @@ contract QuarkWallet is IERC1271 {
             revert AmbiguousScript();
         }
 
-        bytes32 structHash = keccak256(
-            abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptAddress, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry
-            )
-        );
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash));
+        bytes32 digest = QuarkWalletMetadata.DIGEST(address(this), op);
 
         // if the signature check does not revert, the signature is valid
         checkValidSignatureInternal(signer, digest, v, r, s);

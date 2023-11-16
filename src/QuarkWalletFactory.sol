@@ -114,6 +114,25 @@ contract QuarkWalletFactory {
     }
 
     /**
+     * @notice Returns the next unset nonce for the wallet corresponding to the given signer with the DEFAULT_SALT
+     * @dev Any unset nonce is valid to use, but using this method increases
+     * the likelihood that the nonce you use will be on a bucket that has
+     * already been written to, which costs less gas
+     * @return The next unused nonce
+     */
+    function nextNonce(address signer, bytes32 salt) external view returns (uint96) {
+        return stateManager.nextNonce(walletAddressForSignerWithSalt(signer, salt));
+    }
+
+    /**
+     * @notice Returns the EIP-712 domain separator used for signing operations for the given salted wallet
+     * @return bytes32 The domain separator for the wallet corresponding to the signer and salt
+     */
+    function DOMAIN_SEPARATOR(address signer, bytes32 salt) external view returns (bytes32) {
+        return QuarkWalletMetadata.DOMAIN_SEPARATOR(walletAddressForSignerWithSalt(signer, salt));
+    }
+
+    /**
      * @notice Create a wallet for signer (and default salt) if it does not exist, then execute operation
      * @param signer Signer to deploy QuarkWallet for and then execute operation with
      * @param op The QuarkOperation to execute on the wallet

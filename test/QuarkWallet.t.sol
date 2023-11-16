@@ -94,7 +94,7 @@ contract QuarkWalletTest is Test {
         aliceAccount.call{value: ethToSend}("");
         QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
-        uint96 nonce = aliceWalletExecutable.nextNonce();
+        uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
         address scriptAddress = codeJar.saveCode(getMessageDetails);
         bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
 
@@ -119,7 +119,7 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            nonce: aliceWallet.nextNonce(),
+            nonce: stateManager.nextNonce(address(aliceWallet)),
             scriptAddress: address(0),
             scriptSource: bytes(""),
             scriptCalldata: bytes(""),
@@ -135,7 +135,7 @@ contract QuarkWalletTest is Test {
         assertEq(stateManager.isNonceSet(address(aliceWallet), op.nonce), true);
 
         // direct execution of the null script with no calldata is allowed
-        uint96 nonce = aliceWallet.nextNonce();
+        uint96 nonce = stateManager.nextNonce(address(aliceWallet));
         vm.prank(aliceWallet.executor());
         aliceWallet.executeScript(nonce, address(0), bytes(""));
         assertEq(stateManager.isNonceSet(address(aliceWallet), nonce), true);
@@ -146,7 +146,7 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            nonce: aliceWallet.nextNonce(),
+            nonce: stateManager.nextNonce(address(aliceWallet)),
             scriptAddress: address(0xc0c0),
             scriptSource: bytes("f00f00"),
             scriptCalldata: bytes("feefee"),
@@ -282,7 +282,7 @@ contract QuarkWalletTest is Test {
         vm.startPrank(aliceWallet.signer());
 
         // pre-compute execution parameters so that the revert is expected from the right call
-        uint96 nonce = aliceWallet.nextNonce();
+        uint96 nonce = stateManager.nextNonce(address(aliceWallet));
         address target = codeJar.saveCode(incrementer);
         bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
 
@@ -304,7 +304,7 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 0);
 
         // pre-compute execution parameters so that the revert is expected from the right call
-        uint96 nonce = aliceWallet.nextNonce();
+        uint96 nonce = stateManager.nextNonce(address(aliceWallet));
         address target = codeJar.saveCode(incrementer);
         bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
 
