@@ -5,8 +5,9 @@ import "./lib/PoolAddress.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
+import "../QuarkScript.sol";
 
-contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback {
+contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback, QuarkScript {
     using SafeERC20 for IERC20;
 
     // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
@@ -43,6 +44,7 @@ contract UniswapFlashLoanMulticall is IUniswapV3FlashCallback {
      * @param payload UniswapFlashLoanMulticallPayload struct; contains token and fee info and MultiCall inputs
      */
     function run(UniswapFlashLoanMulticallPayload memory payload) external {
+        allowCallback();
         // Reorder token0, token1 to ensure token1 > token0
         if (payload.token0 > payload.token1) {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
