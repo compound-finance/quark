@@ -11,9 +11,7 @@ import "../QuarkScript.sol";
 contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
     using SafeERC20 for IERC20;
 
-    error FailedFlashRepay(address token);
     error InvalidCaller();
-    error InvalidInput();
 
     /// @notice Input for flash loan when interacting with UniswapV3 Pool contract
     struct FlashLoanCallbackPayload {
