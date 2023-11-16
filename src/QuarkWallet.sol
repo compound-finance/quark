@@ -21,36 +21,6 @@ library QuarkWalletMetadata {
     /// @notice The EIP-712 domain typehash for this version of QuarkWallet
     bytes32 public constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-
-    /**
-     * @notice Returns the domain separator used for signing an operation with this version of QuarkWallet
-     * @return bytes32 The domain separator
-     */
-    function DOMAIN_SEPARATOR(address wallet) public view returns (bytes32) {
-        return keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, wallet)
-        );
-    }
-
-    /**
-     * @notice Returns the struct hash used for signing the given operation with this version of QuarkWallet
-     * @return bytes32 The struct hash for the given operation
-     */
-    function STRUCT_HASH(QuarkWallet.QuarkOperation memory op) public pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptAddress, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry
-            )
-        );
-    }
-
-    /**
-     * @notice Returns the EIP-712 digest for signing the given operation with this version of QuarkWallet
-     * @return bytes32 The digest for the given operation
-     */
-    function DIGEST(address wallet, QuarkWallet.QuarkOperation memory op) public view returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(wallet), STRUCT_HASH(op)));
-    }
 }
 
 contract QuarkWallet is IERC1271 {
@@ -140,7 +110,26 @@ contract QuarkWallet is IERC1271 {
             revert AmbiguousScript();
         }
 
-        bytes32 digest = QuarkWalletMetadata.DIGEST(address(this), op);
+        bytes32 structHash = keccak256(
+            abi.encode(
+                QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH,
+                op.nonce,
+                op.scriptAddress,
+                op.scriptSource,
+                op.scriptCalldata,
+                op.expiry
+            )
+        );
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                QuarkWalletMetadata.DOMAIN_TYPEHASH,
+                keccak256(bytes(QuarkWalletMetadata.NAME)),
+                keccak256(bytes(QuarkWalletMetadata.VERSION)),
+                block.chainid,
+                address(this)
+            )
+        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         // if the signature check does not revert, the signature is valid
         checkValidSignatureInternal(signer, digest, v, r, s);

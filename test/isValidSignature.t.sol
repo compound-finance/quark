@@ -9,6 +9,7 @@ import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
 import {EIP1271Signer, EIP1271Reverter} from "./lib/EIP1271Signer.sol";
+import {SignatureHelper} from "./lib/SignatureHelper.sol";
 
 contract isValidSignatureTest is Test {
     CodeJar public codeJar;
@@ -41,12 +42,11 @@ contract isValidSignatureTest is Test {
 
     function createTestSignature(uint256 privateKey, QuarkWallet wallet)
         internal
-        view
         returns (bytes32, bytes memory)
     {
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest =
-            keccak256(abi.encodePacked("\x19\x01", QuarkWalletMetadata.DOMAIN_SEPARATOR(address(wallet)), structHash));
+            keccak256(abi.encodePacked("\x19\x01", new SignatureHelper().domainSeparator(address(wallet)), structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         return (digest, abi.encodePacked(r, s, v));
     }
@@ -84,7 +84,7 @@ contract isValidSignatureTest is Test {
 
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", QuarkWalletMetadata.DOMAIN_SEPARATOR(address(aliceWallet)), structHash)
+            abi.encodePacked("\x19\x01", new SignatureHelper().domainSeparator(address(aliceWallet)), structHash)
         );
         (uint8 v, bytes32 r, /* bytes32 s */ ) = vm.sign(alicePrivateKey, digest);
 
@@ -104,7 +104,7 @@ contract isValidSignatureTest is Test {
 
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", QuarkWalletMetadata.DOMAIN_SEPARATOR(address(aliceWallet)), structHash)
+            abi.encodePacked("\x19\x01", new SignatureHelper().domainSeparator(address(aliceWallet)), structHash)
         );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
 

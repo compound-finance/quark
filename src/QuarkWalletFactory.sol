@@ -129,7 +129,15 @@ contract QuarkWalletFactory {
      * @return bytes32 The domain separator for the wallet corresponding to the signer and salt
      */
     function DOMAIN_SEPARATOR(address signer, bytes32 salt) external view returns (bytes32) {
-        return QuarkWalletMetadata.DOMAIN_SEPARATOR(walletAddressForSignerWithSalt(signer, salt));
+        return keccak256(
+            abi.encode(
+                QuarkWalletMetadata.DOMAIN_TYPEHASH,
+                keccak256(bytes(QuarkWalletMetadata.NAME)),
+                keccak256(bytes(QuarkWalletMetadata.VERSION)),
+                block.chainid,
+                walletAddressForSignerWithSalt(signer, salt)
+            )
+        );
     }
 
     /**

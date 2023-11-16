@@ -5,16 +5,12 @@ import "forge-std/Test.sol";
 import "./../../src/QuarkWallet.sol";
 
 contract SignatureHelper is Test {
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH;
-
-    bytes32 internal constant QUARK_WALLET_DOMAIN_TYPEHASH = QuarkWalletMetadata.DOMAIN_TYPEHASH;
-
     function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op)
         external
         view
         returns (uint8, bytes32, bytes32)
     {
-        bytes32 digest = QuarkWalletMetadata.DIGEST(address(wallet), op);
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator(address(wallet)), structHash(op)));
         return vm.sign(privateKey, digest);
     }
 
@@ -26,15 +22,32 @@ contract SignatureHelper is Test {
         view
         returns (uint8, bytes32, bytes32)
     {
-        bytes32 digest = QuarkWalletMetadata.DIGEST(walletAddress, op);
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator(walletAddress), structHash(op)));
         return vm.sign(privateKey, digest);
     }
 
     function structHash(QuarkWallet.QuarkOperation memory op) internal pure returns (bytes32) {
-        return QuarkWalletMetadata.STRUCT_HASH(op);
+        return keccak256(
+            abi.encode(
+                QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH,
+                op.nonce,
+                op.scriptAddress,
+                op.scriptSource,
+                op.scriptCalldata,
+                op.expiry
+            )
+        );
     }
 
-    function domainSeparator(address walletAddress) internal view returns (bytes32) {
-        return QuarkWalletMetadata.DOMAIN_SEPARATOR(walletAddress);
+    function domainSeparator(address walletAddress) public view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                QuarkWalletMetadata.DOMAIN_TYPEHASH,
+                keccak256(bytes(QuarkWalletMetadata.NAME)),
+                keccak256(bytes(QuarkWalletMetadata.VERSION)),
+                block.chainid,
+                walletAddress
+            )
+        );
     }
 }
