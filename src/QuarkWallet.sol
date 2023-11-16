@@ -6,6 +6,11 @@ import {QuarkStateManager} from "./QuarkStateManager.sol";
 import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
 
+/**
+ * @title Quark Wallet Metadata
+ * @notice A library of metadata specific to this implementation of the Quark Wallet
+ * @author Compound Labs, Inc.
+ */
 library QuarkWalletMetadata {
     /// @notice QuarkWallet contract name
     string internal constant NAME = "Quark Wallet";
@@ -23,6 +28,11 @@ library QuarkWalletMetadata {
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 }
 
+/**
+ * @title Quark Wallet
+ * @notice A smart wallet that can run transaction scripts
+ * @author Compound Labs, Inc.
+ */
 contract QuarkWallet is IERC1271 {
     error AmbiguousScript();
     error BadSignatory();

@@ -5,6 +5,11 @@ import "./CodeJar.sol";
 import "./QuarkWallet.sol";
 import "./QuarkStateManager.sol";
 
+/**
+ * @title Quark Wallet Factory
+ * @notice A factory for deploying new Quark Wallets at deterministic addresses
+ * @author Compound Labs, Inc.
+ */
 contract QuarkWalletFactory {
     event WalletDeploy(address indexed signer, address indexed executor, address walletAddress, bytes32 salt);
 

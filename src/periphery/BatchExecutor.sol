@@ -3,6 +3,12 @@ pragma solidity 0.8.19;
 
 import {QuarkWallet} from "../QuarkWallet.sol";
 
+/**
+ * @title Batch Executor for Quark Operations
+ * @notice An entry point contract that enables a submitter to submit multiple Quark Operations for different
+ *         accounts in a single transaction
+ * @author Compound Labs, Inc.
+ */
 contract BatchExecutor {
     /// @dev Thrown when the input for a function is invalid
     error BadData();

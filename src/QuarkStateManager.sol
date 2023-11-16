@@ -8,6 +8,12 @@ interface IExecutor {
         returns (bytes memory);
 }
 
+/**
+ * @title Quark State Manager
+ * @notice Contract for managing nonces and storage for Quark wallets, guaranteeing storage isolation across wallets
+ *         and Quark operations
+ * @author Compound Labs, Inc.
+ */
 contract QuarkStateManager {
     error InvalidNonce();
     error NoNonceActive();

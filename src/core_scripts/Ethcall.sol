@@ -3,6 +3,11 @@ pragma solidity 0.8.19;
 
 import "../QuarkWallet.sol";
 
+/**
+ * @title Ethcall Core Script
+ * @notice Core transaction script that can be used to call into another contract
+ * @author Compound Labs, Inc.
+ */
 contract Ethcall {
     /**
      * @notice Execute a single call
