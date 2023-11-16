@@ -25,11 +25,7 @@ contract QuarkWalletFactory {
     /// @notice Address of QuarkStateManager contract
     QuarkStateManager public immutable stateManager;
 
-    /**
-     * @notice Construct a new QuarkWalletFactory
-     * @param codeJar_ The CodeJar contract used to store scripts
-     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for wallets
-     */
+    /// @notice Construct a new QuarkWalletFactory, deploying a CodeJar and QuarkStateManager as well
     constructor() {
         codeJar = new CodeJar();
         stateManager = new QuarkStateManager();
