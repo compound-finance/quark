@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import "./lib/PoolAddress.sol";
+import "./../vendor/uniswap_v3_periphery/PoolAddress.sol";
 import "./lib/UniswapFactoryAddress.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
