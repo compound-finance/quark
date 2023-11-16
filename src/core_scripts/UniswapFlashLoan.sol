@@ -36,7 +36,7 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
     }
 
     /**
-     * @notice Execute multiple calls in a single transaction with flash loan
+     * @notice Execute multiple calls in a single transaction after taking out a flash loan
      * @param payload UniswapFlashLoanPayload struct; contains token and fee info and inputs
      */
     function run(UniswapFlashLoanPayload memory payload) external {
