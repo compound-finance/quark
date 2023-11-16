@@ -8,7 +8,7 @@ import "forge-std/StdUtils.sol";
 import "./../../src/CodeJar.sol";
 import "./../../src/core_scripts/Ethcall.sol";
 import "./../../src/core_scripts/Multicall.sol";
-import "./../../src/core_scripts/UniswapFlashLoanMulticall.sol";
+import "./../../src/core_scripts/UniswapFlashLoan.sol";
 import "./../../src/QuarkWallet.sol";
 import "./../../src/QuarkWalletFactory.sol";
 import "./../lib/YulHelper.sol";
@@ -19,7 +19,7 @@ import "./interfaces/IComet.sol";
 
 import "../lib/QuarkOperationHelper.sol";
 
-contract UniswapFlashLoanMulticallTest is Test {
+contract UniswapFlashLoanTest is Test {
     QuarkWalletFactory public factory;
     // For signature to QuarkWallet
     uint256 alicePrivateKey = 0xa11ce;
@@ -39,12 +39,12 @@ contract UniswapFlashLoanMulticallTest is Test {
     bytes ethcall = new YulHelper().getDeployed(
             "Ethcall.sol/Ethcall.json"
         );
-    bytes uniswapFlashLoanMulticall = new YulHelper().getDeployed(
-            "UniswapFlashLoanMulticall.sol/UniswapFlashLoanMulticall.json"
+    bytes uniswapFlashLoan = new YulHelper().getDeployed(
+            "UniswapFlashLoan.sol/UniswapFlashLoan.json"
         );
     address ethcallAddress;
     address multicallAddress;
-    address uniswapFlashLoanMulticallAddress;
+    address uniswapFlashLoanAddress;
 
     function setUp() public {
         vm.createSelectFork(
@@ -55,7 +55,7 @@ contract UniswapFlashLoanMulticallTest is Test {
         factory = new QuarkWalletFactory();
         ethcallAddress = factory.codeJar().saveCode(ethcall);
         multicallAddress = factory.codeJar().saveCode(multicall);
-        uniswapFlashLoanMulticallAddress = factory.codeJar().saveCode(uniswapFlashLoanMulticall);
+        uniswapFlashLoanAddress = factory.codeJar().saveCode(uniswapFlashLoan);
     }
 
     function testFlashLoanOnBorrowPosition() public {
@@ -148,10 +148,10 @@ contract UniswapFlashLoanMulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            uniswapFlashLoanMulticall,
+            uniswapFlashLoan,
             abi.encodeWithSelector(
-                UniswapFlashLoanMulticall.run.selector,
-                UniswapFlashLoanMulticall.UniswapFlashLoanMulticallPayload({
+                UniswapFlashLoan.run.selector,
+                UniswapFlashLoan.UniswapFlashLoanPayload({
                     token0: USDC,
                     token1: DAI,
                     fee: 100,
@@ -181,13 +181,13 @@ contract UniswapFlashLoanMulticallTest is Test {
         // Invoking the callback directly should revert as invalid caller
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            uniswapFlashLoanMulticall,
+            uniswapFlashLoan,
             abi.encodeWithSelector(
-                UniswapFlashLoanMulticall.uniswapV3FlashCallback.selector,
+                UniswapFlashLoan.uniswapV3FlashCallback.selector,
                 1000e6,
                 1000e6,
                 abi.encode(
-                    UniswapFlashLoanMulticall.FlashLoanCallbackPayload({
+                    UniswapFlashLoan.FlashLoanCallbackPayload({
                         amount0: 1 ether,
                         amount1: 0,
                         poolKey: PoolAddress.getPoolKey(WETH, USDC, 500),
@@ -201,8 +201,7 @@ contract UniswapFlashLoanMulticallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(UniswapFlashLoanMulticall.InvalidCaller.selector)
+                QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(UniswapFlashLoan.InvalidCaller.selector)
             )
         );
         wallet.executeQuarkOperation(op, v, r, s);
@@ -212,8 +211,7 @@ contract UniswapFlashLoanMulticallTest is Test {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Send USDC to random address
-        UniswapFlashLoanMulticall.UniswapFlashLoanMulticallPayload memory payload = UniswapFlashLoanMulticall
-            .UniswapFlashLoanMulticallPayload({
+        UniswapFlashLoan.UniswapFlashLoanPayload memory payload = UniswapFlashLoan.UniswapFlashLoanPayload({
             token0: USDC,
             token1: DAI,
             fee: 100,
@@ -227,8 +225,8 @@ contract UniswapFlashLoanMulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            uniswapFlashLoanMulticall,
-            abi.encodeWithSelector(UniswapFlashLoanMulticall.run.selector, payload),
+            uniswapFlashLoan,
+            abi.encodeWithSelector(UniswapFlashLoan.run.selector, payload),
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -248,10 +246,10 @@ contract UniswapFlashLoanMulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            uniswapFlashLoanMulticall,
+            uniswapFlashLoan,
             abi.encodeWithSelector(
-                UniswapFlashLoanMulticall.run.selector,
-                UniswapFlashLoanMulticall.UniswapFlashLoanMulticallPayload({
+                UniswapFlashLoan.run.selector,
+                UniswapFlashLoan.UniswapFlashLoanPayload({
                     token0: USDC,
                     token1: DAI,
                     fee: 100,
@@ -273,10 +271,10 @@ contract UniswapFlashLoanMulticallTest is Test {
 
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            uniswapFlashLoanMulticall,
+            uniswapFlashLoan,
             abi.encodeWithSelector(
-                UniswapFlashLoanMulticall.run.selector,
-                UniswapFlashLoanMulticall.UniswapFlashLoanMulticallPayload({
+                UniswapFlashLoan.run.selector,
+                UniswapFlashLoan.UniswapFlashLoanPayload({
                     token0: DAI,
                     token1: USDC,
                     fee: 100,
