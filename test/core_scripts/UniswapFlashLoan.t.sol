@@ -126,25 +126,35 @@ contract UniswapFlashLoanTest is Test {
                     })
                 )
             ),
-            0
+            0 // value
         );
 
         // Approve Comet for LINK
         callContracts[5] = ethcallAddress;
         callDatas[5] = abi.encodeWithSelector(
-            Ethcall.run.selector, LINK, abi.encodeCall(IERC20.approve, (comet, type(uint256).max)), 0
+            Ethcall.run.selector,
+            LINK,
+            abi.encodeCall(IERC20.approve, (comet, type(uint256).max)),
+            0 // value
         );
 
         // Supply LINK back to Comet
         callContracts[6] = ethcallAddress;
         callDatas[6] = abi.encodeWithSelector(
-            Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (LINK, linkBalanceEst)), 0
+            Ethcall.run.selector,
+            comet,
+            abi.encodeCall(IComet.supply, (LINK, linkBalanceEst)),
+            0 // value
         );
 
         // Withdraw 1000 USDC from Comet again to repay debt
         callContracts[7] = ethcallAddress;
-        callDatas[7] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0);
+        callDatas[7] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            comet,
+            abi.encodeCall(IComet.withdraw, (USDC, 1000e6)),
+            0 // value
+        );
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
@@ -282,8 +292,11 @@ contract UniswapFlashLoanTest is Test {
                     amount1: 10000e6,
                     callContract: ethcallAddress,
                     callData: abi.encodeWithSelector(
-                        Ethcall.run.selector, USDC, abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
-                        )
+                        Ethcall.run.selector, 
+                        USDC, 
+                        abi.encodeCall(IERC20.approve, (comet, 1000e6)), 
+                        0 // value
+                    )
                 })
             ),
             ScriptType.ScriptAddress
