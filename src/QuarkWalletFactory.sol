@@ -126,6 +126,8 @@ contract QuarkWalletFactory {
 
     /**
      * @notice Returns the EIP-712 domain separator used for signing operations for the given salted wallet
+     * @dev Only use for wallets deployed by this factory, or counterfactual wallets that will be deployed;
+     * only a wallet with the assumed QuarkWalletMetadata (NAME, VERSION, DOMAIN_TYPEHASH) will work.
      * @return bytes32 The domain separator for the wallet corresponding to the signer and salt
      */
     function DOMAIN_SEPARATOR(address signer, bytes32 salt) external view returns (bytes32) {
