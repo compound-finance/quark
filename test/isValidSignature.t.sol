@@ -40,10 +40,7 @@ contract isValidSignatureTest is Test {
         bobWallet = new QuarkWallet(bob, address(0), codeJar, stateManager);
     }
 
-    function createTestSignature(uint256 privateKey, QuarkWallet wallet)
-        internal
-        returns (bytes32, bytes memory)
-    {
+    function createTestSignature(uint256 privateKey, QuarkWallet wallet) internal returns (bytes32, bytes memory) {
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest =
             keccak256(abi.encodePacked("\x19\x01", new SignatureHelper().domainSeparator(address(wallet)), structHash));
