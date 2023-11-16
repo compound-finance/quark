@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.21;
+pragma solidity 0.8.19;
 
 import {CodeJar} from "./CodeJar.sol";
 import {QuarkStateManager} from "./QuarkStateManager.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
+import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
 
 contract QuarkWallet is IERC1271 {
     error AmbiguousScript();
@@ -264,7 +264,7 @@ contract QuarkWallet is IERC1271 {
         return returnData;
     }
 
-    fallback(bytes calldata data) external returns (bytes memory) {
+    fallback(bytes calldata data) external payable returns (bytes memory) {
         address callback = address(uint160(uint256(stateManager.read(CALLBACK_KEY))));
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);

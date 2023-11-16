@@ -1,4 +1,4 @@
-pragma solidity ^0.8.20;
+pragma solidity 0.8.19;
 
 contract EIP1271Signer {
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
