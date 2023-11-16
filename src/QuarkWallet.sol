@@ -8,18 +8,18 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 library QuarkWalletMetadata {
     /// @notice QuarkWallet contract name
-    string public constant NAME = "Quark Wallet";
+    string internal constant NAME = "Quark Wallet";
 
     /// @notice QuarkWallet contract major version
-    string public constant VERSION = "1";
+    string internal constant VERSION = "1";
 
     /// @notice The EIP-712 typehash for authorizing an operation for this version of QuarkWallet
-    bytes32 public constant QUARK_OPERATION_TYPEHASH = keccak256(
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
         "QuarkOperation(uint96 nonce,address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 expiry)"
     );
 
     /// @notice The EIP-712 domain typehash for this version of QuarkWallet
-    bytes32 public constant DOMAIN_TYPEHASH =
+    bytes32 internal constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 }
 
@@ -50,6 +50,12 @@ contract QuarkWallet is IERC1271 {
 
     /// @notice The major version of this contract
     string public constant VERSION = QuarkWalletMetadata.VERSION;
+
+    /// @dev The EIP-712 domain typehash for this wallet
+    bytes32 internal constant DOMAIN_TYPEHASH = QuarkWalletMetadata.DOMAIN_TYPEHASH;
+
+    /// @dev The EIP-712 typehash for authorizing an operation for this wallet
+    bytes32 internal constant QUARK_OPERATION_TYPEHASH = QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH;
 
     /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
     bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
@@ -112,7 +118,7 @@ contract QuarkWallet is IERC1271 {
 
         bytes32 structHash = keccak256(
             abi.encode(
-                QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH,
+                QUARK_OPERATION_TYPEHASH,
                 op.nonce,
                 op.scriptAddress,
                 op.scriptSource,
@@ -122,9 +128,9 @@ contract QuarkWallet is IERC1271 {
         );
         bytes32 domainSeparator = keccak256(
             abi.encode(
-                QuarkWalletMetadata.DOMAIN_TYPEHASH,
-                keccak256(bytes(QuarkWalletMetadata.NAME)),
-                keccak256(bytes(QuarkWalletMetadata.VERSION)),
+                DOMAIN_TYPEHASH,
+                keccak256(bytes(NAME)),
+                keccak256(bytes(VERSION)),
                 block.chainid,
                 address(this)
             )
