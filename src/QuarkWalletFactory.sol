@@ -25,6 +25,11 @@ contract QuarkWalletFactory {
     /// @notice Address of QuarkStateManager contract
     QuarkStateManager public immutable stateManager;
 
+    /**
+     * @notice Construct a new QuarkWalletFactory
+     * @param codeJar_ The CodeJar contract used to store scripts
+     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for wallets
+     */
     constructor() {
         codeJar = new CodeJar();
         stateManager = new QuarkStateManager();
@@ -87,6 +92,7 @@ contract QuarkWalletFactory {
         return walletAddressForSignerInternal(signer, executor, salt);
     }
 
+    /// @dev Get the deterministic address of a QuarkWallet with a given (signer, executor, salt) permutation
     function walletAddressForSignerInternal(address signer, address executor, bytes32 salt)
         internal
         view

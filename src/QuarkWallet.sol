@@ -93,6 +93,13 @@ contract QuarkWallet is IERC1271 {
         uint256 expiry;
     }
 
+    /**
+     * @notice Construct a new QuarkWallet
+     * @param signer_ The address that is allowed to sign QuarkOperations for this wallet
+     * @param executor_ The address that is allowed to directly execute Quark scripts for this wallet
+     * @param codeJar_ The CodeJar contract used to store scripts
+     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
+     */
     constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
         signer = signer_;
         executor = executor_;
@@ -150,7 +157,7 @@ contract QuarkWallet is IERC1271 {
 
     /**
      * @notice Execute a transaction script directly
-     * @dev Can only be called by the wallet's signer or executor
+     * @dev Can only be called by the wallet's executor
      * @param nonce Nonce for the operation; must be unused
      * @param scriptAddress Address for the script to execute
      * @param scriptCalldata Encoded call to invoke on the script
@@ -202,7 +209,7 @@ contract QuarkWallet is IERC1271 {
         return EIP_1271_MAGIC_VALUE;
     }
 
-    /*
+    /**
      * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
      * that the signature comes from the signer; if the QuarkWallet is owned by
      * a smart contract, isValidSignature relays the `isValidSignature` to the
@@ -237,7 +244,7 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @notice Execute a QuarkOperation with its nonce locked and with access to private nonce-scoped storage.
+     * @notice Execute a QuarkOperation with its nonce locked and with access to private nonce-scoped storage
      * @dev Can only be called by stateManager during setActiveNonceAndCallback()
      * @param scriptAddress Address of script to execute
      * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
@@ -271,6 +278,10 @@ contract QuarkWallet is IERC1271 {
         return returnData;
     }
 
+    /**
+     * @notice Fallback function specifically used for scripts that have enabled callbacks
+     * @dev Reverts if callback is not set by the script
+     */
     fallback(bytes calldata data) external payable returns (bytes memory) {
         address callback = address(uint160(uint256(stateManager.read(CALLBACK_KEY))));
         if (callback != address(0)) {

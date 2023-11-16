@@ -21,6 +21,7 @@ contract QuarkStateManager {
     error NonceAlreadySet();
     error NonceScriptMismatch();
 
+    /// @notice Bit-packed structure of a nonce-script pair
     struct NonceScript {
         uint96 nonce;
         address scriptAddress;
@@ -54,9 +55,7 @@ contract QuarkStateManager {
         return isNonceSetInternal(wallet, bucket, mask);
     }
 
-    /**
-     * @dev Returns if a given nonce is set for a wallet, using the nonce's bucket and mask
-     */
+    /// @dev Returns if a given nonce is set for a wallet, using the nonce's bucket and mask
     function isNonceSetInternal(address wallet, uint256 bucket, uint256 mask) internal view returns (bool) {
         return (nonces[wallet][bucket] & mask) != 0;
     }
@@ -90,9 +89,7 @@ contract QuarkStateManager {
         return activeNonceScript[msg.sender].scriptAddress;
     }
 
-    /**
-     * @dev Locate a nonce at a (bucket, mask) bitset position in the nonces mapping
-     */
+    /// @dev Locate a nonce at a (bucket, mask) bitset position in the nonces mapping
     function getBucket(uint96 nonce) internal pure returns (uint256, /* bucket */ uint256 /* mask */ ) {
         if (nonce == 0) {
             revert InvalidNonce();
@@ -102,9 +99,7 @@ contract QuarkStateManager {
         return (bucket, setMask);
     }
 
-    /**
-     * @notice Clears (un-sets) the active nonce to allow its reuse; allows a script to be replayed
-     */
+    /// @notice Clears (un-sets) the active nonce to allow its reuse; allows a script to be replayed
     function clearNonce() external {
         if (activeNonceScript[msg.sender].nonce == 0) {
             revert NoNonceActive();
@@ -123,9 +118,7 @@ contract QuarkStateManager {
         setNonceInternal(bucket, setMask);
     }
 
-    /**
-     * @dev Set a nonce for the msg.sender, using the nonce's bucket and mask
-     */
+    /// @dev Set a nonce for the msg.sender, using the nonce's bucket and mask
     function setNonceInternal(uint256 bucket, uint256 setMask) internal {
         nonces[msg.sender][bucket] |= setMask;
     }
@@ -184,9 +177,7 @@ contract QuarkStateManager {
         return result;
     }
 
-    /**
-     * @notice Write arbitrary bytes to storage namespaced by the currently active nonce; reverts if no nonce is currently active
-     */
+    /// @notice Write arbitrary bytes to storage namespaced by the currently active nonce; reverts if no nonce is currently active
     function write(bytes32 key, bytes32 value) external {
         if (activeNonceScript[msg.sender].nonce == 0) {
             revert NoNonceActive();
