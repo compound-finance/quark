@@ -26,8 +26,17 @@ contract QuarkStateManagerTest is Test {
 
     function testRevertsForNoActiveNonce() public {
         // this contract does not have an active nonce
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NoNonceActive.selector));
         stateManager.clearNonce();
+
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NoNonceActive.selector));
+        stateManager.read(bytes32("hello"));
+
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NoNonceActive.selector));
+        stateManager.write(bytes32("hello"), bytes32("goodbye"));
+
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NoNonceActive.selector));
+        stateManager.getActiveScript();
     }
 
     function testNonceZeroIsValid() public {
