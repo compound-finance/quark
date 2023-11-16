@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import "./lib/ConditionalChecker.sol";
 
-contract Multicall {
+contract ConditionalMulticall {
     error InvalidInput();
     error MulticallError(uint256 callIndex, address callContract, bytes err);
 
