@@ -114,7 +114,7 @@ contract QuarkWalletFactory {
     }
 
     /**
-     * @notice Returns the next unset nonce for the wallet corresponding to the given signer with the DEFAULT_SALT
+     * @notice Returns the next unset nonce for the wallet corresponding to the given signer and salt
      * @dev Any unset nonce is valid to use, but using this method increases
      * the likelihood that the nonce you use will be on a bucket that has
      * already been written to, which costs less gas
