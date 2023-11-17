@@ -280,7 +280,7 @@ contract QuarkWallet is IERC1271 {
 
     /**
      * @notice Fallback function specifically used for scripts that have enabled callbacks
-     * @dev Reverts if callback is not set by the script
+     * @dev Reverts if callback is not enabled by the script
      */
     fallback(bytes calldata data) external payable returns (bytes memory) {
         address callback = address(uint160(uint256(stateManager.read(CALLBACK_KEY))));
