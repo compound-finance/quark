@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.21;
+// SPDX-License-Identifier: BSD-3-Clause
+pragma solidity 0.8.19;
 
 library ConditionalChecker {
     enum CheckType {
