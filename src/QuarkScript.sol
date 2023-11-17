@@ -3,6 +3,11 @@ pragma solidity 0.8.19;
 
 import "./QuarkWallet.sol";
 
+/**
+ * @title Quark Script
+ * @notice A contract that exposes helper functions for Quark scripts to inherit from
+ * @author Compound Labs, Inc.
+ */
 contract QuarkScript {
     function allowCallback() internal {
         QuarkWallet self = QuarkWallet(payable(address(this)));

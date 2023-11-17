@@ -5,6 +5,11 @@ import "./CodeJar.sol";
 import "./QuarkWallet.sol";
 import "./QuarkStateManager.sol";
 
+/**
+ * @title Quark Wallet Factory
+ * @notice A factory for deploying new Quark Wallets at deterministic addresses
+ * @author Compound Labs, Inc.
+ */
 contract QuarkWalletFactory {
     event WalletDeploy(address indexed signer, address indexed executor, address walletAddress, bytes32 salt);
 
@@ -20,6 +25,7 @@ contract QuarkWalletFactory {
     /// @notice Address of QuarkStateManager contract
     QuarkStateManager public immutable stateManager;
 
+    /// @notice Construct a new QuarkWalletFactory, deploying a CodeJar and QuarkStateManager as well
     constructor() {
         codeJar = new CodeJar();
         stateManager = new QuarkStateManager();
@@ -82,6 +88,7 @@ contract QuarkWalletFactory {
         return walletAddressForSignerInternal(signer, executor, salt);
     }
 
+    /// @dev Get the deterministic address of a QuarkWallet with a given (signer, executor, salt) permutation
     function walletAddressForSignerInternal(address signer, address executor, bytes32 salt)
         internal
         view

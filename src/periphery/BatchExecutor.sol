@@ -3,18 +3,24 @@ pragma solidity 0.8.19;
 
 import {QuarkWallet} from "../QuarkWallet.sol";
 
+/**
+ * @title Batch Executor for Quark Operations
+ * @notice An entry point contract that enables a submitter to submit multiple Quark Operations for different
+ *         accounts in a single transaction
+ * @author Compound Labs, Inc.
+ */
 contract BatchExecutor {
     /// @dev Thrown when the input for a function is invalid
     error BadData();
 
     /**
      * @notice Execute a list of QuarkOperations via signatures
-     * @param accounts A list of accounts to execute operations for
-     * @param ops A list of QuarkOperations
-     * @param v A list of EIP-712 signature v values
-     * @param r A list of EIP-712 signature r values
-     * @param s A list of EIP-712 signature s values
-     * @return A list of return values from the executed operations
+     * @param accounts List of accounts to execute operations for
+     * @param ops List of QuarkOperations
+     * @param v List of EIP-712 signature v values
+     * @param r List of EIP-712 signature r values
+     * @param s List of EIP-712 signature s values
+     * @return List of return values from the executed operations
      */
     function batchExecuteOperations(
         address[] calldata accounts,

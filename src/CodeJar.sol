@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
+/**
+ * @title Code Jar
+ * @notice Stores contract code at deterministic addresses
+ * @author Compound Labs, Inc.
+ */
 contract CodeJar {
     error CodeInvalid(address codeAddress);
     error CodeHashMismatch(address codeAddress, bytes32 expected, bytes32 given);

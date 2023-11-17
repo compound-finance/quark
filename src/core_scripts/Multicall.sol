@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
+/**
+ * @title Multicall Core Script
+ * @notice Core transaction script that can be used to bundle multiple delegatecalls into a single operation
+ * @author Compound Labs, Inc.
+ */
 contract Multicall {
     error InvalidInput();
     error MulticallError(uint256 callIndex, address callContract, bytes err);
