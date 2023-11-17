@@ -15,7 +15,6 @@ interface IExecutor {
  * @author Compound Labs, Inc.
  */
 contract QuarkStateManager {
-    error InvalidNonce();
     error NoNonceActive();
     error NoUnusedNonces();
     error NonceAlreadySet();
@@ -48,9 +47,6 @@ contract QuarkStateManager {
      * @return Whether the nonce has been exhausted
      */
     function isNonceSet(address wallet, uint96 nonce) public view returns (bool) {
-        if (nonce == 0) {
-            revert InvalidNonce();
-        }
         (uint256 bucket, uint256 mask) = getBucket(nonce);
         return isNonceSetInternal(wallet, bucket, mask);
     }
@@ -68,8 +64,7 @@ contract QuarkStateManager {
      * @return The next unused nonce
      */
     function nextNonce(address wallet) external view returns (uint96) {
-        uint96 i;
-        for (i = 1; i < type(uint96).max; i++) {
+        for (uint96 i = 0; i < type(uint96).max; i++) {
             if (!isNonceSet(wallet, i) && (nonceScriptAddress[wallet][i] == address(0))) {
                 return i;
             }
@@ -82,7 +77,7 @@ contract QuarkStateManager {
      * @return Currently active script address
      */
     function getActiveScript() external view returns (address) {
-        if (activeNonceScript[msg.sender].nonce == 0) {
+        if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
             revert NoNonceActive();
         }
         // the last 20 bytes is the address
@@ -91,9 +86,6 @@ contract QuarkStateManager {
 
     /// @dev Locate a nonce at a (bucket, mask) bitset position in the nonces mapping
     function getBucket(uint96 nonce) internal pure returns (uint256, /* bucket */ uint256 /* mask */ ) {
-        if (nonce == 0) {
-            revert InvalidNonce();
-        }
         uint256 bucket = nonce >> 8;
         uint256 setMask = 1 << (nonce & 0xff);
         return (bucket, setMask);
@@ -101,7 +93,7 @@ contract QuarkStateManager {
 
     /// @notice Clears (un-sets) the active nonce to allow its reuse; allows a script to be replayed
     function clearNonce() external {
-        if (activeNonceScript[msg.sender].nonce == 0) {
+        if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
             revert NoNonceActive();
         }
         (uint256 bucket, uint256 setMask) = getBucket(activeNonceScript[msg.sender].nonce);
@@ -135,10 +127,6 @@ contract QuarkStateManager {
         payable
         returns (bytes memory)
     {
-        if (nonce == 0) {
-            revert InvalidNonce();
-        }
-
         // retrieve the (bucket, mask) pair that addresses the nonce in memory
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
 
@@ -179,7 +167,7 @@ contract QuarkStateManager {
 
     /// @notice Write arbitrary bytes to storage namespaced by the currently active nonce; reverts if no nonce is currently active
     function write(bytes32 key, bytes32 value) external {
-        if (activeNonceScript[msg.sender].nonce == 0) {
+        if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
             revert NoNonceActive();
         }
         walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key] = value;
@@ -190,7 +178,7 @@ contract QuarkStateManager {
      * @return Value at the nonce storage location, as bytes
      */
     function read(bytes32 key) external view returns (bytes32) {
-        if (activeNonceScript[msg.sender].nonce == 0) {
+        if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
             revert NoNonceActive();
         }
         return walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key];
