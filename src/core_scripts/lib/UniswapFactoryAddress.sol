@@ -13,12 +13,12 @@ library UniswapFactoryAddress {
     function getAddress() internal view returns (address) {
         if (block.chainid == 1) return MAINNET; // Ethereum mainnet
         if (block.chainid == 10) return MAINNET; // Optimism mainnet
-        if (block.chainid == 42161) return MAINNET; // Arbitrum mainnet
+        if (block.chainid == 42_161) return MAINNET; // Arbitrum mainnet
         if (block.chainid == 137) return MAINNET; // Polygon mainnet
         if (block.chainid == 5) return MAINNET; // Goerli testnet
         if (block.chainid == 56) return BNB; // Binance Smart Chain mainnet
         if (block.chainid == 8453) return BASE; // Base mainnet
-        if (block.chainid == 42220) return CELO; // Celo mainnet
+        if (block.chainid == 42_220) return CELO; // Celo mainnet
         revert UnrecognizedChain(block.chainid);
     }
 }

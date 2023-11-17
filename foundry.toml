@@ -4,5 +4,8 @@ out = "out"
 libs = ["lib"]
 solc = "0.8.19"
 
+[fmt]
+number_underscore = "thousands"
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 evm_version = "paris"

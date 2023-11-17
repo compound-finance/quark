@@ -40,7 +40,7 @@ contract UniswapSwapActionsTest is Test {
             string.concat(
                 "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
             ),
-            18429607 // 2023-10-25 13:24:00 PST
+            18_429_607 // 2023-10-25 13:24:00 PST
         );
         factory = new QuarkWalletFactory();
     }
@@ -51,7 +51,7 @@ contract UniswapSwapActionsTest is Test {
         vm.pauseGasMetering();
 
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        deal(USDC, address(wallet), 10000e6);
+        deal(USDC, address(wallet), 10_000e6);
 
         // ExactIn: Limit the amount of USDC you want to spend and receive as much WETH as possible
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -111,7 +111,7 @@ contract UniswapSwapActionsTest is Test {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
-        deal(USDC, address(wallet), 10000e6);
+        deal(USDC, address(wallet), 10_000e6);
 
         // ExactIn: Limit the amount of USDC you want to spend and receive as much COMP as possible
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(

@@ -48,7 +48,7 @@ contract CodeJarTest is Test {
         address scriptAddress = codeJar.saveCode(hex"11223344");
         uint256 gasUsed = gasLeft - gasleft();
         assertEq(scriptAddress.code, hex"11223344");
-        assertApproxEqAbs(gasUsed, 42000, 3000);
+        assertApproxEqAbs(gasUsed, 42_000, 3000);
     }
 
     function testCodeJarSecondDeploy() public {
