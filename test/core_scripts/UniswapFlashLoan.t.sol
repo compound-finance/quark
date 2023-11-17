@@ -58,7 +58,7 @@ contract UniswapFlashLoanTest is Test {
         uniswapFlashLoanAddress = factory.codeJar().saveCode(uniswapFlashLoan);
     }
 
-    function testFlashLoanOnBorrowPosition() public {
+    function testFlashLoanForCollateralSwapOnCompound() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Set up some funds for test
@@ -70,7 +70,7 @@ contract UniswapFlashLoanTest is Test {
         // Supply WETH to Comet
         IComet(comet).supply(WETH, 2 ether);
         // Withdraw USDC from Comet
-        IComet(comet).withdraw(USDC, 1000e6);
+        IComet(comet).withdraw(USDC, 1_000e6);
         // Transfer all USDC out to null address so test wallet will need to use flashloan to pay off debt
         // Leave only 1 USDC to repay flash loan fee
         IERC20(USDC).transfer(address(123), 999e6);
@@ -88,12 +88,12 @@ contract UniswapFlashLoanTest is Test {
         // Approve Comet to spend USDC
         callContracts[0] = ethcallAddress;
         callDatas[0] =
-            abi.encodeWithSelector(Ethcall.run.selector, USDC, abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0);
+            abi.encodeWithSelector(Ethcall.run.selector, USDC, abi.encodeCall(IERC20.approve, (comet, 1_000e6)), 0);
 
         // Use flashloan usdc to pay off comet debt (1000USDC)
         callContracts[1] = ethcallAddress;
         callDatas[1] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (USDC, 1000e6)), 0);
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (USDC, 1_000e6)), 0);
 
         // Withdraw all comet collateral (2 WETH)
         callContracts[2] = ethcallAddress;
@@ -152,7 +152,7 @@ contract UniswapFlashLoanTest is Test {
         callDatas[7] = abi.encodeWithSelector(
             Ethcall.run.selector,
             comet,
-            abi.encodeCall(IComet.withdraw, (USDC, 1000e6)),
+            abi.encodeCall(IComet.withdraw, (USDC, 1_000e6)),
             0 // value
         );
 
@@ -165,7 +165,7 @@ contract UniswapFlashLoanTest is Test {
                     token0: USDC,
                     token1: DAI,
                     fee: 100,
-                    amount0: 1000e6,
+                    amount0: 1_000e6,
                     amount1: 0,
                     callContract: multicallAddress,
                     callData: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)
@@ -179,14 +179,14 @@ contract UniswapFlashLoanTest is Test {
         // Verify that user now has no WETH collateral on Comet, but only LINK
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0);
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), linkBalanceEst);
-        assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
+        assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1_000e6);
     }
 
     function testRevertsForInvalidCaller() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         deal(WETH, address(wallet), 100 ether);
-        deal(USDC, address(wallet), 1000e6);
+        deal(USDC, address(wallet), 1_000e6);
 
         // Invoking the callback directly should revert as invalid caller
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -194,8 +194,8 @@ contract UniswapFlashLoanTest is Test {
             uniswapFlashLoan,
             abi.encodeWithSelector(
                 UniswapFlashLoan.uniswapV3FlashCallback.selector,
-                1000e6,
-                1000e6,
+                1_000e6,
+                1_000e6,
                 abi.encode(
                     UniswapFlashLoan.FlashLoanCallbackPayload({
                         amount0: 1 ether,
@@ -225,11 +225,11 @@ contract UniswapFlashLoanTest is Test {
             token0: USDC,
             token1: DAI,
             fee: 100,
-            amount0: 1000e6,
+            amount0: 1_000e6,
             amount1: 0,
             callContract: ethcallAddress,
             callData: abi.encodeWithSelector(
-                Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(1), 1000e6)), 0
+                Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(1), 1_000e6)), 0
                 )
         });
 
@@ -252,7 +252,7 @@ contract UniswapFlashLoanTest is Test {
     function testTokensOrderInvariant() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
-        deal(USDC, address(wallet), 10000e6);
+        deal(USDC, address(wallet), 10_000e6);
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
@@ -263,11 +263,11 @@ contract UniswapFlashLoanTest is Test {
                     token0: USDC,
                     token1: DAI,
                     fee: 100,
-                    amount0: 10000e6,
+                    amount0: 10_000e6,
                     amount1: 0,
                     callContract: ethcallAddress,
                     callData: abi.encodeWithSelector(
-                        Ethcall.run.selector, USDC, abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
+                        Ethcall.run.selector, USDC, abi.encodeCall(IERC20.approve, (comet, 1_000e6)), 0
                     )
                 })
             ),
@@ -277,7 +277,7 @@ contract UniswapFlashLoanTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Lose 1 USDC to flash loan fee
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 9999e6);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 9_999e6);
 
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
@@ -289,12 +289,12 @@ contract UniswapFlashLoanTest is Test {
                     token1: USDC,
                     fee: 100,
                     amount0: 0,
-                    amount1: 10000e6,
+                    amount1: 10_000e6,
                     callContract: ethcallAddress,
                     callData: abi.encodeWithSelector(
                         Ethcall.run.selector, 
                         USDC, 
-                        abi.encodeCall(IERC20.approve, (comet, 1000e6)), 
+                        abi.encodeCall(IERC20.approve, (comet, 1_000e6)), 
                         0 // value
                     )
                 })
@@ -305,6 +305,6 @@ contract UniswapFlashLoanTest is Test {
         wallet.executeQuarkOperation(op2, v2, r2, s2);
 
         // Lose 1 USDC to flash loan fee
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 9998e6);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 9_998e6);
     }
 }
