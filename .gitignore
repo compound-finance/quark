@@ -15,3 +15,6 @@ docs/
 
 # VSCode files
 .vscode/
+
+# Node modules
+node_modules/
