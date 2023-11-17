@@ -58,7 +58,8 @@ contract UniswapFlashLoanTest is Test {
         uniswapFlashLoanAddress = factory.codeJar().saveCode(uniswapFlashLoan);
     }
 
-    function testFlashLoanOnBorrowPosition() public {
+    function testFlashLoanForCollateralSwapOnCompound() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Set up some funds for test
@@ -174,6 +175,7 @@ contract UniswapFlashLoanTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Verify that user now has no WETH collateral on Comet, but only LINK
@@ -183,6 +185,7 @@ contract UniswapFlashLoanTest is Test {
     }
 
     function testRevertsForInvalidCaller() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         deal(WETH, address(wallet), 100 ether);
@@ -214,10 +217,12 @@ contract UniswapFlashLoanTest is Test {
                 QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(UniswapFlashLoan.InvalidCaller.selector)
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
     function testRevertsForInsufficientFundsToRepayFlashLoan() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Send USDC to random address
@@ -246,13 +251,15 @@ contract UniswapFlashLoanTest is Test {
                 abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
     function testTokensOrderInvariant() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
-        deal(USDC, address(wallet), 10000e6);
+        deal(USDC, address(wallet), 10_000e6);
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
@@ -263,7 +270,7 @@ contract UniswapFlashLoanTest is Test {
                     token0: USDC,
                     token1: DAI,
                     fee: 100,
-                    amount0: 10000e6,
+                    amount0: 10_000e6,
                     amount1: 0,
                     callContract: ethcallAddress,
                     callData: abi.encodeWithSelector(
@@ -289,7 +296,7 @@ contract UniswapFlashLoanTest is Test {
                     token1: USDC,
                     fee: 100,
                     amount0: 0,
-                    amount1: 10000e6,
+                    amount1: 10_000e6,
                     callContract: ethcallAddress,
                     callData: abi.encodeWithSelector(
                         Ethcall.run.selector, 
@@ -302,6 +309,7 @@ contract UniswapFlashLoanTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op2, v2, r2, s2);
 
         // Lose 1 USDC to flash loan fee
