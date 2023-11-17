@@ -51,6 +51,7 @@ contract ConditionalMulticallTest is Test {
     }
 
     function testConditionalRunPassed() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Set up some funds for test
@@ -127,6 +128,7 @@ contract ConditionalMulticallTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // When reaches here, meaning all checks are passed
@@ -134,6 +136,7 @@ contract ConditionalMulticallTest is Test {
     }
 
     function testConditionalRunUnmet() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Set up some funds for test
@@ -182,10 +185,12 @@ contract ConditionalMulticallTest is Test {
                 )
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
     function testConditionalRunInvalidInput() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Compose array of parameters
@@ -215,10 +220,12 @@ contract ConditionalMulticallTest is Test {
                 QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(ConditionalMulticall.InvalidInput.selector)
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
     function testConditionalRunMulticallError() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Set up some funds for test
@@ -291,10 +298,12 @@ contract ConditionalMulticallTest is Test {
                 )
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
     function testConditionalRunEmptyInputIsValid() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Compose array of parameters
@@ -314,10 +323,12 @@ contract ConditionalMulticallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // Empty array is a valid input representing a no-op, and it should not revert
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
     function testConditionalRunOnPeriodicRepay() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Set up some funds for test
@@ -390,8 +401,10 @@ contract ConditionalMulticallTest is Test {
                 )
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
+        vm.pauseGasMetering();
         // Wallet has accrue 400 USDC
         deal(USDC, address(wallet), 400e6);
 
@@ -405,8 +418,10 @@ contract ConditionalMulticallTest is Test {
             ScriptType.ScriptAddress
         );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
+        vm.pauseGasMetering();
         // Wallet has accrued another 400 USDC
         deal(USDC, address(wallet), 400e6);
         op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -418,8 +433,10 @@ contract ConditionalMulticallTest is Test {
             ScriptType.ScriptAddress
         );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
+        vm.pauseGasMetering();
         // Wallet has accrued another 400 USDC
         deal(USDC, address(wallet), 400e6);
         op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -430,8 +447,10 @@ contract ConditionalMulticallTest is Test {
                 ),ScriptType.ScriptAddress
         );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
+        vm.pauseGasMetering();
         // Wallet no longer borrows from Comet, condition 2 will fail
         deal(USDC, address(wallet), 400e6);
 
@@ -456,6 +475,7 @@ contract ConditionalMulticallTest is Test {
                 )
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Wallet fully pays off debt
