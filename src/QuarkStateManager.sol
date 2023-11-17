@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.8.21;
+pragma solidity 0.8.19;
 
 interface IExecutor {
     function executeScriptWithNonceLock(address scriptAddress, bytes calldata scriptCalldata)
@@ -23,15 +23,15 @@ contract QuarkStateManager {
     /// @notice Bit-packed nonce values
     mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
 
+    /// @notice Per-wallet-nonce address for preventing replays with changed script address
+    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => address /* address */)) public nonceScriptAddress;
+
     /// @notice Currently active nonce-script pair for a wallet, if any, for which storage is accessible
     mapping(address /* wallet */ => NonceScript) internal activeNonceScript;
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
     mapping(address /* wallet */ => mapping(uint96 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
         internal walletStorage;
-
-    /// @notice Per-wallet-nonce address for preventing replays with changed script address
-    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => address /* address */)) nonceScriptAddress;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -44,9 +44,15 @@ contract QuarkStateManager {
         if (nonce == 0) {
             revert InvalidNonce();
         }
-        uint256 bucket = nonce >> 8;
-        uint256 mask = 1 << (nonce & 0xff);
-        return nonces[wallet][bucket] & mask != 0;
+        (uint256 bucket, uint256 mask) = getBucket(nonce);
+        return isNonceSetInternal(wallet, bucket, mask);
+    }
+
+    /**
+     * @dev Returns if a given nonce is set for a wallet, using the nonce's bucket and mask
+     */
+    function isNonceSetInternal(address wallet, uint256 bucket, uint256 mask) internal view returns (bool) {
+        return (nonces[wallet][bucket] & mask) != 0;
     }
 
     /**
@@ -64,18 +70,6 @@ contract QuarkStateManager {
             }
         }
         revert NoUnusedNonces();
-    }
-
-    /**
-     * @notice Return the nonce currently active for a wallet; revert if none
-     * @return Currently active nonce
-     */
-    function getActiveNonce() external view returns (uint96) {
-        if (activeNonceScript[msg.sender].nonce == 0) {
-            revert NoNonceActive();
-        }
-        // the first 12 bytes is the nonce
-        return activeNonceScript[msg.sender].nonce;
     }
 
     /**
@@ -120,6 +114,13 @@ contract QuarkStateManager {
     function setNonce(uint96 nonce) external {
         // TODO: should we check whether there exists a nonceScriptAddress?
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
+        setNonceInternal(bucket, setMask);
+    }
+
+    /**
+     * @dev Set a nonce for the msg.sender, using the nonce's bucket and mask
+     */
+    function setNonceInternal(uint256 bucket, uint256 setMask) internal {
         nonces[msg.sender][bucket] |= setMask;
     }
 
@@ -142,13 +143,13 @@ contract QuarkStateManager {
         // retrieve the (bucket, mask) pair that addresses the nonce in memory
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
 
-        // ensure nonce is not already set (NOTE: inlined isNonceSet to avoid reading the nonce twice)
-        if ((nonces[msg.sender][bucket] & setMask) != 0) {
+        // ensure nonce is not already set
+        if (isNonceSetInternal(msg.sender, bucket, setMask)) {
             revert NonceAlreadySet();
         }
 
         // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
-        nonces[msg.sender][bucket] |= setMask;
+        setNonceInternal(bucket, setMask);
 
         // if the nonce has been used before, check if the script address matches, and revert if not
         if (
@@ -166,7 +167,7 @@ contract QuarkStateManager {
             IExecutor(msg.sender).executeScriptWithNonceLock{value: msg.value}(scriptAddress, scriptCalldata);
 
         // if a nonce was cleared, set the nonceScriptAddress to lock nonce re-use to the same script address
-        if (nonceScriptAddress[msg.sender][nonce] == address(0) && (nonces[msg.sender][bucket] & setMask) == 0) {
+        if (nonceScriptAddress[msg.sender][nonce] == address(0) && !isNonceSetInternal(msg.sender, bucket, setMask)) {
             nonceScriptAddress[msg.sender][nonce] = scriptAddress;
         }
 
