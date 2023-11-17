@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
 import "./../vendor/uniswap_v3_periphery/PoolAddress.sol";
