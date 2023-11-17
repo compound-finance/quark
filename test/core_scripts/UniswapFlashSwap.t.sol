@@ -53,6 +53,7 @@ contract UniswapFlashSwapTest is Test {
     }
 
     function testUniswapFlashSwapMulticallLeverageComet() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Set up some funds for test
@@ -112,6 +113,7 @@ contract UniswapFlashSwapTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
 
         // Verify that user is now supplying 10 + 1 WETH
@@ -119,6 +121,7 @@ contract UniswapFlashSwapTest is Test {
     }
 
     function testInvalidCallerFlashSwap() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         deal(WETH, address(wallet), 100 ether);
@@ -148,10 +151,12 @@ contract UniswapFlashSwapTest is Test {
                 QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(UniswapFlashSwap.InvalidCaller.selector)
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
     function testNotEnoughToPayFlashSwap() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Set up some funds for test
@@ -196,10 +201,12 @@ contract UniswapFlashSwapTest is Test {
                 abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
             )
         );
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
     function testTokenOrderInvariant() public {
+        vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
 
         // Start with 10000 USDC
@@ -226,11 +233,12 @@ contract UniswapFlashSwapTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
-
         // Bought 1 weth for USDC
         assertEq(IERC20(WETH).balanceOf(address(wallet)), 1 ether);
 
+        vm.pauseGasMetering();
         // Payload swap token0 and token1 order, this will not affect the outcome
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
@@ -253,6 +261,7 @@ contract UniswapFlashSwapTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
+        vm.resumeGasMetering();
         wallet.executeQuarkOperation(op2, v2, r2, s2);
 
         // Bought 1 weth for USDC
