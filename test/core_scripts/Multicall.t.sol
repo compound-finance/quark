@@ -347,7 +347,7 @@ contract MulticallTest is Test {
         wallets[0] = address(walletA);
         walletCalls[0] = abi.encodeWithSignature(
             "executeScript(uint96,address,bytes)",
-            walletA.nextNonce(),
+            factory.stateManager().nextNonce(address(walletA)),
             ethcallAddress,
             abi.encodeWithSelector(
                 Ethcall.run.selector,
@@ -358,7 +358,7 @@ contract MulticallTest is Test {
         );
 
         // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
-        uint96 walletBNextNonce = walletB.nextNonce();
+        uint96 walletBNextNonce = factory.stateManager().nextNonce(address(walletB));
         wallets[1] = address(walletB);
         walletCalls[1] = abi.encodeWithSignature(
             "executeScript(uint96,address,bytes)",
