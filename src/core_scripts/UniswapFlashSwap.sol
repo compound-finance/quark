@@ -1,22 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.21;
+pragma solidity 0.8.19;
 
-import "./lib/PoolAddress.sol";
+import "./../vendor/uniswap_v3_periphery/PoolAddress.sol";
+import "./lib/UniswapFactoryAddress.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 import "v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "../QuarkScript.sol";
 
-contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback, QuarkScript {
+contract UniswapFlashSwap is IUniswapV3SwapCallback, QuarkScript {
     using SafeERC20 for IERC20;
 
-    // Constant of uniswap's factory to authorize callback caller for Mainnet, Goerli, Arbitrum, Optimism, Polygon
-    address constant UNISWAP_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-
-    error FailedFlashSwap(address token);
     error InvalidCaller();
-    error InvalidInput();
-    error MulticallError(uint256 callIndex, address callContract, bytes err);
 
     /// @notice Input for flash swap multicall when interacting with UniswapV3 Pool swap function
     struct FlashSwapMulticallInput {
@@ -25,7 +20,7 @@ contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback, QuarkScript {
         bytes callData;
     }
 
-    /// @notice Payload for UniswapFlashSwapMulticall
+    /// @notice Payload for UniswapFlashSwap
     struct UniswapFlashSwapMulticallPayload {
         address token0;
         address token1;
@@ -51,7 +46,7 @@ contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback, QuarkScript {
 
         IUniswapV3Pool(
             PoolAddress.computeAddress(
-                UNISWAP_FACTORY, PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee)
+                UniswapFactoryAddress.getAddress(), PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee)
             )
         ).swap(
             address(this),
@@ -76,7 +71,8 @@ contract UniswapFlashSwapMulticall is IUniswapV3SwapCallback, QuarkScript {
      */
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         FlashSwapMulticallInput memory input = abi.decode(data, (FlashSwapMulticallInput));
-        IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(UNISWAP_FACTORY, input.poolKey));
+        IUniswapV3Pool pool =
+            IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), input.poolKey));
         if (msg.sender != address(pool)) {
             revert InvalidCaller();
         }
