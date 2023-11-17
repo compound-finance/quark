@@ -64,7 +64,7 @@ contract ConditionalMulticallTest is Test {
         // Approve Comet to spend WETH
         callContracts[0] = ethcallAddress;
         callDatas[0] =
-            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 100 ether)));
+            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0);
         conditions[0] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.Bool,
             operator: ConditionalChecker.Operator.Equal
@@ -74,7 +74,7 @@ contract ConditionalMulticallTest is Test {
         // Supply WETH to Comet
         callContracts[1] = ethcallAddress;
         callDatas[1] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)));
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0);
         conditions[1] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.None,
             operator: ConditionalChecker.Operator.None
@@ -83,8 +83,9 @@ contract ConditionalMulticallTest is Test {
 
         // Withdraw USDC from Comet
         callContracts[2] = ethcallAddress;
-        callDatas[2] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1_000_000_000)));
+        callDatas[2] = abi.encodeWithSelector(
+            Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1_000_000_000)), 0
+        );
         conditions[2] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.None,
             operator: ConditionalChecker.Operator.None
@@ -94,7 +95,7 @@ contract ConditionalMulticallTest is Test {
         // Condition checks, account is not liquidatable
         callContracts[3] = ethcallAddress;
         callDatas[3] = abi.encodeWithSelector(
-            Ethcall.run.selector, comet, abi.encodeCall(IComet.isLiquidatable, (address(wallet)))
+            Ethcall.run.selector, comet, abi.encodeCall(IComet.isLiquidatable, (address(wallet))), 0
         );
         conditions[3] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.Bool,
@@ -105,7 +106,7 @@ contract ConditionalMulticallTest is Test {
         // Condition checks that account borrow balance is 1000
         callContracts[4] = ethcallAddress;
         callDatas[4] = abi.encodeWithSelector(
-            Ethcall.run.selector, comet, abi.encodeCall(IComet.borrowBalanceOf, (address(wallet)))
+            Ethcall.run.selector, comet, abi.encodeCall(IComet.borrowBalanceOf, (address(wallet))), 0
         );
         conditions[4] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.Uint,
@@ -134,9 +135,6 @@ contract ConditionalMulticallTest is Test {
 
     function testConditionalRunUnmet() public {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory multicall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
-        );
 
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
@@ -149,7 +147,7 @@ contract ConditionalMulticallTest is Test {
         // Approve Comet to spend WETH
         callContracts[0] = ethcallAddress;
         callDatas[0] =
-            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 100 ether)));
+            abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeCall(IERC20.approve, (comet, 100 ether)), 0);
         conditions[0] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.Bool,
             operator: ConditionalChecker.Operator.Equal
@@ -159,7 +157,7 @@ contract ConditionalMulticallTest is Test {
         // Supply WETH to Comet
         callContracts[1] = ethcallAddress;
         callDatas[1] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)));
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0);
         conditions[1] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.None,
             operator: ConditionalChecker.Operator.None
@@ -167,7 +165,7 @@ contract ConditionalMulticallTest is Test {
         checkValues[1] = hex"";
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            wallet, multicall, abi.encodeWithSelector(
+            wallet, conditionalMulticall, abi.encodeWithSelector(
                 ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
                 ), ScriptType.ScriptAddress);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -245,7 +243,7 @@ contract ConditionalMulticallTest is Test {
         // Supply WETH to Comet
         callContracts[1] = ethcallAddress;
         callDatas[1] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)));
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (WETH, 100 ether)), 0);
         conditions[1] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.None,
             operator: ConditionalChecker.Operator.None
@@ -255,7 +253,7 @@ contract ConditionalMulticallTest is Test {
         // Withdraw USDC from Comet
         callContracts[2] = ethcallAddress;
         callDatas[2] =
-            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)));
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, 1000e6)), 0);
         conditions[2] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.None,
             operator: ConditionalChecker.Operator.None
@@ -264,8 +262,9 @@ contract ConditionalMulticallTest is Test {
 
         // Send USDC to Stranger; will fail (insufficient balance)
         callContracts[3] = ethcallAddress;
-        callDatas[3] =
-            abi.encodeWithSelector(Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(123), 10000e6)));
+        callDatas[3] = abi.encodeWithSelector(
+            Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(123), 10000e6)), 0
+        );
         conditions[3] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.None,
             operator: ConditionalChecker.Operator.None
@@ -341,7 +340,7 @@ contract ConditionalMulticallTest is Test {
         // Check wallet balance of USDC
         callContracts[0] = ethcallAddress;
         callDatas[0] =
-            abi.encodeWithSelector(Ethcall.run.selector, USDC, abi.encodeCall(IERC20.balanceOf, (address(wallet))));
+            abi.encodeWithSelector(Ethcall.run.selector, USDC, abi.encodeCall(IERC20.balanceOf, (address(wallet))), 0);
         conditions[0] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.Uint,
             operator: ConditionalChecker.Operator.GreaterThanOrEqual
@@ -351,7 +350,7 @@ contract ConditionalMulticallTest is Test {
         // Check that wallet still has USDC borrow in Comet
         callContracts[1] = ethcallAddress;
         callDatas[1] = abi.encodeWithSelector(
-            Ethcall.run.selector, comet, abi.encodeCall(IComet.borrowBalanceOf, (address(wallet)))
+            Ethcall.run.selector, comet, abi.encodeCall(IComet.borrowBalanceOf, (address(wallet))), 0
         );
         conditions[1] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.Uint,
@@ -361,7 +360,8 @@ contract ConditionalMulticallTest is Test {
 
         // Supply USDC to Comet to repay
         callContracts[2] = ethcallAddress;
-        callDatas[2] = abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (USDC, 400e6)));
+        callDatas[2] =
+            abi.encodeWithSelector(Ethcall.run.selector, comet, abi.encodeCall(IComet.supply, (USDC, 400e6)), 0);
         conditions[2] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.None,
             operator: ConditionalChecker.Operator.None

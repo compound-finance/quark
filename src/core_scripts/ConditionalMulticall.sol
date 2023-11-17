@@ -37,10 +37,10 @@ contract ConditionalMulticall {
                 conditions[i].checkType != ConditionalChecker.CheckType.None
                     && conditions[i].operator != ConditionalChecker.Operator.None
             ) {
-                ConditionalChecker.check(returnData, checkValues[i], conditions[i]);
+                ConditionalChecker.check(abi.decode(returnData, (bytes)), checkValues[i], conditions[i]);
             }
 
-            returnDatas[i] = returnData;
+            returnDatas[i] = abi.decode(returnData, (bytes));
         }
 
         return returnDatas;
