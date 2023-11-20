@@ -39,7 +39,6 @@ contract QuarkWallet is IERC1271 {
     error InvalidEIP1271Signature();
     error InvalidSignature();
     error NoActiveCallback();
-    error QuarkCallError(bytes);
     error SignatureExpired();
     error Unauthorized();
 
@@ -272,7 +271,9 @@ contract QuarkWallet is IERC1271 {
         }
 
         if (!success) {
-            revert QuarkCallError(returnData);
+            assembly {
+                revert(add(returnData, 0x20), returnSize)
+            }
         }
 
         return returnData;

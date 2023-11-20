@@ -369,11 +369,7 @@ contract QuarkWalletTest is Test {
         assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), 3);
 
         // revert because max has been hit
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector));
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
@@ -433,9 +429,7 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectRevert(
-            abi.encodeWithSelector(QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(Reverts.Whoops.selector))
-        );
+        vm.expectRevert(abi.encodeWithSelector(Reverts.Whoops.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
