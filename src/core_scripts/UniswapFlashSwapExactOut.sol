@@ -46,22 +46,18 @@ contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
      */
     function run(UniswapFlashSwapExactOutPayload memory payload) external {
         allowCallback();
-        bool tokenOrderInBeforeOut = payload.tokenIn < payload.tokenOut;
-        IUniswapV3Pool(
-            PoolAddress.computeAddress(
-                UniswapFactoryAddress.getAddress(),
-                PoolAddress.getPoolKey(payload.tokenIn, payload.tokenOut, payload.fee)
-            )
-        ).swap(
+        bool zeroForOne = payload.tokenIn < payload.tokenOut;
+        PoolAddress.PoolKey memory poolKey = PoolAddress.getPoolKey(payload.tokenIn, payload.tokenOut, payload.fee);
+        IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), poolKey)).swap(
             address(this),
-            tokenOrderInBeforeOut,
+            zeroForOne,
             -payload.amountOut.toInt256(),
             payload.sqrtPriceLimitX96 == 0
-                ? (tokenOrderInBeforeOut ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1)
+                ? (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1)
                 : payload.sqrtPriceLimitX96,
             abi.encode(
                 FlashSwapExactOutInput({
-                    poolKey: PoolAddress.getPoolKey(payload.tokenIn, payload.tokenOut, payload.fee),
+                    poolKey: poolKey,
                     callContract: payload.callContract,
                     callData: payload.callData
                 })
