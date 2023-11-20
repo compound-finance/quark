@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 /**
  * @title Code Jar
- * @notice Stores contract code at deterministic addresses
+ * @notice Deploys contract code to deterministic addresses
  * @author Compound Labs, Inc.
  */
 contract CodeJar {
@@ -11,7 +11,7 @@ contract CodeJar {
     error CodeHashMismatch(address codeAddress, bytes32 expected, bytes32 given);
 
     /**
-     * @notice Saves the code to Code Jar, no-op if it already exists
+     * @notice Deploys the code via Code Jar, no-op if it already exists
      * @dev This call is meant to be idemponent and fairly inexpensive on a second call
      * @param code The runtime bytecode of the code to save
      * @return The address of the contract that matches the input code
@@ -45,7 +45,7 @@ contract CodeJar {
     }
 
     /**
-     * @notice Checks if code already exists in Code Jar
+     * @notice Checks if code was already deployed by CodeJar
      * @dev Use `saveCode` to get the address of the contract with that code
      * @param code The runtime bytecode of the code to check
      * @return True if code already exists in Code Jar
