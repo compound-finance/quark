@@ -41,7 +41,7 @@ contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
     }
 
     /**
-     * @notice Execute multiple calls in a single transaction with flash swap
+     * @notice Execute a flash swap with a callback
      * @param payload Struct containing pool info and script info to execute before repaying the flash swap
      */
     function run(UniswapFlashSwapExactOutPayload memory payload) external {

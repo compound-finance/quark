@@ -59,14 +59,16 @@ contract UniswapFlashSwapExactOutTest is Test {
         // Set up some funds for test
         deal(WETH, address(wallet), 10 ether);
 
-        // User has a borrow position in comet and tries to use a flash swap to leverage up
+        // User gets into a borrow position in comet and tries to use a flash swap to leverage up
         // They borrow 1 ETH worth of USDC from comet and purchase 1 ETH
         // Some computation is required to get the right number to pass into UniswapFlashSwapExactOut core scripts
 
         // Compose array of actions
         address[] memory callContracts = new address[](3);
         bytes[] memory callDatas = new bytes[](3);
-
+        //  Use 1.2 multiplier to address price slippage and fee during swap
+        uint256 borrowAmountOfUSDC =
+            (IComet(comet).getPrice(IComet(comet).getAssetInfoByAddress(WETH).priceFeed) * 1e6 / 1e8) * 12 / 10;
         // Approve Comet to spend WETH
         callContracts[0] = ethcallAddress;
         callDatas[0] =
@@ -81,17 +83,7 @@ contract UniswapFlashSwapExactOutTest is Test {
         // Withdraw 1 WETH worth of USDC from Comet
         callContracts[2] = ethcallAddress;
         callDatas[2] = abi.encodeWithSelector(
-            Ethcall.run.selector,
-            comet,
-            abi.encodeCall(
-                IComet.withdraw,
-                (
-                    USDC,
-                    //  Use 1.2 multiplier to address price slippage and fee during swap
-                    (IComet(comet).getPrice(IComet(comet).getAssetInfoByAddress(WETH).priceFeed) * 1e6 / 1e8) * 12 / 10
-                )
-            ),
-            0
+            Ethcall.run.selector, comet, abi.encodeCall(IComet.withdraw, (USDC, borrowAmountOfUSDC)), 0
         );
 
         UniswapFlashSwapExactOut.UniswapFlashSwapExactOutPayload memory payload = UniswapFlashSwapExactOut
@@ -117,6 +109,8 @@ contract UniswapFlashSwapExactOutTest is Test {
 
         // Verify that user is now supplying 10 + 1 WETH
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 11 ether);
+        // Verify the user borrow balance on Comet
+        assertEq(IComet(comet).borrowBalanceOf(address(wallet)), borrowAmountOfUSDC);
     }
 
     function testInvalidCallerFlashSwap() public {
