@@ -5,19 +5,12 @@ import "forge-std/Test.sol";
 import "./../../src/QuarkWallet.sol";
 
 contract SignatureHelper is Test {
-    bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(uint96 nonce,address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 expiry)"
-    );
-
-    bytes32 internal constant QUARK_WALLET_DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-
     function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op)
         external
         view
         returns (uint8, bytes32, bytes32)
     {
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", wallet.DOMAIN_SEPARATOR(), structHash(op)));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator(address(wallet)), structHash(op)));
         return vm.sign(privateKey, digest);
     }
 
@@ -36,17 +29,22 @@ contract SignatureHelper is Test {
     function structHash(QuarkWallet.QuarkOperation memory op) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.scriptAddress, op.scriptSource, op.scriptCalldata, op.nonce, op.expiry
+                QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH,
+                op.nonce,
+                op.scriptAddress,
+                op.scriptSource,
+                op.scriptCalldata,
+                op.expiry
             )
         );
     }
 
-    function domainSeparator(address walletAddress) internal view returns (bytes32) {
+    function domainSeparator(address walletAddress) public view returns (bytes32) {
         return keccak256(
             abi.encode(
-                QUARK_WALLET_DOMAIN_TYPEHASH,
-                keccak256(bytes("Quark Wallet")), // name
-                keccak256(bytes("1")), // version
+                QuarkWalletMetadata.DOMAIN_TYPEHASH,
+                keccak256(bytes(QuarkWalletMetadata.NAME)),
+                keccak256(bytes(QuarkWalletMetadata.VERSION)),
                 block.chainid,
                 walletAddress
             )

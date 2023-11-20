@@ -16,20 +16,12 @@ contract NonceTest is Test {
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
     }
 
-    function testRevertsForInvalidNonce() public {
-        vm.expectRevert();
-        stateManager.isNonceSet(address(this), 0);
-        // NOTE: this is only defense-in-depth -- if this case is triggered, an invariant has been violated because an invalid nonce was acquired
-        vm.expectRevert(QuarkStateManager.InvalidNonce.selector);
-        stateManager.setNonce(0);
-    }
-
     function testIsSet() public {
         // nonce is unset by default
-        assertEq(stateManager.isNonceSet(address(this), 1), false);
+        assertEq(stateManager.isNonceSet(address(this), 0), false);
         // it can be set
-        stateManager.setNonce(1);
-        assertEq(stateManager.isNonceSet(address(this), 1), true);
+        stateManager.setNonce(0);
+        assertEq(stateManager.isNonceSet(address(this), 0), true);
     }
 
     function testNonLinearNonce() public {

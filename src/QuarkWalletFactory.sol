@@ -5,6 +5,11 @@ import "./CodeJar.sol";
 import "./QuarkWallet.sol";
 import "./QuarkStateManager.sol";
 
+/**
+ * @title Quark Wallet Factory
+ * @notice A factory for deploying new Quark Wallets at deterministic addresses
+ * @author Compound Labs, Inc.
+ */
 contract QuarkWalletFactory {
     event WalletDeploy(address indexed signer, address indexed executor, address walletAddress, bytes32 salt);
 
@@ -20,6 +25,7 @@ contract QuarkWalletFactory {
     /// @notice Address of QuarkStateManager contract
     QuarkStateManager public immutable stateManager;
 
+    /// @notice Construct a new QuarkWalletFactory, deploying a CodeJar and QuarkStateManager as well
     constructor() {
         codeJar = new CodeJar();
         stateManager = new QuarkStateManager();
@@ -82,6 +88,7 @@ contract QuarkWalletFactory {
         return walletAddressForSignerInternal(signer, executor, salt);
     }
 
+    /// @dev Get the deterministic address of a QuarkWallet with a given (signer, executor, salt) permutation
     function walletAddressForSignerInternal(address signer, address executor, bytes32 salt)
         internal
         view
@@ -109,6 +116,35 @@ contract QuarkWalletFactory {
                         )
                     )
                 )
+            )
+        );
+    }
+
+    /**
+     * @notice Returns the next unset nonce for the wallet corresponding to the given signer and salt
+     * @dev Any unset nonce is valid to use, but using this method increases
+     * the likelihood that the nonce you use will be on a bucket that has
+     * already been written to, which costs less gas
+     * @return The next unused nonce
+     */
+    function nextNonce(address signer, bytes32 salt) external view returns (uint96) {
+        return stateManager.nextNonce(walletAddressForSignerWithSalt(signer, salt));
+    }
+
+    /**
+     * @notice Returns the EIP-712 domain separator used for signing operations for the given salted wallet
+     * @dev Only use for wallets deployed by this factory, or counterfactual wallets that will be deployed;
+     * only a wallet with the assumed QuarkWalletMetadata (NAME, VERSION, DOMAIN_TYPEHASH) will work.
+     * @return bytes32 The domain separator for the wallet corresponding to the signer and salt
+     */
+    function DOMAIN_SEPARATOR(address signer, bytes32 salt) external view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                QuarkWalletMetadata.DOMAIN_TYPEHASH,
+                keccak256(bytes(QuarkWalletMetadata.NAME)),
+                keccak256(bytes(QuarkWalletMetadata.VERSION)),
+                block.chainid,
+                walletAddressForSignerWithSalt(signer, salt)
             )
         );
     }
