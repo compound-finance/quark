@@ -48,7 +48,7 @@ contract QuarkWallet is IERC1271 {
     /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
     address public immutable executor;
 
-    /// @notice Address of CodeJar contract used to save transaction script source code
+    /// @notice Address of CodeJar contract used to deploy transaction script source code
     CodeJar public immutable codeJar;
 
     /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
@@ -96,7 +96,7 @@ contract QuarkWallet is IERC1271 {
      * @notice Construct a new QuarkWallet
      * @param signer_ The address that is allowed to sign QuarkOperations for this wallet
      * @param executor_ The address that is allowed to directly execute Quark scripts for this wallet
-     * @param codeJar_ The CodeJar contract used to store scripts
+     * @param codeJar_ The CodeJar contract used to deploy scripts
      * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
      */
     constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
