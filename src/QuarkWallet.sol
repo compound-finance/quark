@@ -211,15 +211,14 @@ contract QuarkWallet is IERC1271 {
     /**
      * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
      * that the signature comes from the signer; if the QuarkWallet is owned by
-     * a smart contract, isValidSignature relays the `isValidSignature` to the
-     * smart contract; if the smart contract that owns the wallet has no code,
-     * the signature will be treated as an EIP-712 signature and revert
+     * a smart contract, isValidSignature relays the `isValidSignature` check
+     * to the smart contract; if the smart contract that owns the wallet has no
+     * code, the signature will be treated as an EIP-712 signature and revert
      */
     function checkValidSignatureInternal(address signatory, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
         internal
         view
     {
-        // a contract deployed with empty code will be treated as an EOA and will revert
         if (signatory.code.length > 0) {
             bytes memory signature = abi.encodePacked(r, s, v);
             (bool success, bytes memory data) =
@@ -243,7 +242,7 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @notice Execute a QuarkOperation with its nonce locked and with access to private nonce-scoped storage
+     * @notice Execute a QuarkOperation with a lock acquired on nonce-namespaced storage
      * @dev Can only be called by stateManager during setActiveNonceAndCallback()
      * @param scriptAddress Address of script to execute
      * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
