@@ -139,12 +139,7 @@ contract UniswapFlashSwapExactOutTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(UniswapFlashSwapExactOut.InvalidCaller.selector)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(UniswapFlashSwapExactOut.InvalidCaller.selector));
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
@@ -188,12 +183,7 @@ contract UniswapFlashSwapExactOutTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
-            )
-        );
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }

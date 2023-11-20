@@ -175,11 +175,7 @@ contract CallbacksTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 }

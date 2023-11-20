@@ -184,11 +184,7 @@ contract MulticallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(Multicall.InvalidInput.selector)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Multicall.InvalidInput.selector));
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
@@ -249,13 +245,10 @@ contract MulticallTest is Test {
         // gas: meter execute
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(
-                    Multicall.MulticallError.selector,
-                    3,
-                    callContracts[3],
-                    abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
-                )
+                Multicall.MulticallError.selector,
+                3,
+                callContracts[3],
+                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
             )
         );
         vm.resumeGasMetering();

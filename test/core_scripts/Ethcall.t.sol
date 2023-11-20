@@ -194,12 +194,7 @@ contract EthcallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
-            )
-        );
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
         wallet.executeQuarkOperation(op, v, r, s);
     }
 

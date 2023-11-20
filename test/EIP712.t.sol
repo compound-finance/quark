@@ -310,12 +310,7 @@ contract EIP712Test is Test {
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, dependentOp);
 
         // attempting to execute the second operation first reverts
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(ExecuteWithRequirements.RequirementNotMet.selector, firstOp.nonce)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(ExecuteWithRequirements.RequirementNotMet.selector, firstOp.nonce));
 
         // gas: meter execute
         vm.resumeGasMetering();
