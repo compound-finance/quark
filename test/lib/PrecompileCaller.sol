@@ -3,45 +3,40 @@ pragma solidity 0.8.19;
 
 contract PrecompileCaller {
     // 0x01
-    function ecrecoverCall(bytes32 h, uint8 v, bytes32 r, bytes32 s, address expected) public view {
+    function ecrecoverCall(bytes32 h, uint8 v, bytes32 r, bytes32 s) public view returns (bytes memory) {
         (bool success, bytes memory output) = address(0x01).staticcall(abi.encode(h, v, r, s));
         require(success);
-        require(abi.decode(output, (address)) == expected);
+        return output;
     }
 
     // 0x02
-    function sha256Call(uint256 numberToHash, bytes memory expected) public view {
+    function sha256Call(uint256 numberToHash) public view returns (bytes memory) {
         (bool success, bytes memory output) = address(0x02).staticcall(abi.encode(numberToHash));
         require(success);
-        require(output.length == expected.length);
-        for (uint256 i = 0; i < output.length; i++) {
-            require(output[i] == expected[i]);
-        }
+        return output;
     }
 
     // 0x03
-    function ripemd160Call(bytes calldata data, bytes20 expected) public view {
+    function ripemd160Call(bytes calldata data) public view returns (bytes20) {
         (bool success, bytes memory output) = address(0x03).staticcall(data);
         require(success);
         bytes20 result = bytes20(abi.decode(output, (bytes32)) << 96);
-        require(result == expected);
+        return result;
     }
 
     // 0x04
-    function dataCopyCall(bytes memory data) public {
+    function dataCopyCall(bytes memory data) public returns (bytes memory) {
         bytes memory out = new bytes(data.length);
         assembly {
             let len := mload(data)
             if iszero(call(gas(), 0x04, 0, add(data, 0x20), len, add(out, 0x20), len)) { invalid() }
         }
 
-        for (uint256 i = 0; i < data.length; i++) {
-            require(data[i] == out[i]);
-        }
+        return out;
     }
 
     // 0x05
-    function bigModExpCall(bytes32 base, bytes32 exponent, bytes32 modulus, bytes32 expected) public {
+    function bigModExpCall(bytes32 base, bytes32 exponent, bytes32 modulus) public returns (bytes32) {
         bytes32 result;
         assembly {
             let memPtr := mload(0x40)
@@ -58,11 +53,11 @@ contract PrecompileCaller {
             result := mload(memPtr)
         }
 
-        require(result == expected);
+        return result;
     }
 
     // 0x06
-    function bn256AddCall(uint256 ax, uint256 ay, uint256 bx, uint256 by, uint256[2] memory expected) public {
+    function bn256AddCall(uint256 ax, uint256 ay, uint256 bx, uint256 by) public returns (uint256[2] memory) {
         uint256[4] memory input;
         input[0] = ax;
         input[1] = ay;
@@ -74,12 +69,11 @@ contract PrecompileCaller {
             if iszero(success) { revert(0, 0) }
         }
 
-        require(output[0] == expected[0]);
-        require(output[1] == expected[1]);
+        return output;
     }
 
     // 0x07
-    function bn256ScalarMulCall(uint256 x, uint256 y, uint256 scalar, uint256[2] memory expected) public {
+    function bn256ScalarMulCall(uint256 x, uint256 y, uint256 scalar) public returns (uint256[2] memory) {
         uint256[3] memory input;
         input[0] = x;
         input[1] = y;
@@ -90,12 +84,11 @@ contract PrecompileCaller {
             if iszero(success) { revert(0, 0) }
         }
 
-        require(output[0] == expected[0]);
-        require(output[1] == expected[1]);
+        return output;
     }
 
     // 0x08
-    function bn256PairingCall(bytes memory input, bytes32 expected) public {
+    function bn256PairingCall(bytes memory input) public returns (bytes32) {
         uint256 len = input.length;
         bytes32 output;
         require(len % 192 == 0);
@@ -106,18 +99,15 @@ contract PrecompileCaller {
             output := mload(memPtr)
         }
 
-        require(output == expected);
+        return output;
     }
 
     // 0x09
-    function blake2FCall(
-        uint32 rounds,
-        bytes32[2] memory h,
-        bytes32[4] memory m,
-        bytes8[2] memory t,
-        bool f,
-        bytes32[2] memory expected
-    ) public view {
+    function blake2FCall(uint32 rounds, bytes32[2] memory h, bytes32[4] memory m, bytes8[2] memory t, bool f)
+        public
+        view
+        returns (bytes32[2] memory)
+    {
         bytes32[2] memory output;
         bytes memory args = abi.encodePacked(rounds, h[0], h[1], m[0], m[1], m[2], m[3], t[0], t[1], f);
         assembly {
@@ -125,7 +115,6 @@ contract PrecompileCaller {
             if iszero(success) { revert(0, 0) }
         }
 
-        require(output[0] == expected[0]);
-        require(output[1] == expected[1]);
+        return output;
     }
 }

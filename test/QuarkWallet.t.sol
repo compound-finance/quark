@@ -502,11 +502,13 @@ contract QuarkWalletTest is Test {
         bytes32 testHash = keccak256("test");
         (uint8 vt, bytes32 rt, bytes32 st) = vm.sign(alicePrivateKey, testHash);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.ecrecoverCall, (testHash, vt, rt, st, aliceAccount)), ScriptType.ScriptAddress
+            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.ecrecoverCall, (testHash, vt, rt, st)), ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory output = abi.decode(rawOut, (bytes));
+        assertEq(abi.decode(output, (address)), aliceAccount);
     }
 
     function testSha256() public {
@@ -514,18 +516,12 @@ contract QuarkWalletTest is Test {
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         uint256 numberToHash = 123;
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.sha256Call, 
-            (
-                numberToHash, 
-                abi.encodePacked(
-                    sha256(
-                        abi.encodePacked(numberToHash)
-                    )
-                )
-            )), ScriptType.ScriptAddress);
+            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.sha256Call, (numberToHash)), ScriptType.ScriptAddress);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory output = abi.decode(rawOut, (bytes));
+        assertEq(abi.decode(output, (bytes32)), sha256(abi.encodePacked(numberToHash)));
     }
 
     function testRipemd160() public {
@@ -533,11 +529,12 @@ contract QuarkWalletTest is Test {
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         bytes memory testBytes = abi.encodePacked(keccak256("test"));
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.ripemd160Call, (testBytes, ripemd160(testBytes))), ScriptType.ScriptAddress
+            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.ripemd160Call, (testBytes)), ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(abi.decode(output, (bytes20)), ripemd160(testBytes));
     }
 
     function testDataCopy() public {
@@ -549,7 +546,8 @@ contract QuarkWalletTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(abi.decode(output, (bytes)), testBytes);
     }
 
     function testBigModExp() public {
@@ -561,11 +559,12 @@ contract QuarkWalletTest is Test {
         // 7^3 % 11 = 2
         bytes32 expected = bytes32(uint256(2));
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.bigModExpCall, (base, exponent, modulus, expected)), ScriptType.ScriptAddress
+            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.bigModExpCall, (base, exponent, modulus)), ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(abi.decode(output, (bytes32)), expected);
     }
 
     function testBn256Add() public {
@@ -579,17 +578,16 @@ contract QuarkWalletTest is Test {
                         uint256(1), 
                         uint256(2),
                         uint256(1),
-                        uint256(2),
-                        [
-                            uint256(0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd3),
-                            uint256(0x15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4)
-                        ]
+                        uint256(2)
                     )
                 ), ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        uint256[2] memory output = abi.decode(rawOut, (uint256[2]));
+        assertEq(output[0], uint256(0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd3));
+        assertEq(output[1], uint256(0x15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4));
     }
 
     function testBn256ScalarMul() public {
@@ -602,17 +600,16 @@ contract QuarkWalletTest is Test {
                     (
                         uint256(1), 
                         uint256(2),
-                        uint256(3),
-                        [
-                            uint256(0x0769bf9ac56bea3ff40232bcb1b6bd159315d84715b8e679f2d355961915abf0),
-                            uint256(0x2ab799bee0489429554fdb7c8d086475319e63b40b9c5b57cdf1ff3dd9fe2261)
-                        ]
+                        uint256(3)
                     )
                 ), ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        uint256[2] memory output = abi.decode(rawOut, (uint256[2]));
+        assertEq(output[0], uint256(0x0769bf9ac56bea3ff40232bcb1b6bd159315d84715b8e679f2d355961915abf0));
+        assertEq(output[1], uint256(0x2ab799bee0489429554fdb7c8d086475319e63b40b9c5b57cdf1ff3dd9fe2261));
     }
 
     function testBlake2F() public {
@@ -649,13 +646,15 @@ contract QuarkWalletTest is Test {
                         h,
                         m,
                         t,
-                        f,
-                        expected
+                        f
                     )
                 ), ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes32[2] memory output = abi.decode(rawOut, (bytes32[2]));
+        assertEq(output[0], expected[0]);
+        assertEq(output[1], expected[1]);
     }
 }
