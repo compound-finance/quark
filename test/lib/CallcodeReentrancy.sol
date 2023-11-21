@@ -49,9 +49,7 @@ contract CallbackCaller {
     function doubleDip(bool dipped) external payable {
         if (!dipped) {
             CallbackReceiver(msg.sender).callMeBack{value: msg.value}(
-                address(this),
-                abi.encodeCall(CallbackCaller.doubleDip, (true)),
-                msg.value * 2
+                address(this), abi.encodeCall(CallbackCaller.doubleDip, (true)), msg.value * 2
             );
         } else {
             CallbackReceiver(msg.sender).receiveCallback();

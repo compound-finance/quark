@@ -271,7 +271,8 @@ contract CallbacksTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 behaved_v, bytes32 behaved_r, bytes32 behaved_s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, behavedOp);
+        (uint8 behaved_v, bytes32 behaved_r, bytes32 behaved_s) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, behavedOp);
 
         // gas: meter execute
         vm.resumeGasMetering();
