@@ -58,7 +58,8 @@ contract MulticallTest is Test {
         vm.createSelectFork(
             string.concat(
                 "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
-            )
+            ),
+            18429607 // 2023-10-25 13:24:00 PST
         );
         factory = new QuarkWalletFactory();
         counter = new Counter();
