@@ -496,7 +496,7 @@ contract QuarkWalletTest is Test {
 
     /* ===== execution on Precompiles ===== */
 
-    function testEcRecover() public {
+    function testPrecompileEcRecover() public {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         bytes32 testHash = keccak256("test");
@@ -511,7 +511,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(output, (address)), aliceAccount);
     }
 
-    function testEcRecoverWithoutScript() public {
+    function testPrecompileEcRecoverWithoutScript() public {
         vm.pauseGasMetering();
         bytes32 testHash = keccak256("test");
         (uint8 vt, bytes32 rt, bytes32 st) = vm.sign(alicePrivateKey, testHash);
@@ -634,7 +634,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(output, (bytes32)), expected);
     }
 
-    function testBigModExpWithoutScript() public {
+    function testPrecompileBigModExpWithoutScript() public {
         vm.pauseGasMetering();
         bytes32 base = bytes32(uint256(7));
         bytes32 exponent = bytes32(uint256(3));
