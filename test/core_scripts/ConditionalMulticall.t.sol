@@ -41,7 +41,8 @@ contract ConditionalMulticallTest is Test {
         vm.createSelectFork(
             string.concat(
                 "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
-            )
+            ),
+            18429607 // 2023-10-25 13:24:00 PST
         );
         factory = new QuarkWalletFactory();
         counter = new Counter();
@@ -175,14 +176,11 @@ contract ConditionalMulticallTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(
-                    ConditionalChecker.CheckFailed.selector,
-                    abi.encode(true),
-                    abi.encode(false),
-                    ConditionalChecker.CheckType.Bool,
-                    ConditionalChecker.Operator.Equal
-                )
+                ConditionalChecker.CheckFailed.selector,
+                abi.encode(true),
+                abi.encode(false),
+                ConditionalChecker.CheckType.Bool,
+                ConditionalChecker.Operator.Equal
             )
         );
         vm.resumeGasMetering();
@@ -215,11 +213,7 @@ contract ConditionalMulticallTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(ConditionalMulticall.InvalidInput.selector)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(ConditionalMulticall.InvalidInput.selector));
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
@@ -289,13 +283,10 @@ contract ConditionalMulticallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(
-                    ConditionalMulticall.MulticallError.selector,
-                    3,
-                    callContracts[3],
-                    abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
-                )
+                ConditionalMulticall.MulticallError.selector,
+                3,
+                callContracts[3],
+                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
             )
         );
         vm.resumeGasMetering();
@@ -391,14 +382,11 @@ contract ConditionalMulticallTest is Test {
         // Wallet doesn't have USDC, condition will fail
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(
-                    ConditionalChecker.CheckFailed.selector,
-                    abi.encode(uint256(0)),
-                    abi.encode(uint256(400e6)),
-                    ConditionalChecker.CheckType.Uint,
-                    ConditionalChecker.Operator.GreaterThanOrEqual
-                )
+                ConditionalChecker.CheckFailed.selector,
+                abi.encode(uint256(0)),
+                abi.encode(uint256(400e6)),
+                ConditionalChecker.CheckType.Uint,
+                ConditionalChecker.Operator.GreaterThanOrEqual
             )
         );
         vm.resumeGasMetering();
@@ -465,14 +453,11 @@ contract ConditionalMulticallTest is Test {
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSelector(
-                    ConditionalChecker.CheckFailed.selector,
-                    abi.encode(uint256(0)),
-                    abi.encode(uint256(0)),
-                    ConditionalChecker.CheckType.Uint,
-                    ConditionalChecker.Operator.GreaterThan
-                )
+                ConditionalChecker.CheckFailed.selector,
+                abi.encode(uint256(0)),
+                abi.encode(uint256(0)),
+                ConditionalChecker.CheckType.Uint,
+                ConditionalChecker.Operator.GreaterThan
             )
         );
         vm.resumeGasMetering();
