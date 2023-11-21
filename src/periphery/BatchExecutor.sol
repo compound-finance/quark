@@ -40,7 +40,7 @@ contract BatchExecutor {
         for (uint256 i = 0; i < accounts.length;) {
             returnData[i] = QuarkWallet(payable(accounts[i])).executeQuarkOperation(ops[i], v[i], r[i], s[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
         return returnData;

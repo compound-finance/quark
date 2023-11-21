@@ -30,7 +30,7 @@ contract Multicall {
             returnDatas[i] = returnData;
 
             unchecked {
-                i++;
+                ++i;
             }
         }
 

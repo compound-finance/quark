@@ -70,7 +70,7 @@ contract QuarkStateManager {
             }
 
             unchecked {
-                i++;
+                ++i;
             }
         }
         revert NoUnusedNonces();
