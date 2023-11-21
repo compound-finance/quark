@@ -496,7 +496,7 @@ contract QuarkWalletTest is Test {
 
     /* ===== execution on scripts calling Precompiles ===== */
 
-    function testErecover() public {
+    function testEcRecover() public {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         bytes32 testHash = keccak256("test");
