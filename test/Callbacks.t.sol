@@ -183,17 +183,13 @@ contract CallbacksTest is Test {
          *
          * Well, callcode changes `msg.sender` to the caller, which is in our case the wallet itself,
          * while otherwise working (for our purposes) like `delegatecall`. Why do we want that?
-         *   (a) msg.sender is not useful and leaks information to a script that can be misused.
+         *   (a) msg.sender can otherwise be pretty much any address, making it difficult to use
          *   (b) if we use `callcode`, we can see when `msg.sender == address(this)` to check if
          *       the script was called directly from the wallet for re-entrancy guards.
          *
-         * (a) msg.sender is probably an arbitrary address; namely, the submitter of a signed QuarkOperation.
-         * It is tempting for a script author to act on the submitter address to do things that make
-         * scripts less robust and reuable; for example, only allow your scripts to be submitted by some
-         * allowlist of blessed submitters. This is bad for the protocol: scripts belong to users, not
-         * to script authors. If your submitter addresses stop submitting transactions, then a user should
-         * be able to rely on some other submitter to run their scripts. One use-case for knowing the
-         * submitter would be to pay them; however, this can still be done (and more reliably) using `tx.origin`.
+         * (a) msg.sender is probably an arbitrary address; usually, the submitter of a signed QuarkOperation.
+         * One use-case for knowing the submitter would be to pay them; however, this can still be done
+         * (and more reliably) using tx.origin. So there is very little use for the default msg.sender.
          *
          * (b) Quark wallets are able to accept callbacks within a transaction, which is what enables
          * scripts to do things like execute a Uniswap FlashLoan. However, what if a script calls out to
