@@ -634,7 +634,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(output, (bytes32)), expected);
     }
 
-    function testBigModExpWithouScript() public {
+    function testBigModExpWithoutScript() public {
         vm.pauseGasMetering();
         bytes32 base = bytes32(uint256(7));
         bytes32 exponent = bytes32(uint256(3));
