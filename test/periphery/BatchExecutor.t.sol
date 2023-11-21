@@ -131,9 +131,7 @@ contract BatchExecutorTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectRevert(
-            abi.encodeWithSelector(QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(Reverts.Whoops.selector))
-        );
+        vm.expectRevert(abi.encodeWithSelector(Reverts.Whoops.selector));
         batchExecutor.batchExecuteOperations(accounts, operations, v, r, s);
     }
 

@@ -50,7 +50,8 @@ contract UniswapFlashLoanTest is Test {
         vm.createSelectFork(
             string.concat(
                 "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
-            )
+            ),
+            18429607 // 2023-10-25 13:24:00 PST
         );
         factory = new QuarkWalletFactory();
         ethcallAddress = factory.codeJar().saveCode(ethcall);
@@ -212,11 +213,7 @@ contract UniswapFlashLoanTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector, abi.encodeWithSelector(UniswapFlashLoan.InvalidCaller.selector)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(UniswapFlashLoan.InvalidCaller.selector));
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
@@ -245,12 +242,7 @@ contract UniswapFlashLoanTest is Test {
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
-            )
-        );
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }
@@ -299,9 +291,9 @@ contract UniswapFlashLoanTest is Test {
                     amount1: 10_000e6,
                     callContract: ethcallAddress,
                     callData: abi.encodeWithSelector(
-                        Ethcall.run.selector, 
-                        USDC, 
-                        abi.encodeCall(IERC20.approve, (comet, 1000e6)), 
+                        Ethcall.run.selector,
+                        USDC,
+                        abi.encodeCall(IERC20.approve, (comet, 1000e6)),
                         0 // value
                     )
                 })

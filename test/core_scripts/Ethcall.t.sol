@@ -37,7 +37,8 @@ contract EthcallTest is Test {
         vm.createSelectFork(
             string.concat(
                 "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
-            )
+            ),
+            18429607 // 2023-10-25 13:24:00 PST
         );
 
         counter = new Counter();
@@ -194,12 +195,7 @@ contract EthcallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkWallet.QuarkCallError.selector,
-                abi.encodeWithSignature("Error(string)", "ERC20: transfer amount exceeds balance")
-            )
-        );
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
