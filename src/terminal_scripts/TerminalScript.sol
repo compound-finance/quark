@@ -55,9 +55,12 @@ contract CometSupplyActions {
      * @param amounts The amounts of each asset to supply
      */
     function supplyMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
-        for (uint256 i = 0; i < assets.length; i++) {
+        for (uint256 i = 0; i < assets.length;) {
             IERC20(assets[i]).forceApprove(comet, amounts[i]);
             IComet(comet).supply(assets[i], amounts[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 }
@@ -105,8 +108,11 @@ contract CometWithdrawActions {
      * @param amounts The amounts of each asset to withdraw
      */
     function withdrawMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
-        for (uint256 i = 0; i < assets.length; i++) {
+        for (uint256 i = 0; i < assets.length;) {
             IComet(comet).withdraw(assets[i], amounts[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 }
@@ -231,9 +237,12 @@ contract CometSupplyMultipleAssetsAndBorrow {
         address baseAsset,
         uint256 borrow
     ) external {
-        for (uint256 i = 0; i < assets.length; i++) {
+        for (uint256 i = 0; i < assets.length;) {
             IERC20(assets[i]).forceApprove(comet, amounts[i]);
             IComet(comet).supply(assets[i], amounts[i]);
+            unchecked {
+                ++i;
+            }
         }
         IComet(comet).withdraw(baseAsset, borrow);
     }
@@ -248,8 +257,11 @@ contract CometRepayAndWithdrawMultipleAssets {
     {
         IERC20(baseAsset).forceApprove(comet, repay);
         IComet(comet).supply(baseAsset, repay);
-        for (uint256 i = 0; i < assets.length; i++) {
+        for (uint256 i = 0; i < assets.length;) {
             IComet(comet).withdraw(assets[i], amounts[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 }
