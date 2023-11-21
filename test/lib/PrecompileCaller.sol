@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 contract PrecompileCaller {
     // 0x01
     function ecrecoverCall(bytes32 h, uint8 v, bytes32 r, bytes32 s, address expected) public view {
@@ -91,9 +89,7 @@ contract PrecompileCaller {
             let success := call(gas(), 0x07, 0, input, 0x60, output, 0x40)
             if iszero(success) { revert(0, 0) }
         }
-        console.log("******");
-        console.log(output[0]);
-        console.log(output[1]);
+
         require(output[0] == expected[0]);
         require(output[1] == expected[1]);
     }
