@@ -494,7 +494,7 @@ contract QuarkWalletTest is Test {
         _testAtomicIncrementer(ScriptType.ScriptAddress);
     }
 
-    /* ===== execution on scripts calling Precompiles ===== */
+    /* ===== execution on Precompiles ===== */
 
     function testEcRecover() public {
         vm.pauseGasMetering();
@@ -529,7 +529,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(rawOut, (address)), aliceAccount);
     }
 
-    function testSha256() public {
+    function testPrecompileSha256() public {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         uint256 numberToHash = 123;
@@ -542,7 +542,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(output, (bytes32)), sha256(abi.encodePacked(numberToHash)));
     }
 
-    function testSha256WithoutScript() public {
+    function testPrecompileSha256WithoutScript() public {
         vm.pauseGasMetering();
         uint256 numberToHash = 123;
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
@@ -559,7 +559,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(output, (bytes32)), sha256(abi.encodePacked(numberToHash)));
     }
 
-    function testRipemd160() public {
+    function testPrecompileRipemd160() public {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         bytes memory testBytes = abi.encodePacked(keccak256("test"));
@@ -572,7 +572,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(output, (bytes20)), ripemd160(testBytes));
     }
 
-    function testRipemd160WithoutScript() public {
+    function testPrecompileRipemd160WithoutScript() public {
         vm.pauseGasMetering();
         bytes memory testBytes = abi.encodePacked(keccak256("test"));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
@@ -588,7 +588,7 @@ contract QuarkWalletTest is Test {
         assertEq(bytes20(abi.decode(output, (bytes32)) << 96), ripemd160(testBytes));
     }
 
-    function testDataCopy() public {
+    function testPrecompileDataCopy() public {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         bytes memory testBytes = abi.encodePacked(keccak256("testDataCopy"));
@@ -601,7 +601,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(output, (bytes)), testBytes);
     }
 
-    function testDataCopyWithoutScript() public {
+    function testPrecompileDataCopyWithoutScript() public {
         vm.pauseGasMetering();
         bytes memory testBytes = abi.encodePacked(keccak256("testDataCopy"));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
@@ -617,7 +617,7 @@ contract QuarkWalletTest is Test {
         assertEq(output, testBytes);
     }
 
-    function testBigModExp() public {
+    function testPrecompileBigModExp() public {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         bytes32 base = bytes32(uint256(7));
@@ -654,7 +654,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(output, (bytes32)), expected);
     }
 
-    function testBn256Add() public {
+    function testPrecompileBn256Add() public {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -677,7 +677,7 @@ contract QuarkWalletTest is Test {
         assertEq(output[1], uint256(0x15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4));
     }
 
-    function testBn256AddWithoutScript() public {
+    function testPrecompileBn256AddWithoutScript() public {
         vm.pauseGasMetering();
         uint256[4] memory input;
         input[0] = uint256(1);
@@ -699,7 +699,7 @@ contract QuarkWalletTest is Test {
         assertEq(output[1], uint256(0x15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4));
     }
 
-    function testBn256ScalarMul() public {
+    function testPrecompileBn256ScalarMul() public {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -721,7 +721,7 @@ contract QuarkWalletTest is Test {
         assertEq(output[1], uint256(0x2ab799bee0489429554fdb7c8d086475319e63b40b9c5b57cdf1ff3dd9fe2261));
     }
 
-    function testBn256ScalarMulWithoutScript() public {
+    function testPrecompileBn256ScalarMulWithoutScript() public {
         vm.pauseGasMetering();
         uint256[3] memory input;
         input[0] = uint256(1);
@@ -742,7 +742,7 @@ contract QuarkWalletTest is Test {
         assertEq(output[1], uint256(0x2ab799bee0489429554fdb7c8d086475319e63b40b9c5b57cdf1ff3dd9fe2261));
     }
 
-    function testBlake2F() public {
+    function testPrecompileBlake2F() public {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         uint32 rounds = 12;
@@ -788,7 +788,7 @@ contract QuarkWalletTest is Test {
         assertEq(output[1], expected[1]);
     }
 
-    function testBlake2FWithoutScript() public {
+    function testPrecompileBlake2FWithoutScript() public {
         vm.pauseGasMetering();
         uint32 rounds = 12;
 
