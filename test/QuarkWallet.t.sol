@@ -511,7 +511,7 @@ contract QuarkWalletTest is Test {
         assertEq(abi.decode(output, (address)), aliceAccount);
     }
 
-    function testErecoverWithoutScript() public {
+    function testEcRecoverWithoutScript() public {
         vm.pauseGasMetering();
         bytes32 testHash = keccak256("test");
         (uint8 vt, bytes32 rt, bytes32 st) = vm.sign(alicePrivateKey, testHash);
