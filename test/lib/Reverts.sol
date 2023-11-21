@@ -29,7 +29,12 @@ contract Reverts {
         bytes memory byteCode = abi.encodePacked(hex"FE");
         address scriptAddress = codeJar.saveCode(byteCode);
 
-        scriptAddress.call(hex"");
+        (bool success, bytes memory result) = scriptAddress.call(hex"");
+        if (!success) {
+            assembly {
+                revert(add(result, 0x20), mload(result))
+            }
+        }
     }
 
     fallback() external {
