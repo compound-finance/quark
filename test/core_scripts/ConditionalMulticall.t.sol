@@ -264,7 +264,7 @@ contract ConditionalMulticallTest is Test {
         // Send USDC to Stranger; will fail (insufficient balance)
         callContracts[3] = ethcallAddress;
         callDatas[3] = abi.encodeWithSelector(
-            Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(123), 10000e6)), 0
+            Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(123), 10_000e6)), 0
         );
         conditions[3] = ConditionalChecker.Condition({
             checkType: ConditionalChecker.CheckType.None,
