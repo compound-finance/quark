@@ -1,3 +1,3 @@
 #!/bin/bash
 
-forge snapshot --via-ir
+forge snapshot --via-ir $@
