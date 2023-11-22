@@ -33,7 +33,9 @@ Quark Script is an extensible contract that exposes helper functions for other Q
 
 Core scripts are a set of important scripts that should be deployed via CodeJar to cover essential operations that will likely be used by a large number of QuarkOperations. Examples of Core Scripts include multicall, ethcall, and flashloans with callbacks.
 
-## Diagrams
+## System Diagrams
+
+### Happy path for wallet creation and execution of Quark Operation
 
 ```mermaid
 ---
@@ -43,16 +45,16 @@ title: Happy path for creating a wallet and executing a Quark Operation
 flowchart TB
     factory[Wallet Factory]
     wallet[Quark Wallet]
-    state[Quark State Manager]
     jar[Code Jar]
     script[Quark Script]
+    state[Quark State Manager]
 
     factory -- 1. createAndExecute --> wallet
     wallet -- 2. saveCode --> jar
-    jar -- 3. CREATE2 bytecode --> script
+    jar -- 3. CREATE2  --> script
     wallet -- 4. setActiveNonceAndCallback --> state
     state -- 5. executeScriptWithNonceLock --> wallet
-    wallet -- 6. Executes bytecode\nusing callcode --> script
+    wallet -- 6. Executes script\nusing callcode --> script
 ```
 
 ## Fork tests and NODE_PROVIDER_BYPASS_KEY
