@@ -7,6 +7,7 @@ import {CodeJar} from "../src/CodeJar.sol";
 import {QuarkWalletFactory} from "../src/QuarkWalletFactory.sol";
 import {Ethcall} from "../src/core_scripts/Ethcall.sol";
 import {Multicall} from "../src/core_scripts/Multicall.sol";
+import {BatchExecutor} from "../src/periphery/BatchExecutor.sol";
 
 // Deploy with:
 // $ set -a && source .env && ./script/deploy.sh --broadcast
@@ -20,6 +21,7 @@ import {Multicall} from "../src/core_scripts/Multicall.sol";
 
 contract DeployQuarkWalletFactory is Script {
     QuarkWalletFactory quarkWalletFactory;
+    BatchExecutor batchExecutor;
     Ethcall ethcall;
     Multicall multicall;
 
@@ -34,6 +36,12 @@ contract DeployQuarkWalletFactory is Script {
         quarkWalletFactory = new QuarkWalletFactory();
 
         console.log("QuarkWalletFactory Deployed:", address(quarkWalletFactory));
+
+        console.log("Deploying BatchExecutor");
+
+        batchExecutor = new BatchExecutor();
+
+        console.log("BatchExecutor Deployed:", address(batchExecutor));
 
         console.log("Deploying Core Scripts");
 

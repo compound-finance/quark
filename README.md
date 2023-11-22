@@ -47,7 +47,7 @@ $ git add .gas-snapshot && git commit -m "commit new baseline gas snapshot"
 To locally test run the deploy, run the following command:
 
 ```sh
-./script/deploy.sh
+./script/deploy-quark.sh
 ```
 
 To actually deploy contracts on-chain, the following env variables need to be set:
@@ -63,5 +63,5 @@ ETHERSCAN_KEY=
 Once the env variables are defined, run the following command:
 
 ```sh
-set -a && source .env && ./script/deploy.sh --broadcast
+set -a && source .env && ./script/deploy-quark.sh --broadcast
 ```
