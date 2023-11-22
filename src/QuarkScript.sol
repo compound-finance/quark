@@ -9,6 +9,22 @@ import "./QuarkWallet.sol";
  * @author Compound Labs, Inc.
  */
 contract QuarkScript {
+    error ReentrantCall();
+
+    /// @notice storage location for the re-entrancy guard
+    bytes32 internal constant REENTRANCY_FLAG = keccak256("quark.scripts.reentrancy.guard.v1");
+
+    modifier nonReentrant() {
+        if (read(REENTRANCY_FLAG) == bytes32(uint256(1))) {
+            revert ReentrantCall();
+        }
+        write(REENTRANCY_FLAG, bytes32(uint256(1)));
+
+        _;
+
+        write(REENTRANCY_FLAG, bytes32(uint256(0)));
+    }
+
     function allowCallback() internal {
         QuarkWallet self = QuarkWallet(payable(address(this)));
         self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(self.stateManager().getActiveScript()))));

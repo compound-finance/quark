@@ -175,10 +175,6 @@ contract TransferActions is QuarkScript {
     using SafeERC20 for IERC20;
 
     error TransferFailed(bytes data);
-    error ReentrantCall();
-
-    /// @notice storage location for the re-entrancy guard
-    bytes32 public constant REENTRANCY_FLAG = keccak256("terminal.scripts.reentrancy.guard.v1");
 
     /**
      * @notice Transfer ERC20 token
@@ -195,16 +191,11 @@ contract TransferActions is QuarkScript {
      * @param recipient The recipient address
      * @param amount The amount to transfer
      */
-    function transferNativeToken(address recipient, uint256 amount) external {
-        if (read(REENTRANCY_FLAG) == bytes32(uint256(1))) {
-            revert ReentrantCall();
-        }
-        write(REENTRANCY_FLAG, bytes32(uint256(1)));
+    function transferNativeToken(address recipient, uint256 amount) external nonReentrant {
         (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
         if (!success) {
             revert TransferFailed(data);
         }
-        write(REENTRANCY_FLAG, bytes32(uint256(0)));
     }
 }
 
