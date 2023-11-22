@@ -38,10 +38,6 @@ Core scripts are a set of important scripts that should be deployed via CodeJar 
 ### Happy path for wallet creation and execution of Quark Operation
 
 ```mermaid
----
-title: Happy path for creating a wallet and executing a Quark Operation
----
-
 flowchart TB
     factory[Wallet Factory]
     wallet[Quark Wallet]
