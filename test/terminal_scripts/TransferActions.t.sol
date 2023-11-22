@@ -6,12 +6,17 @@ import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
 
+import "./../../src/CodeJar.sol";
+import "./../../src/QuarkScript.sol";
 import "./../../src/QuarkWallet.sol";
 import "./../../src/QuarkWalletFactory.sol";
 import "./../../src/terminal_scripts/TerminalScript.sol";
+import "./../../src/core_scripts/Multicall.sol";
+import "./../lib/AllowCallbacks.sol";
 import "./../lib/YulHelper.sol";
 import "./../lib/SignatureHelper.sol";
 import "./../lib/Counter.sol";
+import "./../lib/ReentrantTransfer.sol";
 import "./../lib/QuarkOperationHelper.sol";
 import "./../lib/EvilReceiver.sol";
 
@@ -20,6 +25,7 @@ import "./../lib/EvilReceiver.sol";
  */
 contract TransferActionsTest is Test {
     QuarkWalletFactory public factory;
+    CodeJar public codeJar;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
@@ -28,6 +34,10 @@ contract TransferActionsTest is Test {
     bytes terminalScript = new YulHelper().getDeployed(
             "TerminalScript.sol/TransferActions.json"
         );
+    bytes multicall = new YulHelper().getDeployed(
+            "Multicall.sol/Multicall.json"
+        );
+    bytes allowCallbacks = new YulHelper().getDeployed("AllowCallbacks.sol/AllowCallbacks.json");
 
     // Contracts address on mainnet
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -41,6 +51,7 @@ contract TransferActionsTest is Test {
             18429607 // 2023-10-25 13:24:00 PST
         );
         factory = new QuarkWalletFactory();
+        codeJar = factory.codeJar();
     }
 
     function testTransferERC20TokenToEOA() public {
@@ -133,7 +144,90 @@ contract TransferActionsTest is Test {
         assertEq(address(walletBob).balance, 10 ether);
     }
 
-    function testTransferReentrancyAttack() public {
+    function testTransferReentrancyAttackSuccessWithCallbackEnabled() public {
+        vm.pauseGasMetering();
+        bytes memory reentrantTransfer = new YulHelper().getDeployed(
+            "ReentrantTransfer.sol/ReentrantTransfer.json"
+        );
+        address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
+        address reentrantTransferAddress = codeJar.saveCode(reentrantTransfer);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        EvilReceiver evilReceiver = new EvilReceiver();
+        evilReceiver.setAttack(
+            EvilReceiver.ReentryAttack(EvilReceiver.AttackType.REINVOKE_TRANSFER, address(evilReceiver), 1 ether, 2)
+        );
+        deal(address(wallet), 10 ether);
+        // Compose array of parameters
+        address[] memory callContracts = new address[](2);
+        bytes[] memory callDatas = new bytes[](2);
+        callContracts[0] = allowCallbacksAddress;
+        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(reentrantTransferAddress));
+        callContracts[1] = reentrantTransferAddress;
+        callDatas[1] =
+            abi.encodeWithSelector(ReentrantTransfer.transferNativeToken.selector, address(evilReceiver), 1 ether);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(evilReceiver).balance, 0 ether);
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(address(wallet).balance, 7 ether);
+        assertEq(address(evilReceiver).balance, 3 ether);
+    }
+
+    function testRevertsForTransferReentrancyAttackWithReentrancyGuard() public {
+        vm.pauseGasMetering();
+        address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
+        address terminalScriptAddress = codeJar.saveCode(terminalScript);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        EvilReceiver evilReceiver = new EvilReceiver();
+        evilReceiver.setAttack(
+            EvilReceiver.ReentryAttack(EvilReceiver.AttackType.REINVOKE_TRANSFER, address(evilReceiver), 1 ether, 2)
+        );
+        deal(address(wallet), 10 ether);
+        // Compose array of parameters
+        address[] memory callContracts = new address[](2);
+        bytes[] memory callDatas = new bytes[](2);
+        callContracts[0] = allowCallbacksAddress;
+        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(terminalScriptAddress));
+        callContracts[1] = terminalScriptAddress;
+        callDatas[1] =
+            abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(evilReceiver).balance, 0 ether);
+        vm.resumeGasMetering();
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Multicall.MulticallError.selector,
+                1,
+                callContracts[1],
+                abi.encodeWithSelector(
+                    TransferActions.TransferFailed.selector, abi.encodeWithSelector(QuarkScript.ReentrantCall.selector)
+                )
+            )
+        );
+        wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(evilReceiver).balance, 0 ether);
+    }
+
+    function testRevertsForTransferReentrancyAttackWithoutCallbackEnabled() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         EvilReceiver evilReceiver = new EvilReceiver();
@@ -165,7 +259,7 @@ contract TransferActionsTest is Test {
         assertEq(address(evilReceiver).balance, 0 ether);
     }
 
-    function testTransferReentrantAttackWithStolenSignature() public {
+    function testRevertsForTransferReentrantAttackWithStolenSignature() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
         EvilReceiver evilReceiver = new EvilReceiver();
