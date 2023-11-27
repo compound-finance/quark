@@ -43,9 +43,8 @@ contract CometSupplyMultipleAssetsAndBorrowTest is Test {
     function testSupplyMultipleAssetsAndBorrow() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/CometSupplyMultipleAssetsAndBorrow.json"
-        );
+        bytes memory terminalScript =
+            new YulHelper().getDeployed("TerminalScript.sol/CometSupplyMultipleAssetsAndBorrow.json");
 
         deal(WETH, address(wallet), 10 ether);
         deal(LINK, address(wallet), 10e18);

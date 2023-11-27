@@ -28,9 +28,7 @@ contract SupplyActionsTest is Test {
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
-    bytes terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/CometSupplyActions.json"
-        );
+    bytes terminalScript = new YulHelper().getDeployed("TerminalScript.sol/CometSupplyActions.json");
 
     function setUp() public {
         // Fork setup
@@ -100,7 +98,9 @@ contract SupplyActionsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeWithSelector(CometSupplyActions.supplyFrom.selector, comet, address(wallet2), address(wallet), WETH, 10 ether),
+            abi.encodeWithSelector(
+                CometSupplyActions.supplyFrom.selector, comet, address(wallet2), address(wallet), WETH, 10 ether
+            ),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

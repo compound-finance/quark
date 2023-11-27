@@ -96,7 +96,10 @@ contract RevertsTest is Test {
         vm.pauseGasMetering();
         bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, revertsCode, abi.encodeWithSelector(Reverts.invalidOpcode.selector, codeJar), ScriptType.ScriptAddress
+            aliceWallet,
+            revertsCode,
+            abi.encodeWithSelector(Reverts.invalidOpcode.selector, codeJar),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 

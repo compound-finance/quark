@@ -130,10 +130,7 @@ contract CallbacksTest is Test {
             new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
         QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet,
-            counterScript,
-            abi.encodeWithSignature("run(address)", counter),
-            ScriptType.ScriptAddress
+            aliceWallet, counterScript, abi.encodeWithSignature("run(address)", counter), ScriptType.ScriptAddress
         );
 
         (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);

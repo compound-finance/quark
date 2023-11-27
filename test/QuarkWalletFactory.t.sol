@@ -144,8 +144,9 @@ contract QuarkWalletFactoryTest is Test {
         bytes32 salt = bytes32("salty salt salt");
 
         // alice signs the operation
-        (uint8 v, bytes32 r, bytes32 s) =
-        new SignatureHelper().signOpForAddress(alicePrivateKey, factory.walletAddressForSignerWithSalt(alice, salt), op);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(
+            alicePrivateKey, factory.walletAddressForSignerWithSalt(alice, salt), op
+        );
 
         assertEq(counter.number(), 0);
 

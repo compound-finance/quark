@@ -29,12 +29,8 @@ contract ConditionalMulticallTest is Test {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     // Uniswap router info on mainnet
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-    bytes ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
-    bytes conditionalMulticall = new YulHelper().getDeployed(
-            "ConditionalMulticall.sol/ConditionalMulticall.json"
-        );
+    bytes ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+    bytes conditionalMulticall = new YulHelper().getDeployed("ConditionalMulticall.sol/ConditionalMulticall.json");
     address ethcallAddress;
 
     function setUp() public {
@@ -117,15 +113,9 @@ contract ConditionalMulticallTest is Test {
         checkValues[4] = abi.encode(uint256(1000e6));
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            wallet, 
-            conditionalMulticall, 
-            abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, 
-                callContracts, 
-                callDatas, 
-                conditions, 
-                checkValues
-            ), 
+            wallet,
+            conditionalMulticall,
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -169,9 +159,11 @@ contract ConditionalMulticallTest is Test {
         checkValues[1] = hex"";
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            wallet, conditionalMulticall, abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
-                ), ScriptType.ScriptAddress);
+            wallet,
+            conditionalMulticall,
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
+            ScriptType.ScriptAddress
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.expectRevert(
@@ -204,11 +196,9 @@ contract ConditionalMulticallTest is Test {
         callContracts[1] = ethcallAddress;
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            wallet, 
-            conditionalMulticall, 
-            abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
-            ), 
+            wallet,
+            conditionalMulticall,
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -275,10 +265,8 @@ contract ConditionalMulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             conditionalMulticall,
-            abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
-            ),
-           ScriptType.ScriptAddress
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
@@ -306,9 +294,7 @@ contract ConditionalMulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             conditionalMulticall,
-            abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
-            ),
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -373,9 +359,7 @@ contract ConditionalMulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             conditionalMulticall,
-            abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
-                ),
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -400,9 +384,7 @@ contract ConditionalMulticallTest is Test {
         op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             conditionalMulticall,
-           abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
-                ),
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -415,9 +397,7 @@ contract ConditionalMulticallTest is Test {
         op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             conditionalMulticall,
-            abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
-                ),
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -428,11 +408,10 @@ contract ConditionalMulticallTest is Test {
         // Wallet has accrued another 400 USDC
         deal(USDC, address(wallet), 400e6);
         op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            wallet, 
+            wallet,
             conditionalMulticall,
-            abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
-                ),ScriptType.ScriptAddress
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
+            ScriptType.ScriptAddress
         );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.resumeGasMetering();
@@ -443,11 +422,9 @@ contract ConditionalMulticallTest is Test {
         deal(USDC, address(wallet), 400e6);
 
         op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            wallet, 
+            wallet,
             conditionalMulticall,
-            abi.encodeWithSelector(
-                ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues
-                ),
+            abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
         (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

@@ -32,8 +32,8 @@ contract SignatureHelper is Test {
                 QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH,
                 op.nonce,
                 op.scriptAddress,
-                op.scriptSource,
-                op.scriptCalldata,
+                keccak256(op.scriptSource),
+                keccak256(op.scriptCalldata),
                 op.expiry
             )
         );

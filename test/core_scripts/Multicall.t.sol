@@ -29,24 +29,14 @@ contract MulticallTest is Test {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     // Uniswap router info on mainnet
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-    bytes multicall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
-        );
-    bytes ethcall = new YulHelper().getDeployed(
-            "Ethcall.sol/Ethcall.json"
-        );
+    bytes multicall = new YulHelper().getDeployed("Multicall.sol/Multicall.json");
+    bytes ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
 
-    bytes terminalCometSupplyScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/CometSupplyActions.json"
-        );
+    bytes terminalCometSupplyScript = new YulHelper().getDeployed("TerminalScript.sol/CometSupplyActions.json");
 
-    bytes terminalCometWithdrawScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/CometWithdrawActions.json"
-        );
+    bytes terminalCometWithdrawScript = new YulHelper().getDeployed("TerminalScript.sol/CometWithdrawActions.json");
 
-    bytes terminalUniswapSwapScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/UniswapSwapActions.json"
-        );
+    bytes terminalUniswapSwapScript = new YulHelper().getDeployed("TerminalScript.sol/UniswapSwapActions.json");
 
     address ethcallAddress;
     address multicallAddress;
@@ -413,10 +403,7 @@ contract MulticallTest is Test {
 
         // set up the primary operation to execute the cross-wallet supply
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            primary,
-            multicall,
-            abi.encodeWithSelector(Multicall.run.selector, targets, calls),
-            ScriptType.ScriptSource
+            primary, multicall, abi.encodeWithSelector(Multicall.run.selector, targets, calls), ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, primary, op);
 

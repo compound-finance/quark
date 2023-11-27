@@ -134,7 +134,12 @@ contract QuarkWallet is IERC1271 {
 
         bytes32 structHash = keccak256(
             abi.encode(
-                QUARK_OPERATION_TYPEHASH, op.nonce, op.scriptAddress, op.scriptSource, op.scriptCalldata, op.expiry
+                QUARK_OPERATION_TYPEHASH,
+                op.nonce,
+                op.scriptAddress,
+                keccak256(op.scriptSource),
+                keccak256(op.scriptCalldata),
+                op.expiry
             )
         );
         bytes32 domainSeparator = keccak256(
