@@ -41,7 +41,6 @@ contract QuarkStateManager {
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
-     * @dev `0` is not a valid nonce
      * @param wallet Address of the wallet owning the nonce
      * @param nonce Nonce to check
      * @return Whether the nonce has been exhausted
@@ -57,14 +56,14 @@ contract QuarkStateManager {
     }
 
     /**
-     * @notice Returns the next valid unset nonce for a given wallet (note that 0 is not a valid nonce)
-     * @dev Any unset nonce > 0 is valid to use, but using this method
+     * @notice Returns the next valid unset nonce for a given wallet
+     * @dev Any unset nonce is valid to use, but using this method
      * increases the likelihood that the nonce you use will be in a bucket that
      * has already been written to, which costs less gas
      * @return The next unused nonce
      */
     function nextNonce(address wallet) external view returns (uint96) {
-        for (uint96 i = 0; i < type(uint96).max;) {
+        for (uint96 i = 0; i <= type(uint96).max;) {
             if (!isNonceSet(wallet, i) && (nonceScriptAddress[wallet][i] == address(0))) {
                 return i;
             }
