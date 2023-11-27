@@ -28,7 +28,7 @@ contract ExploitableScript is QuarkScript, CallbackReceiver {
 }
 
 contract ProtectedScript is QuarkScript, CallbackReceiver {
-    // we expect callback, guarding against re-entrancy, so we only pay the target once
+    // we expect a callback, guarding against re-entrancy, so we only pay the target once
     function callMeBack(address target, bytes calldata call, uint256 fee) external payable returns (bytes memory) {
         require(msg.sender == address(this));
         allowCallback();

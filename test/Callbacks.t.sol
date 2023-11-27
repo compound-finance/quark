@@ -178,29 +178,36 @@ contract CallbacksTest is Test {
 
     function testCallcodeReentrancyExploit() public {
         /*
-         * Notably, Quark uses `callcode` instead of `delegatecall` to execute
-         * script bytecode in the context of a wallet. Why is that?
+         * Notably, Quark uses `callcode` instead of `delegatecall` to execute script bytecode in
+         * the context of a wallet. Consequently, it is possible to construct a sort of "only-self"
+         * guard, similar to a re-entrancy guard, but cheaper since it does not use storage.
          *
-         * Well, callcode changes `msg.sender` to the caller, which is in our case the wallet itself,
-         * while otherwise working (for our purposes) like `delegatecall`. Why do we want that?
-         *   (a) msg.sender can otherwise be pretty much any address, making it difficult to use
-         *   (b) if we use `callcode`, we can see when `msg.sender == address(this)` to check if
-         *       the script was called directly from the wallet for re-entrancy guards.
+         * Compared to a re-entrancy guard, an "only-self" guard does not prevent the script from
+         * recursively calling itself. However, it does prevent a second, separate contract and
+         * context from calling the guarded method.
          *
-         * (a) msg.sender is probably an arbitrary address; usually, the submitter of a signed QuarkOperation.
-         * One use-case for knowing the submitter would be to pay them; however, this can still be done
-         * (and more reliably) using tx.origin. So there is very little use for the default msg.sender.
+         * callcode changes `msg.sender` to the caller, which is in our case the wallet itself,
+         * while otherwise working (for our purposes) like `delegatecall`.
+         *   (a) this makes msg.sender more predictable; msg.sender can otherwise be any address
+         *   (b) this enables a check like `msg.sender == address(this)` that acts as a sort of
+         *       re-entrancy guard that prevents other addresses from calling a method.
          *
-         * (b) Quark wallets are able to accept callbacks within a transaction, which is what enables
-         * scripts to do things like execute a Uniswap FlashLoan. However, what if a script calls out to
-         * a third-party contract, like Uniswap but malicious, and receives a callback other than the one
-         * expected? What if the third-party calls back into the entrypoint of the script and recursively
-         * drains the wallet's funds? Using `callcode` gives us a mechanism for detecting just that: when
-         * the wallet `callcode`s into the script at the beginning of the transaction,
-         * `msg.sender == address(this)`. If and when a callback is performed, the wallet will use
-         * `delegatecall`, and `msg.sender` will not be the wallet address. So we can protect
-         * methods from outside callers by guarding on the condition `msg.sender == address(this)`,
-         * preventing malicious callback executors from triggering recursive callbacks and exploiting the wallet.
+         * (a) msg.sender is pretty much an arbitrary address; usually, the submitter of a signed
+         * QuarkOperation, or the address of the wallet's executor. One use-case for knowing the
+         * submitter would be to pay them; however, this can still be done (and more reliably) using
+         * tx.origin.
+         *
+         * (b) Quark wallets are able to accept callbacks within a transaction, which is what
+         * enables scripts to do things like execute a Uniswap FlashLoan. However, what if a script
+         * calls out to a third-party contract, like Uniswap but malicious, and receives a callback
+         * other than the one expected? What if the third-party calls back into the entrypoint of
+         * the script and recursively drains the wallet's funds? Using `callcode` gives us a
+         * mechanism for detecting those csaes: when the wallet `callcode`s into the script at the
+         * beginning of the transaction, `msg.sender == address(this)`. If and when a callback is
+         * performed, the wallet will use `delegatecall`, and `msg.sender` will not be the wallet
+         * address. So we can protect methods from outside callers by guarding on the condition
+         * `msg.sender == address(this)`, preventing malicious callback executors from triggering
+         * recursive callbacks and exploiting the wallet.
          */
         vm.pauseGasMetering();
         bytes memory exploitableScript = new YulHelper().getDeployed("CallcodeReentrancy.sol/ExploitableScript.json");
