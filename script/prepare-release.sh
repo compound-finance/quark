@@ -10,7 +10,7 @@ version_hash=$(git rev-parse --short HEAD)
 release_date=$(date +'%Y-%m-%d') # year-month-day
 release_name="release-v${release_date}+${version_hash}"
 
-artifact_name="out.zip"
+artifact_name="quark-out.${release_name}.zip"
 artifact_note="Compiled ABI"
 
 printf 'preparing release archive "%s"...\n' ${release_name}
