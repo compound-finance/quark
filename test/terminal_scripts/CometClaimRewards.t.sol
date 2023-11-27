@@ -43,9 +43,7 @@ contract CometClaimRewardsTest is Test {
     function testClaimComp() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-        bytes memory terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/CometClaimRewards.json"
-        );
+        bytes memory terminalScript = new YulHelper().getDeployed("TerminalScript.sol/CometClaimRewards.json");
 
         deal(USDC, address(wallet), 1_000_000e6);
 
@@ -60,9 +58,7 @@ contract CometClaimRewardsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeCall(
-                CometClaimRewards.claim, (cometReward, comet, address(wallet))
-            ),
+            abi.encodeCall(CometClaimRewards.claim, (cometReward, comet, address(wallet))),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

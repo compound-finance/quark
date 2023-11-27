@@ -31,12 +31,8 @@ contract TransferActionsTest is Test {
     address alice = vm.addr(alicePrivateKey);
     uint256 bobPrivateKey = 0xb0b;
     address bob = vm.addr(bobPrivateKey);
-    bytes terminalScript = new YulHelper().getDeployed(
-            "TerminalScript.sol/TransferActions.json"
-        );
-    bytes multicall = new YulHelper().getDeployed(
-            "Multicall.sol/Multicall.json"
-        );
+    bytes terminalScript = new YulHelper().getDeployed("TerminalScript.sol/TransferActions.json");
+    bytes multicall = new YulHelper().getDeployed("Multicall.sol/Multicall.json");
     bytes allowCallbacks = new YulHelper().getDeployed("AllowCallbacks.sol/AllowCallbacks.json");
 
     // Contracts address on mainnet
@@ -87,9 +83,7 @@ contract TransferActionsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeWithSelector(
-                TransferActions.transferERC20Token.selector, WETH, address(walletBob), 10 ether
-                ),
+            abi.encodeWithSelector(TransferActions.transferERC20Token.selector, WETH, address(walletBob), 10 ether),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -129,9 +123,7 @@ contract TransferActionsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeWithSelector(
-                TransferActions.transferNativeToken.selector, address(walletBob), 10 ether
-                ),
+            abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(walletBob), 10 ether),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -146,9 +138,7 @@ contract TransferActionsTest is Test {
 
     function testTransferReentrancyAttackSuccessWithCallbackEnabled() public {
         vm.pauseGasMetering();
-        bytes memory reentrantTransfer = new YulHelper().getDeployed(
-            "ReentrantTransfer.sol/ReentrantTransfer.json"
-        );
+        bytes memory reentrantTransfer = new YulHelper().getDeployed("ReentrantTransfer.sol/ReentrantTransfer.json");
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
         address reentrantTransferAddress = codeJar.saveCode(reentrantTransfer);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
@@ -238,9 +228,7 @@ contract TransferActionsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeWithSelector(
-                TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether
-                ),
+            abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -270,9 +258,7 @@ contract TransferActionsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             terminalScript,
-            abi.encodeWithSelector(
-                TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether
-                ),
+            abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

@@ -71,10 +71,7 @@ contract QuarkWalletTest is Test {
         uint256 ethToSend = 3.2 ether;
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet,
-            getMessageDetails,
-            abi.encodeWithSignature("getMsgSenderAndValue()"),
-            ScriptType.ScriptSource
+            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -423,9 +420,8 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(
-            aliceWallet, revertsCode, scriptType
-        );
+        QuarkWallet.QuarkOperation memory op =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, scriptType);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -446,9 +442,7 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(
-            aliceWallet, ping, scriptType
-        );
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(aliceWallet, ping, scriptType);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
@@ -473,10 +467,7 @@ contract QuarkWalletTest is Test {
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         assertEq(counter.number(), 0);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet,
-            incrementer,
-            abi.encodeWithSignature("incrementCounter(address)", counter),
-            scriptType
+            aliceWallet, incrementer, abi.encodeWithSignature("incrementCounter(address)", counter), scriptType
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -502,7 +493,10 @@ contract QuarkWalletTest is Test {
         bytes32 testHash = keccak256("test");
         (uint8 vt, bytes32 rt, bytes32 st) = vm.sign(alicePrivateKey, testHash);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.ecrecoverCall, (testHash, vt, rt, st)), ScriptType.ScriptAddress
+            aliceWallet,
+            preCompileCaller,
+            abi.encodeCall(PrecompileCaller.ecrecoverCall, (testHash, vt, rt, st)),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
@@ -534,7 +528,11 @@ contract QuarkWalletTest is Test {
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         uint256 numberToHash = 123;
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.sha256Call, (numberToHash)), ScriptType.ScriptAddress);
+            aliceWallet,
+            preCompileCaller,
+            abi.encodeCall(PrecompileCaller.sha256Call, (numberToHash)),
+            ScriptType.ScriptAddress
+        );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
         bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
@@ -564,7 +562,10 @@ contract QuarkWalletTest is Test {
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         bytes memory testBytes = abi.encodePacked(keccak256("test"));
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.ripemd160Call, (testBytes)), ScriptType.ScriptAddress
+            aliceWallet,
+            preCompileCaller,
+            abi.encodeCall(PrecompileCaller.ripemd160Call, (testBytes)),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
@@ -593,7 +594,10 @@ contract QuarkWalletTest is Test {
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         bytes memory testBytes = abi.encodePacked(keccak256("testDataCopy"));
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.dataCopyCall, (testBytes)), ScriptType.ScriptAddress
+            aliceWallet,
+            preCompileCaller,
+            abi.encodeCall(PrecompileCaller.dataCopyCall, (testBytes)),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
@@ -626,7 +630,10 @@ contract QuarkWalletTest is Test {
         // 7^3 % 11 = 2
         bytes32 expected = bytes32(uint256(2));
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, abi.encodeCall(PrecompileCaller.bigModExpCall, (base, exponent, modulus)), ScriptType.ScriptAddress
+            aliceWallet,
+            preCompileCaller,
+            abi.encodeCall(PrecompileCaller.bigModExpCall, (base, exponent, modulus)),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
@@ -658,16 +665,10 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, 
-            abi.encodeCall(
-                PrecompileCaller.bn256AddCall, 
-                    (
-                        uint256(1), 
-                        uint256(2),
-                        uint256(1),
-                        uint256(2)
-                    )
-                ), ScriptType.ScriptAddress
+            aliceWallet,
+            preCompileCaller,
+            abi.encodeCall(PrecompileCaller.bn256AddCall, (uint256(1), uint256(2), uint256(1), uint256(2))),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
@@ -703,15 +704,10 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
         bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, 
-            abi.encodeCall(
-                PrecompileCaller.bn256ScalarMulCall, 
-                    (
-                        uint256(1), 
-                        uint256(2),
-                        uint256(3)
-                    )
-                ), ScriptType.ScriptAddress
+            aliceWallet,
+            preCompileCaller,
+            abi.encodeCall(PrecompileCaller.bn256ScalarMulCall, (uint256(1), uint256(2), uint256(3))),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
@@ -768,17 +764,10 @@ contract QuarkWalletTest is Test {
         expected[1] = hex"7d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923";
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, preCompileCaller, 
-            abi.encodeCall(
-                PrecompileCaller.blake2FCall, 
-                    (
-                        rounds, 
-                        h,
-                        m,
-                        t,
-                        f
-                    )
-                ), ScriptType.ScriptAddress
+            aliceWallet,
+            preCompileCaller,
+            abi.encodeCall(PrecompileCaller.blake2FCall, (rounds, h, m, t, f)),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
