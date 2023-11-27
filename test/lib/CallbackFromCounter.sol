@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 import "./Counter.sol";
 import "../../src/QuarkScript.sol";
 
