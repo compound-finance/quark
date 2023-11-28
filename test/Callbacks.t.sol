@@ -175,4 +175,116 @@ contract CallbacksTest is Test {
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
+
+    function testCallcodeReentrancyExploit() public {
+        /*
+         * Notably, Quark uses `callcode` instead of `delegatecall` to execute script bytecode in
+         * the context of a wallet. Consequently, it is possible to construct a sort of "only-self"
+         * guard, similar to a re-entrancy guard, but cheaper since it does not use storage.
+         *
+         * Compared to a re-entrancy guard, an "only-self" guard does not prevent the script from
+         * recursively calling itself. However, it does prevent a second, separate contract and
+         * context from calling the guarded method.
+         *
+         * callcode changes `msg.sender` to the caller, which is in our case the wallet itself,
+         * while otherwise working (for our purposes) like `delegatecall`.
+         *   (a) this makes msg.sender more predictable; msg.sender can otherwise be any address
+         *   (b) this enables a check like `msg.sender == address(this)` that acts as a sort of
+         *       re-entrancy guard that prevents other addresses from calling a method.
+         *
+         * (a) msg.sender is pretty much an arbitrary address; usually, the submitter of a signed
+         * QuarkOperation, or the address of the wallet's executor. One use-case for knowing the
+         * submitter would be to pay them; however, this can still be done (and more reliably) using
+         * tx.origin.
+         *
+         * (b) Quark wallets are able to accept callbacks within a transaction, which is what
+         * enables scripts to do things like execute a Uniswap FlashLoan. However, what if a script
+         * calls out to a third-party contract, like Uniswap but malicious, and receives a callback
+         * other than the one expected? What if the third-party calls back into the entrypoint of
+         * the script and recursively drains the wallet's funds? Using `callcode` gives us a
+         * mechanism for detecting those csaes: when the wallet `callcode`s into the script at the
+         * beginning of the transaction, `msg.sender == address(this)`. If and when a callback is
+         * performed, the wallet will use `delegatecall`, and `msg.sender` will not be the wallet
+         * address. So we can protect methods from outside callers by guarding on the condition
+         * `msg.sender == address(this)`, preventing malicious callback executors from triggering
+         * recursive callbacks and exploiting the wallet.
+         */
+        vm.pauseGasMetering();
+        bytes memory exploitableScript = new YulHelper().getDeployed("CallcodeReentrancy.sol/ExploitableScript.json");
+        bytes memory callbackCaller = new YulHelper().getDeployed("CallcodeReentrancy.sol/CallbackCaller.json");
+
+        address callbackCallerAddress = codeJar.saveCode(callbackCaller);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            exploitableScript,
+            abi.encodeWithSignature(
+                "callMeBack(address,bytes,uint256)",
+                callbackCallerAddress,
+                abi.encodeWithSignature("doubleDip(bool)", false),
+                500 wei /* fee */
+            ),
+            ScriptType.ScriptAddress
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        deal(address(aliceWallet), 1000 wei);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation{value: 1000 wei}(op, v, r, s);
+        assertEq(callbackCallerAddress.balance, 1000 wei);
+    }
+
+    function testCallcodeReentrancyProtection() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory protectedScript = new YulHelper().getDeployed("CallcodeReentrancy.sol/ProtectedScript.json");
+        bytes memory callbackCaller = new YulHelper().getDeployed("CallcodeReentrancy.sol/CallbackCaller.json");
+
+        address callbackCallerAddress = codeJar.saveCode(callbackCaller);
+
+        QuarkWallet.QuarkOperation memory badOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            protectedScript,
+            abi.encodeWithSignature(
+                "callMeBack(address,bytes,uint256)",
+                callbackCallerAddress,
+                abi.encodeWithSignature("doubleDip(bool)", false),
+                500 wei /* fee */
+            ),
+            ScriptType.ScriptAddress
+        );
+        (uint8 bad_v, bytes32 bad_r, bytes32 bad_s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, badOp);
+
+        deal(address(aliceWallet), 1000 wei);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectRevert(); // attacker tried to call back into the script with a changed fee
+        aliceWallet.executeQuarkOperation{value: 1000 wei}(badOp, bad_v, bad_r, bad_s);
+
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        QuarkWallet.QuarkOperation memory behavedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            protectedScript,
+            abi.encodeWithSignature(
+                "callMeBack(address,bytes,uint256)",
+                callbackCallerAddress,
+                abi.encodeWithSignature("beGood()"),
+                500 wei /* fee */
+            ),
+            ScriptType.ScriptAddress
+        );
+        (uint8 behaved_v, bytes32 behaved_r, bytes32 behaved_s) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, behavedOp);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation{value: 1000 wei}(behavedOp, behaved_v, behaved_r, behaved_s);
+        // the well-behaved callback caller gets the correct fee
+        assertEq(callbackCallerAddress.balance, 500 wei);
+    }
 }
