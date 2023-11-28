@@ -26,3 +26,6 @@ forge script --via-ir \
     $etherscan_args \
     $@ \
     script/DeployQuarkWalletFactory.s.sol:DeployQuarkWalletFactory
+
+repo_root=$(git rev-parse --show-toplevel)
+${repo_root}/script/prepare-release.sh
