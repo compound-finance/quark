@@ -465,6 +465,7 @@ contract MulticallTest is Test {
                                 tokenFrom: USDC,
                                 amount: 5000e6,
                                 amountOutMinimum: 2 ether,
+                                deadline: block.timestamp + 1000,
                                 path: abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
                             })
                         )

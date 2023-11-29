@@ -139,6 +139,7 @@ contract UniswapSwapActions {
         uint256 amount;
         // Minimum amount of target token to receive (revert if return amount is less than this)
         uint256 amountOutMinimum;
+        uint256 deadline;
         // Path of the swap
         bytes path;
     }
@@ -150,6 +151,7 @@ contract UniswapSwapActions {
         uint256 amount;
         // Maximum amount of input token to spend (revert if input amount is greater than this)
         uint256 amountInMaximum;
+        uint256 deadline;
         // Path of the swap
         bytes path;
     }
@@ -164,7 +166,7 @@ contract UniswapSwapActions {
             ISwapRouter.ExactInputParams({
                 path: params.path,
                 recipient: params.recipient,
-                deadline: block.timestamp,
+                deadline: params.deadline,
                 amountIn: params.amount,
                 amountOutMinimum: params.amountOutMinimum
             })
@@ -181,7 +183,7 @@ contract UniswapSwapActions {
             ISwapRouter.ExactOutputParams({
                 path: params.path,
                 recipient: params.recipient,
-                deadline: block.timestamp,
+                deadline: params.deadline,
                 amountOut: params.amount,
                 amountInMaximum: params.amountInMaximum
             })
