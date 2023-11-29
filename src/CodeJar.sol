@@ -7,7 +7,6 @@ pragma solidity 0.8.19;
  * @author Compound Labs, Inc.
  */
 contract CodeJar {
-    error CodeInvalid(address codeAddress);
     error CodeHashMismatch(address codeAddress, bytes32 expected, bytes32 given);
 
     /**
@@ -67,8 +66,8 @@ contract CodeJar {
         //       more than 2^32 bytes long, the gas cost would be (2^32)^2 or
         //       about 13 orders of magnitude above the current block gas
         //       limit. As such, we check the type-conversion, but understand
-        //       it is not possible to accept a value whose length whose length
-        //       would not actually fit in 32-bits.
+        //       it is not possible to accept a value whose length would not
+        //       actually fit in 32-bits.
         require(code.length < type(uint32).max);
         uint32 codeLen = uint32(code.length);
 
