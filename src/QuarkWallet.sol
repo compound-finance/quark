@@ -72,6 +72,10 @@ contract QuarkWallet is IERC1271 {
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
 
+    bytes32 internal immutable domainSeparator;
+
+    uint256 internal immutable blockId;
+
     /// @notice The structure of a signed operation to execute in the context of this wallet
     struct QuarkOperation {
         /// @notice Nonce identifier for the operation
@@ -104,6 +108,10 @@ contract QuarkWallet is IERC1271 {
         executor = executor_;
         codeJar = codeJar_;
         stateManager = stateManager_;
+        domainSeparator = keccak256(
+            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this))
+        );
+        blockId = block.chainid;
     }
 
     /**
@@ -142,10 +150,8 @@ contract QuarkWallet is IERC1271 {
                 op.expiry
             )
         );
-        bytes32 domainSeparator = keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this))
-        );
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
 
         // if the signature check does not revert, the signature is valid
         checkValidSignatureInternal(signer, digest, v, r, s);
@@ -281,6 +287,16 @@ contract QuarkWallet is IERC1271 {
         }
 
         return returnData;
+    }
+
+    function getDomainSeparator() internal view returns (bytes32) {
+        if (block.chainid != blockId) {
+            return keccak256(
+                abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), 0, address(this))
+            );
+        } else {
+            return domainSeparator;
+        }
     }
 
     /**
