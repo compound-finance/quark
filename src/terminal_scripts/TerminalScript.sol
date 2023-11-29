@@ -8,8 +8,12 @@ import "./../QuarkScript.sol";
 import "./interfaces/IComet.sol";
 import "./interfaces/ICometRewards.sol";
 
+abstract contract TerminalScript {
+    error InvalidInput();
+}
+
 // TODO: Will need to add support for E-Comet once E-Comet has been deployed
-contract CometSupplyActions {
+contract CometSupplyActions is TerminalScript {
     using SafeERC20 for IERC20;
 
     /**
@@ -55,6 +59,10 @@ contract CometSupplyActions {
      * @param amounts The amounts of each asset to supply
      */
     function supplyMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
+        if (assets.length != amounts.length) {
+            revert InvalidInput();
+        }
+
         for (uint256 i = 0; i < assets.length;) {
             IERC20(assets[i]).forceApprove(comet, amounts[i]);
             IComet(comet).supply(assets[i], amounts[i]);
@@ -65,7 +73,7 @@ contract CometSupplyActions {
     }
 }
 
-contract CometWithdrawActions {
+contract CometWithdrawActions is TerminalScript {
     using SafeERC20 for IERC20;
 
     /**
@@ -108,6 +116,10 @@ contract CometWithdrawActions {
      * @param amounts The amounts of each asset to withdraw
      */
     function withdrawMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
+        if (assets.length != amounts.length) {
+            revert InvalidInput();
+        }
+
         for (uint256 i = 0; i < assets.length;) {
             IComet(comet).withdraw(assets[i], amounts[i]);
             unchecked {
@@ -217,7 +229,7 @@ contract CometClaimRewards {
     }
 }
 
-contract CometSupplyMultipleAssetsAndBorrow {
+contract CometSupplyMultipleAssetsAndBorrow is TerminalScript {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
@@ -228,6 +240,10 @@ contract CometSupplyMultipleAssetsAndBorrow {
         address baseAsset,
         uint256 borrow
     ) external {
+        if (assets.length != amounts.length) {
+            revert InvalidInput();
+        }
+
         for (uint256 i = 0; i < assets.length;) {
             IERC20(assets[i]).forceApprove(comet, amounts[i]);
             IComet(comet).supply(assets[i], amounts[i]);
@@ -239,13 +255,17 @@ contract CometSupplyMultipleAssetsAndBorrow {
     }
 }
 
-contract CometRepayAndWithdrawMultipleAssets {
+contract CometRepayAndWithdrawMultipleAssets is TerminalScript {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
     function run(address comet, address[] calldata assets, uint256[] calldata amounts, address baseAsset, uint256 repay)
         external
     {
+        if (assets.length != amounts.length) {
+            revert InvalidInput();
+        }
+
         IERC20(baseAsset).forceApprove(comet, repay);
         IComet(comet).supply(baseAsset, repay);
         for (uint256 i = 0; i < assets.length;) {

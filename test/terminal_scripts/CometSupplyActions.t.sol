@@ -171,4 +171,29 @@ contract SupplyActionsTest is Test {
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 10e18);
         assertApproxEqAbs(IComet(comet).balanceOf(address(wallet)), 1000e6, 1);
     }
+
+    function testInvalidInput() public {
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+
+        address[] memory assets = new address[](3);
+        uint256[] memory amounts = new uint256[](2);
+        assets[0] = WETH;
+        assets[1] = LINK;
+        assets[2] = USDC;
+        amounts[0] = 10 ether;
+        amounts[1] = 10e18;
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeWithSelector(CometSupplyActions.supplyMultipleAssets.selector, comet, assets, amounts),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        vm.expectRevert(abi.encodeWithSelector(TerminalScript.InvalidInput.selector));
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
 }

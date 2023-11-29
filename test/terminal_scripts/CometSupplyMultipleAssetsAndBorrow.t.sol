@@ -73,4 +73,29 @@ contract CometSupplyMultipleAssetsAndBorrowTest is Test {
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), LINK), 10e18);
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 100e6);
     }
+
+    function testInvalidInput() public {
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory terminalScript =
+            new YulHelper().getDeployed("TerminalScript.sol/CometSupplyMultipleAssetsAndBorrow.json");
+
+        address[] memory assets = new address[](2);
+        uint256[] memory amounts = new uint256[](1);
+        assets[0] = WETH;
+        assets[1] = LINK;
+        amounts[0] = 10 ether;
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeWithSelector(CometSupplyMultipleAssetsAndBorrow.run.selector, comet, assets, amounts, USDC, 100e6),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        vm.expectRevert(abi.encodeWithSelector(TerminalScript.InvalidInput.selector));
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
 }
