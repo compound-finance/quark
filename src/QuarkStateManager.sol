@@ -27,17 +27,16 @@ contract QuarkStateManager {
     }
 
     /// @notice Bit-packed nonce values
-    mapping(address /* wallet */ => mapping(uint256 /* bucket */ => uint256 /* bitset */)) public nonces;
+    mapping(address wallet => mapping(uint256 bucket => uint256 bitset)) public nonces;
 
     /// @notice Per-wallet-nonce address for preventing replays with changed script address
-    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => address /* address */)) public nonceScriptAddress;
+    mapping(address wallet => mapping(uint96 nonce => address scriptAddress)) public nonceScriptAddress;
 
     /// @notice Currently active nonce-script pair for a wallet, if any, for which storage is accessible
-    mapping(address /* wallet */ => NonceScript) internal activeNonceScript;
+    mapping(address wallet => NonceScript) internal activeNonceScript;
 
     /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
-    mapping(address /* wallet */ => mapping(uint96 /* nonce */ => mapping(bytes32 /* key */ => bytes32 /* storage */)))
-        internal walletStorage;
+    mapping(address wallet => mapping(uint96 nonce => mapping(bytes32 key => bytes32 value))) internal walletStorage;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -164,7 +163,6 @@ contract QuarkStateManager {
         // release the nonce when the wallet finishes executing callback
         activeNonceScript[msg.sender] = previousNonceScript;
 
-        // otherwise, return the result.
         return result;
     }
 

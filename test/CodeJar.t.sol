@@ -11,8 +11,6 @@ import "../src/CodeJar.sol";
 contract CodeJarTest is Test {
     event Ping(uint256 value);
 
-    error CodeInvalid(address codeAddress);
-
     CodeJar public codeJar;
     address destructingAddress;
     bytes destructingCode = hex"6000ff"; // PUSH1 [60]; 0 [00]; SELFDESTRUCT [FF]
