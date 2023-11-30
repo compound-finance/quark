@@ -117,7 +117,6 @@ contract QuarkWallet is IERC1271 {
      */
     function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
         external
-        payable
         returns (bytes memory)
     {
         if (block.timestamp >= op.expiry) {
@@ -156,7 +155,7 @@ contract QuarkWallet is IERC1271 {
             scriptAddress = codeJar.saveCode(op.scriptSource);
         }
 
-        return stateManager.setActiveNonceAndCallback{value: msg.value}(op.nonce, scriptAddress, op.scriptCalldata);
+        return stateManager.setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
     }
 
     /**
@@ -169,14 +168,13 @@ contract QuarkWallet is IERC1271 {
      */
     function executeScript(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
         external
-        payable
         returns (bytes memory)
     {
         // only allow the executor for the wallet to use unsigned execution
         if (msg.sender != executor) {
             revert Unauthorized();
         }
-        return stateManager.setActiveNonceAndCallback{value: msg.value}(nonce, scriptAddress, scriptCalldata);
+        return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
     }
 
     /**
@@ -255,7 +253,6 @@ contract QuarkWallet is IERC1271 {
      */
     function executeScriptWithNonceLock(address scriptAddress, bytes memory scriptCalldata)
         external
-        payable
         returns (bytes memory)
     {
         require(msg.sender == address(stateManager));
@@ -265,7 +262,8 @@ contract QuarkWallet is IERC1271 {
         uint256 scriptCalldataLen = scriptCalldata.length;
         assembly {
             // Note: CALLCODE is used to set the QuarkWallet as the `msg.sender`
-            success := callcode(gas(), scriptAddress, callvalue(), add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
+            success :=
+                callcode(gas(), scriptAddress, /* value */ 0, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
         }
 

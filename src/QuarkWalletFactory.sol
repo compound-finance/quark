@@ -160,7 +160,6 @@ contract QuarkWalletFactory {
      */
     function createAndExecute(address signer, QuarkWallet.QuarkOperation memory op, uint8 v, bytes32 r, bytes32 s)
         external
-        payable
         returns (bytes memory)
     {
         return createAndExecute(signer, DEFAULT_SALT, op, v, r, s);
@@ -183,12 +182,12 @@ contract QuarkWalletFactory {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public payable returns (bytes memory) {
+    ) public returns (bytes memory) {
         address payable walletAddress = walletAddressForSignerWithSalt(signer, salt);
         if (walletAddress.code.length == 0) {
             create(signer, salt);
         }
 
-        return QuarkWallet(walletAddress).executeQuarkOperation{value: msg.value}(op, v, r, s);
+        return QuarkWallet(walletAddress).executeQuarkOperation(op, v, r, s);
     }
 }
