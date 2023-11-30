@@ -262,7 +262,8 @@ contract QuarkWallet is IERC1271 {
         uint256 scriptCalldataLen = scriptCalldata.length;
         assembly {
             // Note: CALLCODE is used to set the QuarkWallet as the `msg.sender`
-            success := callcode(gas(), scriptAddress, 0 /* value */ , add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
+            success :=
+                callcode(gas(), scriptAddress, /* value */ 0, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
         }
 

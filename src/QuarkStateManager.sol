@@ -150,8 +150,7 @@ contract QuarkStateManager {
         NonceScript memory previousNonceScript = activeNonceScript[msg.sender];
         activeNonceScript[msg.sender] = NonceScript({nonce: nonce, scriptAddress: scriptAddress});
 
-        bytes memory result =
-            IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
+        bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
 
         // if a nonce was cleared, set the nonceScriptAddress to lock nonce re-use to the same script address
         if (nonceScriptAddress[msg.sender][nonce] == address(0) && !isNonceSetInternal(msg.sender, bucket, setMask)) {
