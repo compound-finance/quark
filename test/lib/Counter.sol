@@ -25,8 +25,13 @@ contract Counter {
         return number;
     }
 
-    function incrementAndCallback() public payable {
+    function incrementAndCallback() public {
         number++;
-        return HasCallback(msg.sender).callback{value: msg.value}();
+        return HasCallback(msg.sender).callback();
+    }
+
+    function incrementAndCallbackWithFee(uint256 fee) public {
+        number++;
+        return HasCallback(msg.sender).callback{value: fee}();
     }
 }
