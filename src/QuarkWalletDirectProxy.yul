@@ -29,15 +29,27 @@ object "QuarkWalletDirectProxy" {
       let executor := verbatim_0i_1o(hex"730000000000000000000000000000000000000000")
       let impl := verbatim_0i_1o(hex"730000000000000000000000000000000000000000")
 
-      let calldataLen := calldatasize()
+      function returnUint(v) {
+        mstore(0, v)
+        return(0, 0x20)
+      }
 
-      mstore(0x00, 0xaabbccdd) // myFun(address,address,bytes)
-      mstore(0x04, signer)
-      mstore(0x24, executor)
-      mstore(0x44, 0x64)
-      mstore(0x64, calldataLen)
-      calldatacopy(0x64, 0, calldataLen)
-      pop(delegatecall(gas(), impl, 0x00, add(0x64, calldataLen), 0x00, 0x00))
+      function selector() -> s {
+        s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
+      }
+
+      switch selector()
+      case 0x238ac933 /* "signer()" */ {
+          returnUint(signer)
+      }
+      case 0xc34c08e5 /* "executor()" */ {
+          returnUint(executor)
+      }
+      default {
+        let calldataLen := calldatasize()
+        calldatacopy(0, 0, calldataLen)
+        pop(delegatecall(gas(), impl, 0x00, calldataLen, 0x00, 0x00))
+      }
     }
   }
 }
