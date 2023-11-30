@@ -14,6 +14,8 @@ interface IExecutor {
  * @author Compound Labs, Inc.
  */
 contract QuarkStateManager {
+    event ClearNonce(address indexed wallet, uint96 nonce);
+
     error NoActiveNonce();
     error NoUnusedNonces();
     error NonceAlreadySet();
@@ -97,8 +99,11 @@ contract QuarkStateManager {
         if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
             revert NoActiveNonce();
         }
-        (uint256 bucket, uint256 setMask) = getBucket(activeNonceScript[msg.sender].nonce);
+
+        uint96 nonce = activeNonceScript[msg.sender].nonce;
+        (uint256 bucket, uint256 setMask) = getBucket(nonce);
         nonces[msg.sender][bucket] &= ~setMask;
+        emit ClearNonce(msg.sender, nonce);
     }
 
     /**
