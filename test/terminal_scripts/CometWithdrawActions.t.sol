@@ -230,7 +230,7 @@ contract WithdrawActionsTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        vm.expectRevert(abi.encodeWithSelector(TerminalScript.InvalidInput.selector));
+        vm.expectRevert(abi.encodeWithSelector(TerminalErrors.InvalidInput.selector));
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }

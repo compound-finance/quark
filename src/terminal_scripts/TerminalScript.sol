@@ -8,12 +8,13 @@ import "./../QuarkScript.sol";
 import "./interfaces/IComet.sol";
 import "./interfaces/ICometRewards.sol";
 
-abstract contract TerminalScript {
+library TerminalErrors {
     error InvalidInput();
+    error TransferFailed(bytes data);
 }
 
 // TODO: Will need to add support for E-Comet once E-Comet has been deployed
-contract CometSupplyActions is TerminalScript {
+contract CometSupplyActions {
     using SafeERC20 for IERC20;
 
     /**
@@ -60,7 +61,7 @@ contract CometSupplyActions is TerminalScript {
      */
     function supplyMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
         if (assets.length != amounts.length) {
-            revert InvalidInput();
+            revert TerminalErrors.InvalidInput();
         }
 
         for (uint256 i = 0; i < assets.length;) {
@@ -73,7 +74,7 @@ contract CometSupplyActions is TerminalScript {
     }
 }
 
-contract CometWithdrawActions is TerminalScript {
+contract CometWithdrawActions {
     using SafeERC20 for IERC20;
 
     /**
@@ -117,7 +118,7 @@ contract CometWithdrawActions is TerminalScript {
      */
     function withdrawMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
         if (assets.length != amounts.length) {
-            revert InvalidInput();
+            revert TerminalErrors.InvalidInput();
         }
 
         for (uint256 i = 0; i < assets.length;) {
@@ -194,8 +195,6 @@ contract UniswapSwapActions {
 contract TransferActions is QuarkScript {
     using SafeERC20 for IERC20;
 
-    error TransferFailed(bytes data);
-
     /**
      * @notice Transfer ERC20 token
      * @param token The token address
@@ -214,7 +213,7 @@ contract TransferActions is QuarkScript {
     function transferNativeToken(address recipient, uint256 amount) external nonReentrant {
         (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
         if (!success) {
-            revert TransferFailed(data);
+            revert TerminalErrors.TransferFailed(data);
         }
     }
 }
@@ -231,7 +230,7 @@ contract CometClaimRewards {
     }
 }
 
-contract CometSupplyMultipleAssetsAndBorrow is TerminalScript {
+contract CometSupplyMultipleAssetsAndBorrow {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
@@ -243,7 +242,7 @@ contract CometSupplyMultipleAssetsAndBorrow is TerminalScript {
         uint256 borrow
     ) external {
         if (assets.length != amounts.length) {
-            revert InvalidInput();
+            revert TerminalErrors.InvalidInput();
         }
 
         for (uint256 i = 0; i < assets.length;) {
@@ -257,7 +256,7 @@ contract CometSupplyMultipleAssetsAndBorrow is TerminalScript {
     }
 }
 
-contract CometRepayAndWithdrawMultipleAssets is TerminalScript {
+contract CometRepayAndWithdrawMultipleAssets {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
@@ -265,7 +264,7 @@ contract CometRepayAndWithdrawMultipleAssets is TerminalScript {
         external
     {
         if (assets.length != amounts.length) {
-            revert InvalidInput();
+            revert TerminalErrors.InvalidInput();
         }
 
         IERC20(baseAsset).forceApprove(comet, repay);
