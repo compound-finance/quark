@@ -5,9 +5,14 @@ import "./Counter.sol";
 import "../../src/QuarkScript.sol";
 
 contract CallbackFromCounter is QuarkScript {
-    function doIncrementAndCallback(Counter counter) public payable {
+    function doIncrementAndCallback(Counter counter) public {
         allowCallback();
-        counter.incrementAndCallback{value: msg.value}();
+        counter.incrementAndCallback();
+    }
+
+    function doIncrementAndCallbackWithFee(Counter counter, uint256 fee) public {
+        allowCallback();
+        counter.incrementAndCallbackWithFee(fee);
     }
 
     function callback() external payable {

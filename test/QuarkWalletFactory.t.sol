@@ -207,10 +207,9 @@ contract QuarkWalletFactoryTest is Test {
 
     /* ===== msg.value and msg.sender tests ===== */
 
-    function testCreateAndExecuteSetsMsgSenderAndValue() public {
+    function testCreateAndExecuteSetsMsgSender() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        uint256 ethToSend = 3.2 ether;
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         address aliceWallet = factory.walletAddressForSigner(alice);
         uint96 nonce = factory.stateManager().nextNonce(aliceWallet);
@@ -230,21 +229,19 @@ contract QuarkWalletFactoryTest is Test {
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
         emit WalletDeploy(alice, address(0), aliceWallet, bytes32(0));
-        bytes memory result = factory.createAndExecute{value: ethToSend}(alice, op, v, r, s);
+        bytes memory result = factory.createAndExecute(alice, op, v, r, s);
 
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
         assertEq(msgSender, address(aliceWallet));
-        assertEq(msgValue, ethToSend);
-        assertEq(address(aliceWallet).balance, ethToSend);
+        assertEq(msgValue, 0);
 
         // uses up the operation's nonce
         assertEq(factory.stateManager().isNonceSet(aliceWallet, nonce), true);
     }
 
-    function testCreateAndExecuteWithSaltSetsMsgSenderAndValue() public {
+    function testCreateAndExecuteWithSaltSetsMsgSender() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        uint256 ethToSend = 3.2 ether;
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         bytes32 salt = bytes32("salty salt salt");
         uint96 nonce = factory.nextNonce(alice, salt);
@@ -265,12 +262,11 @@ contract QuarkWalletFactoryTest is Test {
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
         emit WalletDeploy(alice, factory.walletAddressForSigner(alice), aliceWallet, salt);
-        bytes memory result = factory.createAndExecute{value: ethToSend}(alice, salt, op, v, r, s);
+        bytes memory result = factory.createAndExecute(alice, salt, op, v, r, s);
 
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
         assertEq(msgSender, address(aliceWallet));
-        assertEq(msgValue, ethToSend);
-        assertEq(address(aliceWallet).balance, ethToSend);
+        assertEq(msgValue, 0);
 
         // uses up the operation's nonce
         assertEq(factory.stateManager().isNonceSet(aliceWallet, nonce), true);

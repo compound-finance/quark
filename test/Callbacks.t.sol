@@ -62,9 +62,10 @@ contract CallbacksTest is Test {
     function testPayableCallback() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        uint256 ethToSend = 5.7 ether;
+        deal(address(counter), 1000 wei);
         assertEq(counter.number(), 0);
-        assertEq(address(aliceWallet).balance, 0);
+        assertEq(address(counter).balance, 1000 wei);
+        assertEq(address(aliceWallet).balance, 0 wei);
 
         bytes memory callbackFromCounter =
             new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
@@ -72,7 +73,7 @@ contract CallbacksTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             callbackFromCounter,
-            abi.encodeWithSignature("doIncrementAndCallback(address)", counter),
+            abi.encodeWithSignature("doIncrementAndCallbackWithFee(address,uint256)", counter, 500 wei),
             ScriptType.ScriptSource
         );
 
@@ -80,10 +81,11 @@ contract CallbacksTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation{value: ethToSend}(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 11);
-        assertEq(address(aliceWallet).balance, ethToSend);
+        assertEq(address(counter).balance, 500 wei);
+        assertEq(address(aliceWallet).balance, 500 wei);
     }
 
     function testAllowNestedCallbacks() public {
@@ -232,7 +234,7 @@ contract CallbacksTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation{value: 1000 wei}(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, v, r, s);
         assertEq(callbackCallerAddress.balance, 1000 wei);
     }
 
@@ -262,7 +264,7 @@ contract CallbacksTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectRevert(); // attacker tried to call back into the script with a changed fee
-        aliceWallet.executeQuarkOperation{value: 1000 wei}(badOp, bad_v, bad_r, bad_s);
+        aliceWallet.executeQuarkOperation(badOp, bad_v, bad_r, bad_s);
 
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -283,7 +285,7 @@ contract CallbacksTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation{value: 1000 wei}(behavedOp, behaved_v, behaved_r, behaved_s);
+        aliceWallet.executeQuarkOperation(behavedOp, behaved_v, behaved_r, behaved_s);
         // the well-behaved callback caller gets the correct fee
         assertEq(callbackCallerAddress.balance, 500 wei);
     }

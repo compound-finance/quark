@@ -66,10 +66,9 @@ contract QuarkWalletTest is Test {
 
     /* ===== msg.value and msg.sender tests ===== */
 
-    function testSetsMsgSenderAndValue() public {
+    function testSetsMsgSender() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        uint256 ethToSend = 3.2 ether;
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptSource
@@ -78,19 +77,16 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation{value: ethToSend}(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
 
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
         assertEq(msgSender, address(aliceWallet));
-        assertEq(msgValue, ethToSend);
-        assertEq(address(aliceWallet).balance, ethToSend);
+        assertEq(msgValue, 0);
     }
 
-    function testSetsMsgSenderAndValueDuringDirectExecute() public {
+    function testSetsMsgSenderDuringDirectExecute() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        uint256 ethToSend = 3.2 ether;
-        aliceAccount.call{value: ethToSend}("");
         QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
@@ -101,14 +97,13 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWalletExecutable.executeScript{value: ethToSend}(nonce, scriptAddress, call);
+        bytes memory result = aliceWalletExecutable.executeScript(nonce, scriptAddress, call);
 
         vm.stopPrank();
 
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
         assertEq(msgSender, address(aliceWalletExecutable));
-        assertEq(msgValue, ethToSend);
-        assertEq(address(aliceWalletExecutable).balance, ethToSend);
+        assertEq(msgValue, 0);
     }
 
     /* ===== general invariant tests ===== */
