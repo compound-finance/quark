@@ -187,6 +187,8 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, true);
+        emit ClearNonce(address(aliceWallet), op1.nonce);
         aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
         // incrementer increments the counter thrice
         assertEq(counter.number(), 3);
