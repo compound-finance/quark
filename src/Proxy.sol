@@ -21,7 +21,13 @@ contract Proxy {
      * @param codeJar_ The CodeJar contract used to deploy scripts
      * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
      */
-    constructor(address implementation_, address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
+    constructor(
+        address implementation_,
+        address signer_,
+        address executor_,
+        CodeJar codeJar_,
+        QuarkStateManager stateManager_
+    ) {
         signer = signer_;
         executor = executor_;
         walletImplementation = implementation_;

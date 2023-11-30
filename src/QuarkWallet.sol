@@ -110,7 +110,7 @@ contract QuarkWallet is IERC1271 {
      * crazy stuff
      */
     function getSigner() public returns (address) {
-        (,bytes memory result) = address(this).call(abi.encodeWithSignature("signer()"));
+        (, bytes memory result) = address(this).call(abi.encodeWithSignature("signer()"));
         return abi.decode(result, (address));
     }
 

@@ -21,7 +21,9 @@ contract Debug is Script {
         Proxy proxy = new Proxy(address(impl), dummy, address(0), codejar, manager);
         (bool success, bytes memory result) = address(proxy).call(abi.encodeWithSignature("getSigner()"));
         if (!success) {
-            assembly { revert(add(result, 0x20), mload(result)) }
+            assembly {
+                revert(add(result, 0x20), mload(result))
+            }
         }
         address signer = abi.decode(result, (address));
         console.log(signer);
