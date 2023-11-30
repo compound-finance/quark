@@ -110,7 +110,8 @@ contract QuarkWalletFactory {
                                 salt,
                                 keccak256(
                                     abi.encodePacked(
-                                        type(QuarkWallet).creationCode,
+                                        type(QuarkWalletDirectProxy).creationCode,
+                                        abi.encode(quarkWalletImpl),
                                         abi.encode(signer),
                                         abi.encode(executor),
                                         abi.encode(address(codeJar)),

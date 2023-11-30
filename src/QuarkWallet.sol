@@ -5,6 +5,7 @@ import {CodeJar} from "./CodeJar.sol";
 import {QuarkStateManager} from "./QuarkStateManager.sol";
 import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
+import "forge-std/console.sol";
 
 /**
  * @title Quark Wallet Metadata
@@ -43,16 +44,18 @@ contract QuarkWallet is IERC1271 {
     error Unauthorized();
 
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
-    address public immutable signer;
+    address public signer;
 
     /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
-    address public immutable executor;
+    address public executor;
 
     /// @notice Address of CodeJar contract used to deploy transaction script source code
-    CodeJar public immutable codeJar;
+    CodeJar public codeJar;
 
     /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
-    QuarkStateManager public immutable stateManager;
+    QuarkStateManager public stateManager;
+
+    address public impl;
 
     /// @notice Name of contract
     string public constant NAME = QuarkWalletMetadata.NAME;
@@ -104,6 +107,7 @@ contract QuarkWallet is IERC1271 {
         executor = executor_;
         codeJar = codeJar_;
         stateManager = stateManager_;
+        impl = address(0);
     }
 
     /**
@@ -239,6 +243,8 @@ contract QuarkWallet is IERC1271 {
                 revert InvalidSignature();
             }
             if (recoveredSigner != signatory) {
+                console.log("recoveredSigner: %s", recoveredSigner);
+                console.log("signatory: %s", signatory);
                 revert BadSignatory();
             }
         }
