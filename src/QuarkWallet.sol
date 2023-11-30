@@ -107,6 +107,14 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
+     * crazy stuff
+     */
+    function getSigner() public returns (address) {
+        (,bytes memory result) = address(this).call(abi.encodeWithSignature("signer()"));
+        return abi.decode(result, (address));
+    }
+
+    /**
      * @notice Execute a QuarkOperation via signature
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
