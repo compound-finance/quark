@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "./CodeJar.sol";
 import "./QuarkWallet.sol";
 import "./QuarkStateManager.sol";
+import "./QuarkWalletDirectProxy.sol";
 
 /**
  * @title Quark Wallet Factory
@@ -25,10 +26,13 @@ contract QuarkWalletFactory {
     /// @notice Address of QuarkStateManager contract
     QuarkStateManager public immutable stateManager;
 
+    address public immutable quarkWalletImpl;
+
     /// @notice Construct a new QuarkWalletFactory, deploying a CodeJar and QuarkStateManager as well
     constructor() {
         codeJar = new CodeJar();
         stateManager = new QuarkStateManager();
+        quarkWalletImpl = address(new QuarkWallet(address(0), address(0), codeJar, stateManager));
     }
 
     /**
@@ -55,8 +59,9 @@ contract QuarkWalletFactory {
         } else {
             executor = address(0);
         }
-        address payable walletAddress =
-            payable(address(new QuarkWallet{salt: salt}(signer, executor, codeJar, stateManager)));
+        address payable walletAddress = payable(
+            address(new QuarkWalletDirectProxy{salt: salt}(quarkWalletImpl, signer, executor, codeJar, stateManager))
+        );
         emit WalletDeploy(signer, executor, walletAddress, salt);
         return walletAddress;
     }
