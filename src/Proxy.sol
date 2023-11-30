@@ -11,12 +11,6 @@ contract Proxy {
     /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
     address public immutable executor;
 
-    /// @notice Address of CodeJar contract used to deploy transaction script source code
-    CodeJar public immutable codeJar;
-
-    /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
-    QuarkStateManager public immutable stateManager;
-
     /// @notice Address of the quark wallet implementation code
     address public immutable walletImplementation;
 
@@ -30,8 +24,6 @@ contract Proxy {
     constructor(address implementation_, address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
         signer = signer_;
         executor = executor_;
-        codeJar = codeJar_;
-        stateManager = stateManager_;
         walletImplementation = implementation_;
     }
 
