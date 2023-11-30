@@ -210,4 +210,28 @@ contract WithdrawActionsTest is Test {
         assertEq(IERC20(LINK).balanceOf(address(wallet)), 1000e18);
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
+
+    function testInvalidInput() public {
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+
+        address[] memory assets = new address[](3);
+        uint256[] memory amounts = new uint256[](1);
+        assets[0] = WETH;
+        assets[1] = LINK;
+        assets[2] = USDC;
+        amounts[0] = 10 ether;
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeWithSelector(CometWithdrawActions.withdrawMultipleAssets.selector, comet, assets, amounts),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        vm.expectRevert(abi.encodeWithSelector(TerminalErrors.InvalidInput.selector));
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
 }

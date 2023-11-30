@@ -208,7 +208,7 @@ contract TransferActionsTest is Test {
                 1,
                 callContracts[1],
                 abi.encodeWithSelector(
-                    TransferActions.TransferFailed.selector, abi.encodeWithSelector(QuarkScript.ReentrantCall.selector)
+                    TerminalErrors.TransferFailed.selector, abi.encodeWithSelector(QuarkScript.ReentrantCall.selector)
                 )
             )
         );
@@ -238,7 +238,7 @@ contract TransferActionsTest is Test {
         // Reentering into the QuarkWallet fails due to there being no active callback
         vm.expectRevert(
             abi.encodeWithSelector(
-                TransferActions.TransferFailed.selector, abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
+                TerminalErrors.TransferFailed.selector, abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
             )
         );
         vm.resumeGasMetering();
@@ -270,7 +270,7 @@ contract TransferActionsTest is Test {
         // Not replayable signature will blocked by QuarkWallet during executeQuarkOperation
         vm.expectRevert(
             abi.encodeWithSelector(
-                TransferActions.TransferFailed.selector,
+                TerminalErrors.TransferFailed.selector,
                 abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector)
             )
         );

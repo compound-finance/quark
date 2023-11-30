@@ -78,4 +78,29 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
         assertEq(IERC20(LINK).balanceOf(address(wallet)), 10e18);
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 0);
     }
+
+    function testInvalidInput() public {
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        bytes memory terminalScript =
+            new YulHelper().getDeployed("TerminalScript.sol/CometRepayAndWithdrawMultipleAssets.json");
+
+        address[] memory assets = new address[](2);
+        uint256[] memory amounts = new uint256[](1);
+        assets[0] = WETH;
+        assets[1] = LINK;
+        amounts[0] = 10 ether;
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeCall(CometRepayAndWithdrawMultipleAssets.run, (comet, assets, amounts, USDC, 100e6)),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        vm.expectRevert(abi.encodeWithSelector(TerminalErrors.InvalidInput.selector));
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
 }

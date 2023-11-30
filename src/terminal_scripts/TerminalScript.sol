@@ -8,6 +8,11 @@ import "./../QuarkScript.sol";
 import "./interfaces/IComet.sol";
 import "./interfaces/ICometRewards.sol";
 
+library TerminalErrors {
+    error InvalidInput();
+    error TransferFailed(bytes data);
+}
+
 // TODO: Will need to add support for E-Comet once E-Comet has been deployed
 contract CometSupplyActions {
     using SafeERC20 for IERC20;
@@ -55,6 +60,10 @@ contract CometSupplyActions {
      * @param amounts The amounts of each asset to supply
      */
     function supplyMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
+        if (assets.length != amounts.length) {
+            revert TerminalErrors.InvalidInput();
+        }
+
         for (uint256 i = 0; i < assets.length;) {
             IERC20(assets[i]).forceApprove(comet, amounts[i]);
             IComet(comet).supply(assets[i], amounts[i]);
@@ -108,6 +117,10 @@ contract CometWithdrawActions {
      * @param amounts The amounts of each asset to withdraw
      */
     function withdrawMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
+        if (assets.length != amounts.length) {
+            revert TerminalErrors.InvalidInput();
+        }
+
         for (uint256 i = 0; i < assets.length;) {
             IComet(comet).withdraw(assets[i], amounts[i]);
             unchecked {
@@ -127,6 +140,7 @@ contract UniswapSwapActions {
         uint256 amount;
         // Minimum amount of target token to receive (revert if return amount is less than this)
         uint256 amountOutMinimum;
+        uint256 deadline;
         // Path of the swap
         bytes path;
     }
@@ -138,6 +152,7 @@ contract UniswapSwapActions {
         uint256 amount;
         // Maximum amount of input token to spend (revert if input amount is greater than this)
         uint256 amountInMaximum;
+        uint256 deadline;
         // Path of the swap
         bytes path;
     }
@@ -152,7 +167,7 @@ contract UniswapSwapActions {
             ISwapRouter.ExactInputParams({
                 path: params.path,
                 recipient: params.recipient,
-                deadline: block.timestamp,
+                deadline: params.deadline,
                 amountIn: params.amount,
                 amountOutMinimum: params.amountOutMinimum
             })
@@ -169,7 +184,7 @@ contract UniswapSwapActions {
             ISwapRouter.ExactOutputParams({
                 path: params.path,
                 recipient: params.recipient,
-                deadline: block.timestamp,
+                deadline: params.deadline,
                 amountOut: params.amount,
                 amountInMaximum: params.amountInMaximum
             })
@@ -179,8 +194,6 @@ contract UniswapSwapActions {
 
 contract TransferActions is QuarkScript {
     using SafeERC20 for IERC20;
-
-    error TransferFailed(bytes data);
 
     /**
      * @notice Transfer ERC20 token
@@ -200,7 +213,7 @@ contract TransferActions is QuarkScript {
     function transferNativeToken(address recipient, uint256 amount) external nonReentrant {
         (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
         if (!success) {
-            revert TransferFailed(data);
+            revert TerminalErrors.TransferFailed(data);
         }
     }
 }
@@ -228,6 +241,10 @@ contract CometSupplyMultipleAssetsAndBorrow {
         address baseAsset,
         uint256 borrow
     ) external {
+        if (assets.length != amounts.length) {
+            revert TerminalErrors.InvalidInput();
+        }
+
         for (uint256 i = 0; i < assets.length;) {
             IERC20(assets[i]).forceApprove(comet, amounts[i]);
             IComet(comet).supply(assets[i], amounts[i]);
@@ -246,6 +263,10 @@ contract CometRepayAndWithdrawMultipleAssets {
     function run(address comet, address[] calldata assets, uint256[] calldata amounts, address baseAsset, uint256 repay)
         external
     {
+        if (assets.length != amounts.length) {
+            revert TerminalErrors.InvalidInput();
+        }
+
         IERC20(baseAsset).forceApprove(comet, repay);
         IComet(comet).supply(baseAsset, repay);
         for (uint256 i = 0; i < assets.length;) {
