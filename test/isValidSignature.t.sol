@@ -135,7 +135,8 @@ contract isValidSignatureTest is Test {
         vm.resumeGasMetering();
 
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
-        aliceWallet.isValidSignature(digest, abi.encodePacked(r, s, v + 1));
+        // If v == 27, add 1 to it to make it invalid. If v == 28, subtract 1 from it to make it invalid.
+        aliceWallet.isValidSignature(digest, abi.encodePacked(r, s, v - 1));
     }
 
     function testRevertsForWrongSigner() public {
