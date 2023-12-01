@@ -72,26 +72,26 @@ contract TransferActionsTest is Test {
         assertEq(IERC20(WETH).balanceOf(bob), 10 ether);
     }
 
-    // function testTransferERC20TokenToQuarkWallet() public {
-    //     vm.pauseGasMetering();
-    //     QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-    //     QuarkWallet walletBob = QuarkWallet(factory.create(bob, 0));
+    function testTransferERC20TokenToQuarkWallet() public {
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet walletBob = QuarkWallet(factory.create(bob, 0));
 
-    //     deal(WETH, address(wallet), 10 ether);
-    //     assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
-    //     assertEq(IERC20(WETH).balanceOf(bob), 0 ether);
-    //     QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-    //         wallet,
-    //         terminalScript,
-    //         abi.encodeWithSelector(TransferActions.transferERC20Token.selector, WETH, address(walletBob), 10 ether),
-    //         ScriptType.ScriptSource
-    //     );
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-    //     vm.resumeGasMetering();
-    //     wallet.executeQuarkOperation(op, v, r, s);
-    //     assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
-    //     assertEq(IERC20(WETH).balanceOf(address(walletBob)), 10 ether);
-    // }
+        deal(WETH, address(wallet), 10 ether);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 10 ether);
+        assertEq(IERC20(WETH).balanceOf(bob), 0 ether);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeWithSelector(TransferActions.transferERC20Token.selector, WETH, address(walletBob), 10 ether),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 0 ether);
+        assertEq(IERC20(WETH).balanceOf(address(walletBob)), 10 ether);
+    }
 
     function testTransferNativeTokenToEOA() public {
         vm.pauseGasMetering();
@@ -117,8 +117,8 @@ contract TransferActionsTest is Test {
 
     function testTransferNativeTokenToQuarkWallet() public {
         vm.pauseGasMetering();
-        QuarkWallet walletBob = QuarkWallet(factory.create(bob, 0));
         QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet walletBob = QuarkWallet(factory.create(bob, 0));
 
         deal(address(wallet), 10 ether);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
