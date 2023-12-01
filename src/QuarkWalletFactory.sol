@@ -61,11 +61,7 @@ contract QuarkWalletFactory {
             executor = address(0);
         }
         address payable walletAddress = payable(
-            address(
-                new QuarkWalletDirectProxy{salt: keccak256(abi.encode(signer, executor, salt))}(
-                    quarkWalletImpl
-                )
-            )
+            address(new QuarkWalletDirectProxy{salt: keccak256(abi.encode(signer, executor, salt))}(quarkWalletImpl))
         );
         QuarkWallet(walletAddress).initialize(signer, executor);
         emit WalletDeploy(signer, executor, walletAddress, salt);
