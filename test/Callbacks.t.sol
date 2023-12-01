@@ -34,6 +34,7 @@ contract CallbacksTest is Test {
 
         aliceAccount = vm.addr(alicePrivateKey);
         aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet.initialize(aliceAccount, address(0));
     }
 
     function testCallbackFromCounter() public {

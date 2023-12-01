@@ -51,6 +51,7 @@ contract QuarkStateManagerTest is Test {
         // a QuarkWallet can use nonce 0 as the active nonce
         vm.pauseGasMetering(); // do not meter deployment gas
         QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        wallet.initialize(address(0), address(0));
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         address scriptAddress = codeJar.saveCode(getMessageDetails);
         bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
@@ -79,6 +80,7 @@ contract QuarkStateManagerTest is Test {
         // the null script is not special: since it can never run any code, it just kills the nonce
         vm.pauseGasMetering();
         QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        wallet.initialize(address(0), address(0));
         vm.resumeGasMetering();
         vm.prank(address(wallet));
         /* although nonce=0 scriptAddress=0 is a zero-value for activeNonceScript, since the null script
@@ -93,6 +95,7 @@ contract QuarkStateManagerTest is Test {
         // an EOA can be passed as scriptAddress and it will just return empty bytes
         vm.pauseGasMetering();
         QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        wallet.initialize(address(0), address(0));
         vm.resumeGasMetering();
         vm.prank(address(wallet));
         bytes memory result = stateManager.setActiveNonceAndCallback(0, address(0x123), bytes(""));

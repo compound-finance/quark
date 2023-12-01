@@ -37,6 +37,7 @@ contract EIP712Test is Test {
 
         alice = vm.addr(alicePrivateKey);
         wallet = new QuarkWallet(alice, address(0), codeJar, stateManager);
+        wallet.initialize(alice, address(0));
     }
 
     function incrementCounterOperation(QuarkWallet targetWallet) public returns (QuarkWallet.QuarkOperation memory) {

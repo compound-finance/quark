@@ -44,18 +44,20 @@ contract QuarkWallet is IERC1271 {
     error Unauthorized();
 
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
-    address public signer;
+    // address public immutable signer;
 
-    /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
-    address public executor;
+    // /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
+    // address public immutable executor;
+
+    address public immutable impl;
+
+    address public immutable initializer;
 
     /// @notice Address of CodeJar contract used to deploy transaction script source code
-    CodeJar public codeJar;
+    CodeJar public immutable codeJar;
 
     /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
-    QuarkStateManager public stateManager;
-
-    address public impl;
+    QuarkStateManager public immutable stateManager;
 
     /// @notice Name of contract
     string public constant NAME = QuarkWalletMetadata.NAME;
@@ -103,11 +105,24 @@ contract QuarkWallet is IERC1271 {
      * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
      */
     constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
-        signer = signer_;
-        executor = executor_;
         codeJar = codeJar_;
         stateManager = stateManager_;
         impl = address(0);
+        initializer = msg.sender;
+    }
+
+    function initialize(address signer, address executor) public {
+        require(msg.sender == initializer, "QuarkWalletDirectProxy: not initializer");
+        stateManager.writeImmutable(bytes32("signer"), bytes32(uint256(uint160(signer))));
+        stateManager.writeImmutable(bytes32("executor"), bytes32(uint256(uint160(executor))));
+    }
+
+    function signer() public view returns (address) {
+        return address(uint160(uint256(stateManager.readImmutable("signer"))));
+    }
+
+    function executor() public view returns (address) {
+        return address(uint160(uint256(stateManager.readImmutable("executor"))));
     }
 
     /**
@@ -151,7 +166,7 @@ contract QuarkWallet is IERC1271 {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(signer, digest, v, r, s);
+        checkValidSignatureInternal(address(uint160(uint256(stateManager.readImmutable("signer")))), digest, v, r, s);
 
         // if scriptAddress not given, derive deterministic address from bytecode
         address scriptAddress = op.scriptAddress;
@@ -175,7 +190,7 @@ contract QuarkWallet is IERC1271 {
         returns (bytes memory)
     {
         // only allow the executor for the wallet to use unsigned execution
-        if (msg.sender != executor) {
+        if (msg.sender != address(uint160(uint256(stateManager.readImmutable("executor"))))) {
             revert Unauthorized();
         }
         return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
@@ -211,7 +226,7 @@ contract QuarkWallet is IERC1271 {
             v := byte(0, mload(add(signature, 0x60)))
         }
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(signer, hash, v, r, s);
+        checkValidSignatureInternal(address(uint160(uint256(stateManager.readImmutable("signer")))), hash, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 

@@ -176,6 +176,11 @@ contract QuarkStateManager {
         walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key] = value;
     }
 
+    function writeImmutable(bytes32 key, bytes32 value) external {
+        require(walletStorage[msg.sender][type(uint96).max][key] == bytes32(0), "immutable key already set");
+        walletStorage[msg.sender][type(uint96).max][key] = value;
+    }
+
     /**
      * @notice Read from storage namespaced by the currently active nonce; reverts if no nonce is currently active
      * @return Value at the nonce storage location, as bytes
@@ -185,5 +190,9 @@ contract QuarkStateManager {
             revert NoActiveNonce();
         }
         return walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key];
+    }
+
+    function readImmutable(bytes32 key) external view returns (bytes32) {
+        return walletStorage[msg.sender][type(uint96).max][key];
     }
 }

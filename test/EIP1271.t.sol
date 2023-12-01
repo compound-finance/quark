@@ -35,6 +35,7 @@ contract EIP1271Test is Test {
 
         alice = vm.addr(alicePrivateKey);
         aliceWallet = new QuarkWallet(alice, address(0), codeJar, stateManager);
+        aliceWallet.initialize(alice, address(0));
     }
 
     function incrementCounterOperation(QuarkWallet targetWallet) public returns (QuarkWallet.QuarkOperation memory) {
@@ -54,6 +55,7 @@ contract EIP1271Test is Test {
         // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
+        contractWallet.initialize(address(signatureApprover), address(0));
 
         // signature from alice; doesn't matter because the EIP1271Signer will approve anything
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(aliceWallet);
@@ -73,6 +75,7 @@ contract EIP1271Test is Test {
         // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
         QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
+        contractWallet.initialize(address(signatureApprover), address(0));
 
         // signature from alice; doesn't matter because the EIP1271Signer will reject anything
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(aliceWallet);

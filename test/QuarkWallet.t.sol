@@ -42,6 +42,7 @@ contract QuarkWalletTest is Test {
         console.log("QuarkStateManagerHarness deployed to: %s", address(stateManager));
 
         aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet.initialize(aliceAccount, address(0));
         console.log("Alice signer: %s", aliceAccount);
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
@@ -88,6 +89,7 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
+        aliceWalletExecutable.initialize(aliceAccount, aliceAccount);
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
         address scriptAddress = codeJar.saveCode(getMessageDetails);
