@@ -34,7 +34,7 @@ contract EIP1271Test is Test {
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
         alice = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWallet(alice, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWallet(codeJar, stateManager);
         aliceWallet.initialize(alice, address(0));
     }
 
@@ -54,7 +54,7 @@ contract EIP1271Test is Test {
         vm.pauseGasMetering();
         // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
-        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
+        QuarkWallet contractWallet = new QuarkWallet(codeJar, stateManager);
         contractWallet.initialize(address(signatureApprover), address(0));
 
         // signature from alice; doesn't matter because the EIP1271Signer will approve anything
@@ -74,7 +74,7 @@ contract EIP1271Test is Test {
         vm.pauseGasMetering();
         // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
-        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
+        QuarkWallet contractWallet = new QuarkWallet(codeJar, stateManager);
         contractWallet.initialize(address(signatureApprover), address(0));
 
         // signature from alice; doesn't matter because the EIP1271Signer will reject anything

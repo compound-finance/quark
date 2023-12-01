@@ -34,11 +34,11 @@ contract isValidSignatureTest is Test {
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
         alice = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWallet(alice, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWallet(codeJar, stateManager);
         aliceWallet.initialize(alice, address(0));
 
         bob = vm.addr(bobPrivateKey);
-        bobWallet = new QuarkWallet(bob, address(0), codeJar, stateManager);
+        bobWallet = new QuarkWallet(codeJar, stateManager);
         bobWallet.initialize(bob, address(0));
     }
 
@@ -134,7 +134,7 @@ contract isValidSignatureTest is Test {
 
         // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
-        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
+        QuarkWallet contractWallet = new QuarkWallet(codeJar, stateManager);
         contractWallet.initialize(address(signatureApprover), address(0));
         // signature from bob; doesn't matter because the EIP1271Signer will approve anything
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
@@ -150,7 +150,7 @@ contract isValidSignatureTest is Test {
 
         // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
-        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
+        QuarkWallet contractWallet = new QuarkWallet(codeJar, stateManager);
         contractWallet.initialize(address(signatureApprover), address(0));
         // signature from bob; doesn't matter because the EIP1271Signer will reject everything
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
@@ -167,7 +167,7 @@ contract isValidSignatureTest is Test {
 
         // QuarkWallet is owned by a smart contract that always reverts
         EIP1271Reverter signatureApprover = new EIP1271Reverter();
-        QuarkWallet contractWallet = new QuarkWallet(address(signatureApprover), address(0), codeJar, stateManager);
+        QuarkWallet contractWallet = new QuarkWallet(codeJar, stateManager);
         contractWallet.initialize(address(signatureApprover), address(0));
         // signature from bob; doesn't matter because the EIP1271Signer will revert
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
@@ -183,7 +183,7 @@ contract isValidSignatureTest is Test {
         vm.pauseGasMetering();
 
         address emptyCodeContract = codeJar.saveCode(hex"");
-        QuarkWallet contractWallet = new QuarkWallet(emptyCodeContract, address(0), codeJar, stateManager);
+        QuarkWallet contractWallet = new QuarkWallet(codeJar, stateManager);
         contractWallet.initialize(emptyCodeContract, address(0));
         // signature from bob; doesn't matter because the empty contract will be treated as an EOA and revert
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);

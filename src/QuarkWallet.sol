@@ -42,12 +42,6 @@ contract QuarkWallet is IERC1271 {
     error SignatureExpired();
     error Unauthorized();
 
-    /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
-    // address public immutable signer;
-
-    // /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
-    // address public immutable executor;
-
     address public immutable impl;
 
     address public immutable initializer;
@@ -98,22 +92,20 @@ contract QuarkWallet is IERC1271 {
 
     /**
      * @notice Construct a new QuarkWallet
-     * @param signer_ The address that is allowed to sign QuarkOperations for this wallet
-     * @param executor_ The address that is allowed to directly execute Quark scripts for this wallet
      * @param codeJar_ The CodeJar contract used to deploy scripts
      * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
      */
-    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
+    constructor(CodeJar codeJar_, QuarkStateManager stateManager_) {
         codeJar = codeJar_;
         stateManager = stateManager_;
         impl = address(0);
         initializer = msg.sender;
     }
 
-    function initialize(address signer, address executor) public {
+    function initialize(address signer_, address executor_) public {
         require(msg.sender == initializer, "QuarkWalletDirectProxy: not initializer");
-        stateManager.writeImmutable(bytes32("signer"), bytes32(uint256(uint160(signer))));
-        stateManager.writeImmutable(bytes32("executor"), bytes32(uint256(uint160(executor))));
+        stateManager.writeImmutable(bytes32("signer"), bytes32(uint256(uint160(signer_))));
+        stateManager.writeImmutable(bytes32("executor"), bytes32(uint256(uint160(executor_))));
     }
 
     function signer() public view returns (address) {

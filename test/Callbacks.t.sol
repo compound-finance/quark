@@ -33,7 +33,7 @@ contract CallbacksTest is Test {
         console.log("Counter deployed to: %s", address(counter));
 
         aliceAccount = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWallet(codeJar, stateManager);
         aliceWallet.initialize(aliceAccount, address(0));
     }
 

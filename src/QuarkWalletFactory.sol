@@ -33,7 +33,7 @@ contract QuarkWalletFactory {
     constructor() {
         codeJar = new CodeJar();
         stateManager = new QuarkStateManager();
-        quarkWalletImpl = address(new QuarkWallet(address(0), address(0), codeJar, stateManager));
+        quarkWalletImpl = address(new QuarkWallet(codeJar, stateManager));
     }
 
     /**
@@ -60,8 +60,11 @@ contract QuarkWalletFactory {
         } else {
             executor = address(0);
         }
-        address payable walletAddress =
-            payable(address(new QuarkWalletDirectProxy{salt: salt}(signer, executor, quarkWalletImpl, address(this))));
+        address payable walletAddress = payable(
+            address(
+                new QuarkWalletDirectProxy{salt: keccak256(abi.encode(signer, executor, salt))}(quarkWalletImpl, address(this))
+            )
+        );
         QuarkWalletDirectProxy(walletAddress).initialize(signer, executor, stateManager);
         emit WalletDeploy(signer, executor, walletAddress, salt);
         return walletAddress;
@@ -108,12 +111,10 @@ contract QuarkWalletFactory {
                             abi.encodePacked(
                                 bytes1(0xff),
                                 address(this),
-                                salt,
+                                keccak256(abi.encode(signer, executor, salt)),
                                 keccak256(
                                     abi.encodePacked(
                                         type(QuarkWalletDirectProxy).creationCode,
-                                        abi.encode(signer),
-                                        abi.encode(executor),
                                         abi.encode(quarkWalletImpl),
                                         abi.encode(address(this))
                                     )
