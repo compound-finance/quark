@@ -23,6 +23,9 @@ library QuarkWalletMetadata {
         "QuarkOperation(uint96 nonce,address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 expiry)"
     );
 
+    /// @notice The EIP-712 typehash for authorizing an EIP-1271 signature for this version of QuarkWallet
+    bytes32 internal constant QUARK_MSG_TYPEHASH = keccak256("QuarkMessage(bytes message)");
+
     /// @notice The EIP-712 domain typehash for this version of QuarkWallet
     bytes32 internal constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -65,6 +68,9 @@ contract QuarkWallet is IERC1271 {
 
     /// @dev The EIP-712 typehash for authorizing an operation for this wallet
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH;
+
+    /// @dev The EIP-712 typehash for authorizing an EIP-1271 signature for this wallet
+    bytes32 internal constant QUARK_MSG_TYPEHASH = QuarkWalletMetadata.QUARK_MSG_TYPEHASH;
 
     /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
     bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
@@ -141,10 +147,7 @@ contract QuarkWallet is IERC1271 {
                 op.expiry
             )
         );
-        bytes32 domainSeparator = keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this))
-        );
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
 
         // if the signature check does not revert, the signature is valid
         checkValidSignatureInternal(signer, digest, v, r, s);
@@ -178,6 +181,26 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
+     * @dev Returns the domain separator for this Quark wallet
+     * @return Domain separator
+     */
+    function getDomainSeparator() internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this))
+        );
+    }
+
+    /**
+     * @dev Returns the hash of a message that can be signed by `signer`
+     * @param message Message that should be hashed
+     * @return Message hash
+     */
+    function getMessageHashForQuark(bytes memory message) public view returns (bytes32) {
+        bytes32 quarkMessageHash = keccak256(abi.encode(QUARK_MSG_TYPEHASH, keccak256(message)));
+        return keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), quarkMessageHash));
+    }
+
+    /**
      * @notice Checks whether an EIP-1271 signature is valid
      * @dev If the QuarkWallet is owned by an EOA, isValidSignature confirms
      * that the signature comes from the signer; if the QuarkWallet is owned by
@@ -206,8 +229,11 @@ contract QuarkWallet is IERC1271 {
             s := mload(add(signature, 0x40))
             v := byte(0, mload(add(signature, 0x60)))
         }
-        // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(signer, hash, v, r, s);
+        // If the signature check does not revert, the signature is valid
+        // Note: The following logic further encodes the provided `hash` with the wallet's domain
+        // to prevent signature replayability for Quark wallets owned by the same `signer`
+        bytes32 messageHash = getMessageHashForQuark(abi.encode(hash));
+        checkValidSignatureInternal(signer, messageHash, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 

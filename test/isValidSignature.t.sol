@@ -60,7 +60,8 @@ contract isValidSignatureTest is Test {
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest =
             keccak256(abi.encodePacked("\x19\x01", new SignatureHelper().domainSeparator(address(wallet)), structHash));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        bytes32 quarkMsgDigest = aliceWallet.getMessageHashForQuark(abi.encode(digest));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, quarkMsgDigest);
         return (digest, abi.encodePacked(r, s, v));
     }
 
@@ -70,7 +71,8 @@ contract isValidSignatureTest is Test {
     {
         bytes32 domainSeparator = Permit2Helper.DOMAIN_SEPARATOR(PERMIT2_ADDRESS);
         bytes32 digest = Permit2Helper._hashTypedData(Permit2Helper.hash(permitSingle), domainSeparator);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        bytes32 quarkMsgDigest = aliceWallet.getMessageHashForQuark(abi.encode(digest));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, quarkMsgDigest);
         return (digest, abi.encodePacked(r, s, v));
     }
 
@@ -220,7 +222,7 @@ contract isValidSignatureTest is Test {
 
     /* ===== re-use signature tests ===== */
 
-    function testPermit2ReuseSignature() public {
+    function testRevertsForPermit2SignatureReuse() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet aliceWallet2 = new QuarkWallet(alice, address(0), codeJar, stateManager);
@@ -242,10 +244,13 @@ contract isValidSignatureTest is Test {
         assertEq(permit2.allowance(address(aliceWallet2), USDC, bob), 0);
 
         permit2.permit(address(aliceWallet), permitSingle, signature);
+
+        // Re-using the signature for a different one of Alice's wallet will revert
+        vm.expectRevert(QuarkWallet.BadSignatory.selector);
         permit2.permit(address(aliceWallet2), permitSingle, signature);
 
-        // Allowances can be set for both wallets using the same signature
+        // Allowances are only set for Alice's first wallet
         assertNotEq(permit2.allowance(address(aliceWallet), USDC, bob), 0);
-        assertNotEq(permit2.allowance(address(aliceWallet2), USDC, bob), 0);
+        assertEq(permit2.allowance(address(aliceWallet2), USDC, bob), 0);
     }
 }
