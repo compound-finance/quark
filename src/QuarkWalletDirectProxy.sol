@@ -8,6 +8,10 @@ import {QuarkStateManager} from "./QuarkStateManager.sol";
 contract QuarkWalletDirectProxy is Proxy {
     error NotInitializer();
 
+    bytes32 internal constant SIGNER_KEY = keccak256("signer.v1.quark");
+
+    bytes32 internal constant EXECUTOR_KEY = keccak256("executor.v1.quark");
+
     address public immutable impl;
     address public immutable initializer;
 
@@ -20,8 +24,8 @@ contract QuarkWalletDirectProxy is Proxy {
         if (msg.sender != initializer) {
             revert NotInitializer();
         }
-        stateManager_.writeImmutable(bytes32("signer"), bytes32(uint256(uint160(signer))));
-        stateManager_.writeImmutable(bytes32("executor"), bytes32(uint256(uint160(executor))));
+        stateManager_.writeImmutable(SIGNER_KEY, bytes32(uint256(uint160(signer))));
+        stateManager_.writeImmutable(EXECUTOR_KEY, bytes32(uint256(uint160(executor))));
     }
 
     function _implementation() internal view virtual override returns (address) {

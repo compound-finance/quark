@@ -67,6 +67,10 @@ contract QuarkWallet is IERC1271 {
     /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
     bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
 
+    bytes32 internal constant SIGNER_KEY = keccak256("signer.v1.quark");
+
+    bytes32 internal constant EXECUTOR_KEY = keccak256("executor.v1.quark");
+
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
 
@@ -104,16 +108,16 @@ contract QuarkWallet is IERC1271 {
 
     function initialize(address signer_, address executor_) public {
         require(msg.sender == initializer, "QuarkWalletDirectProxy: not initializer");
-        stateManager.writeImmutable(bytes32("signer"), bytes32(uint256(uint160(signer_))));
-        stateManager.writeImmutable(bytes32("executor"), bytes32(uint256(uint160(executor_))));
+        stateManager.writeImmutable(SIGNER_KEY, bytes32(uint256(uint160(signer_))));
+        stateManager.writeImmutable(EXECUTOR_KEY, bytes32(uint256(uint160(executor_))));
     }
 
     function signer() public view returns (address) {
-        return address(uint160(uint256(stateManager.readImmutable("signer"))));
+        return address(uint160(uint256(stateManager.readImmutable(SIGNER_KEY))));
     }
 
     function executor() public view returns (address) {
-        return address(uint160(uint256(stateManager.readImmutable("executor"))));
+        return address(uint160(uint256(stateManager.readImmutable(EXECUTOR_KEY))));
     }
 
     /**
@@ -157,7 +161,7 @@ contract QuarkWallet is IERC1271 {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(address(uint160(uint256(stateManager.readImmutable("signer")))), digest, v, r, s);
+        checkValidSignatureInternal(address(uint160(uint256(stateManager.readImmutable(SIGNER_KEY)))), digest, v, r, s);
 
         // if scriptAddress not given, derive deterministic address from bytecode
         address scriptAddress = op.scriptAddress;
@@ -181,7 +185,7 @@ contract QuarkWallet is IERC1271 {
         returns (bytes memory)
     {
         // only allow the executor for the wallet to use unsigned execution
-        if (msg.sender != address(uint160(uint256(stateManager.readImmutable("executor"))))) {
+        if (msg.sender != address(uint160(uint256(stateManager.readImmutable(EXECUTOR_KEY))))) {
             revert Unauthorized();
         }
         return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
@@ -217,7 +221,7 @@ contract QuarkWallet is IERC1271 {
             v := byte(0, mload(add(signature, 0x60)))
         }
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(address(uint160(uint256(stateManager.readImmutable("signer")))), hash, v, r, s);
+        checkValidSignatureInternal(address(uint160(uint256(stateManager.readImmutable(SIGNER_KEY)))), hash, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 
