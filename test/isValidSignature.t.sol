@@ -9,6 +9,7 @@ import {QuarkStateManager} from "../src/QuarkStateManager.sol";
 import {CodeJar} from "../src/CodeJar.sol";
 import {Counter} from "./lib/Counter.sol";
 import {EIP1271Signer, EIP1271Reverter} from "./lib/EIP1271Signer.sol";
+import {Permit2, Permit2Helper} from "./lib/Permit2Helper.sol";
 import {SignatureHelper} from "./lib/SignatureHelper.sol";
 
 contract isValidSignatureTest is Test {
@@ -16,6 +17,7 @@ contract isValidSignatureTest is Test {
     QuarkWallet aliceWallet;
     QuarkWallet bobWallet;
     QuarkStateManager public stateManager;
+    Permit2 permit2;
 
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
 
@@ -26,7 +28,19 @@ contract isValidSignatureTest is Test {
     uint256 bobPrivateKey = 0xb0b;
     address bob; // see setup()
 
+    // Contract address on mainnet
+    address constant PERMIT2_ADDRESS = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+    address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+
     function setUp() public {
+        // Fork setup
+        vm.createSelectFork(
+            string.concat(
+                "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
+            ),
+            18429607 // 2023-10-25 13:24:00 PST
+        );
+
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
@@ -38,12 +52,24 @@ contract isValidSignatureTest is Test {
 
         bob = vm.addr(bobPrivateKey);
         bobWallet = new QuarkWallet(bob, address(0), codeJar, stateManager);
+
+        permit2 = Permit2(PERMIT2_ADDRESS);
     }
 
     function createTestSignature(uint256 privateKey, QuarkWallet wallet) internal returns (bytes32, bytes memory) {
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest =
             keccak256(abi.encodePacked("\x19\x01", new SignatureHelper().domainSeparator(address(wallet)), structHash));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        return (digest, abi.encodePacked(r, s, v));
+    }
+
+    function createPermit2Signature(uint256 privateKey, Permit2Helper.PermitSingle memory permitSingle)
+        internal
+        returns (bytes32, bytes memory)
+    {
+        bytes32 domainSeparator = Permit2Helper.DOMAIN_SEPARATOR(PERMIT2_ADDRESS);
+        bytes32 digest = Permit2Helper._hashTypedData(Permit2Helper.hash(permitSingle), domainSeparator);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         return (digest, abi.encodePacked(r, s, v));
     }
@@ -189,5 +215,36 @@ contract isValidSignatureTest is Test {
         // signatures and will revert as bad signature
         vm.expectRevert(QuarkWallet.BadSignatory.selector);
         contractWallet.isValidSignature(bytes32(""), signature);
+    }
+
+    /* ===== re-use signature tests ===== */
+
+    function testPermit2ReuseSignature() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        QuarkWallet aliceWallet2 = new QuarkWallet(alice, address(0), codeJar, stateManager);
+
+        Permit2Helper.PermitDetails memory permitDetails = Permit2Helper.PermitDetails({
+            token: USDC,
+            amount: 1_000e6,
+            expiration: uint48(block.timestamp + 100),
+            nonce: 0
+        });
+        Permit2Helper.PermitSingle memory permitSingle =
+            Permit2Helper.PermitSingle({details: permitDetails, spender: bob, sigDeadline: block.timestamp + 100});
+        (bytes32 digest, bytes memory signature) = createPermit2Signature(alicePrivateKey, permitSingle);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        assertEq(permit2.allowance(address(aliceWallet), USDC, bob), 0);
+        assertEq(permit2.allowance(address(aliceWallet2), USDC, bob), 0);
+
+        permit2.permit(address(aliceWallet), permitSingle, signature);
+        permit2.permit(address(aliceWallet2), permitSingle, signature);
+
+        // Allowances can be set for both wallets using the same signature
+        assertNotEq(permit2.allowance(address(aliceWallet), USDC, bob), 0);
+        assertNotEq(permit2.allowance(address(aliceWallet2), USDC, bob), 0);
     }
 }
