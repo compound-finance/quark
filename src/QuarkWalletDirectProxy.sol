@@ -10,7 +10,7 @@ contract QuarkWalletDirectProxy is Proxy {
 
     address public immutable initializer;
 
-    constructor(address impl_, address initializer_) {
+    constructor(address signer, address executor, address impl_, address initializer_) {
         impl = impl_;
         initializer = initializer_;
     }

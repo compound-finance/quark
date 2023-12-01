@@ -115,26 +115,27 @@ contract TransferActionsTest is Test {
         assertEq(bob.balance, 10 ether);
     }
 
-    // function testTransferNativeTokenToQuarkWallet() public {
-    //     vm.pauseGasMetering();
-    //     QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
-    //     QuarkWallet walletBob = QuarkWallet(factory.create(bob, 0));
-    //     deal(address(wallet), 10 ether);
-    //     QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-    //         wallet,
-    //         terminalScript,
-    //         abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(walletBob), 10 ether),
-    //         ScriptType.ScriptSource
-    //     );
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-    //     assertEq(address(wallet).balance, 10 ether);
-    //     assertEq(address(walletBob).balance, 0 ether);
-    //     vm.resumeGasMetering();
-    //     wallet.executeQuarkOperation(op, v, r, s);
-    //     // assert on native ETH balance
-    //     assertEq(address(wallet).balance, 0 ether);
-    //     assertEq(address(walletBob).balance, 10 ether);
-    // }
+    function testTransferNativeTokenToQuarkWallet() public {
+        vm.pauseGasMetering();
+        QuarkWallet walletBob = QuarkWallet(factory.create(bob, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+
+        deal(address(wallet), 10 ether);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(walletBob), 10 ether),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(walletBob).balance, 0 ether);
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+        // assert on native ETH balance
+        assertEq(address(wallet).balance, 0 ether);
+        assertEq(address(walletBob).balance, 10 ether);
+    }
 
     function testTransferReentrancyAttackSuccessWithCallbackEnabled() public {
         vm.pauseGasMetering();

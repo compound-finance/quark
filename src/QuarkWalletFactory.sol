@@ -5,6 +5,7 @@ import "./CodeJar.sol";
 import "./QuarkWallet.sol";
 import "./QuarkStateManager.sol";
 import "./QuarkWalletDirectProxy.sol";
+import "forge-std/console.sol";
 
 /**
  * @title Quark Wallet Factory
@@ -60,7 +61,7 @@ contract QuarkWalletFactory {
             executor = address(0);
         }
         address payable walletAddress =
-            payable(address(new QuarkWalletDirectProxy{salt: salt}(quarkWalletImpl, address(this))));
+            payable(address(new QuarkWalletDirectProxy{salt: salt}(signer, executor, quarkWalletImpl, address(this))));
         QuarkWalletDirectProxy(walletAddress).initialize(signer, executor, stateManager);
         emit WalletDeploy(signer, executor, walletAddress, salt);
         return walletAddress;
@@ -111,6 +112,8 @@ contract QuarkWalletFactory {
                                 keccak256(
                                     abi.encodePacked(
                                         type(QuarkWalletDirectProxy).creationCode,
+                                        abi.encode(signer),
+                                        abi.encode(executor),
                                         abi.encode(quarkWalletImpl),
                                         abi.encode(address(this))
                                     )

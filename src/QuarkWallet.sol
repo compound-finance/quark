@@ -5,7 +5,6 @@ import {CodeJar} from "./CodeJar.sol";
 import {QuarkStateManager} from "./QuarkStateManager.sol";
 import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
-import "forge-std/console.sol";
 
 /**
  * @title Quark Wallet Metadata
@@ -258,8 +257,6 @@ contract QuarkWallet is IERC1271 {
                 revert InvalidSignature();
             }
             if (recoveredSigner != signatory) {
-                console.log("recoveredSigner: %s", recoveredSigner);
-                console.log("signatory: %s", signatory);
                 revert BadSignatory();
             }
         }
