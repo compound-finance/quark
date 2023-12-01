@@ -16,6 +16,7 @@ interface IExecutor {
 contract QuarkStateManager {
     event ClearNonce(address indexed wallet, uint96 nonce);
 
+    error InvalidNonce();
     error NoActiveNonce();
     error NoUnusedNonces();
     error NonceAlreadySet();
@@ -46,6 +47,9 @@ contract QuarkStateManager {
      * @return Whether the nonce has been exhausted
      */
     function isNonceSet(address wallet, uint96 nonce) public view returns (bool) {
+        if (nonce == type(uint96).max) {
+            revert InvalidNonce();
+        }
         (uint256 bucket, uint256 mask) = getBucket(nonce);
         return isNonceSetInternal(wallet, bucket, mask);
     }
@@ -63,7 +67,7 @@ contract QuarkStateManager {
      * @return The next unused nonce
      */
     function nextNonce(address wallet) external view returns (uint96) {
-        for (uint96 i = 0; i <= type(uint96).max;) {
+        for (uint96 i = 0; i < type(uint96).max;) {
             if (!isNonceSet(wallet, i) && (nonceScriptAddress[wallet][i] == address(0))) {
                 return i;
             }
@@ -112,6 +116,9 @@ contract QuarkStateManager {
      */
     function setNonce(uint96 nonce) external {
         // TODO: should we check whether there exists a nonceScriptAddress?
+        if (nonce == type(uint96).max) {
+            revert InvalidNonce();
+        }
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
         setNonceInternal(bucket, setMask);
     }
@@ -132,6 +139,10 @@ contract QuarkStateManager {
         external
         returns (bytes memory)
     {
+        if (nonce == type(uint96).max) {
+            revert InvalidNonce();
+        }
+
         // retrieve the (bucket, mask) pair that addresses the nonce in memory
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
 
