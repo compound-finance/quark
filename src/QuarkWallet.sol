@@ -39,6 +39,7 @@ contract QuarkWallet is IERC1271 {
     error InvalidEIP1271Signature();
     error InvalidSignature();
     error NoActiveCallback();
+    error NotInitializer();
     error SignatureExpired();
     error Unauthorized();
 
@@ -107,7 +108,9 @@ contract QuarkWallet is IERC1271 {
     }
 
     function initialize(address signer_, address executor_) public {
-        require(msg.sender == initializer, "QuarkWalletDirectProxy: not initializer");
+        if (msg.sender != initializer) {
+            revert NotInitializer();
+        }
         stateManager.writeImmutable(SIGNER_KEY, bytes32(uint256(uint160(signer_))));
         stateManager.writeImmutable(EXECUTOR_KEY, bytes32(uint256(uint160(executor_))));
     }

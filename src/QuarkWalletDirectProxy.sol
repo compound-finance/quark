@@ -4,26 +4,10 @@ pragma solidity 0.8.19;
 import {QuarkStateManager} from "./QuarkStateManager.sol";
 
 contract QuarkWalletDirectProxy {
-    error NotInitializer();
-
-    bytes32 internal constant SIGNER_KEY = keccak256("signer.v1.quark");
-
-    bytes32 internal constant EXECUTOR_KEY = keccak256("executor.v1.quark");
-
     address public immutable impl;
-    address public immutable initializer;
 
-    constructor(address impl_, address initializer_) {
+    constructor(address impl_) {
         impl = impl_;
-        initializer = initializer_;
-    }
-
-    function initialize(address signer, address executor, QuarkStateManager stateManager_) public {
-        if (msg.sender != initializer) {
-            revert NotInitializer();
-        }
-        stateManager_.writeImmutable(SIGNER_KEY, bytes32(uint256(uint160(signer))));
-        stateManager_.writeImmutable(EXECUTOR_KEY, bytes32(uint256(uint160(executor))));
     }
 
     fallback() external payable {
