@@ -6,3 +6,10 @@ solc = "0.8.19"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 evm_version = "paris"
+
+[profile.proxy]
+src = "src-proxy"
+libs = []
+optimizer = true
+optimizer_runs = 1
+bytecode_hash = "none"
