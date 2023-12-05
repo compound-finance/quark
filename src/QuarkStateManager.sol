@@ -16,6 +16,7 @@ interface IExecutor {
 contract QuarkStateManager {
     event ClearNonce(address indexed wallet, uint96 nonce);
 
+    error InvalidNonce();
     error NoActiveNonce();
     error NoUnusedNonces();
     error NonceAlreadySet();
@@ -46,6 +47,10 @@ contract QuarkStateManager {
      * @return Whether the nonce has been exhausted
      */
     function isNonceSet(address wallet, uint96 nonce) public view returns (bool) {
+        if (nonce == type(uint96).max) {
+            revert InvalidNonce();
+        }
+
         (uint256 bucket, uint256 mask) = getBucket(nonce);
         return isNonceSetInternal(wallet, bucket, mask);
     }
@@ -63,15 +68,24 @@ contract QuarkStateManager {
      * @return The next unused nonce
      */
     function nextNonce(address wallet) external view returns (uint96) {
-        for (uint96 i = 0; i <= type(uint96).max;) {
-            if (!isNonceSet(wallet, i) && (nonceScriptAddress[wallet][i] == address(0))) {
-                return i;
+        for (uint256 bucket = 0; bucket < type(uint256).max;) {
+            for (uint256 maskOffset = 0; maskOffset < 256;) {
+                uint256 mask = 1 << maskOffset;
+                if ((nonces[wallet][bucket] & mask) == 0) {
+                    uint96 nonce = uint96((bucket << 8) + maskOffset);
+                    if (nonceScriptAddress[wallet][nonce] == address(0)) {
+                        return nonce;
+                    }
+                }
+                unchecked {
+                    ++maskOffset;
+                }
             }
-
             unchecked {
-                ++i;
+                ++bucket;
             }
         }
+
         revert NoUnusedNonces();
     }
 
@@ -111,6 +125,10 @@ contract QuarkStateManager {
      * @param nonce Nonce to set for the calling wallet
      */
     function setNonce(uint96 nonce) external {
+        if (nonce == type(uint96).max) {
+            revert InvalidNonce();
+        }
+
         // TODO: should we check whether there exists a nonceScriptAddress?
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
         setNonceInternal(bucket, setMask);
@@ -132,6 +150,10 @@ contract QuarkStateManager {
         external
         returns (bytes memory)
     {
+        if (nonce == type(uint96).max) {
+            revert InvalidNonce();
+        }
+
         // retrieve the (bucket, mask) pair that addresses the nonce in memory
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
 
