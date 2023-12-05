@@ -71,10 +71,12 @@ contract QuarkStateManager {
      */
     function nextNonce(address wallet, uint256 offset) external view returns (uint96) {
         for (uint256 bucket = offset; bucket < type(uint256).max;) {
+            uint256 bucketNonces = nonces[wallet][bucket];
+            uint96 bucketValue = uint96(bucket << 8);
             for (uint256 maskOffset = 0; maskOffset < 256;) {
                 uint256 mask = 1 << maskOffset;
-                if ((nonces[wallet][bucket] & mask) == 0) {
-                    uint96 nonce = uint96((bucket << 8) + maskOffset);
+                if ((bucketNonces & mask) == 0) {
+                    uint96 nonce = uint96(bucketValue + maskOffset);
                     if (nonceScriptAddress[wallet][nonce] == address(0)) {
                         return nonce;
                     }
