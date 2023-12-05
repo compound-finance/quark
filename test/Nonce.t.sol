@@ -36,12 +36,12 @@ contract NonceTest is Test {
     }
 
     function testNextUnusedNonce() public {
-        uint96 nonce1 = stateManager.nextNonce(address(this));
+        uint96 nonce1 = stateManager.nextNonce(address(this), 0);
 
         stateManager.setNonce(nonce1);
-        assertEq(stateManager.nextNonce(address(this)), nonce1 + 1);
+        assertEq(stateManager.nextNonce(address(this), 0), nonce1 + 1);
 
         stateManager.setNonce(nonce1 + 1);
-        assertEq(stateManager.nextNonce(address(this)), nonce1 + 2);
+        assertEq(stateManager.nextNonce(address(this), 0), nonce1 + 2);
     }
 }

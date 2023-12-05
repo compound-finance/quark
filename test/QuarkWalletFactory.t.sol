@@ -96,7 +96,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint96 nonce = factory.nextNonce(alice, factory.DEFAULT_SALT());
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForSigner(alice), 0);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: incrementer,
@@ -132,7 +132,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint96 nonce = factory.nextNonce(alice, factory.DEFAULT_SALT());
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForSigner(alice), 0);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: incrementer,
@@ -172,7 +172,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint96 nonce = factory.nextNonce(alice, factory.DEFAULT_SALT());
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForSigner(alice), 0);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: incrementer,
@@ -212,7 +212,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         address aliceWallet = factory.walletAddressForSigner(alice);
-        uint96 nonce = factory.stateManager().nextNonce(aliceWallet);
+        uint96 nonce = factory.stateManager().nextNonce(aliceWallet, 0);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: getMessageDetails,
@@ -244,8 +244,8 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         bytes32 salt = bytes32("salty salt salt");
-        uint96 nonce = factory.nextNonce(alice, salt);
         address aliceWallet = factory.walletAddressForSignerWithSalt(alice, salt);
+        uint96 nonce = factory.stateManager().nextNonce(aliceWallet, 0);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: getMessageDetails,
@@ -298,13 +298,13 @@ contract QuarkWalletFactoryTest is Test {
             scriptCalldata: abi.encodeWithSignature(
                 "run(address,uint96,address,bytes)",
                 address(aliceWalletSecondary),
-                factory.stateManager().nextNonce(address(aliceWalletSecondary)),
+                factory.stateManager().nextNonce(address(aliceWalletSecondary), 0),
                 ethcallAddress,
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 7), 0
                 )
                 ),
-            nonce: factory.stateManager().nextNonce(address(aliceWalletPrimary)),
+            nonce: factory.stateManager().nextNonce(address(aliceWalletPrimary), 0),
             expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWalletPrimary, op);

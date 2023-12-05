@@ -29,7 +29,7 @@ contract QuarkOperationHelper is Test {
                 scriptAddress: scriptAddress,
                 scriptSource: "",
                 scriptCalldata: scriptCalldata,
-                nonce: wallet.stateManager().nextNonce(address(wallet)),
+                nonce: wallet.stateManager().nextNonce(address(wallet), 0),
                 expiry: block.timestamp + 1000
             });
         } else {
@@ -37,7 +37,7 @@ contract QuarkOperationHelper is Test {
                 scriptAddress: address(0),
                 scriptSource: scriptSource,
                 scriptCalldata: scriptCalldata,
-                nonce: wallet.stateManager().nextNonce(address(wallet)),
+                nonce: wallet.stateManager().nextNonce(address(wallet), 0),
                 expiry: block.timestamp + 1000
             });
         }
