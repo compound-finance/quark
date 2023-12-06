@@ -25,6 +25,18 @@ contract QuarkScript {
         write(REENTRANCY_FLAG, bytes32(uint256(0)));
     }
 
+    function signer() internal view returns (address) {
+        (bool success, bytes memory signer_) = address(this).staticcall(abi.encodeWithSignature("signer()"));
+        if (!success) revert("no signer");
+        return abi.decode(signer_, (address));
+    }
+
+    function executor() internal view returns (address) {
+        (bool success, bytes memory executor_) = address(this).staticcall(abi.encodeWithSignature("executor()"));
+        if (!success) revert("no executor");
+        return abi.decode(executor_, (address));
+    }
+
     function allowCallback() internal {
         QuarkWallet self = QuarkWallet(payable(address(this)));
         self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(self.stateManager().getActiveScript()))));

@@ -114,6 +114,24 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
+     * @dev Internal getter for the signer immutable
+     */
+    function getSigner() internal view returns (address) {
+        (bool success, bytes memory signer_) = address(this).staticcall(abi.encodeWithSignature("signer()"));
+        if (!success) revert("no signer");
+        return abi.decode(signer_, (address));
+    }
+
+    /**
+     * @dev Internal getter for the executor immutable
+     */
+    function getExecutor() internal view returns (address) {
+        (bool success, bytes memory executor_) = address(this).staticcall(abi.encodeWithSignature("executor()"));
+        if (!success) revert("no executor");
+        return abi.decode(executor_, (address));
+    }
+
+    /**
      * @notice Execute a QuarkOperation via signature
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
@@ -151,7 +169,7 @@ contract QuarkWallet is IERC1271 {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
 
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(signer, digest, v, r, s);
+        checkValidSignatureInternal(getSigner(), digest, v, r, s);
 
         // if scriptAddress not given, derive deterministic address from bytecode
         address scriptAddress = op.scriptAddress;
@@ -175,7 +193,7 @@ contract QuarkWallet is IERC1271 {
         returns (bytes memory)
     {
         // only allow the executor for the wallet to use unsigned execution
-        if (msg.sender != executor) {
+        if (msg.sender != getExecutor()) {
             revert Unauthorized();
         }
         return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
@@ -234,7 +252,7 @@ contract QuarkWallet is IERC1271 {
         // to prevent signature replayability for Quark wallets owned by the same `signer`
         bytes32 messageHash = getMessageHashForQuark(abi.encode(hash));
         // If the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(signer, messageHash, v, r, s);
+        checkValidSignatureInternal(getSigner(), messageHash, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 
