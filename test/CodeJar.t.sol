@@ -49,6 +49,28 @@ contract CodeJarTest is Test {
         assertApproxEqAbs(gasUsed, 42000, 3000);
     }
 
+    function testCodeJarDeployNotAffectedByChangedCodeHash() public {
+        vm.deal(address(0xbab), 10 ether);
+        bytes memory code = hex"11223344";
+        bytes memory initCode = abi.encodePacked(hex"63", uint32(code.length), hex"80600e6000396000f3", code);
+        address targetAddress = address(
+            uint160(
+                uint256(keccak256(abi.encodePacked(bytes1(0xff), address(codeJar), uint256(0), keccak256(initCode))))
+            )
+        );
+        vm.startPrank(address(0xbab));
+        // Attacker poison the target address so the codehash will be different
+        targetAddress.call{value: 1 ether}("");
+        vm.stopPrank();
+        assertNotEq(targetAddress.codehash, 0);
+        uint256 gasLeft = gasleft();
+        // CodeJar will detect the codehash diff, but it will still be able to deploy the code
+        address scriptAddress = codeJar.saveCode(code);
+        uint256 gasUsed = gasLeft - gasleft();
+        assertEq(scriptAddress.code, code);
+        assertApproxEqAbs(gasUsed, 40000, 3000);
+    }
+
     function testCodeJarSecondDeploy() public {
         address scriptAddress = codeJar.saveCode(hex"11223344");
 
