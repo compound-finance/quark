@@ -62,6 +62,7 @@ contract CodeJarTest is Test {
         // Attacker poison the target address so the codehash will be different
         targetAddress.call{value: 1 ether}("");
         vm.stopPrank();
+        assertNotEq(targetAddress.codehash, 0);
         uint256 gasLeft = gasleft();
         // CodeJar will detect the codehash diff, but it will still be able to deploy the code
         address scriptAddress = codeJar.saveCode(code);
