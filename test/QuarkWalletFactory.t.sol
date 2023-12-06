@@ -96,7 +96,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint96 nonce = factory.nextNonce(alice, factory.DEFAULT_SALT());
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForSigner(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: incrementer,
@@ -132,7 +132,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint96 nonce = factory.nextNonce(alice, factory.DEFAULT_SALT());
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForSigner(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: incrementer,
@@ -172,7 +172,7 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
-        uint96 nonce = factory.nextNonce(alice, factory.DEFAULT_SALT());
+        uint96 nonce = factory.stateManager().nextNonce(factory.walletAddressForSigner(alice));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: incrementer,
@@ -244,8 +244,8 @@ contract QuarkWalletFactoryTest is Test {
         vm.pauseGasMetering();
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         bytes32 salt = bytes32("salty salt salt");
-        uint96 nonce = factory.nextNonce(alice, salt);
         address aliceWallet = factory.walletAddressForSignerWithSalt(alice, salt);
+        uint96 nonce = factory.stateManager().nextNonce(aliceWallet);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: address(0),
             scriptSource: getMessageDetails,

@@ -60,18 +60,31 @@ contract QuarkStateManager {
      * @dev Any unset nonce is valid to use, but using this method
      * increases the likelihood that the nonce you use will be in a bucket that
      * has already been written to, which costs less gas
+     * @param wallet Address of the wallet to find the next nonce for
      * @return The next unused nonce
      */
     function nextNonce(address wallet) external view returns (uint96) {
-        for (uint96 i = 0; i <= type(uint96).max;) {
-            if (!isNonceSet(wallet, i) && (nonceScriptAddress[wallet][i] == address(0))) {
-                return i;
+        // Exclude bucket==uint88.max out to prevent from overlfowing, as favor in using unchecked for gas optimization
+        for (uint256 bucket = 0; bucket < type(uint88).max;) {
+            uint256 bucketNonces = nonces[wallet][bucket];
+            uint96 bucketValue = uint96(bucket << 8);
+            for (uint256 maskOffset = 0; maskOffset < 256;) {
+                uint256 mask = 1 << maskOffset;
+                if ((bucketNonces & mask) == 0) {
+                    uint96 nonce = uint96(bucketValue + maskOffset);
+                    if (nonceScriptAddress[wallet][nonce] == address(0)) {
+                        return nonce;
+                    }
+                }
+                unchecked {
+                    ++maskOffset;
+                }
             }
-
             unchecked {
-                ++i;
+                ++bucket;
             }
         }
+
         revert NoUnusedNonces();
     }
 
