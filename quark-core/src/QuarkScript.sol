@@ -34,6 +34,18 @@ contract QuarkScript {
         return QuarkWallet(payable(address(this))).stateManager().clearNonce();
     }
 
+    function signer() internal view returns (address) {
+        (bool success, bytes memory signer_) = address(this).staticcall(abi.encodeWithSignature("signer()"));
+        if (!success) revert("what are you doing");
+        return abi.decode(signer_, (address));
+    }
+
+    function executor() internal view returns (address) {
+        (bool success, bytes memory executor_) = address(this).staticcall(abi.encodeWithSignature("executor()"));
+        if (!success) revert("what are you doing");
+        return abi.decode(executor_, (address));
+    }
+
     function readU256(string memory key) internal view returns (uint256) {
         return uint256(read(key));
     }
