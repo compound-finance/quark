@@ -49,7 +49,7 @@ contract CodeJarTest is Test {
         assertApproxEqAbs(gasUsed, 42000, 3000);
     }
 
-    function testCodeJarFirstDeployFrontrunPoisonScriptAddress() public {
+    function testCodeJarDeployNotAffectedByChangedCodeHash() public {
         vm.deal(address(0xbab), 10 ether);
         bytes memory code = hex"11223344";
         bytes memory initCode = abi.encodePacked(hex"63", uint32(code.length), hex"80600e6000396000f3", code);
