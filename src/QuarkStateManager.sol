@@ -194,6 +194,6 @@ contract QuarkStateManager {
      * @return Value at the nonce storage location, as bytes
      */
     function readStorageForWallet(address wallet, uint96 nonce, string memory key) external view returns (bytes32) {
-        return walletStorage[address(wallet)][nonce][keccak256(bytes(key))];
+        return walletStorage[wallet][nonce][keccak256(bytes(key))];
     }
 }
