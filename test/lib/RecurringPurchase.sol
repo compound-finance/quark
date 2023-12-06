@@ -16,6 +16,7 @@ contract RecurringPurchase is QuarkScript {
     // Note: This script uses the following storage layout:
     // key: keccak(PurchaseConfig) -> value: PurchaseState
 
+    // TODO: Support exact input swaps
     struct SwapParamsExactOut {
         address uniswapRouter;
         address recipient;
