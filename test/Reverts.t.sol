@@ -109,4 +109,20 @@ contract RevertsTest is Test {
         vm.expectRevert();
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
+
+    function testRevertsOutOfMemory() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, revertsCode, abi.encodeWithSelector(Reverts.outOfMemory.selector), ScriptType.ScriptAddress
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        // Reverts with "EvmError: MemoryLimitOOG"
+        vm.expectRevert();
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
 }

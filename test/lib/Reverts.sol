@@ -37,6 +37,12 @@ contract Reverts {
         }
     }
 
+    function outOfMemory() external {
+        assembly {
+            mstore(0xffffffff, 1)
+        }
+    }
+
     fallback() external {
         revert Whoops();
     }
