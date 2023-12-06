@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "../../src/QuarkWallet.sol";
-import "../../src/QuarkScript.sol";
-import "../../src/terminal_scripts/TerminalScript.sol";
+import "quark-core/src/QuarkWallet.sol";
+import "quark-core/src/QuarkScript.sol";
+
+import "terminal-scripts/src/TerminalScript.sol";
 
 contract EvilReceiver {
     enum AttackType {

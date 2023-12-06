@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "../../src/QuarkScript.sol";
-import "./Counter.sol";
+import "quark-core/src/QuarkScript.sol";
+import "test/lib/Counter.sol";
 
 contract MaxCounterScript is QuarkScript {
     error EnoughAlready();

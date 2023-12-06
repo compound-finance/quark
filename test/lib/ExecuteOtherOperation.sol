@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "../../src/QuarkWallet.sol";
-import "../../src/QuarkScript.sol";
+import "quark-core/src/QuarkWallet.sol";
+import "quark-core/src/QuarkScript.sol";
 
 contract ExecuteOtherOperation is QuarkScript {
     function run(QuarkWallet.QuarkOperation memory op, uint8 v, bytes32 r, bytes32 s) external returns (bytes memory) {
