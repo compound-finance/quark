@@ -60,7 +60,7 @@ contract QuarkStateManager {
      * @dev Any unset nonce is valid to use, but using this method
      * increases the likelihood that the nonce you use will be in a bucket that
      * has already been written to, which costs less gas
-     * @param wallet Address of the wallet to find the next nonce
+     * @param wallet Address of the wallet to find the next nonce for
      * @return The next unused nonce
      */
     function nextNonce(address wallet) external view returns (uint96) {
