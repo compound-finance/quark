@@ -186,4 +186,14 @@ contract QuarkStateManager {
         }
         return walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key];
     }
+
+    /**
+     * @notice Read the storage of a wallet at a specific nonce and key
+     * @dev It is discouraged for scripts to use this function directly. This function is primarily used to make it
+     * easier for third-party tools to read from storage.
+     * @return Value at the nonce storage location, as bytes
+     */
+    function readStorageForWallet(address wallet, uint96 nonce, string memory key) external view returns (bytes32) {
+        return walletStorage[address(wallet)][nonce][keccak256(bytes(key))];
+    }
 }
