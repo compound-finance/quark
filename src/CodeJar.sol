@@ -20,7 +20,10 @@ contract CodeJar {
         address codeAddress = getCodeAddress(initCode);
         bytes32 codeAddressHash = codeAddress.codehash;
 
-        if (codeAddressHash == 0) {
+        if (codeAddressHash == keccak256(code)) {
+            // Code is already deployed and matches expected code
+            return codeAddress;
+        } else {
             // The code has not been deployed here (or it was deployed and destructed).
             address codeCreateAddress;
             uint256 initCodeLen = initCode.length;
@@ -32,14 +35,6 @@ contract CodeJar {
             require(codeCreateAddress == codeAddress);
 
             return codeAddress;
-        } else if (codeAddressHash == keccak256(code)) {
-            // Code is already deployed and matches expected code
-            return codeAddress;
-        } else {
-            // Code is already deployed but does not match expected code.
-            // Note: this should never happen except if the initCode script
-            //       has an unknown bug.
-            revert CodeHashMismatch(codeAddress, keccak256(code), codeAddressHash);
         }
     }
 
