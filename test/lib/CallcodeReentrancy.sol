@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/console.sol";
 
-import "../../src/QuarkScript.sol";
+import "quark-core/src/QuarkScript.sol";
 
 interface CallbackReceiver {
     function callMeBack(address, bytes calldata, uint256) external payable returns (bytes memory);

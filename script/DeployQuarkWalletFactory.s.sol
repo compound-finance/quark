@@ -3,11 +3,13 @@ pragma solidity 0.8.19;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {CodeJar} from "../src/CodeJar.sol";
-import {QuarkWalletFactory} from "../src/QuarkWalletFactory.sol";
-import {Ethcall} from "../src/core_scripts/Ethcall.sol";
-import {Multicall} from "../src/core_scripts/Multicall.sol";
-import {BatchExecutor} from "../src/periphery/BatchExecutor.sol";
+
+import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
+import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
+
+import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
+import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 
 // Deploy with:
 // $ set -a && source .env && ./script/deploy.sh --broadcast

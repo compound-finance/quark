@@ -3,8 +3,10 @@ pragma solidity 0.8.19;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {CodeJar} from "../src/CodeJar.sol";
-import {QuarkWalletFactory} from "../src/QuarkWalletFactory.sol";
+
+import {CodeJar} from "../quark-core/src/CodeJar.sol";
+import {QuarkWalletFactory} from "../quark-core/src/QuarkWalletFactory.sol";
+
 import {
     CometSupplyActions,
     CometWithdrawActions,
@@ -13,7 +15,7 @@ import {
     CometClaimRewards,
     CometSupplyMultipleAssetsAndBorrow,
     CometRepayAndWithdrawMultipleAssets
-} from "../src/terminal_scripts/TerminalScript.sol";
+} from "../terminal-scripts/src/TerminalScript.sol";
 
 // Deploy with:
 // $ set -a && source .env && ./script/deploy.sh --broadcast

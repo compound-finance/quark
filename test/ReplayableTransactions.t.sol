@@ -4,15 +4,15 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "../src/CodeJar.sol";
-import "../src/QuarkWallet.sol";
-import "../src/QuarkStateManager.sol";
+import "quark-core/src/CodeJar.sol";
+import "quark-core/src/QuarkWallet.sol";
+import "quark-core/src/QuarkStateManager.sol";
 
-import {RecurringPurchase} from "./lib/RecurringPurchase.sol";
+import {RecurringPurchase} from "test/lib/RecurringPurchase.sol";
 
-import "./lib/YulHelper.sol";
-import "./lib/SignatureHelper.sol";
-import "./lib/QuarkOperationHelper.sol";
+import "test/lib/YulHelper.sol";
+import "test/lib/SignatureHelper.sol";
+import "test/lib/QuarkOperationHelper.sol";
 import "openzeppelin/token/ERC20/IERC20.sol";
 
 // TODO: Limit orders
