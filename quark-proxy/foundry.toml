@@ -1,0 +1,14 @@
+[profile.default]
+solc = "0.8.19"
+evm_version = "paris"
+
+libs = [ "../lib" ]
+
+src = "src"
+out = "out"
+test = "../test/quark-proxy"
+
+# optimizer config
+optimizer = true
+optimizer_runs = 1
+bytecode_hash = "none"
