@@ -60,12 +60,12 @@ contract ExecutorTest is Test {
 
         // execute counter.increment(5) as bob from alice's wallet (that is, from bob's wallet's executor)
         aliceWallet.executeScript(
-            stateManager.nextNonce(address(aliceWallet), 0),
+            stateManager.nextNonce(address(aliceWallet)),
             executeOnBehalfAddress,
             abi.encodeWithSignature(
                 "run(address,uint96,address,bytes)",
                 address(bobWallet),
-                stateManager.nextNonce(address(bobWallet), 0),
+                stateManager.nextNonce(address(bobWallet)),
                 address(ethcallAddress),
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 5), 0
@@ -91,7 +91,7 @@ contract ExecutorTest is Test {
             abi.encodeWithSignature(
                 "run(address,uint96,address,bytes)",
                 address(bobWallet),
-                stateManager.nextNonce(address(bobWallet), 0),
+                stateManager.nextNonce(address(bobWallet)),
                 address(ethcallAddress),
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 3), 0

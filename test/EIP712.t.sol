@@ -137,7 +137,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // alice's nonce is not incremented
-        assertEq(stateManager.nextNonce(address(wallet), 0), op.nonce);
+        assertEq(stateManager.nextNonce(address(wallet)), op.nonce);
     }
 
     function testRevertsOnReusedNonce() public {
@@ -154,7 +154,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(stateManager.nextNonce(address(wallet), 0), op.nonce + 1);
+        assertEq(stateManager.nextNonce(address(wallet)), op.nonce + 1);
 
         // submitter tries to reuse the same signature twice, for a non-replayable operation
         vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
@@ -180,7 +180,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(stateManager.nextNonce(address(wallet), 0), op.nonce);
+        assertEq(stateManager.nextNonce(address(wallet)), op.nonce);
     }
 
     function testRevertsInvalidS() public {
@@ -202,7 +202,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, invalidS);
 
         assertEq(counter.number(), 0);
-        assertEq(stateManager.nextNonce(address(wallet), 0), op.nonce);
+        assertEq(stateManager.nextNonce(address(wallet)), op.nonce);
     }
 
     function testNonceIsNotSetForReplayableOperation() public {
@@ -278,7 +278,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(stateManager.nextNonce(address(wallet), 0), op.nonce);
+        assertEq(stateManager.nextNonce(address(wallet)), op.nonce);
     }
 
     function testRequirements() public {

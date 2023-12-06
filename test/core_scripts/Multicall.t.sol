@@ -331,7 +331,7 @@ contract MulticallTest is Test {
         wallets[0] = address(walletA);
         walletCalls[0] = abi.encodeWithSignature(
             "executeScript(uint96,address,bytes)",
-            factory.stateManager().nextNonce(address(walletA), 0),
+            factory.stateManager().nextNonce(address(walletA)),
             ethcallAddress,
             abi.encodeWithSelector(
                 Ethcall.run.selector,
@@ -342,7 +342,7 @@ contract MulticallTest is Test {
         );
 
         // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
-        uint96 walletBNextNonce = factory.stateManager().nextNonce(address(walletB), 0);
+        uint96 walletBNextNonce = factory.stateManager().nextNonce(address(walletB));
         wallets[1] = address(walletB);
         walletCalls[1] = abi.encodeWithSignature(
             "executeScript(uint96,address,bytes)",
@@ -428,7 +428,7 @@ contract MulticallTest is Test {
         deal(WETH, address(wallet), 100 ether);
 
         address subWallet1 = factory.walletAddressForSignerWithSalt(alice, bytes32("1"));
-        uint96 nonce = factory.stateManager().nextNonce(subWallet1, 0);
+        uint96 nonce = factory.stateManager().nextNonce(subWallet1);
         // Steps: Wallet#1: Supply WETH to Comet -> Borrow USDC from Comet(USDC) to subwallet -> Create subwallet
         // -> Swap USDC to WETH on Uniswap -> Supply WETH to Comet(WETH)
         address[] memory callContracts = new address[](5);
