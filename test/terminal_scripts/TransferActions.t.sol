@@ -250,7 +250,7 @@ contract TransferActionsTest is Test {
         assertEq(address(evilReceiver).balance, 1 ether);
     }
 
-    function testTransferErc777SuccessWithEvilReceiverWithoutAttackAttempt() public {
+    function testTransferERC777SuccessWithEvilReceiverWithoutAttackAttempt() public {
         vm.pauseGasMetering();
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
         address terminalScriptAddress = codeJar.saveCode(terminalScript);

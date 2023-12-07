@@ -43,12 +43,12 @@ contract EvilReceiver {
         targetTokenAddress = t;
     }
 
-    function startAttack(bool erc20, address from, address to, uint256 amount) public {
+    function startAttack(bool isERC20, address from, address to, uint256 amount) public {
         if (count < attack.maxCalls) {
             count++;
             if (attack.attackType == AttackType.REINVOKE_TRANSFER) {
                 // Simply cast the address to Terminal script and call the Transfer function
-                if (erc20) {
+                if (isERC20) {
                     TransferActions(from).transferERC20Token(targetTokenAddress, to, amount);
                 } else {
                     TransferActions(from).transferNativeToken(attack.destination, attack.amount);
