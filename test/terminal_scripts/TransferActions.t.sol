@@ -209,6 +209,7 @@ contract TransferActionsTest is Test {
         assertEq(IERC20(victimERC777).balanceOf(address(evilReceiver)), 0 ether);
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
+        // Attacker successfully transferes 3 eth by exploiting reentrancy in 1eth transfer
         assertEq(IERC20(victimERC777).balanceOf(address(wallet)), 7 ether);
         assertEq(IERC20(victimERC777).balanceOf(address(evilReceiver)), 3 ether);
     }
