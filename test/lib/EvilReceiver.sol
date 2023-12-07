@@ -29,6 +29,7 @@ contract EvilReceiver {
     uint256 public count = 0;
     ReentryAttack public attack;
     StolenSignature public stolenSignature;
+    address public targetTokenAddress;
 
     function setAttack(ReentryAttack calldata t) public {
         attack = t;
@@ -38,12 +39,20 @@ contract EvilReceiver {
         stolenSignature = t;
     }
 
-    receive() external payable {
+    function setTargetTokenAddress(address t) public {
+        targetTokenAddress = t;
+    }
+
+    function startAttack(bool isERC20, address from, address to, uint256 amount) public {
         if (count < attack.maxCalls) {
             count++;
             if (attack.attackType == AttackType.REINVOKE_TRANSFER) {
                 // Simply cast the address to Terminal script and call the Transfer function
-                TransferActions(msg.sender).transferNativeToken(attack.destination, attack.amount);
+                if (isERC20) {
+                    TransferActions(from).transferERC20Token(targetTokenAddress, to, amount);
+                } else {
+                    TransferActions(from).transferNativeToken(attack.destination, attack.amount);
+                }
             }
 
             if (attack.attackType == AttackType.STOLEN_SIGNATURE) {
@@ -52,5 +61,20 @@ contract EvilReceiver {
                 );
             }
         }
+    }
+
+    function tokensReceived(
+        address, /* operator */
+        address from,
+        address, /* to */
+        uint256, /* amount */
+        bytes calldata,
+        bytes calldata
+    ) external {
+        startAttack(true, from, attack.destination, attack.amount);
+    }
+
+    receive() external payable {
+        startAttack(false, msg.sender, attack.destination, attack.amount);
     }
 }
