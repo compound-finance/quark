@@ -15,7 +15,6 @@ import "./lib/Reverts.sol";
 import "./lib/YulHelper.sol";
 import "./lib/SignatureHelper.sol";
 import "./lib/QuarkOperationHelper.sol";
-import "./lib/QuarkStateManagerHarness.sol";
 import "./lib/PrecompileCaller.sol";
 
 contract QuarkWalletTest is Test {
@@ -24,7 +23,7 @@ contract QuarkWalletTest is Test {
 
     CodeJar public codeJar;
     Counter public counter;
-    QuarkStateManagerHarness public stateManager;
+    QuarkStateManager public stateManager;
 
     uint256 alicePrivateKey = 0x8675309;
     address aliceAccount = vm.addr(alicePrivateKey);
@@ -38,8 +37,8 @@ contract QuarkWalletTest is Test {
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
-        stateManager = new QuarkStateManagerHarness();
-        console.log("QuarkStateManagerHarness deployed to: %s", address(stateManager));
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
         aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
         console.log("Alice signer: %s", aliceAccount);
@@ -342,46 +341,48 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
-        // gas: do not meter readRawUnsafe
+        // gas: do not meter walletStorage
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 1);
-        assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), 1);
+        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), 1);
 
         // call twice
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
-        // gas: do not meter readRawUnsafe
+        // gas: do not meter walletStorage
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 2);
-        assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), 2);
+        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), 2);
 
         // call thrice
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
-        // gas: do not meter readRawUnsafe
+        // gas: do not meter walletStorage
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 3);
-        assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), 3);
+        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), 3);
 
         // revert because max has been hit
         vm.expectRevert(abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector));
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
-        // gas: do not meter readRawUnsafe()
+        // gas: do not meter walletStorage
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 3);
-        assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), counter.number());
+        assertEq(
+            uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), counter.number()
+        );
 
         counter.increment();
         assertEq(counter.number(), 4);
-        assertEq(uint256(stateManager.readRawUnsafe(aliceWallet, op.nonce, "count")), 3);
+        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), 3);
 
         vm.resumeGasMetering();
         vm.stopPrank();

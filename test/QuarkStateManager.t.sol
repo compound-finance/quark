@@ -6,22 +6,25 @@ import "forge-std/console.sol";
 
 import "../src/CodeJar.sol";
 import "../src/QuarkWallet.sol";
+import "../src/QuarkStateManager.sol";
 
 import "./lib/YulHelper.sol";
 import "./lib/SignatureHelper.sol";
 import "./lib/QuarkOperationHelper.sol";
-import "./lib/QuarkStateManagerHarness.sol";
+
+import "./lib/Counter.sol";
+import "./lib/MaxCounterScript.sol";
 
 contract QuarkStateManagerTest is Test {
     CodeJar public codeJar;
-    QuarkStateManagerHarness public stateManager;
+    QuarkStateManager public stateManager;
 
     constructor() {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
-        stateManager = new QuarkStateManagerHarness();
-        console.log("QuarkStateManagerHarness deployed to: %s", address(stateManager));
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
     }
 
     function testRevertsForNoActiveNonce() public {
@@ -97,5 +100,33 @@ contract QuarkStateManagerTest is Test {
         vm.prank(address(wallet));
         bytes memory result = stateManager.setActiveNonceAndCallback(0, address(0x123), bytes(""));
         assertEq(result, bytes(""));
+    }
+
+    function testReadStorageForWallet() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+
+        Counter counter = new Counter();
+        assertEq(counter.number(), 0);
+
+        bytes memory maxCounterScript = new YulHelper().getDeployed("MaxCounterScript.sol/MaxCounterScript.json");
+        address maxCounterScriptAddress = codeJar.saveCode(maxCounterScript);
+        bytes memory call = abi.encodeWithSignature("run(address)", address(counter));
+
+        QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+
+        vm.resumeGasMetering();
+
+        assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(0)));
+
+        vm.prank(address(wallet));
+        stateManager.setActiveNonceAndCallback(0, maxCounterScriptAddress, call);
+
+        assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(1)));
+
+        vm.prank(address(wallet));
+        stateManager.setActiveNonceAndCallback(0, maxCounterScriptAddress, call);
+
+        assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(2)));
     }
 }
