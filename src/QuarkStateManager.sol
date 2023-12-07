@@ -64,7 +64,7 @@ contract QuarkStateManager {
      * @return The next unused nonce
      */
     function nextNonce(address wallet) external view returns (uint96) {
-        // Any bucket larger than `type(uint88).max` will result unsafe undercast when converting to nonce
+        // Any bucket larger than `type(uint88).max` will result in unsafe undercast when converting to nonce
         for (uint256 bucket = 0; bucket <= type(uint88).max;) {
             uint256 bucketNonces = nonces[wallet][bucket];
             uint96 bucketValue = uint96(bucket << 8);
