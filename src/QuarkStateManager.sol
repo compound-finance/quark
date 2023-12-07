@@ -64,8 +64,8 @@ contract QuarkStateManager {
      * @return The next unused nonce
      */
     function nextNonce(address wallet) external view returns (uint96) {
-        // Exclude bucket==uint88.max out to prevent from overlfowing, as favor in using unchecked for gas optimization
-        for (uint256 bucket = 0; bucket < type(uint88).max;) {
+        // Any bucket larger than `type(uint88).max` will result in unsafe undercast when converting to nonce
+        for (uint256 bucket = 0; bucket <= type(uint88).max;) {
             uint256 bucketNonces = nonces[wallet][bucket];
             uint96 bucketValue = uint96(bucket << 8);
             for (uint256 maskOffset = 0; maskOffset < 256;) {
