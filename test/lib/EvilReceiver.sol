@@ -63,9 +63,14 @@ contract EvilReceiver {
         }
     }
 
-    function tokensReceived(address operator, address from, address to, uint256 amount, bytes calldata, bytes calldata)
-        external
-    {
+    function tokensReceived(
+        address, /* operator */
+        address from,
+        address, /* to */
+        uint256, /* amount */
+        bytes calldata,
+        bytes calldata
+    ) external {
         startAttack(true, from, attack.destination, attack.amount);
     }
 
