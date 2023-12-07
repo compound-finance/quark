@@ -341,46 +341,46 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
-        // gas: do not meter readStorageForWallet
+        // gas: do not meter walletStorage
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 1);
-        assertEq(uint256(stateManager.readStorageForWallet(address(aliceWallet), op.nonce, "count")), 1);
+        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), 1);
 
         // call twice
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
-        // gas: do not meter readStorageForWallet
+        // gas: do not meter walletStorage
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 2);
-        assertEq(uint256(stateManager.readStorageForWallet(address(aliceWallet), op.nonce, "count")), 2);
+        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), 2);
 
         // call thrice
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
-        // gas: do not meter readStorageForWallet
+        // gas: do not meter walletStorage
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 3);
-        assertEq(uint256(stateManager.readStorageForWallet(address(aliceWallet), op.nonce, "count")), 3);
+        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), 3);
 
         // revert because max has been hit
         vm.expectRevert(abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector));
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
-        // gas: do not meter readStorageForWallet()
+        // gas: do not meter walletStorage
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 3);
-        assertEq(uint256(stateManager.readStorageForWallet(address(aliceWallet), op.nonce, "count")), counter.number());
+        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), counter.number());
 
         counter.increment();
         assertEq(counter.number(), 4);
-        assertEq(uint256(stateManager.readStorageForWallet(address(aliceWallet), op.nonce, "count")), 3);
+        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), 3);
 
         vm.resumeGasMetering();
         vm.stopPrank();

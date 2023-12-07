@@ -117,16 +117,16 @@ contract QuarkStateManagerTest is Test {
 
         vm.resumeGasMetering();
 
-        assertEq(stateManager.readStorageForWallet(address(wallet), 0, "count"), bytes32(uint256(0)));
+        assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(0)));
 
         vm.prank(address(wallet));
         stateManager.setActiveNonceAndCallback(0, maxCounterScriptAddress, call);
 
-        assertEq(stateManager.readStorageForWallet(address(wallet), 0, "count"), bytes32(uint256(1)));
+        assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(1)));
 
         vm.prank(address(wallet));
         stateManager.setActiveNonceAndCallback(0, maxCounterScriptAddress, call);
 
-        assertEq(stateManager.readStorageForWallet(address(wallet), 0, "count"), bytes32(uint256(2)));
+        assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(2)));
     }
 }

@@ -33,11 +33,11 @@ contract QuarkStateManager {
     /// @notice Per-wallet-nonce address for preventing replays with changed script address
     mapping(address wallet => mapping(uint96 nonce => address scriptAddress)) public nonceScriptAddress;
 
+    /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
+    mapping(address wallet => mapping(uint96 nonce => mapping(bytes32 key => bytes32 value))) public walletStorage;
+
     /// @notice Currently active nonce-script pair for a wallet, if any, for which storage is accessible
     mapping(address wallet => NonceScript) internal activeNonceScript;
-
-    /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
-    mapping(address wallet => mapping(uint96 nonce => mapping(bytes32 key => bytes32 value))) internal walletStorage;
 
     /**
      * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
@@ -185,15 +185,5 @@ contract QuarkStateManager {
             revert NoActiveNonce();
         }
         return walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key];
-    }
-
-    /**
-     * @notice Read the storage of a wallet at a specific nonce and key
-     * @dev It is discouraged for scripts to use this function directly. This function is primarily used to make it
-     * easier for third-party tools to read from storage.
-     * @return Value at the nonce storage location, as bytes
-     */
-    function readStorageForWallet(address wallet, uint96 nonce, string memory key) external view returns (bytes32) {
-        return walletStorage[wallet][nonce][keccak256(bytes(key))];
     }
 }
