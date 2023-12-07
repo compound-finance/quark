@@ -376,7 +376,9 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 3);
-        assertEq(uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), counter.number());
+        assertEq(
+            uint256(stateManager.walletStorage(address(aliceWallet), op.nonce, keccak256("count"))), counter.number()
+        );
 
         counter.increment();
         assertEq(counter.number(), 4);
