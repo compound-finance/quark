@@ -48,7 +48,7 @@ contract CodeJar {
         bytes memory initCode = getInitCode(code);
         address codeAddress = getCodeAddress(initCode);
 
-        return codeAddress.codehash == keccak256(code);
+        return codeAddress.code.length != 0 && codeAddress.codehash == keccak256(code);
     }
 
     /**

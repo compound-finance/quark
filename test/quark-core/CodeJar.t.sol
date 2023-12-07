@@ -155,5 +155,21 @@ contract CodeJarTest is Test {
         assertEq(returnData, hex"abcd");
     }
 
+    function testCodeJarCodeExistsCorrectnessOnEmptyCodeAddressWithETH() public {
+        bytes memory code = hex"";
+        assertEq(codeJar.codeExists(code), false);
+        bytes memory initCode = abi.encodePacked(hex"63", uint32(code.length), hex"80600e6000396000f3", code);
+        address scriptAddress = address(
+            uint160(
+                uint256(keccak256(abi.encodePacked(bytes1(0xff), address(codeJar), uint256(0), keccak256(initCode))))
+            )
+        );
+        vm.deal(address(this), 1 ether);
+        scriptAddress.call{value: 1}("");
+
+        // Ensure codeExists correctness holds for empty code with natvie token ETH
+        assertEq(codeJar.codeExists(code), false);
+    }
+
     // Note: cannot test code too large, as overflow impossible to test
 }
