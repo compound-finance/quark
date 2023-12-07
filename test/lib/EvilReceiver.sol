@@ -43,30 +43,16 @@ contract EvilReceiver {
         targetTokenAddress = t;
     }
 
-    function tokensReceived(address, address from, address to, uint256 amount, bytes calldata, bytes calldata)
-        external
-    {
+    function startAttack(bool erc20, address from, address to, uint256 amount) public {
         if (count < attack.maxCalls) {
             count++;
             if (attack.attackType == AttackType.REINVOKE_TRANSFER) {
                 // Simply cast the address to Terminal script and call the Transfer function
-                TransferActions(from).transferERC20Token(targetTokenAddress, to, amount);
-            }
-
-            if (attack.attackType == AttackType.STOLEN_SIGNATURE) {
-                QuarkWallet(payable(from)).executeQuarkOperation(
-                    stolenSignature.op, stolenSignature.v, stolenSignature.r, stolenSignature.s
-                );
-            }
-        }
-    }
-
-    receive() external payable {
-        if (count < attack.maxCalls) {
-            count++;
-            if (attack.attackType == AttackType.REINVOKE_TRANSFER) {
-                // Simply cast the address to Terminal script and call the Transfer function
-                TransferActions(msg.sender).transferNativeToken(attack.destination, attack.amount);
+                if (erc20) {
+                    TransferActions(from).transferERC20Token(targetTokenAddress, to, amount);
+                } else {
+                    TransferActions(from).transferNativeToken(attack.destination, attack.amount);
+                }
             }
 
             if (attack.attackType == AttackType.STOLEN_SIGNATURE) {
@@ -75,5 +61,15 @@ contract EvilReceiver {
                 );
             }
         }
+    }
+
+    function tokensReceived(address operator, address from, address to, uint256 amount, bytes calldata, bytes calldata)
+        external
+    {
+        startAttack(true, from, attack.destination, attack.amount);
+    }
+
+    receive() external payable {
+        startAttack(false, msg.sender, attack.destination, attack.amount);
     }
 }

@@ -12,7 +12,7 @@ contract VictimERC777 is ERC20 {
         _mint(account, amount);
     }
 
-    // Enable receving callback by overriding ERC777 implementation for testing on reentrant attacks
+    // Enable receiving callback by overriding ERC777 implementation for testing on reentrant attacks
     function transfer(address recipient, uint256 amount) public override returns (bool) {
         super.transfer(recipient, amount);
         IERC777Recipient(recipient).tokensReceived(address(0), msg.sender, recipient, amount, "", "");

@@ -173,7 +173,7 @@ contract TransferActionsTest is Test {
         assertEq(address(evilReceiver).balance, 3 ether);
     }
 
-    function testTransferERC20TokenReentrancyAttackSuccessWithCallbackEnabled() public {
+    function testTransferERC777TokenReentrancyAttackSuccessWithCallbackEnabled() public {
         vm.pauseGasMetering();
         bytes memory reentrantTransfer = new YulHelper().getDeployed("ReentrantTransfer.sol/ReentrantTransfer.json");
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
@@ -209,12 +209,12 @@ contract TransferActionsTest is Test {
         assertEq(IERC20(victimERC777).balanceOf(address(evilReceiver)), 0 ether);
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
-        // Attacker successfully transferes 3 eth by exploiting reentrancy in 1eth transfer
+        // Attacker successfully transfers 3 eth by exploiting reentrancy in 1eth transfers
         assertEq(IERC20(victimERC777).balanceOf(address(wallet)), 7 ether);
         assertEq(IERC20(victimERC777).balanceOf(address(evilReceiver)), 3 ether);
     }
 
-    function testTransferSucessWithEvilReceiverWithoutAttackAttempt() public {
+    function testTransferSuccessWithEvilReceiverWithoutAttackAttempt() public {
         vm.pauseGasMetering();
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
         address terminalScriptAddress = codeJar.saveCode(terminalScript);
@@ -250,7 +250,7 @@ contract TransferActionsTest is Test {
         assertEq(address(evilReceiver).balance, 1 ether);
     }
 
-    function testTransferErc20SuccessWithEvilReceiverWithoutAttackAttempt() public {
+    function testTransferErc777SuccessWithEvilReceiverWithoutAttackAttempt() public {
         vm.pauseGasMetering();
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
         address terminalScriptAddress = codeJar.saveCode(terminalScript);
@@ -335,7 +335,7 @@ contract TransferActionsTest is Test {
         assertEq(address(evilReceiver).balance, 0 ether);
     }
 
-    function testRevertsForTransferERC20ReentrancyAttackWithReentrancyGuard() public {
+    function testRevertsForTransferERC777ReentrancyAttackWithReentrancyGuard() public {
         vm.pauseGasMetering();
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
         address terminalScriptAddress = codeJar.saveCode(terminalScript);
