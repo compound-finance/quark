@@ -214,6 +214,82 @@ contract TransferActionsTest is Test {
         assertEq(IERC20(victimERC777).balanceOf(address(evilReceiver)), 3 ether);
     }
 
+    function testTransferSucessWithEvilReceiverWithoutAttackAttempt() public {
+        vm.pauseGasMetering();
+        address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
+        address terminalScriptAddress = codeJar.saveCode(terminalScript);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        EvilReceiver evilReceiver = new EvilReceiver();
+        // Attack maxCalls set to 0, so no attack will be attempted
+        evilReceiver.setAttack(
+            EvilReceiver.ReentryAttack(EvilReceiver.AttackType.REINVOKE_TRANSFER, address(evilReceiver), 1 ether, 0)
+        );
+        deal(address(wallet), 10 ether);
+        // Compose array of parameters
+        address[] memory callContracts = new address[](2);
+        bytes[] memory callDatas = new bytes[](2);
+        callContracts[0] = allowCallbacksAddress;
+        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(terminalScriptAddress));
+        callContracts[1] = terminalScriptAddress;
+        callDatas[1] =
+            abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        assertEq(address(wallet).balance, 10 ether);
+        assertEq(address(evilReceiver).balance, 0 ether);
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(address(wallet).balance, 9 ether);
+        assertEq(address(evilReceiver).balance, 1 ether);
+    }
+
+    function testTransferErc20SuccessWithEvilReceiverWithoutAttackAttempt() public {
+        vm.pauseGasMetering();
+        address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
+        address terminalScriptAddress = codeJar.saveCode(terminalScript);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        EvilReceiver evilReceiver = new EvilReceiver();
+        // Attack maxCalls set to 0, so no attack will be attempted
+        evilReceiver.setAttack(
+            EvilReceiver.ReentryAttack(EvilReceiver.AttackType.REINVOKE_TRANSFER, address(evilReceiver), 1 ether, 0)
+        );
+        // Create victim ERC777 token
+        VictimERC777 victimERC777 = new VictimERC777();
+        victimERC777.mint(address(wallet), 10 ether);
+        evilReceiver.setTargetTokenAddress(address(victimERC777));
+        // Compose array of parameters
+        address[] memory callContracts = new address[](2);
+        bytes[] memory callDatas = new bytes[](2);
+        callContracts[0] = allowCallbacksAddress;
+        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(terminalScriptAddress));
+        callContracts[1] = terminalScriptAddress;
+        callDatas[1] = abi.encodeWithSelector(
+            ReentrantTransfer.transferERC20Token.selector, address(victimERC777), address(evilReceiver), 1 ether
+        );
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        assertEq(IERC20(victimERC777).balanceOf(address(wallet)), 10 ether);
+        assertEq(IERC20(victimERC777).balanceOf(address(evilReceiver)), 0 ether);
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(IERC20(victimERC777).balanceOf(address(wallet)), 9 ether);
+        assertEq(IERC20(victimERC777).balanceOf(address(evilReceiver)), 1 ether);
+    }
+
     function testRevertsForTransferReentrancyAttackWithReentrancyGuard() public {
         vm.pauseGasMetering();
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);

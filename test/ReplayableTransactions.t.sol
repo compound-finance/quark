@@ -13,7 +13,6 @@ import {RecurringPurchase} from "./lib/RecurringPurchase.sol";
 import "./lib/YulHelper.sol";
 import "./lib/SignatureHelper.sol";
 import "./lib/QuarkOperationHelper.sol";
-import "./lib/QuarkStateManagerHarness.sol";
 import "openzeppelin/token/ERC20/IERC20.sol";
 
 // TODO: Limit orders
@@ -23,7 +22,7 @@ contract ReplayableTransactionsTest is Test {
     event ClearNonce(address indexed wallet, uint96 nonce);
 
     CodeJar public codeJar;
-    QuarkStateManagerHarness public stateManager;
+    QuarkStateManager public stateManager;
 
     uint256 alicePrivateKey = 0x8675309;
     address aliceAccount = vm.addr(alicePrivateKey);
@@ -50,8 +49,8 @@ contract ReplayableTransactionsTest is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
-        stateManager = new QuarkStateManagerHarness();
-        console.log("QuarkStateManagerHarness deployed to: %s", address(stateManager));
+        stateManager = new QuarkStateManager();
+        console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
         aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
         console.log("Alice signer: %s", aliceAccount);
