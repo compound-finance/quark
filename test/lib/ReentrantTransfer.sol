@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
+import "openzeppelin/token/ERC20/IERC20.sol";
+import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+
 contract ReentrantTransfer {
+    using SafeERC20 for IERC20;
+
     error TransferFailed(bytes data);
 
     /**
@@ -15,5 +20,15 @@ contract ReentrantTransfer {
         if (!success) {
             revert TransferFailed(data);
         }
+    }
+
+    /**
+     * @notice Transfer ERC20 token without re-entrancy guards
+     * @param token The token address
+     * @param recipient The recipient address
+     * @param amount The amount to transfer
+     */
+    function transferERC20Token(address token, address recipient, uint256 amount) external {
+        IERC20(token).safeTransfer(recipient, amount);
     }
 }

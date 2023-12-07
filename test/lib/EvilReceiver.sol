@@ -29,6 +29,7 @@ contract EvilReceiver {
     uint256 public count = 0;
     ReentryAttack public attack;
     StolenSignature public stolenSignature;
+    address public targetTokenAddress;
 
     function setAttack(ReentryAttack calldata t) public {
         attack = t;
@@ -36,6 +37,28 @@ contract EvilReceiver {
 
     function stealSignature(StolenSignature calldata t) public {
         stolenSignature = t;
+    }
+
+    function setTargetTokenAddress(address t) public {
+        targetTokenAddress = t;
+    }
+
+    function tokensReceived(address, address from, address to, uint256 amount, bytes calldata, bytes calldata)
+        external
+    {
+        if (count < attack.maxCalls) {
+            count++;
+            if (attack.attackType == AttackType.REINVOKE_TRANSFER) {
+                // Simply cast the address to Terminal script and call the Transfer function
+                TransferActions(from).transferERC20Token(targetTokenAddress, to, amount);
+            }
+
+            if (attack.attackType == AttackType.STOLEN_SIGNATURE) {
+                QuarkWallet(payable(from)).executeQuarkOperation(
+                    stolenSignature.op, stolenSignature.v, stolenSignature.r, stolenSignature.s
+                );
+            }
+        }
     }
 
     receive() external payable {
