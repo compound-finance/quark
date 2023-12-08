@@ -112,11 +112,11 @@ flowchart TB
 
 The `signer` and `executor` roles are separate roles in the Quark Wallet. The `signer` is able to sign Quark operations that can be executed by the Quark Wallet. The `executor` is able to directly execute scripts on the Quark Wallet. Theoretically, the same address can be both the `signer` and `executor` of a Quark Wallet.
 
-The separation of these two roles allows for a subwallet system, where a wallet can be the `executor` for another wallet but both wallets share the same `signer`. This is discussed in more detail in the [next section](#subwallets).
+The separation of these two roles allows for a subwallet system, where a wallet can be the `executor` for another wallet but both wallets share the same `signer`. This is discussed in more detail in the [Subwallets section](#subwallets).
 
 ### Subwallets
 
-Subwallets are Quark wallets controlled by another Quark wallet. Specifically, the subwallet's `executor` is another Quark wallet (main wallet), meaning the main wallet can directly execute scripts on the subwallet. This allows complex interactions that span multiple Quark wallets to be executed via a single signature.
+Subwallets are Quark wallets controlled by another Quark wallet. Specifically, the subwallet's `executor` is another Quark wallet (main wallet), meaning the main wallet can directly execute scripts on the subwallet. This allows for complex interactions that span multiple Quark wallets to be executed via a single signature.
 
 For example, let Wallet A be the `executor` of Wallet B. Alice is the `signer` for Wallet A. If Alice wants to borrow USDC from Comet in Wallet A, transfer the USDC to Wallet B, and then supply the USDC to Comet from Wallet B, she can accomplish this with a single signature of a Quark operation. The final action of "supply USDC to Comet in Wallet B" can be invoked by a direct execution call from Wallet A.
 
