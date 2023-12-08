@@ -287,6 +287,7 @@ contract isValidSignatureTest is Test {
         });
         Permit2Helper.PermitSingle memory permitSingle =
             Permit2Helper.PermitSingle({details: permitDetails, spender: bob, sigDeadline: block.timestamp + 100});
+        // We skip the step of encoding a domain separator around the message
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, Permit2Helper.hash(permitSingle));
         bytes memory signature = abi.encodePacked(r, s, v);
 
