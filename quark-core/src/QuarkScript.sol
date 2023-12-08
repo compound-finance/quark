@@ -8,7 +8,7 @@ import "quark-core/src/QuarkWallet.sol";
  * @notice A contract that exposes helper functions for Quark scripts to inherit from
  * @author Compound Labs, Inc.
  */
-contract QuarkScript {
+abstract contract QuarkScript {
     error ReentrantCall();
 
     /// @notice storage location for the re-entrancy guard
