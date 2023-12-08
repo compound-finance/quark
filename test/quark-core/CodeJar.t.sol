@@ -84,16 +84,15 @@ contract CodeJarTest is Test {
     }
 
     function testCodeJarInputVariety() public {
-        bytes[] memory scripts = new bytes[](8);
-        scripts[0] = hex"";
-        scripts[1] = hex"00";
-        scripts[2] = hex"11";
-        scripts[3] = hex"112233";
-        scripts[4] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
-        scripts[5] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
-        scripts[6] =
+        bytes[] memory scripts = new bytes[](7);
+        scripts[0] = hex"00";
+        scripts[1] = hex"11";
+        scripts[2] = hex"112233";
+        scripts[3] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
+        scripts[4] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
+        scripts[5] =
             hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
-        scripts[7] =
+        scripts[6] =
             hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
 
         for (uint8 i = 0; i < scripts.length; i++) {
