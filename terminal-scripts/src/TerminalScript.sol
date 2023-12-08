@@ -191,6 +191,8 @@ contract UniswapSwapActions {
                 amountInMaximum: params.amountInMaximum
             })
         );
+        // Reset approved leftover input token back to 0
+        IERC20(params.tokenFrom).forceApprove(params.uniswapRouter, 0);
     }
 }
 
