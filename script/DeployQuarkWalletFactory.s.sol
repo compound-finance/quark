@@ -11,6 +11,8 @@ import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
 import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 
+import {CodeJarDeployer} from "./CodeJarDeployer.s.sol";
+
 // Deploy with:
 // $ set -a && source .env && ./script/deploy.sh --broadcast
 
@@ -21,21 +23,22 @@ import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 // Optional ENV vars:
 // ETHERSCAN_KEY
 
-contract DeployQuarkWalletFactory is Script {
+contract DeployQuarkWalletFactory is Script, CodeJarDeployer {
     QuarkWalletFactory quarkWalletFactory;
     BatchExecutor batchExecutor;
     Ethcall ethcall;
     Multicall multicall;
 
     function run() public {
-        address deployer = vm.addr(vm.envUint("DEPLOYER_PK"));
+        uint256 deployerPk = vm.envUint("DEPLOYER_PK");
+        address deployer = vm.addr(deployerPk);
 
         vm.startBroadcast(deployer);
 
         console.log("=============================================================");
         console.log("Deploying QuarkWalletFactory");
 
-        quarkWalletFactory = new QuarkWalletFactory();
+        quarkWalletFactory = QuarkWalletFactory(deploy(type(QuarkWalletFactory).creationCode, hex"", deployerPk));
 
         console.log("QuarkWalletFactory Deployed:", address(quarkWalletFactory));
 
