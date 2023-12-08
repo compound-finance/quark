@@ -93,11 +93,12 @@ contract QuarkStateManager {
      * @return Currently active script address
      */
     function getActiveScript() external view returns (address) {
-        if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
+        address scriptAddress = activeNonceScript[msg.sender].scriptAddress;
+        if (scriptAddress == address(0)) {
             revert NoActiveNonce();
         }
         // the last 20 bytes is the address
-        return activeNonceScript[msg.sender].scriptAddress;
+        return scriptAddress;
     }
 
     /// @dev Locate a nonce at a (bucket, mask) bitset position in the nonces mapping
