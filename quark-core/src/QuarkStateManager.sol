@@ -157,11 +157,9 @@ contract QuarkStateManager {
         // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
         setNonceInternal(bucket, setMask);
 
+        address mappedScriptAddress = nonceScriptAddress[msg.sender][nonce];
         // if the nonce has been used before, check if the script address matches, and revert if not
-        if (
-            (nonceScriptAddress[msg.sender][nonce] != address(0))
-                && (nonceScriptAddress[msg.sender][nonce] != scriptAddress)
-        ) {
+        if ((mappedScriptAddress != address(0)) && (mappedScriptAddress != scriptAddress)) {
             revert NonceScriptMismatch();
         }
 
@@ -172,7 +170,7 @@ contract QuarkStateManager {
         bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
 
         // if a nonce was cleared, set the nonceScriptAddress to lock nonce re-use to the same script address
-        if (nonceScriptAddress[msg.sender][nonce] == address(0) && !isNonceSetInternal(msg.sender, bucket, setMask)) {
+        if (mappedScriptAddress == address(0) && !isNonceSetInternal(msg.sender, bucket, setMask)) {
             nonceScriptAddress[msg.sender][nonce] = scriptAddress;
         }
 
