@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "../../src/QuarkWallet.sol";
+import "quark-core/src/QuarkWallet.sol";
 
 contract AllowCallbacks {
     function run(address callbackAddress) public {

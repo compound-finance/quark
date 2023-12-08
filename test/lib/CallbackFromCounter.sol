@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "./Counter.sol";
-import "../../src/QuarkScript.sol";
+import "test/lib/Counter.sol";
+import "quark-core/src/QuarkScript.sol";
 
 contract CallbackFromCounter is QuarkScript {
     function doIncrementAndCallback(Counter counter) public {

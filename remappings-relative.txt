@@ -1,0 +1,12 @@
+test=../test
+quark-core=../quark-core/
+quark-core-scripts=../quark-core-scripts/
+terminal-scripts=../terminal-scripts/
+@uniswap/=../lib/
+ds-test/=../lib/forge-std/lib/ds-test/src/
+erc4626-tests/=../lib/openzeppelin-contracts/lib/erc4626-tests/
+forge-std/=../lib/forge-std/src/
+openzeppelin-contracts/=../lib/openzeppelin-contracts/
+openzeppelin/=../lib/openzeppelin-contracts/contracts/
+v3-core/=../lib/v3-core/
+v3-periphery/=../lib/v3-periphery/contracts/

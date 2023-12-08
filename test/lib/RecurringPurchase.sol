@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "../../src/QuarkWallet.sol";
-import "../../src/QuarkScript.sol";
+import "quark-core/src/QuarkWallet.sol";
+import "quark-core/src/QuarkScript.sol";
 import "v3-periphery/interfaces/ISwapRouter.sol";
 import "openzeppelin/token/ERC20/IERC20.sol";
 import "openzeppelin/token/ERC20/utils/SafeERC20.sol";

@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
-import "./../../src/QuarkWallet.sol";
+import "quark-core/src/QuarkWallet.sol";
 
 contract SignatureHelper is Test {
     function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op)

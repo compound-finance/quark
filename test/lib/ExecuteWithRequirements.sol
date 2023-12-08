@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "../../src/QuarkWallet.sol";
-import "../../src/QuarkStateManager.sol";
+import "quark-core/src/QuarkWallet.sol";
+import "quark-core/src/QuarkStateManager.sol";
 
 contract ExecuteWithRequirements {
     error RequirementNotMet(uint96 nonce);
