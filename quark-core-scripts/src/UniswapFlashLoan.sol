@@ -41,7 +41,7 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
      */
     function run(UniswapFlashLoanPayload memory payload) external {
         allowCallback();
-        PoolKey pk = PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee);
+        PoolAddress.PoolKey memory pk = PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee);
         // Reorder token0, token1 to ensure token1 > token0
         if (payload.token0 > payload.token1) {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
