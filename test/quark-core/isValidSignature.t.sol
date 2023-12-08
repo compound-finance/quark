@@ -79,6 +79,7 @@ contract isValidSignatureTest is Test {
     }
 
     /* wallet owned by EOA  */
+
     function testIsValidSignatureForEOAOwner() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -156,7 +157,25 @@ contract isValidSignatureTest is Test {
         aliceWallet.isValidSignature(digest, signature);
     }
 
+    function testRevertsForMessageWithoutDomainTypehash() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
+        // We skip the step of encoding a domain separator around the message
+        bytes32 quarkMsgDigest = aliceWallet.getMessageHashForQuark(abi.encode(structHash));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, quarkMsgDigest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        vm.expectRevert(QuarkWallet.BadSignatory.selector);
+        aliceWallet.isValidSignature(quarkMsgDigest, signature);
+    }
+
     /* wallet owned by smart contract  */
+
     function testReturnsMagicValueForValidSignature() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -254,5 +273,33 @@ contract isValidSignatureTest is Test {
         // Allowances are only set for Alice's first wallet
         assertNotEq(permit2.allowance(address(aliceWallet), USDC, bob), 0);
         assertEq(permit2.allowance(address(aliceWallet2), USDC, bob), 0);
+    }
+
+    function testRevertsForPermit2SignatureWithoutDomainTypehash() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        Permit2Helper.PermitDetails memory permitDetails = Permit2Helper.PermitDetails({
+            token: USDC,
+            amount: 1_000e6,
+            expiration: uint48(block.timestamp + 100),
+            nonce: 0
+        });
+        Permit2Helper.PermitSingle memory permitSingle =
+            Permit2Helper.PermitSingle({details: permitDetails, spender: bob, sigDeadline: block.timestamp + 100});
+        // We skip the step of encoding a domain separator around the message
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, Permit2Helper.hash(permitSingle));
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        assertEq(permit2.allowance(address(aliceWallet), USDC, bob), 0);
+
+        // Signature is invalid
+        vm.expectRevert(QuarkWallet.BadSignatory.selector);
+        permit2.permit(address(aliceWallet), permitSingle, signature);
+
+        assertEq(permit2.allowance(address(aliceWallet), USDC, bob), 0);
     }
 }
