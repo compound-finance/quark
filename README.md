@@ -69,7 +69,7 @@ Quark Wallet is a scriptable wallet located at a counterfactual address derived 
 
 Quark Wallet executes QuarkOperations containing a transaction script (or address pointing to a transaction script) and calldata representing an encoded function call into that script.
 
-QuarkOperations are either directly executed or authorized by signature, and can include replayable transactions and support callbacks for complex operations like flashloans.
+QuarkOperations are either directly executed or authorized by signature, and can include replayable transactions and support callbacks for complex operations like flashloans. See the [Quark Wallet Features](#quark-wallet-features) section for more details.
 
 ### Quark State Manager
 
@@ -105,6 +105,40 @@ flowchart TB
     state -- 5. executeScriptWithNonceLock --> wallet
     wallet -- 6. Executes script\nusing callcode --> script
 ```
+
+## Quark Wallet Features
+
+### Separation of Signer and Executor
+
+The `signer` and `executor` roles are separate roles in the Quark Wallet. The `signer` is able to sign Quark operations that can be executed by the Quark Wallet. The `executor` is able to directly execute scripts on the Quark Wallet. Theoretically, the same address can be both the `signer` and `executor` of a Quark Wallet.
+
+The separation of these two roles allows for a subwallet system, where a wallet can be the `executor` for another wallet but both wallets share the same `signer`. This is discussed in more detail in the [next section](#subwallets).
+
+### Subwallets
+
+Subwallets are Quark wallets controlled by another Quark wallet. Specifically, the subwallet's `executor` is another Quark wallet (main wallet), meaning the main wallet can directly execute scripts on the subwallet. This allows complex interactions that span multiple Quark wallets to be executed via a single signature.
+
+For example, let Wallet A be the `executor` of Wallet B. Alice is the `signer` for Wallet A. If Alice wants to borrow USDC from Comet in Wallet A, transfer the USDC to Wallet B, and then supply the USDC to Comet from Wallet B, she can accomplish this with a single signature of a Quark operation. The final action of "supply USDC to Comet in Wallet B" can be invoked by a direct execution call from Wallet A.
+
+### Replayable Scripts
+
+Replayable scripts are Quark scripts that can re-executed multiple times using the same signature of a Quark operation. More specifically, replayable scripts explicitly clear the nonce used by the transaction (can be done via the `allowReplay` helper function in [`QuarkScript.sol`](./quark-core/src/QuarkScript.sol)) to allow for the same nonce to be re-used with the same script.
+
+An example use-case for replayable scripts is recurring purchases. If a user wanted to buy X WETH using 1,000 USDC every Wednesday until 10,000 USDC is used up, they can achieve this by signing a single Quark operation of a replayable script ([example](./test/lib/RecurringPurchase.sol)). A submitter can then submit this same signed Quark operation every Wednesday to execute the recurring purchase. The replayable script should have checks to ensure conditions are met before purchasing the WETH.
+
+#### Same script address, but different calldata
+
+For replayable transactions where the nonce was cleared, Quark State Manager requires future transactions using that noce to use the same script. However, it does not require the calldata passed to that script to be the same. This means that a cleared nonce can be executed with the same script but different calldata.
+
+Allowing the calldata to change greatly increases the flexibility of replayable scripts. One can think of a replayable script like a submodule of a wallet that supports different functionality. In the [example script](./test/lib/RecurringPurchase.sol) for recurring purchases, there is a separate `cancel` function that the user can sign to cancel the nonce, and therefore, cancel all the recurring purchases that use this nonce. The user can also also sign multiple `purchase` calls, each with different purchase configurations. This means that multiple variations of recurring purchases can exist on the same nonce and all be cancelled together.
+
+One danger of flexible calldata in replayable scripts is that previously signed calldata can always be re-executed. The Quark system does not disallow previously used calldata when a new calldata is executed. This means that scripts may need to implement their own nonce system if previous calldata need to be invalidated.
+
+### Callbacks
+
+Callbacks are an opt-in feature of Quark scripts that allow for an external contract to call into the Quark script (in the context of the Quark wallet) during the same transaction. An example use-case of callbacks is for Uniswap flashloans ([example script](./quark-core-scripts/src/UniswapFlashLoan.sol)), where the Uniswap pool will callback into the Quark wallet to make sure that the loan is paid off before ending the transaction.
+
+Callbacks need to be explicitly turned on by Quark scripts. Specifically, this is done by writing the callback target address to the callback storage slot in Quark State Manager (can be done via the `allowCallback` helper function in [`QuarkScript.sol`](./quark-core/src/QuarkScript.sol)).
 
 ## Fork tests and NODE_PROVIDER_BYPASS_KEY
 
