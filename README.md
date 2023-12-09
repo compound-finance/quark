@@ -83,7 +83,7 @@ One danger of flexible calldata in replayable scripts is that previously signed 
 
 ### Callbacks
 
-Callbacks are an opt-in feature of Quark scripts that allow for an external contract to call into the Quark script (in the context of the Quark wallet) during the same transaction. An example use-case of callbacks is Uniswap flashloans ([example script](./quark-core-scripts/src/UniswapFlashLoan.sol)), where the Uniswap pool will callback into the Quark wallet to make sure that the loan is paid off before ending the transaction.
+Callbacks are an opt-in feature of Quark scripts that allow for an external contract to call into the Quark script (in the context of the Quark wallet) during the same transaction. An example use-case of callbacks is Uniswap flashloans ([example script](./quark-core-scripts/src/UniswapFlashLoan.sol)), where the Uniswap pool will call back into the Quark wallet to make sure that the loan is paid off before ending the transaction.
 
 Callbacks need to be explicitly turned on by Quark scripts. Specifically, this is done by writing the callback target address to the callback storage slot in Quark State Manager (can be done via the `allowCallback` helper function in [`QuarkScript.sol`](./quark-core/src/QuarkScript.sol)).
 
