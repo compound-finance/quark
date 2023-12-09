@@ -12,9 +12,11 @@ contract RecurringPurchase is QuarkScript {
 
     error PurchaseConditionNotMet();
 
-    // @dev
-    // Note: This script uses the following storage layout:
-    // key: keccak(PurchaseConfig) -> value: PurchaseState
+    /**
+     * @dev Note: This script uses the following storage layout:
+     *         mapping(bytes32 hashedPurchaseConfig => PurchaseState purchaseState)
+     *             where hashedPurchaseConfig = keccak256(PurchaseConfig)
+     */
 
     // TODO: Support exact input swaps
     struct SwapParamsExactOut {
@@ -29,6 +31,7 @@ contract RecurringPurchase is QuarkScript {
         bytes path;
     }
 
+    // TODO: Consider adding a purchaseWindow
     struct PurchaseConfig {
         uint40 interval;
         uint216 totalAmountToPurchase;
@@ -46,7 +49,7 @@ contract RecurringPurchase is QuarkScript {
         bytes32 hashedConfig = hashConfig(config);
         PurchaseState memory purchaseState;
         if (read(hashedConfig) == 0) {
-            purchaseState = PurchaseState({totalPurchased: 0, nextPurchaseTime: 0});
+            purchaseState = PurchaseState({totalPurchased: 0, nextPurchaseTime: uint40(block.timestamp)});
         } else {
             bytes memory prevState = abi.encode(read(hashedConfig));
             uint216 totalPurchased;
@@ -82,7 +85,7 @@ contract RecurringPurchase is QuarkScript {
         PurchaseState memory newPurchaseState = PurchaseState({
             totalPurchased: purchaseState.totalPurchased + uint216(config.swapParams.amount),
             // TODO: or should it be purchaseState.nextPurchaseTime + config.interval?
-            nextPurchaseTime: uint40(block.timestamp) + config.interval
+            nextPurchaseTime: purchaseState.nextPurchaseTime + config.interval
         });
 
         // Write new PurchaseState to storage

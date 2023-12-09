@@ -160,7 +160,7 @@ contract QuarkWalletTest is Test {
     /* ===== replayability tests ===== */
 
     function testCanReplaySameScriptWithDifferentCall() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
@@ -199,7 +199,7 @@ contract QuarkWalletTest is Test {
     }
 
     function testRevertsForReusedNonceWithChangedScript() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
 
@@ -234,7 +234,7 @@ contract QuarkWalletTest is Test {
     }
 
     function testRevertsForReplayOfCanceledScript() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         bytes memory cancelOtherScript = new YulHelper().getDeployed("CancelOtherScript.sol/CancelOtherScript.json");
