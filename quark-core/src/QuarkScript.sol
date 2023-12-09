@@ -26,14 +26,12 @@ contract QuarkScript {
     }
 
     function signer() internal view returns (address) {
-        (bool success, bytes memory signer_) = address(this).staticcall(abi.encodeWithSignature("signer()"));
-        if (!success) revert("no signer");
+        (, bytes memory signer_) = address(this).staticcall(abi.encodeWithSignature("signer()"));
         return abi.decode(signer_, (address));
     }
 
     function executor() internal view returns (address) {
-        (bool success, bytes memory executor_) = address(this).staticcall(abi.encodeWithSignature("executor()"));
-        if (!success) revert("no executor");
+        (, bytes memory executor_) = address(this).staticcall(abi.encodeWithSignature("executor()"));
         return abi.decode(executor_, (address));
     }
 

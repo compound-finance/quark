@@ -117,8 +117,7 @@ contract QuarkWallet is IERC1271 {
      * @dev Internal getter for the signer immutable
      */
     function getSigner() internal view returns (address) {
-        (bool success, bytes memory signer_) = address(this).staticcall(abi.encodeWithSignature("signer()"));
-        if (!success) revert("no signer");
+        (, bytes memory signer_) = address(this).staticcall(abi.encodeWithSignature("signer()"));
         return abi.decode(signer_, (address));
     }
 
@@ -126,8 +125,7 @@ contract QuarkWallet is IERC1271 {
      * @dev Internal getter for the executor immutable
      */
     function getExecutor() internal view returns (address) {
-        (bool success, bytes memory executor_) = address(this).staticcall(abi.encodeWithSignature("executor()"));
-        if (!success) revert("no executor");
+        (, bytes memory executor_) = address(this).staticcall(abi.encodeWithSignature("executor()"));
         return abi.decode(executor_, (address));
     }
 
