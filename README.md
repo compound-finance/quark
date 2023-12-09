@@ -79,7 +79,7 @@ For replayable transactions where the nonce is cleared, Quark State Manager requ
 
 Allowing the calldata to change greatly increases the flexibility of replayable scripts. One can think of a replayable script like a submodule of a wallet that supports different functionality. In the [example script](./test/lib/RecurringPurchase.sol) for recurring purchases, there is a separate `cancel` function that the user can sign to cancel the nonce, and therefore, cancel all the recurring purchases that use this nonce. The user can also also sign multiple `purchase` calls, each with different purchase configurations. This means that multiple variations of recurring purchases can exist on the same nonce and can all be cancelled together.
 
-One danger of flexible calldata in replayable scripts is that previously signed calldata can always be re-executed. The Quark system does not disallow previously used calldata when a new calldata is executed. This means that scripts may need to implement their own nonce system if previous calldata need to be invalidated.
+One danger of flexible calldata in replayable scripts is that previously signed calldata can always be re-executed. The Quark system does not disallow previously used calldata when a new calldata is executed. This means that scripts may need to implement their own method of invalidating previously-used calldata.
 
 ### Callbacks
 
