@@ -71,7 +71,7 @@ For example, let Wallet A be the `executor` of Wallet B. Alice is the `signer` f
 
 Replayable scripts are Quark scripts that can re-executed multiple times using the same signature of a Quark operation. More specifically, replayable scripts explicitly clear the nonce used by the transaction (can be done via the `allowReplay` helper function in [`QuarkScript.sol`](./quark-core/src/QuarkScript.sol)) to allow for the same nonce to be re-used with the same script.
 
-An example use-case for replayable scripts is recurring purchases. If a user wanted to buy X WETH using 1,000 USDC every Wednesday until 10,000 USDC is used up, they can achieve this by signing a single Quark operation of a replayable script ([example](./test/lib/RecurringPurchase.sol)). A submitter can then submit this same signed Quark operation every Wednesday to execute the recurring purchase. The replayable script should have checks to ensure conditions are met before purchasing the WETH.
+An example use-case for replayable scripts is recurring purchases. If a user wanted to buy X WETH using 1,000 USDC every Wednesday until 10,000 USDC is spent, they can achieve this by signing a single Quark operation of a replayable script ([example](./test/lib/RecurringPurchase.sol)). A submitter can then submit this same signed Quark operation every Wednesday to execute the recurring purchase. The replayable script should have checks to ensure conditions are met before purchasing the WETH.
 
 #### Same script address, but different calldata
 
