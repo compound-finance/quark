@@ -48,7 +48,10 @@ contract ProxyDirectTest is Test {
 
         bytes memory testScript = new YulHelper().getDeployed("ProxyDirect.t.sol/TestHarness.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            QuarkWallet(payable(aliceWalletProxy)), testScript, abi.encodeWithSignature("getSignerAndExecutor()"), ScriptType.ScriptAddress
+            QuarkWallet(payable(aliceWalletProxy)),
+            testScript,
+            abi.encodeWithSignature("getSignerAndExecutor()"),
+            ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) =
             new SignatureHelper().signOp(alicePrivateKey, QuarkWallet(payable(aliceWalletProxy)), op);
