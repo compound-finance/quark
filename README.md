@@ -75,7 +75,7 @@ An example use-case for replayable scripts is recurring purchases. If a user wan
 
 #### Same script address, but different calldata
 
-For replayable transactions where the nonce is cleared, Quark State Manager requires future transactions using that nonce to use the same script. This is to ensure that the same nonce is not accidentally used and reserved by two different scripts. However, it does not require the calldata passed to that script to be the same. This means that a cleared nonce can be executed with the same script but different calldata.
+For replayable transactions where the nonce is cleared, Quark State Manager requires future transactions using that nonce to use the same script. This is to ensure that the same nonce is not accidentally used by two different scripts. However, it does not require the calldata passed to that script to be the same. This means that a cleared nonce can be executed with the same script but different calldata.
 
 Allowing the calldata to change greatly increases the flexibility of replayable scripts. One can think of a replayable script like a submodule of a wallet that supports different functionality. In the [example script](./test/lib/RecurringPurchase.sol) for recurring purchases, there is a separate `cancel` function that the user can sign to cancel the nonce, and therefore, cancel all the recurring purchases that use this nonce. The user can also also sign multiple `purchase` calls, each with different purchase configurations. This means that multiple variations of recurring purchases can exist on the same nonce and can all be cancelled together.
 
