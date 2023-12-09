@@ -57,7 +57,7 @@ flowchart TB
 
 ### Separation of Signer and Executor
 
-The `signer` and `executor` roles are separate roles in the Quark Wallet. The `signer` is able to sign Quark operations that can be executed by the Quark Wallet. The `executor` is able to directly execute scripts on the Quark Wallet. Theoretically, the same address can be both the `signer` and `executor` of a Quark Wallet.
+The `signer` and `executor` roles are separate roles in the Quark Wallet. The `signer` is able to sign Quark operations that can be executed by the Quark Wallet. The `executor` is able to directly execute scripts on the Quark Wallet. Theoretically, the same address can be both the `signer` and `executor` of a Quark Wallet. Similarly, the `signer` and/or `executor` can be set to the null address to effectively remove that role from the wallet.
 
 The separation of these two roles allows for a subwallet system, where a wallet can be the `executor` for another wallet but both wallets share the same `signer`. This is discussed in more detail in the [Subwallets section](#subwallets).
 
