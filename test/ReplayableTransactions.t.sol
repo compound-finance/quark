@@ -84,7 +84,7 @@ contract ReplayableTransactionsTest is Test {
 
     // Executes the script once for gas measurement purchases
     function testRecurringPurchaseHappyPath() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
 
         deal(USDC, address(aliceWallet), 100_000e6);
@@ -112,7 +112,7 @@ contract ReplayableTransactionsTest is Test {
     }
 
     function testRecurringPurchaseMultiplePurchases() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
 
         deal(USDC, address(aliceWallet), 100_000e6);
@@ -151,7 +151,7 @@ contract ReplayableTransactionsTest is Test {
     }
 
     function testCancelRecurringPurchase() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
 
         deal(USDC, address(aliceWallet), 100_000e6);
@@ -198,7 +198,7 @@ contract ReplayableTransactionsTest is Test {
     }
 
     function testRecurringPurchaseWithDifferentCalldata() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
 
         deal(USDC, address(aliceWallet), 100_000e6);
@@ -285,7 +285,7 @@ contract ReplayableTransactionsTest is Test {
     }
 
     function testRevertsForPurchaseBeforeNextPurchasePeriod() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
 
         deal(USDC, address(aliceWallet), 100_000e6);
@@ -320,7 +320,7 @@ contract ReplayableTransactionsTest is Test {
     }
 
     function testRevertsForExpiredQuarkOperation() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
 
         deal(USDC, address(aliceWallet), 100_000e6);
@@ -345,7 +345,7 @@ contract ReplayableTransactionsTest is Test {
     }
 
     function testRevertsForExpiredUniswapParams() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
 
         deal(USDC, address(aliceWallet), 100_000e6);
@@ -370,7 +370,7 @@ contract ReplayableTransactionsTest is Test {
     }
 
     function testRevertsForPurchasingOverTheLimit() public {
-        // gas: disable gas metering except while executing operatoins
+        // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
 
         deal(USDC, address(aliceWallet), 100_000e6);
