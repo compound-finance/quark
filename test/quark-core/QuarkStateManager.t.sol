@@ -77,7 +77,7 @@ contract QuarkStateManagerTest is Test {
         stateManager.setActiveNonceAndCallback(0, address(0x123), bytes(""));
     }
 
-    function testScriptAddressIsNull() public {
+    function testRevertsIfScriptAddressIsNull() public {
         // the null script is not allowed, it will revert with EmptyCode
         vm.pauseGasMetering();
         QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
@@ -88,7 +88,7 @@ contract QuarkStateManagerTest is Test {
         assertEq(result, bytes(""));
     }
 
-    function testScriptAddressIsEOA() public {
+    function testRevertsIfScriptAddressIsEOA() public {
         // an EOA can be passed as scriptAddress and it will just return empty bytes
         vm.pauseGasMetering();
         QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
