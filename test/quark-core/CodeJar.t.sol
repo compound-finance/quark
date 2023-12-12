@@ -157,12 +157,7 @@ contract CodeJarTest is Test {
     function testCodeJarCodeDoesNotExistOnEmptyScriptWithETH() public {
         bytes memory code = hex"";
         assertEq(codeJar.codeExists(code), false);
-        bytes memory initCode = abi.encodePacked(hex"63", uint32(code.length), hex"80600e6000396000f3", code);
-        address scriptAddress = address(
-            uint160(
-                uint256(keccak256(abi.encodePacked(bytes1(0xff), address(codeJar), uint256(0), keccak256(initCode))))
-            )
-        );
+        address scriptAddress = codeJar.saveCode(code);
         vm.deal(address(this), 1 ether);
         scriptAddress.call{value: 1}("");
 

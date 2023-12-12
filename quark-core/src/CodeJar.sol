@@ -40,7 +40,6 @@ contract CodeJar {
 
     /**
      * @notice Checks if code was already deployed by CodeJar
-     * @dev Use `saveCode` to get the address of the contract with that code
      * @param code The runtime bytecode of the code to check
      * @return True if code already exists in Code Jar
      */
