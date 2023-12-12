@@ -491,7 +491,7 @@ contract QuarkWalletTest is Test {
     }
 
     /* ===== execution on Precompiles ===== */
-    /* ===== Quark no longer able call precompiles directly due to empty code check, so those direct call tests are commented out ===== */
+    // Quark is no longer able call precompiles directly due to empty code check, so these tests are commented out
 
     function testPrecompileEcRecover() public {
         vm.pauseGasMetering();
