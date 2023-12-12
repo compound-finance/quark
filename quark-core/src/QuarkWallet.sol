@@ -182,7 +182,11 @@ contract QuarkWallet is IERC1271 {
         // if scriptAddress not given, derive deterministic address from bytecode
         address scriptAddress = op.scriptAddress;
         if (scriptAddress == address(0)) {
-            scriptAddress = codeJar.saveCode(op.scriptSource);
+            if (op.scriptSource.length == 0) {
+                revert EmptyCode();
+            } else {
+                scriptAddress = codeJar.saveCode(op.scriptSource);
+            }
         }
 
         return stateManager.setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);

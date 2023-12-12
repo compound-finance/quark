@@ -216,7 +216,7 @@ contract QuarkWalletTest is Test {
 
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             nonce: op1.nonce,
-            scriptAddress: address(0),
+            scriptAddress: address(counter),
             scriptSource: bytes(""),
             scriptCalldata: bytes(""),
             expiry: op1.expiry
