@@ -166,7 +166,7 @@ contract CodeJarTest is Test {
         vm.deal(address(this), 1 ether);
         scriptAddress.call{value: 1}("");
 
-        // Ensure codeExists correctness holds for empty code with natvie token ETH
+        // Ensure codeExists correctness holds for empty code with ETH
         assertEq(codeJar.codeExists(code), false);
     }
 
