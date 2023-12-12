@@ -154,7 +154,7 @@ contract CodeJarTest is Test {
         assertEq(returnData, hex"abcd");
     }
 
-    function testCodeJarCodeExistsCorrectnessOnEmptyCodeAddressWithETH() public {
+    function testCodeJarCodeDoesNotExistOnEmptyScriptWithETH() public {
         bytes memory code = hex"";
         assertEq(codeJar.codeExists(code), false);
         bytes memory initCode = abi.encodePacked(hex"63", uint32(code.length), hex"80600e6000396000f3", code);
