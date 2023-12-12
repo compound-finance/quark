@@ -59,6 +59,9 @@ contract QuarkWallet is IERC1271 {
     error SignatureExpired();
     error Unauthorized();
 
+    /// @notice Event emitted when a Quark script is executed by this Quark wallet
+    event ExecuteQuarkScript(bool indexed isDirectExecute, address indexed submitter, address indexed scriptAddress, bytes scriptCalldata, uint96 nonce);
+
     /// @notice Address of CodeJar contract used to deploy transaction script source code
     CodeJar public immutable codeJar;
 
@@ -169,6 +172,8 @@ contract QuarkWallet is IERC1271 {
             scriptAddress = codeJar.saveCode(op.scriptSource);
         }
 
+        emit ExecuteQuarkScript(false, msg.sender, scriptAddress, op.scriptCalldata, op.nonce);
+
         return stateManager.setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
     }
 
@@ -188,6 +193,9 @@ contract QuarkWallet is IERC1271 {
         if (msg.sender != HasSignerExecutor(address(this)).executor()) {
             revert Unauthorized();
         }
+
+        emit ExecuteQuarkScript(true, msg.sender, scriptAddress, scriptCalldata, nonce);
+
         return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
     }
 

@@ -29,6 +29,13 @@ import {CancelOtherScript} from "test/lib/CancelOtherScript.sol";
 contract QuarkWalletTest is Test {
     event Ping(uint256);
     event ClearNonce(address indexed wallet, uint96 nonce);
+    event ExecuteQuarkScript(
+        bool indexed isDirectExecute,
+        address indexed submitter,
+        address indexed scriptAddress,
+        bytes scriptCalldata,
+        uint96 nonce
+    );
 
     CodeJar public codeJar;
     Counter public counter;
@@ -112,6 +119,58 @@ contract QuarkWalletTest is Test {
         (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
         assertEq(msgSender, address(aliceWalletExecutable));
         assertEq(msgValue, 0);
+    }
+
+    /* ===== event emission tests ===== */
+
+    function testEmitsEventsInExecuteQuarkOperation() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        QuarkWallet.QuarkOperation memory opWithScriptAddress = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptAddress
+        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, opWithScriptAddress);
+        QuarkWallet.QuarkOperation memory opWithScriptSource = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptSource
+        );
+        opWithScriptSource.nonce += 1;
+        (uint8 v2, bytes32 r2, bytes32 s2) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, opWithScriptSource);
+        address scriptAddress = opWithScriptAddress.scriptAddress;
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, true);
+        emit ExecuteQuarkScript(
+            false, address(this), scriptAddress, opWithScriptAddress.scriptCalldata, opWithScriptAddress.nonce
+        );
+        aliceWallet.executeQuarkOperation(opWithScriptAddress, v, r, s);
+
+        vm.expectEmit(true, true, true, true);
+        emit ExecuteQuarkScript(
+            false, address(this), scriptAddress, opWithScriptSource.scriptCalldata, opWithScriptSource.nonce
+        );
+        aliceWallet.executeQuarkOperation(opWithScriptSource, v2, r2, s2);
+    }
+
+    function testEmitsEventsInDirectExecute() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
+        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
+        address scriptAddress = codeJar.saveCode(getMessageDetails);
+        bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
+
+        vm.startPrank(aliceAccount);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, true);
+        emit ExecuteQuarkScript(true, address(aliceAccount), scriptAddress, call, nonce);
+        aliceWalletExecutable.executeScript(nonce, scriptAddress, call);
     }
 
     /* ===== general invariant tests ===== */
