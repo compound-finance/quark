@@ -182,7 +182,7 @@ contract UniswapSwapActions {
      */
     function swapAssetExactOut(SwapParamsExactOut calldata params) external {
         IERC20(params.tokenFrom).forceApprove(params.uniswapRouter, params.amountInMaximum);
-        ISwapRouter(params.uniswapRouter).exactOutput(
+        uint256 amountIn = ISwapRouter(params.uniswapRouter).exactOutput(
             ISwapRouter.ExactOutputParams({
                 path: params.path,
                 recipient: params.recipient,
@@ -191,8 +191,11 @@ contract UniswapSwapActions {
                 amountInMaximum: params.amountInMaximum
             })
         );
-        // Reset approved leftover input token back to 0
-        IERC20(params.tokenFrom).forceApprove(params.uniswapRouter, 0);
+
+        // Reset approved leftover input token back to 0, if there is any leftover approved amount
+        if (amountIn < params.amountInMaximum) {
+            IERC20(params.tokenFrom).forceApprove(params.uniswapRouter, 0);
+        }
     }
 }
 
