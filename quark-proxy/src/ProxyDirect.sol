@@ -9,7 +9,7 @@ contract ProxyDirect {
     address public immutable executor;
 
     /// @notice Address of the QuarkWallet implementation contract
-    address public immutable walletImplementation;
+    address internal immutable walletImplementation;
 
     /**
      * @notice Construct a new QuarkWallet
