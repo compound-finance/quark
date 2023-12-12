@@ -110,7 +110,7 @@ contract QuarkWalletTest is Test {
 
     /* ===== general invariant tests ===== */
 
-    function testAllowAllNullNoopScript() public {
+    function testDisallowAllNullNoopScript() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
@@ -126,15 +126,15 @@ contract QuarkWalletTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
 
-        // operation containing no script or calldata is allowed
+        // operation containing no script will revert
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
-        assertEq(stateManager.isNonceSet(address(aliceWallet), op.nonce), true);
 
-        // direct execution of the null script with no calldata is allowed
+        // direct execution of the null script with no calldata will revert
         uint96 nonce = stateManager.nextNonce(address(aliceWallet));
         vm.prank(aliceWallet.executor());
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
         aliceWallet.executeScript(nonce, address(0), bytes(""));
-        assertEq(stateManager.isNonceSet(address(aliceWallet), nonce), true);
     }
 
     function testRevertsForOperationWithAddressAndSource() public {
@@ -399,7 +399,7 @@ contract QuarkWalletTest is Test {
         _testAtomicMaxCounter(ScriptType.ScriptAddress);
     }
 
-    function _testNoopScriptIsValid(ScriptType scriptType) internal {
+    function _testEmptyScriptRevert(ScriptType scriptType) internal {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -409,17 +409,16 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
-        // expect the nonce to be spent by the no-op script
-        assertEq(stateManager.isNonceSet(address(aliceWallet), op.nonce), true);
     }
 
-    function testNoopScriptIsValidForScriptSource() public {
-        _testNoopScriptIsValid(ScriptType.ScriptSource);
+    function testEmptyScriptRevertForScriptSource() public {
+        _testEmptyScriptRevert(ScriptType.ScriptSource);
     }
 
-    function testNoopScriptIsValidForScriptAddress() public {
-        _testNoopScriptIsValid(ScriptType.ScriptAddress);
+    function testEmptyScriptRevertForScriptAddress() public {
+        _testEmptyScriptRevert(ScriptType.ScriptAddress);
     }
 
     function _testQuarkOperationRevertsIfCallReverts(ScriptType scriptType) internal {
