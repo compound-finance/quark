@@ -39,6 +39,7 @@ library QuarkWalletMetadata {
 contract QuarkWallet is IERC1271 {
     error AmbiguousScript();
     error BadSignatory();
+    error EmptyCode();
     error InvalidEIP1271Signature();
     error InvalidSignature();
     error NoActiveCallback();
@@ -282,6 +283,9 @@ contract QuarkWallet is IERC1271 {
         returns (bytes memory)
     {
         require(msg.sender == address(stateManager));
+        if (scriptAddress.code.length == 0) {
+            revert EmptyCode();
+        }
 
         bool success;
         uint256 returnSize;

@@ -77,28 +77,25 @@ contract QuarkStateManagerTest is Test {
         stateManager.setActiveNonceAndCallback(0, address(0x123), bytes(""));
     }
 
-    function testScriptAddressIsNull() public {
-        // the null script is not special: since it can never run any code, it just kills the nonce
+    function testRevertsIfScriptAddressIsNull() public {
+        // the null script is not allowed, it will revert with EmptyCode
         vm.pauseGasMetering();
         QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
         vm.resumeGasMetering();
         vm.prank(address(wallet));
-        /* although nonce=0 scriptAddress=0 is a zero-value for activeNonceScript, since the null script
-         * cannot ever run any code, we do not need to care: we won't ever end up in a NonceScriptMismatch()
-         * revert case since no active-nonce-gated operations can be invoked.
-         */
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
         bytes memory result = stateManager.setActiveNonceAndCallback(0, address(0), bytes(""));
         assertEq(result, bytes(""));
     }
 
-    function testScriptAddressIsEOA() public {
+    function testRevertsIfScriptAddressIsEOA() public {
         // an EOA can be passed as scriptAddress and it will just return empty bytes
         vm.pauseGasMetering();
         QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
         vm.resumeGasMetering();
         vm.prank(address(wallet));
-        bytes memory result = stateManager.setActiveNonceAndCallback(0, address(0x123), bytes(""));
-        assertEq(result, bytes(""));
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
+        stateManager.setActiveNonceAndCallback(0, address(0x123), bytes(""));
     }
 
     function testReadStorageForWallet() public {
