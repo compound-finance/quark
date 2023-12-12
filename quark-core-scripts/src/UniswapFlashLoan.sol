@@ -47,7 +47,7 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
             (payload.token0, payload.token1) = (payload.token1, payload.token0);
             (payload.amount0, payload.amount1) = (payload.amount1, payload.amount0);
         }
-        IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), pk)).flash(
+        IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), poolKey)).flash(
             address(this),
             payload.amount0,
             payload.amount1,
