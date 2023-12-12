@@ -58,6 +58,12 @@ contract QuarkWallet is IERC1271 {
     /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
     QuarkStateManager public immutable stateManager;
 
+    /// @notice EIP-712 domain separator
+    bytes32 internal immutable domainSeparator;
+
+    /// @notice Cached chain ID used to determine if domain separator should be recalculated
+    uint256 internal immutable cachedChainId;
+
     /// @notice Name of contract
     string public constant NAME = QuarkWalletMetadata.NAME;
 
@@ -111,6 +117,10 @@ contract QuarkWallet is IERC1271 {
         executor = executor_;
         codeJar = codeJar_;
         stateManager = stateManager_;
+        domainSeparator = keccak256(
+            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this))
+        );
+        cachedChainId = block.chainid;
     }
 
     /**
@@ -202,9 +212,15 @@ contract QuarkWallet is IERC1271 {
      * @return Domain separator
      */
     function getDomainSeparator() internal view returns (bytes32) {
-        return keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this))
-        );
+        if (block.chainid == cachedChainId) {
+            return domainSeparator;
+        } else {
+            return keccak256(
+                abi.encode(
+                    DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this)
+                )
+            );
+        }
     }
 
     /**
