@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
+import {QuarkWalletMetadata} from "quark-core/src/QuarkWallet.sol";
+
 contract ProxyDirect {
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
     address public immutable signer;
@@ -10,6 +12,8 @@ contract ProxyDirect {
 
     /// @notice Address of the QuarkWallet implementation contract
     address public immutable walletImplementation;
+
+    bytes32 public immutable domainSeparator;
 
     /**
      * @notice Construct a new QuarkWallet
@@ -21,12 +25,21 @@ contract ProxyDirect {
         signer = signer_;
         executor = executor_;
         walletImplementation = implementation_;
+        domainSeparator = keccak256(
+            abi.encode(
+                QuarkWalletMetadata.DOMAIN_TYPEHASH,
+                keccak256(bytes(QuarkWalletMetadata.NAME)),
+                keccak256(bytes(QuarkWalletMetadata.VERSION)),
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
     /**
      * @notice Proxy calls to the underlying wallet implementation
      */
-    fallback(bytes calldata /* data */) external payable returns (bytes memory) {
+    fallback(bytes calldata /* data */ ) external payable returns (bytes memory) {
         address walletImplementation_ = walletImplementation;
         assembly {
             let calldataLen := calldatasize()
@@ -34,9 +47,7 @@ contract ProxyDirect {
             let success := delegatecall(gas(), walletImplementation_, 0x00, calldataLen, 0x00, 0)
             let returnSize := returndatasize()
             returndatacopy(0, 0, returnSize)
-            if success {
-                return(0, returnSize)
-            }
+            if success { return(0, returnSize) }
 
             revert(0, returnSize)
         }
