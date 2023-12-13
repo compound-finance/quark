@@ -12,3 +12,8 @@ test = "../test/quark-proxy"
 optimizer = true
 optimizer_runs = 1
 bytecode_hash = "none"
+
+[profile.ir]
+via_ir = true
+extra_output = [ "ir" ]
+extra_output_files = [ "ir" ]
