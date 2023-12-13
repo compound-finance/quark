@@ -59,10 +59,10 @@ contract QuarkWallet is IERC1271 {
     QuarkStateManager public immutable stateManager;
 
     /// @notice EIP-712 domain separator
-    bytes32 public immutable domainSeparator;
+    bytes32 internal immutable domainSeparator;
 
     /// @notice Cached chain ID used to determine if domain separator should be recalculated
-    uint256 public immutable cachedChainId;
+    uint256 internal immutable cachedChainId;
 
     /// @notice Name of contract
     string public constant NAME = QuarkWalletMetadata.NAME;
@@ -140,23 +140,6 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @dev Returns the domain separator for this Quark wallet
-     * @return Domain separator
-     */
-    function getDomainSeparator() internal view returns (bytes32) {
-        if (block.chainid == cachedChainId) {
-            (, bytes memory domainSeparator_) = address(this).staticcall(abi.encodeWithSignature("domainSeparator()"));
-            return abi.decode(domainSeparator_, (bytes32));
-        } else {
-            return keccak256(
-                abi.encode(
-                    DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this)
-                )
-            );
-        }
-    }
-
-    /**
      * @notice Execute a QuarkOperation via signature
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
@@ -165,7 +148,6 @@ contract QuarkWallet is IERC1271 {
      * @param s EIP-712 signature s value
      * @return return value from the executed operation
      */
-
     function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
         external
         returns (bytes memory)
@@ -227,6 +209,22 @@ contract QuarkWallet is IERC1271 {
             revert Unauthorized();
         }
         return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
+    }
+
+    /**
+     * @dev Returns the domain separator for this Quark wallet
+     * @return Domain separator
+     */
+    function getDomainSeparator() internal view returns (bytes32) {
+        if (block.chainid == cachedChainId) {
+            return domainSeparator;
+        } else {
+            return keccak256(
+                abi.encode(
+                    DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)), block.chainid, address(this)
+                )
+            );
+        }
     }
 
     /**
