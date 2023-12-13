@@ -40,7 +40,6 @@ contract CodeJar {
 
     /**
      * @notice Checks if code was already deployed by CodeJar
-     * @dev Use `saveCode` to get the address of the contract with that code
      * @param code The runtime bytecode of the code to check
      * @return True if code already exists in Code Jar
      */
@@ -48,7 +47,7 @@ contract CodeJar {
         bytes memory initCode = getInitCode(code);
         address codeAddress = getCodeAddress(initCode);
 
-        return codeAddress.codehash == keccak256(code);
+        return codeAddress.code.length != 0 && codeAddress.codehash == keccak256(code);
     }
 
     /**

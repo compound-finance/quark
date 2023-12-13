@@ -84,16 +84,15 @@ contract CodeJarTest is Test {
     }
 
     function testCodeJarInputVariety() public {
-        bytes[] memory scripts = new bytes[](8);
-        scripts[0] = hex"";
-        scripts[1] = hex"00";
-        scripts[2] = hex"11";
-        scripts[3] = hex"112233";
-        scripts[4] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
-        scripts[5] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
-        scripts[6] =
+        bytes[] memory scripts = new bytes[](7);
+        scripts[0] = hex"00";
+        scripts[1] = hex"11";
+        scripts[2] = hex"112233";
+        scripts[3] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
+        scripts[4] = hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
+        scripts[5] =
             hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
-        scripts[7] =
+        scripts[6] =
             hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
 
         for (uint8 i = 0; i < scripts.length; i++) {
@@ -153,6 +152,17 @@ contract CodeJarTest is Test {
         (bool success, bytes memory returnData) = scriptAddress.call(hex"");
 
         assertEq(returnData, hex"abcd");
+    }
+
+    function testCodeJarCodeDoesNotExistOnEmptyScriptWithETH() public {
+        bytes memory code = hex"";
+        assertEq(codeJar.codeExists(code), false);
+        address scriptAddress = codeJar.saveCode(code);
+        vm.deal(address(this), 1 ether);
+        scriptAddress.call{value: 1}("");
+
+        // Ensure codeExists correctness holds for empty code with ETH
+        assertEq(codeJar.codeExists(code), false);
     }
 
     // Note: cannot test code too large, as overflow impossible to test
