@@ -5,7 +5,7 @@ import "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
 
 import {CodeJar} from "quark-core/src/CodeJar.sol";
-import {ProxyDirect} from "quark-proxy/src/ProxyDirect.sol";
+import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 
@@ -13,14 +13,14 @@ import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-contract ProxyDirectTest is Test {
+contract QuarkMinimalProxyTest is Test {
     CodeJar public codeJar;
     QuarkWallet public walletImplementation;
     QuarkStateManager public stateManager;
 
     uint256 alicePrivateKey = 0x8675309;
     address aliceAccount;
-    ProxyDirect public aliceWalletProxy;
+    QuarkMinimalProxy public aliceWalletProxy;
 
     constructor() {
         codeJar = new CodeJar();
@@ -35,7 +35,7 @@ contract ProxyDirectTest is Test {
         aliceAccount = vm.addr(alicePrivateKey);
         console.log("aliceAccount: %s", aliceAccount);
 
-        aliceWalletProxy = new ProxyDirect(address(walletImplementation), aliceAccount, address(0xabc));
+        aliceWalletProxy = new QuarkMinimalProxy(address(walletImplementation), aliceAccount, address(0xabc));
         console.log("aliceWalletProxy deployed to %s", address(aliceWalletProxy));
     }
 
@@ -46,7 +46,7 @@ contract ProxyDirectTest is Test {
         assertEq(aliceWalletProxy.signer(), aliceAccount);
         assertEq(aliceWalletProxy.executor(), address(0xabc));
 
-        bytes memory testScript = new YulHelper().getDeployed("ProxyDirect.t.sol/TestHarness.json");
+        bytes memory testScript = new YulHelper().getDeployed("QuarkMinimalProxy.t.sol/TestHarness.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             QuarkWallet(payable(aliceWalletProxy)),
             testScript,

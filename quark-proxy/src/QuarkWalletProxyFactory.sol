@@ -6,7 +6,7 @@ import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkStateManager.sol";
 import "quark-core/src/AbstractQuarkWalletFactory.sol";
 
-import "quark-proxy/src/ProxyDirect.sol";
+import "quark-proxy/src/QuarkMinimalProxy.sol";
 
 /**
  * @title Quark Wallet Proxy Factory
@@ -66,7 +66,7 @@ contract QuarkWalletProxyFactory is AbstractQuarkWalletFactory {
             executor = address(0);
         }
         address payable proxyAddress =
-            payable(address(new ProxyDirect{salt: salt}(walletImplementation, signer, executor)));
+            payable(address(new QuarkMinimalProxy{salt: salt}(walletImplementation, signer, executor)));
         emit WalletDeploy(signer, executor, proxyAddress, salt);
         return proxyAddress;
     }
@@ -105,7 +105,7 @@ contract QuarkWalletProxyFactory is AbstractQuarkWalletFactory {
                                 salt,
                                 keccak256(
                                     abi.encodePacked(
-                                        type(ProxyDirect).creationCode,
+                                        type(QuarkMinimalProxy).creationCode,
                                         abi.encode(walletImplementation),
                                         abi.encode(signer),
                                         abi.encode(executor)
