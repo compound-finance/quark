@@ -11,10 +11,11 @@ import {QuarkWallet, HasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 abstract contract QuarkScript {
     error ReentrantCall();
 
-    /// @notice storage location for the re-entrancy guard
+    /// @notice Storage location for the re-entrancy guard
     bytes32 internal constant REENTRANCY_FLAG = keccak256("quark.scripts.reentrancy.guard.v1");
 
-    modifier nonReentrant() {
+    /// @notice Safe, but gassier version of a re-entrancy guard that writes the flag to the QuarkStateManager
+    modifier nonReentrantSafe() {
         if (read(REENTRANCY_FLAG) == bytes32(uint256(1))) {
             revert ReentrantCall();
         }
@@ -25,7 +26,11 @@ abstract contract QuarkScript {
         write(REENTRANCY_FLAG, bytes32(uint256(0)));
     }
 
-    modifier nonReentrantLocal() {
+    /**
+     * @notice Cheaper version of a re-entrancy guard that writes the flag to the wallet's storage
+     * @dev Note: Use with caution; make sure that other scripts do not overwrite this storage
+     */
+    modifier nonReentrantUnsafe() {
         bytes32 slot = REENTRANCY_FLAG;
         uint256 status;
         assembly ("memory-safe") {

@@ -208,7 +208,7 @@ contract TransferActions is QuarkScript {
      * @param recipient The recipient address
      * @param amount The amount to transfer
      */
-    function transferERC20Token(address token, address recipient, uint256 amount) external nonReentrantLocal {
+    function transferERC20Token(address token, address recipient, uint256 amount) external nonReentrantUnsafe {
         IERC20(token).safeTransfer(recipient, amount);
     }
 
@@ -217,7 +217,7 @@ contract TransferActions is QuarkScript {
      * @param recipient The recipient address
      * @param amount The amount to transfer
      */
-    function transferNativeToken(address recipient, uint256 amount) external nonReentrantLocal {
+    function transferNativeToken(address recipient, uint256 amount) external nonReentrantUnsafe {
         (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
         if (!success) {
             revert TerminalErrors.TransferFailed(data);
