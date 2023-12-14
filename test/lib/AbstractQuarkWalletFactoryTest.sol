@@ -17,8 +17,8 @@ import "quark-core-scripts/src/Ethcall.sol";
 abstract contract AbstractQuarkWalletFactoryTest is Test {
     event WalletDeploy(address indexed account, address indexed executor, address walletAddress, bytes32 salt);
 
-    CodeJar public codeJar;                    // implementation test suite should set this in constructor
-    QuarkStateManager public stateManager;     // implementation test suite should set this in constructor
+    CodeJar public codeJar; // implementation test suite should set this in constructor
+    QuarkStateManager public stateManager; // implementation test suite should set this in constructor
     AbstractQuarkWalletFactory public factory; // implementation test suite should set this in constructor
 
     uint256 alicePrivateKey = 0xa11ce;
