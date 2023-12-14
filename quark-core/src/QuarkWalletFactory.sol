@@ -52,8 +52,9 @@ contract QuarkWalletFactory {
         address executor;
         if (salt != DEFAULT_SALT) {
             executor = walletAddressForSignerWithSalt(signer, DEFAULT_SALT);
+        } else {
+            executor = address(0);
         }
-
         address payable walletAddress =
             payable(address(new QuarkWallet{salt: salt}(signer, executor, codeJar, stateManager)));
         emit WalletDeploy(signer, executor, walletAddress, salt);
