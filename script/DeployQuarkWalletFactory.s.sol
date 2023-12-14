@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {CodeJarFactory} from "quark-core/src/CodeJarFactory.sol";
 import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
 import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
 
@@ -33,9 +34,15 @@ contract DeployQuarkWalletFactory is Script {
         vm.startBroadcast(deployer);
 
         console.log("=============================================================");
+        console.log("Deploying CodeJar");
+
+        CodeJarFactory codeJarFactory = new CodeJarFactory();
+        CodeJar codeJar = codeJarFactory.codeJar();
+
+        console.log("=============================================================");
         console.log("Deploying QuarkWalletFactory");
 
-        quarkWalletFactory = new QuarkWalletFactory();
+        quarkWalletFactory = new QuarkWalletFactory(codeJar);
 
         console.log("QuarkWalletFactory Deployed:", address(quarkWalletFactory));
 
@@ -46,8 +53,6 @@ contract DeployQuarkWalletFactory is Script {
         console.log("BatchExecutor Deployed:", address(batchExecutor));
 
         console.log("Deploying Core Scripts");
-
-        CodeJar codeJar = quarkWalletFactory.codeJar();
 
         ethcall = Ethcall(codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "Ethcall.sol/Ethcall.json"))));
         console.log("Ethcall Deployed:", address(ethcall));

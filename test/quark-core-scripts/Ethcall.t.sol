@@ -7,6 +7,7 @@ import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
 import "forge-std/interfaces/IERC20.sol";
 
+import "quark-core/src/CodeJarFactory.sol";
 import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkWalletFactory.sol";
 
@@ -42,7 +43,9 @@ contract EthcallTest is Test {
         );
 
         counter = new Counter();
-        factory = new QuarkWalletFactory();
+        CodeJarFactory codeJarFactory = new CodeJarFactory();
+        CodeJar codeJar = codeJarFactory.codeJar();
+        factory = new QuarkWalletFactory(codeJar);
         counter.setNumber(0);
         factory.codeJar().saveCode(ethcall);
     }

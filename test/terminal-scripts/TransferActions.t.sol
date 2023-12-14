@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
 
+import "quark-core/src/CodeJarFactory.sol";
 import "quark-core/src/CodeJar.sol";
 import "quark-core/src/QuarkScript.sol";
 import "quark-core/src/QuarkWallet.sol";
@@ -50,7 +51,9 @@ contract TransferActionsTest is Test {
             ),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletFactory();
+        CodeJarFactory codeJarFactory = new CodeJarFactory();
+        codeJar = codeJarFactory.codeJar();
+        factory = new QuarkWalletFactory(codeJar);
         codeJar = factory.codeJar();
     }
 

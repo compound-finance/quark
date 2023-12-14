@@ -8,6 +8,7 @@ import {Counter} from "test/lib/Counter.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {YulHelper} from "test/lib/YulHelper.sol";
 
+import {CodeJarFactory} from "quark-core/src/CodeJarFactory.sol";
 import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
@@ -25,7 +26,9 @@ contract QuarkWalletFactoryTest is Test {
     address bob = address(11);
 
     constructor() {
-        factory = new QuarkWalletFactory();
+        CodeJarFactory codeJarFactory = new CodeJarFactory();
+        CodeJar codeJar = codeJarFactory.codeJar();
+        factory = new QuarkWalletFactory(codeJar);
         console.log("QuarkWalletFactory deployed to: %s", address(factory));
 
         counter = new Counter();

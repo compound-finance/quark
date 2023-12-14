@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 
+import "quark-core/src/CodeJarFactory.sol";
 import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkWalletFactory.sol";
 
@@ -53,7 +54,9 @@ contract MulticallTest is Test {
             ),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletFactory();
+        CodeJarFactory codeJarFactory = new CodeJarFactory();
+        CodeJar codeJar = codeJarFactory.codeJar();
+        factory = new QuarkWalletFactory(codeJar);
         counter = new Counter();
         counter.setNumber(0);
         ethcallAddress = factory.codeJar().saveCode(ethcall);
