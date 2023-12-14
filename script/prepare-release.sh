@@ -13,8 +13,11 @@ release_name="release-v${release_date}+${version_hash}"
 artifact_name="quark-out.${release_name}.zip"
 artifact_note="Compiled ABI"
 
+printf 'building full project...\n'
+forge build
+
 printf 'preparing release archive "%s"...\n' ${release_name}
-zip "${artifact_name}" out/*
+zip --recurse-paths "${artifact_name}" out/*
 
 # `gh release view` defaults to the 'latest' release
 previous_release_tag=$(gh release view --json tagName --jq '.tagName' || :)
