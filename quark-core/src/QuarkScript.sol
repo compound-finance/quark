@@ -25,6 +25,25 @@ abstract contract QuarkScript {
         write(REENTRANCY_FLAG, bytes32(uint256(0)));
     }
 
+    modifier nonReentrantLocal() {
+        bytes32 slot = REENTRANCY_FLAG;
+        uint256 status;
+        assembly ("memory-safe") {
+            status := sload(slot)
+        }
+
+        if (status != 0) revert ReentrantCall();
+        assembly ("memory-safe") {
+            sstore(slot, 1)
+        }
+
+        _;
+
+        assembly ("memory-safe") {
+            sstore(slot, 0)
+        }
+    }
+
     function signer() internal view returns (address) {
         return HasSignerExecutor(address(this)).signer();
     }
