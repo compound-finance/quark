@@ -2,6 +2,8 @@
 pragma solidity 0.8.23;
 
 import {QuarkWallet, HasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
+import "quark-core/src/Simple.sol";
+import "quark-core/src/SimpleDeployed.sol";
 
 /**
  * @title Quark Script
