@@ -46,7 +46,7 @@ contract QuarkMinimalProxyTest is Test {
         assertEq(aliceWalletProxy.signer(), aliceAccount);
         assertEq(aliceWalletProxy.executor(), address(0xabc));
 
-        bytes memory testScript = new YulHelper().getDeployed("ProxyDirect.t.sol/TestHarness.json");
+        bytes memory testScript = new YulHelper().getDeployed("QuarkMinimalProxy.t.sol/TestHarness.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             QuarkWallet(payable(aliceWalletProxy)),
             testScript,
