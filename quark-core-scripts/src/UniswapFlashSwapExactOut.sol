@@ -11,7 +11,7 @@ import "quark-core/src/QuarkScript.sol";
 import "quark-core-scripts/src/vendor/uniswap_v3_periphery/PoolAddress.sol";
 import "quark-core-scripts/src/lib/UniswapFactoryAddress.sol";
 
-contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
+contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, UniswapFactoryAddress, QuarkScript {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
@@ -50,7 +50,7 @@ contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
         allowCallback();
         bool zeroForOne = payload.tokenIn < payload.tokenOut;
         PoolAddress.PoolKey memory poolKey = PoolAddress.getPoolKey(payload.tokenIn, payload.tokenOut, payload.fee);
-        IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), poolKey)).swap(
+        IUniswapV3Pool(PoolAddress.computeAddress(getUniswapFactoryAddress(), poolKey)).swap(
             address(this),
             zeroForOne,
             -payload.amountOut.toInt256(),
@@ -76,7 +76,7 @@ contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
         FlashSwapExactOutInput memory input = abi.decode(data, (FlashSwapExactOutInput));
         IUniswapV3Pool pool =
-            IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), input.poolKey));
+            IUniswapV3Pool(PoolAddress.computeAddress(getUniswapFactoryAddress(), input.poolKey));
         if (msg.sender != address(pool)) {
             revert InvalidCaller();
         }

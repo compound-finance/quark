@@ -10,7 +10,7 @@ import "quark-core/src/QuarkScript.sol";
 import "quark-core-scripts/src/vendor/uniswap_v3_periphery/PoolAddress.sol";
 import "quark-core-scripts/src/lib/UniswapFactoryAddress.sol";
 
-contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
+contract UniswapFlashLoan is IUniswapV3FlashCallback, UniswapFactoryAddress, QuarkScript {
     using SafeERC20 for IERC20;
 
     error InvalidCaller();
@@ -48,7 +48,7 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
         }
         IUniswapV3Pool(
             PoolAddress.computeAddress(
-                UniswapFactoryAddress.getAddress(), PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee)
+                getUniswapFactoryAddress(), PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee)
             )
         ).flash(
             address(this),
@@ -75,7 +75,7 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
     function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {
         FlashLoanCallbackPayload memory input = abi.decode(data, (FlashLoanCallbackPayload));
         IUniswapV3Pool pool =
-            IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), input.poolKey));
+            IUniswapV3Pool(PoolAddress.computeAddress(getUniswapFactoryAddress(), input.poolKey));
         if (msg.sender != address(pool)) {
             revert InvalidCaller();
         }
