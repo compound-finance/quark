@@ -174,9 +174,9 @@ contract QuarkWallet is IERC1271 {
         if (scriptAddress == address(0)) {
             if (op.scriptSource.length == 0) {
                 revert EmptyCode();
-            } else {
-                scriptAddress = codeJar.saveCode(op.scriptSource);
             }
+
+            scriptAddress = codeJar.saveCode(op.scriptSource);
         }
 
         return stateManager.setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
