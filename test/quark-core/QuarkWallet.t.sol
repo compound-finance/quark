@@ -8,6 +8,8 @@ import "quark-core/src/CodeJar.sol";
 import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkStateManager.sol";
 
+import "quark-core-scripts/src/Ethcall.sol";
+
 import "test/lib/Logger.sol";
 import "test/lib/Counter.sol";
 import "test/lib/Reverts.sol";
@@ -273,6 +275,64 @@ contract QuarkWalletTest is Test {
     }
 
     /* ===== direct execution path tests ===== */
+
+    function testDirectExecuteFromEOA() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        address incrementerAddress = codeJar.saveCode(incrementer);
+        uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
+        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
+
+        assertEq(counter.number(), 0);
+        assertEq(stateManager.nextNonce(address(aliceWalletExecutable)), 0);
+
+        // act as the executor for the wallet
+        vm.startPrank(aliceAccount);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWalletExecutable.executeScript(nonce, incrementerAddress, call);
+
+        assertEq(counter.number(), 3);
+        assertEq(stateManager.nextNonce(address(aliceWalletExecutable)), 1);
+    }
+
+    function testDirectExecuteFromOtherQuarkWallet() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, address(aliceWallet), codeJar, stateManager);
+        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        address incrementerAddress = codeJar.saveCode(incrementer);
+        bytes memory ethcallCalldata = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            address(aliceWalletExecutable),
+            abi.encodeWithSignature(
+                "executeScript(uint96,address,bytes)",
+                stateManager.nextNonce(address(aliceWalletExecutable)),
+                incrementerAddress,
+                abi.encodeWithSignature("incrementCounter(address)", counter)
+            ),
+            0 // value
+        );
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, ethcall, ethcallCalldata, ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        assertEq(counter.number(), 0);
+        assertEq(stateManager.nextNonce(address(aliceWalletExecutable)), 0);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+
+        assertEq(counter.number(), 3);
+        assertEq(stateManager.nextNonce(address(aliceWalletExecutable)), 1);
+    }
 
     function testRevertsForDirectExecuteByNonExecutorSigner() public {
         // gas: disable metering except while executing operations
