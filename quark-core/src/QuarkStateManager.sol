@@ -168,11 +168,16 @@ contract QuarkStateManager {
         NonceScript memory previousNonceScript = activeNonceScript[msg.sender];
         activeNonceScript[msg.sender] = NonceScript({nonce: nonce, scriptAddress: scriptAddress});
 
+        if (nonceScriptAddress[msg.sender][nonce] == address(0)) {
+            nonceScriptAddress[msg.sender][nonce] = scriptAddress;
+        }
+
         bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
 
-        // if a nonce was cleared, set the nonceScriptAddress to lock nonce re-use to the same script address
-        if (nonceScriptAddress[msg.sender][nonce] == address(0) && !isNonceSetInternal(msg.sender, bucket, setMask)) {
-            nonceScriptAddress[msg.sender][nonce] = scriptAddress;
+        // TODO: make sure that there is no way to touch scriptAddress after it is already set
+        // if a nonce was cleared, set the nonceScriptAddress back to 0
+        if (isNonceSetInternal(msg.sender, bucket, setMask)) {
+            nonceScriptAddress[msg.sender][nonce] = address(0);
         }
 
         // release the nonce when the wallet finishes executing callback
