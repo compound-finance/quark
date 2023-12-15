@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 
 import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 import {AbstractQuarkWalletFactory} from "quark-core/src/AbstractQuarkWalletFactory.sol";
 
 import {Counter} from "test/lib/Counter.sol";
