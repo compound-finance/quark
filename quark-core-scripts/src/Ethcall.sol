@@ -11,12 +11,13 @@ import "quark-core/src/QuarkScript.sol";
 contract Ethcall is QuarkScript {
     /**
      * @notice Execute a single call
+     * @dev Note: Does not use a reentrancy guard, so make sure to only call into trusted contracts
      * @param callContract Contract to call
      * @param callData Encoded calldata for call
      * @param callValue Value for call
      * @return Return data from call
      */
-    function run(address callContract, bytes calldata callData, uint256 callValue) external nonReentrantUnsafe returns (bytes memory) {
+    function run(address callContract, bytes calldata callData, uint256 callValue) external returns (bytes memory) {
         (bool success, bytes memory returnData) = callContract.call{value: callValue}(callData);
         if (!success) {
             assembly {

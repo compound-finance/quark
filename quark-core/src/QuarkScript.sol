@@ -12,26 +12,26 @@ abstract contract QuarkScript {
     error ReentrantCall();
 
     /// @notice Storage location for the re-entrancy guard
-    bytes32 internal constant REENTRANCY_FLAG = keccak256("quark.scripts.reentrancy.guard.v1");
+    bytes32 internal constant REENTRANCY_FLAG_SLOT = keccak256("quark.scripts.reentrancy.guard.v1");
 
-    /// @notice Safe, but gassier version of a re-entrancy guard that writes the flag to the QuarkStateManager
-    modifier nonReentrantSafe() {
-        if (read(REENTRANCY_FLAG) == bytes32(uint256(1))) {
+    /// @notice A safer, but gassier reentrancy guard that writes the flag to the QuarkStateManager
+    modifier nonReentrant() {
+        if (read(REENTRANCY_FLAG_SLOT) == bytes32(uint256(1))) {
             revert ReentrantCall();
         }
-        write(REENTRANCY_FLAG, bytes32(uint256(1)));
+        write(REENTRANCY_FLAG_SLOT, bytes32(uint256(1)));
 
         _;
 
-        write(REENTRANCY_FLAG, bytes32(uint256(0)));
+        write(REENTRANCY_FLAG_SLOT, bytes32(uint256(0)));
     }
 
     /**
-     * @notice Cheaper version of a re-entrancy guard that writes the flag to the wallet's storage
-     * @dev Note: Use with caution; make sure that other scripts do not overwrite this storage
+     * @notice A gas optimized reentrancy guard that writes to the wallet's storage instead of the QuarkStateManager
+     * @dev Note: Use with caution; make sure that the slot is not overwritten by other scripts
      */
-    modifier nonReentrantUnsafe() {
-        bytes32 slot = REENTRANCY_FLAG;
+    modifier nonReentrantOptimized() {
+        bytes32 slot = REENTRANCY_FLAG_SLOT;
         uint256 status;
         assembly ("memory-safe") {
             status := sload(slot)
