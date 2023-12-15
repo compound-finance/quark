@@ -27,6 +27,10 @@ import "test/lib/QuarkOperationHelper.sol";
 import "test/lib/AbstractQuarkWalletTest.sol";
 
 contract QuarkWalletTest is AbstractQuarkWalletTest {
+    function newWallet(address signer, address executor) internal override returns (address payable) {
+        return payable(address(new QuarkWallet(signer, executor, codeJar, stateManager)));
+    }
+
     constructor() {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
@@ -45,6 +49,12 @@ contract QuarkWalletTest is AbstractQuarkWalletTest {
 }
 
 contract QuarkWalletProxyTest is AbstractQuarkWalletTest {
+    function newWallet(address signer, address executor) internal override returns (address payable) {
+        return payable(address(new QuarkMinimalProxy(implementation, signer, executor)));
+    }
+
+    address payable implementation;
+
     constructor() {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
@@ -56,7 +66,7 @@ contract QuarkWalletProxyTest is AbstractQuarkWalletTest {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
-        QuarkWallet implementation = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        implementation = payable(address(new QuarkWallet(address(0), address(0), codeJar, stateManager)));
         aliceWallet = QuarkWallet(payable(address(new QuarkMinimalProxy(address(implementation), aliceAccount, address(0)))));
         console.log("Alice signer: %s", aliceAccount);
         console.log("Alice wallet proxy at: %s", address(aliceWallet));

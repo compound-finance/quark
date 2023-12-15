@@ -34,6 +34,8 @@ abstract contract AbstractQuarkWalletTest is Test {
     address aliceAccount = vm.addr(alicePrivateKey);
     QuarkWallet aliceWallet; // see implementation constructor()
 
+    function newWallet(address signer, address executor) internal virtual returns (address payable);
+
     /* ===== immutable getters tests ===== */
 
     function testGetSigner() public {
@@ -75,7 +77,7 @@ abstract contract AbstractQuarkWalletTest is Test {
     function testSetsMsgSenderDuringDirectExecute() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
+        QuarkWallet aliceWalletExecutable = QuarkWallet(newWallet(aliceAccount, aliceAccount));
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
         address scriptAddress = codeJar.saveCode(getMessageDetails);
@@ -263,7 +265,7 @@ abstract contract AbstractQuarkWalletTest is Test {
     function testDirectExecuteFromEOA() public {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
-        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
+        QuarkWallet aliceWalletExecutable = QuarkWallet(newWallet(aliceAccount, aliceAccount));
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         address incrementerAddress = codeJar.saveCode(incrementer);
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
@@ -286,7 +288,7 @@ abstract contract AbstractQuarkWalletTest is Test {
     function testDirectExecuteFromOtherQuarkWallet() public {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
-        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, address(aliceWallet), codeJar, stateManager);
+        QuarkWallet aliceWalletExecutable = QuarkWallet(newWallet(aliceAccount, address(aliceWallet)));
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
         address incrementerAddress = codeJar.saveCode(incrementer);
