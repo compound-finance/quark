@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "quark-core/src/QuarkScript.sol";
-
 /**
  * @title Ethcall Core Script
  * @notice Core transaction script that can be used to call into another contract
  * @author Compound Labs, Inc.
  */
-contract Ethcall is QuarkScript {
+contract Ethcall {
     /**
      * @notice Execute a single call
      * @dev Note: Does not use a reentrancy guard, so make sure to only call into trusted contracts
