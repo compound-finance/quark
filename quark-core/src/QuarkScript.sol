@@ -12,7 +12,7 @@ abstract contract QuarkScript {
     error ReentrantCall();
 
     /// @notice Storage location for the re-entrancy guard
-    bytes32 internal constant REENTRANCY_FLAG_SLOT = keccak256("quark.scripts.reentrancy.guard.v1");
+    bytes32 internal constant REENTRANCY_FLAG_SLOT = bytes32(uint256(keccak256("quark.scripts.reentrancy.guard.v1")) - 1);
 
     /// @notice A safer, but gassier reentrancy guard that writes the flag to the QuarkStateManager
     modifier nonReentrant() {
