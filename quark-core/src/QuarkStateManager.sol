@@ -93,11 +93,12 @@ contract QuarkStateManager {
      * @return Currently active script address
      */
     function getActiveScript() external view returns (address) {
-        if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
+        address scriptAddress = activeNonceScript[msg.sender].scriptAddress;
+        if (scriptAddress == address(0)) {
             revert NoActiveNonce();
         }
         // the last 20 bytes is the address
-        return activeNonceScript[msg.sender].scriptAddress;
+        return scriptAddress;
     }
 
     /// @dev Locate a nonce at a (bucket, mask) bitset position in the nonces mapping
@@ -156,11 +157,9 @@ contract QuarkStateManager {
         // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
         setNonceInternal(bucket, setMask);
 
+        address cachedScriptAddress = nonceScriptAddress[msg.sender][nonce];
         // if the nonce has been used before, check if the script address matches, and revert if not
-        if (
-            (nonceScriptAddress[msg.sender][nonce] != address(0))
-                && (nonceScriptAddress[msg.sender][nonce] != scriptAddress)
-        ) {
+        if ((cachedScriptAddress != address(0)) && (cachedScriptAddress != scriptAddress)) {
             revert NonceScriptMismatch();
         }
 
@@ -171,7 +170,7 @@ contract QuarkStateManager {
         bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
 
         // if a nonce was cleared, set the nonceScriptAddress to lock nonce re-use to the same script address
-        if (nonceScriptAddress[msg.sender][nonce] == address(0) && !isNonceSetInternal(msg.sender, bucket, setMask)) {
+        if (cachedScriptAddress == address(0) && !isNonceSetInternal(msg.sender, bucket, setMask)) {
             nonceScriptAddress[msg.sender][nonce] = scriptAddress;
         }
 

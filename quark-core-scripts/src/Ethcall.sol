@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "quark-core/src/QuarkWallet.sol";
-
 /**
  * @title Ethcall Core Script
  * @notice Core transaction script that can be used to call into another contract

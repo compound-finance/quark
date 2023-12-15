@@ -7,8 +7,6 @@ pragma solidity 0.8.19;
  * @author Compound Labs, Inc.
  */
 contract CodeJar {
-    error CodeHashMismatch(address codeAddress, bytes32 expected, bytes32 given);
-
     /**
      * @notice Deploys the code via Code Jar, no-op if it already exists
      * @dev This call is meant to be idemponent and fairly inexpensive on a second call

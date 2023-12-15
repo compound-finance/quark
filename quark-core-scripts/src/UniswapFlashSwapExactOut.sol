@@ -91,9 +91,7 @@ contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
         // Attempt to pay back amount owed after execution
         if (amount0Delta > 0) {
             IERC20(input.poolKey.token0).safeTransfer(address(pool), uint256(amount0Delta));
-        }
-
-        if (amount1Delta > 0) {
+        } else if (amount1Delta > 0) {
             IERC20(input.poolKey.token1).safeTransfer(address(pool), uint256(amount1Delta));
         }
     }

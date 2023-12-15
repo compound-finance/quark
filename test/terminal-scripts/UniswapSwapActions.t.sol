@@ -282,4 +282,40 @@ contract UniswapSwapActionsTest is Test {
         assertGe(IERC20(COMP).balanceOf(address(wallet)), 0);
         assertEq(IERC20(USDC).balanceOf(address(wallet)), usdcBalance + 1500e6);
     }
+
+    function testApprovalRefund() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        deal(USDC, address(wallet), 10000e6);
+        uint256 wethBalance = IERC20(WETH).balanceOf(address(wallet));
+        uint256 usdcBalance = IERC20(USDC).balanceOf(address(wallet));
+
+        // ExactOut: Limit the amount of WETH you want to receive and spend as much USDC as necessary
+        QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            terminalScript,
+            abi.encodeWithSelector(
+                UniswapSwapActions.swapAssetExactOut.selector,
+                UniswapSwapActions.SwapParamsExactOut({
+                    uniswapRouter: uniswapRouter,
+                    recipient: address(wallet),
+                    tokenFrom: USDC,
+                    amount: 1 ether,
+                    amountInMaximum: 10000e6, // Give it a high amount to trigger approval refund
+                    deadline: block.timestamp + 1000,
+                    path: abi.encodePacked(WETH, uint24(500), USDC) // Path: WETH - 0.05% -> USDC
+                })
+            ),
+            ScriptType.ScriptSource
+        );
+
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op2, v2, r2, s2);
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), wethBalance + 1 ether);
+        assertGe(IERC20(USDC).balanceOf(address(wallet)), usdcBalance - 2000e6);
+        assertEq(IERC20(USDC).allowance(address(wallet), uniswapRouter), 0);
+    }
 }

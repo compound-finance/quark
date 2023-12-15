@@ -154,6 +154,13 @@ contract QuarkWallet is IERC1271 {
             revert AmbiguousScript();
         }
 
+        /*
+         * If scriptAddress is not given, scriptSource must be non-empty
+         */
+        if (op.scriptAddress == address(0) && op.scriptSource.length == 0) {
+            revert EmptyCode();
+        }
+
         bytes32 structHash = keccak256(
             abi.encode(
                 QUARK_OPERATION_TYPEHASH,
