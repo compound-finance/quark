@@ -14,7 +14,6 @@ import "test/lib/PrecompileCaller.sol";
 import "test/lib/QuarkOperationHelper.sol";
 
 contract PrecompilesTest is Test {
-
     CodeJar public codeJar;
     QuarkStateManager public stateManager;
 

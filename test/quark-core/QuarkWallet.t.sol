@@ -67,7 +67,8 @@ contract QuarkWalletProxyTest is AbstractQuarkWalletTest {
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
         implementation = payable(address(new QuarkWallet(address(0), address(0), codeJar, stateManager)));
-        aliceWallet = QuarkWallet(payable(address(new QuarkMinimalProxy(address(implementation), aliceAccount, address(0)))));
+        aliceWallet =
+            QuarkWallet(payable(address(new QuarkMinimalProxy(address(implementation), aliceAccount, address(0)))));
         console.log("Alice signer: %s", aliceAccount);
         console.log("Alice wallet proxy at: %s", address(aliceWallet));
     }
