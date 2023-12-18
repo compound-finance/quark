@@ -171,10 +171,10 @@ contract QuarkWallet is IERC1271 {
         // if scriptAddress not given, derive deterministic address from bytecode
         address scriptAddress = op.scriptAddress;
         if (scriptAddress == address(0)) {
-            scriptAddress = this.codeJar().saveCode(op.scriptSource);
+            scriptAddress = codeJar.saveCode(op.scriptSource);
         }
 
-        return this.stateManager().setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
+        return stateManager.setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
     }
 
     /**
@@ -193,7 +193,7 @@ contract QuarkWallet is IERC1271 {
         if (msg.sender != this.executor()) {
             revert Unauthorized();
         }
-        return this.stateManager().setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
+        return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
     }
 
     /**
@@ -297,7 +297,7 @@ contract QuarkWallet is IERC1271 {
         external
         returns (bytes memory)
     {
-        require(msg.sender == address(this.stateManager()));
+        require(msg.sender == address(stateManager));
         if (scriptAddress.code.length == 0) {
             revert EmptyCode();
         }
@@ -331,7 +331,7 @@ contract QuarkWallet is IERC1271 {
      * @dev Reverts if callback is not enabled by the script
      */
     fallback(bytes calldata data) external payable returns (bytes memory) {
-        address callback = address(uint160(uint256(this.stateManager().read(CALLBACK_KEY))));
+        address callback = address(uint160(uint256(stateManager.read(CALLBACK_KEY))));
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);
             if (!success) {
