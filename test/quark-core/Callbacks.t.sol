@@ -15,12 +15,12 @@ import {ExecuteOtherOperation} from "test/lib/ExecuteOtherOperation.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-import "test/lib/CounterScript.sol";
-import "test/lib/ExecuteOnBehalf.sol";
-import "test/lib/CallbackFromCounter.sol";
-import "test/lib/CallcodeReentrancy.sol";
+import {CounterScript} from  "test/lib/CounterScript.sol";
+import {ExecuteOnBehalf} from "test/lib/ExecuteOnBehalf.sol";
+import {CallbackFromCounter} from "test/lib/CallbackFromCounter.sol";
+import {CallbackCaller, ExploitableScript, ProtectedScript} from "test/lib/CallcodeReentrancy.sol";
 
-import "quark-core-scripts/src/Ethcall.sol";
+import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 
 contract CallbacksTest is Test {
     CodeJar public codeJar;
