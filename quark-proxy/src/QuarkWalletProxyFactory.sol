@@ -18,20 +18,12 @@ contract QuarkWalletProxyFactory is AbstractQuarkWalletFactory {
     /// @notice Major version of the contract
     uint256 public override constant VERSION = 1;
 
-    /// @notice Address of CodeJar contract
-    CodeJar public immutable codeJar;
-
-    /// @notice Address of QuarkStateManager contract
-    QuarkStateManager public immutable stateManager;
-
     /// @notice Address of QuarkWallet implementation contract
     address public immutable walletImplementation;
 
     /// @notice Construct a new QuarkProxyFactory, deploying a CodeJar, QuarkStateManager, and implementation QuarkWallet as well
-    constructor() {
-        codeJar = new CodeJar();
-        stateManager = new QuarkStateManager();
-        walletImplementation = address(new QuarkWallet{salt: 0}(codeJar, stateManager));
+    constructor(address walletImplementation_) {
+        walletImplementation = walletImplementation_;
     }
 
     /**
