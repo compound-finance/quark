@@ -5,9 +5,9 @@ import "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
 
-import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
 import {Counter} from "test/lib/Counter.sol";
 import {YulHelper} from "test/lib/YulHelper.sol";
@@ -43,7 +43,7 @@ contract CallbacksTest is Test {
         console.log("Counter deployed to: %s", address(counter));
 
         aliceAccount = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, stateManager);
     }
 
     function testCallbackFromCounter() public {

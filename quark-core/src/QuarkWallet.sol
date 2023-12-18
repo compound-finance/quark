@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {CodeJar} from "quark-core/src/CodeJar.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
+
+import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 
 /**
  * @title Quark Wallet Metadata
@@ -32,11 +33,12 @@ library QuarkWalletMetadata {
 }
 
 /**
- * @title Quark Wallet
+ * @title Quark Wallet abstract base class
  * @notice A smart wallet that can run transaction scripts
+ * @dev An implementor needs only to provide a public signer and executor: these could be constants, immutables, or address getters of any kind
  * @author Compound Labs, Inc.
  */
-contract QuarkWallet is IERC1271 {
+abstract contract QuarkWallet is IERC1271 {
     error AmbiguousScript();
     error BadSignatory();
     error EmptyCode();
@@ -47,16 +49,16 @@ contract QuarkWallet is IERC1271 {
     error Unauthorized();
 
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
-    address public immutable signer;
+    function signer() external virtual view returns (address);
 
     /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
-    address public immutable executor;
+    function executor() external virtual view returns (address);
 
     /// @notice Address of CodeJar contract used to deploy transaction script source code
-    CodeJar public immutable codeJar;
+    function codeJar() external virtual view returns (CodeJar);
 
     /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
-    QuarkStateManager public immutable stateManager;
+    function stateManager() external virtual view returns (QuarkStateManager);
 
     /// @notice Name of contract
     string public constant NAME = QuarkWalletMetadata.NAME;
@@ -97,36 +99,6 @@ contract QuarkWallet is IERC1271 {
         bytes scriptCalldata;
         /// @notice Expiration time for the signature corresponding to this operation
         uint256 expiry;
-    }
-
-    /**
-     * @notice Construct a new QuarkWallet
-     * @param signer_ The address that is allowed to sign QuarkOperations for this wallet
-     * @param executor_ The address that is allowed to directly execute Quark scripts for this wallet
-     * @param codeJar_ The CodeJar contract used to deploy scripts
-     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
-     */
-    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
-        signer = signer_;
-        executor = executor_;
-        codeJar = codeJar_;
-        stateManager = stateManager_;
-    }
-
-    /**
-     * @dev Internal getter for the signer immutable
-     */
-    function getSigner() internal view returns (address) {
-        (, bytes memory signer_) = address(this).staticcall(abi.encodeWithSignature("signer()"));
-        return abi.decode(signer_, (address));
-    }
-
-    /**
-     * @dev Internal getter for the executor immutable
-     */
-    function getExecutor() internal view returns (address) {
-        (, bytes memory executor_) = address(this).staticcall(abi.encodeWithSignature("executor()"));
-        return abi.decode(executor_, (address));
     }
 
     /**
@@ -174,15 +146,15 @@ contract QuarkWallet is IERC1271 {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
 
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(getSigner(), digest, v, r, s);
+        checkValidSignatureInternal(this.signer(), digest, v, r, s);
 
         // if scriptAddress not given, derive deterministic address from bytecode
         address scriptAddress = op.scriptAddress;
         if (scriptAddress == address(0)) {
-            scriptAddress = codeJar.saveCode(op.scriptSource);
+            scriptAddress = this.codeJar().saveCode(op.scriptSource);
         }
 
-        return stateManager.setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
+        return this.stateManager().setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
     }
 
     /**
@@ -198,10 +170,10 @@ contract QuarkWallet is IERC1271 {
         returns (bytes memory)
     {
         // only allow the executor for the wallet to use unsigned execution
-        if (msg.sender != getExecutor()) {
+        if (msg.sender != this.executor()) {
             revert Unauthorized();
         }
-        return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
+        return this.stateManager().setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
     }
 
     /**
@@ -257,7 +229,7 @@ contract QuarkWallet is IERC1271 {
         // to prevent signature replayability for Quark wallets owned by the same `signer`
         bytes32 messageHash = getMessageHashForQuark(abi.encode(hash));
         // If the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(getSigner(), messageHash, v, r, s);
+        checkValidSignatureInternal(this.signer(), messageHash, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 
@@ -305,7 +277,7 @@ contract QuarkWallet is IERC1271 {
         external
         returns (bytes memory)
     {
-        require(msg.sender == address(stateManager));
+        require(msg.sender == address(this.stateManager()));
         if (scriptAddress.code.length == 0) {
             revert EmptyCode();
         }
@@ -339,7 +311,7 @@ contract QuarkWallet is IERC1271 {
      * @dev Reverts if callback is not enabled by the script
      */
     fallback(bytes calldata data) external payable returns (bytes memory) {
-        address callback = address(uint160(uint256(stateManager.read(CALLBACK_KEY))));
+        address callback = address(uint160(uint256(this.stateManager().read(CALLBACK_KEY))));
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);
             if (!success) {
@@ -355,4 +327,76 @@ contract QuarkWallet is IERC1271 {
     }
 
     receive() external payable {}
+}
+
+/**
+ * @title Quark Wallet Standalone
+ * @notice Standalone implementation of the Abstract Quark Wallet interface that does not require a proxy wrapper
+ * @author Compound Labs, Inc.
+ */
+contract QuarkWalletStandalone is QuarkWallet {
+    /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
+    address public override immutable signer;
+
+    /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
+    address public override immutable executor;
+
+    /// @notice Address of CodeJar contract used to deploy transaction script source code
+    CodeJar public override immutable codeJar;
+
+    /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
+    QuarkStateManager public override immutable stateManager;
+
+    /**
+     * @notice Construct a new QuarkWallet
+     * @param signer_ The address that is allowed to sign QuarkOperations for this wallet
+     * @param executor_ The address that is allowed to directly execute Quark scripts for this wallet
+     * @param codeJar_ The CodeJar contract used to deploy scripts
+     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
+     */
+    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
+        signer = signer_;
+        executor = executor_;
+        codeJar = codeJar_;
+        stateManager = stateManager_;
+    }
+}
+
+/**
+ * @title Quark Wallet Stubbed
+ * @notice An implementation of the Abstract Quark Wallet interface that stubs in the executor and signer, expecting these to be defined by a wrapper proxy
+ * @author Compound Labs, Inc.
+ */
+contract QuarkWalletStubbed is QuarkWallet {
+    /// @notice Address of CodeJar contract used to deploy transaction script source code
+    CodeJar public override immutable codeJar;
+
+    /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
+    QuarkStateManager public override immutable stateManager;
+
+    /**
+     * @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
+     * @dev This is a stub getter for a member that should be defined by a proxy wrapper that delegatecalls this contract
+     */
+    function signer() public override view returns (address) {
+        return QuarkWallet(payable(address(this))).signer();
+    }
+
+    /**
+     * @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
+     * @dev This is a stub getter for a member that should be defined by a proxy wrapper that delegatecalls this contract
+     */
+    function executor() public override view returns (address) {
+        return QuarkWallet(payable(address(this))).executor();
+    }
+
+    /**
+     * @notice Construct a new QuarkWalletImplementation
+     * @param codeJar_ The CodeJar contract used to deploy scripts
+     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
+     */
+    constructor(CodeJar codeJar_, QuarkStateManager stateManager_) {
+        codeJar = codeJar_;
+        stateManager = stateManager_;
+    }
 }

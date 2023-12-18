@@ -4,23 +4,24 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "quark-core/src/CodeJar.sol";
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkStateManager.sol";
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-import "quark-core-scripts/src/Ethcall.sol";
+import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, QuarkWalletMetadata, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
-import "test/lib/Logger.sol";
-import "test/lib/Counter.sol";
-import "test/lib/Reverts.sol";
-import "test/lib/YulHelper.sol";
-import "test/lib/Incrementer.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/PrecompileCaller.sol";
-import "test/lib/MaxCounterScript.sol";
-import "test/lib/GetMessageDetails.sol";
-import "test/lib/CancelOtherScript.sol";
-import "test/lib/QuarkOperationHelper.sol";
+import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
+
+import {Logger} from "test/lib/Logger.sol";
+import {Counter} from "test/lib/Counter.sol";
+import {Reverts} from "test/lib/Reverts.sol";
+import {Incrementer} from "test/lib/Incrementer.sol";
+import {PrecompileCaller} from "test/lib/PrecompileCaller.sol";
+import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
+import {GetMessageDetails} from "test/lib/GetMessageDetails.sol";
+import {CancelOtherScript} from "test/lib/CancelOtherScript.sol";
 
 contract QuarkWalletTest is Test {
     event Ping(uint256);
@@ -45,7 +46,7 @@ contract QuarkWalletTest is Test {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
-        aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, stateManager);
         console.log("Alice signer: %s", aliceAccount);
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
@@ -91,7 +92,7 @@ contract QuarkWalletTest is Test {
     function testSetsMsgSenderDuringDirectExecute() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
+        QuarkWallet aliceWalletExecutable = new QuarkWalletStandalone(aliceAccount, aliceAccount, codeJar, stateManager);
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
         address scriptAddress = codeJar.saveCode(getMessageDetails);
@@ -279,7 +280,7 @@ contract QuarkWalletTest is Test {
     function testDirectExecuteFromEOA() public {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
-        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
+        QuarkWallet aliceWalletExecutable = new QuarkWalletStandalone(aliceAccount, aliceAccount, codeJar, stateManager);
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         address incrementerAddress = codeJar.saveCode(incrementer);
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
@@ -302,7 +303,7 @@ contract QuarkWalletTest is Test {
     function testDirectExecuteFromOtherQuarkWallet() public {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
-        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, address(aliceWallet), codeJar, stateManager);
+        QuarkWallet aliceWalletExecutable = new QuarkWalletStandalone(aliceAccount, address(aliceWallet), codeJar, stateManager);
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
         address incrementerAddress = codeJar.saveCode(incrementer);

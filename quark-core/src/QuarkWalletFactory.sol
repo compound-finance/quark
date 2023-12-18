@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "quark-core/src/CodeJar.sol";
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkStateManager.sol";
-import "quark-core/src/AbstractQuarkWalletFactory.sol";
+import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {AbstractQuarkWalletFactory} from "quark-core/src/AbstractQuarkWalletFactory.sol";
+import {QuarkWalletMetadata, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
 /**
  * @title Quark Wallet Factory
@@ -60,7 +60,7 @@ contract QuarkWalletFactory is AbstractQuarkWalletFactory {
             executor = address(0);
         }
         address payable walletAddress =
-            payable(address(new QuarkWallet{salt: salt}(signer, executor, codeJar, stateManager)));
+            payable(address(new QuarkWalletStandalone{salt: salt}(signer, executor, codeJar, stateManager)));
         emit WalletDeploy(signer, executor, walletAddress, salt);
         return walletAddress;
     }
@@ -99,7 +99,7 @@ contract QuarkWalletFactory is AbstractQuarkWalletFactory {
                                 salt,
                                 keccak256(
                                     abi.encodePacked(
-                                        type(QuarkWallet).creationCode,
+                                        type(QuarkWalletStandalone).creationCode,
                                         abi.encode(signer),
                                         abi.encode(executor),
                                         abi.encode(address(codeJar)),

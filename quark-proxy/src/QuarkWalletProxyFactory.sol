@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "quark-core/src/CodeJar.sol";
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkStateManager.sol";
-import "quark-core/src/AbstractQuarkWalletFactory.sol";
+import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWalletMetadata, QuarkWalletStubbed} from "quark-core/src/QuarkWallet.sol";
 
-import "quark-proxy/src/QuarkMinimalProxy.sol";
+import {AbstractQuarkWalletFactory} from "quark-core/src/AbstractQuarkWalletFactory.sol";
+
+import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 
 /**
  * @title Quark Wallet Proxy Factory
@@ -30,7 +31,7 @@ contract QuarkWalletProxyFactory is AbstractQuarkWalletFactory {
     constructor() {
         codeJar = new CodeJar();
         stateManager = new QuarkStateManager();
-        walletImplementation = address(new QuarkWallet{salt: 0}(address(0), address(0), codeJar, stateManager));
+        walletImplementation = address(new QuarkWalletStubbed{salt: 0}(codeJar, stateManager));
     }
 
     /**
