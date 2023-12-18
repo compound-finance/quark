@@ -14,9 +14,14 @@ import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
  * @notice A factory for deploying new Quark Proxys at deterministic addresses
  * @author Compound Labs, Inc.
  */
-contract QuarkWalletProxyFactory is AbstractQuarkWalletFactory {
+contract QuarkWalletProxyFactory  {
+    event WalletDeploy(address indexed signer, address indexed executor, address walletAddress, bytes32 salt);
+
     /// @notice Major version of the contract
-    uint256 public override constant VERSION = 1;
+    uint256 public constant VERSION = 1;
+
+    /// @notice Default initial salt value
+    bytes32 public constant DEFAULT_SALT = bytes32(0);
 
     /// @notice Address of QuarkWallet implementation contract
     address public immutable walletImplementation;
@@ -32,32 +37,38 @@ contract QuarkWalletProxyFactory is AbstractQuarkWalletFactory {
      * only a wallet with the assumed QuarkWalletMetadata (NAME, VERSION, DOMAIN_TYPEHASH) will work.
      * @return bytes32 The domain separator for the wallet corresponding to the signer and salt
      */
-    function DOMAIN_SEPARATOR(address signer, bytes32 salt) external override view returns (bytes32) {
+    function DOMAIN_SEPARATOR(address signer, address executor, bytes32 salt) external view returns (bytes32) {
         return keccak256(
             abi.encode(
                 QuarkWalletMetadata.DOMAIN_TYPEHASH,
                 keccak256(bytes(QuarkWalletMetadata.NAME)),
                 keccak256(bytes(QuarkWalletMetadata.VERSION)),
                 block.chainid,
-                walletAddressForSignerWithSalt(signer, salt)
+                walletAddressForSalt(signer, executor, salt)
             )
         );
     }
 
     /**
+     * @notice Create new QuarkWallet for signer (with default salt value)
+     * @dev Will revert if wallet already exists for signer
+     * @param signer Address to create a QuarkWallet for
+     * @param executor Address to set as the executor of the QuarkWallet
+     * @return address Address of the newly-created wallet
+     */
+    function create(address signer, address executor) external returns (address payable) {
+        return create(signer, executor, DEFAULT_SALT);
+    }
+
+    /**
      * @notice Create new QuarkWallet for signer, salt pair
      * @dev Will revert if wallet already exists for signer, salt pair; sets the executor for salted wallets to the wallet with salt=DEFAULT_SALT
-     * @param signer Address to create a QuarkWallet for
+     * @param signer Address to set as the signer of the QuarkWallet
+     * @param executor Address to set as the executor of the QuarkWallet
      * @param salt Salt value to use during creation of QuarkWallet
      * @return address Address of the newly-created wallet
      */
-    function create(address signer, bytes32 salt) public override returns (address payable) {
-        address executor;
-        if (salt != DEFAULT_SALT) {
-            executor = walletAddressForSignerWithSalt(signer, DEFAULT_SALT);
-        } else {
-            executor = address(0);
-        }
+    function create(address signer, address executor, bytes32 salt) public returns (address payable) {
         address payable proxyAddress =
             payable(address(new QuarkMinimalProxy{salt: salt}(walletImplementation, signer, executor)));
         emit WalletDeploy(signer, executor, proxyAddress, salt);
@@ -65,24 +76,74 @@ contract QuarkWalletProxyFactory is AbstractQuarkWalletFactory {
     }
 
     /**
-     * @notice Get QuarkWallet address for signer, salt pair
+     * @notice Create a wallet for signer (and default salt) if it does not exist, then execute operation
+     * @param signer Signer to deploy QuarkWallet for and then execute operation with
+     * @param executor Address to set as the executor of the QuarkWallet
+     * @param op The QuarkOperation to execute on the wallet
+     * @param v EIP-712 Signature `v` value
+     * @param r EIP-712 Signature `r` value
+     * @param s EIP-712 Signature `s` value
+     * @return bytes Return value of executing the operation
+     */
+    function createAndExecute(address signer, address executor, QuarkWallet.QuarkOperation memory op, uint8 v, bytes32 r, bytes32 s)
+        external
+        returns (bytes memory)
+    {
+        return createAndExecute(signer, executor, DEFAULT_SALT, op, v, r, s);
+    }
+
+    /**
+     * @notice Create a wallet for signer, salt pair if it does not exist, then execute operation
+     * @param signer Signer to deploy QuarkWallet for and then execute operation with
+     * @param executor Address to set as the executor of the QuarkWallet
+     * @param salt Salt value of QuarkWallet to create and execute operation with
+     * @param op The QuarkOperation to execute on the wallet
+     * @param v EIP-712 Signature `v` value
+     * @param r EIP-712 Signature `r` value
+     * @param s EIP-712 Signature `s` value
+     * @return bytes Return value of executing the operation
+     */
+    function createAndExecute(
+        address signer,
+        address executor,
+        bytes32 salt,
+        QuarkWallet.QuarkOperation memory op,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public returns (bytes memory) {
+        address payable walletAddress = walletAddressForSalt(signer, executor, salt);
+        if (walletAddress.code.length == 0) {
+            create(signer, executor, salt);
+        }
+
+        return QuarkWallet(walletAddress).executeQuarkOperation(op, v, r, s);
+    }
+
+    /**
+     * @notice Get QuarkWallet address for signer (and default salt value)
      * @dev QuarkWallet at returned address may not have been created yet
      * @param signer Address to find QuarkWallet address for
-     * @param salt Salt value for QuarkWallet
+     * @return address Address of the QuarkWallet for signer
+     */
+    function walletAddressFor(address signer, address executor) external view returns (address payable) {
+        return walletAddressForSalt(signer, executor, DEFAULT_SALT);
+    }
+
+    /**
+     * @notice Get QuarkWallet address for signer, salt pair
+     * @dev QuarkWallet at returned address may not have been created yet
+     * @param signer Address of the signer for which to derive a QuarkWallet address
+     * @param executor Address of the executor for which to derive a QuarkWallet address
+     * @param salt Salt value for which to derive a QuarkWallet address
      * @return address Address of the QuarkWallet for signer, salt pair
      */
-    function walletAddressForSignerWithSalt(address signer, bytes32 salt) public override view returns (address payable) {
-        address executor;
-        if (salt != DEFAULT_SALT) {
-            executor = walletAddressForSignerInternal(signer, address(0), DEFAULT_SALT);
-        } else {
-            executor = address(0);
-        }
-        return walletAddressForSignerInternal(signer, executor, salt);
+    function walletAddressForSalt(address signer, address executor, bytes32 salt) public view returns (address payable) {
+        return walletAddressForInternal(signer, executor, salt);
     }
 
     /// @dev Get the deterministic address of a QuarkWallet with a given (signer, executor, salt) permutation
-    function walletAddressForSignerInternal(address signer, address executor, bytes32 salt)
+    function walletAddressForInternal(address signer, address executor, bytes32 salt)
         internal
         view
         returns (address payable)
