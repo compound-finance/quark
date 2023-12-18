@@ -7,7 +7,7 @@ import {Test} from "forge-std/Test.sol";
 import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, QuarkWalletStubbed} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 
 import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
@@ -29,7 +29,7 @@ contract QuarkMinimalProxyTest is Test {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to %s", address(stateManager));
 
-        walletImplementation = new QuarkWalletStubbed(codeJar, stateManager);
+        walletImplementation = new QuarkWallet(codeJar, stateManager);
         console.log("QuarkWallet implementation deployed to %s", address(walletImplementation));
 
         aliceAccount = vm.addr(alicePrivateKey);
