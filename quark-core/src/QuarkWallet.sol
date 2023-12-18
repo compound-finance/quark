@@ -38,7 +38,7 @@ library QuarkWalletMetadata {
  * @dev An implementor needs only to provide a public signer and executor: these could be constants, immutables, or address getters of any kind
  * @author Compound Labs, Inc.
  */
-abstract contract QuarkWallet is IERC1271 {
+contract QuarkWallet is IERC1271 {
     error AmbiguousScript();
     error BadSignatory();
     error EmptyCode();
@@ -48,17 +48,11 @@ abstract contract QuarkWallet is IERC1271 {
     error SignatureExpired();
     error Unauthorized();
 
-    /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
-    function signer() external virtual view returns (address);
-
-    /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
-    function executor() external virtual view returns (address);
-
     /// @notice Address of CodeJar contract used to deploy transaction script source code
-    function codeJar() external virtual view returns (CodeJar);
+    CodeJar public immutable codeJar;
 
     /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
-    function stateManager() external virtual view returns (QuarkStateManager);
+    QuarkStateManager public immutable stateManager;
 
     /// @notice Name of contract
     string public constant NAME = QuarkWalletMetadata.NAME;
@@ -99,6 +93,32 @@ abstract contract QuarkWallet is IERC1271 {
         bytes scriptCalldata;
         /// @notice Expiration time for the signature corresponding to this operation
         uint256 expiry;
+    }
+
+    /**
+     * @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
+     * @dev This is a stub getter for a member that should be defined by a proxy wrapper that delegatecalls this contract
+     */
+    function signer() external virtual view returns (address) {
+        return QuarkWallet(payable(address(this))).signer();
+    }
+
+    /**
+     * @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
+     * @dev This is a stub getter for a member that should be defined by a proxy wrapper that delegatecalls this contract
+     */
+    function executor() external virtual view returns (address) {
+        return QuarkWallet(payable(address(this))).executor();
+    }
+
+    /**
+     * @notice Construct a new QuarkWalletImplementation
+     * @param codeJar_ The CodeJar contract used to deploy scripts
+     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
+     */
+    constructor(CodeJar codeJar_, QuarkStateManager stateManager_) {
+        codeJar = codeJar_;
+        stateManager = stateManager_;
     }
 
     /**
@@ -341,12 +361,6 @@ contract QuarkWalletStandalone is QuarkWallet {
     /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
     address public override immutable executor;
 
-    /// @notice Address of CodeJar contract used to deploy transaction script source code
-    CodeJar public override immutable codeJar;
-
-    /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
-    QuarkStateManager public override immutable stateManager;
-
     /**
      * @notice Construct a new QuarkWallet
      * @param signer_ The address that is allowed to sign QuarkOperations for this wallet
@@ -354,49 +368,8 @@ contract QuarkWalletStandalone is QuarkWallet {
      * @param codeJar_ The CodeJar contract used to deploy scripts
      * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
      */
-    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) {
+    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) QuarkWallet(codeJar_, stateManager_) {
         signer = signer_;
         executor = executor_;
-        codeJar = codeJar_;
-        stateManager = stateManager_;
-    }
-}
-
-/**
- * @title Quark Wallet Stubbed
- * @notice An implementation of the Abstract Quark Wallet interface that stubs in the executor and signer, expecting these to be defined by a wrapper proxy
- * @author Compound Labs, Inc.
- */
-contract QuarkWalletStubbed is QuarkWallet {
-    /// @notice Address of CodeJar contract used to deploy transaction script source code
-    CodeJar public override immutable codeJar;
-
-    /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
-    QuarkStateManager public override immutable stateManager;
-
-    /**
-     * @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
-     * @dev This is a stub getter for a member that should be defined by a proxy wrapper that delegatecalls this contract
-     */
-    function signer() public override view returns (address) {
-        return QuarkWallet(payable(address(this))).signer();
-    }
-
-    /**
-     * @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
-     * @dev This is a stub getter for a member that should be defined by a proxy wrapper that delegatecalls this contract
-     */
-    function executor() public override view returns (address) {
-        return QuarkWallet(payable(address(this))).executor();
-    }
-
-    /**
-     * @notice Construct a new QuarkWalletImplementation
-     * @param codeJar_ The CodeJar contract used to deploy scripts
-     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
-     */
-    constructor(CodeJar codeJar_, QuarkStateManager stateManager_) {
-        codeJar = codeJar_;
-        stateManager = stateManager_;
     }
 }
