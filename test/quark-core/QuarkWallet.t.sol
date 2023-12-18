@@ -30,11 +30,11 @@ contract QuarkWalletTest is Test {
     event Ping(uint256);
     event ClearNonce(address indexed wallet, uint96 nonce);
     event ExecuteQuarkScript(
-        bool indexed isDirectExecute,
         address indexed submitter,
         address indexed scriptAddress,
         bytes scriptCalldata,
-        uint96 nonce
+        uint96 nonce,
+        bool isDirectExecute
     );
 
     CodeJar public codeJar;
@@ -144,13 +144,13 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
         emit ExecuteQuarkScript(
-            false, address(this), scriptAddress, opWithScriptAddress.scriptCalldata, opWithScriptAddress.nonce
+            address(this), scriptAddress, opWithScriptAddress.scriptCalldata, opWithScriptAddress.nonce, false
         );
         aliceWallet.executeQuarkOperation(opWithScriptAddress, v, r, s);
 
         vm.expectEmit(true, true, true, true);
         emit ExecuteQuarkScript(
-            false, address(this), scriptAddress, opWithScriptSource.scriptCalldata, opWithScriptSource.nonce
+            address(this), scriptAddress, opWithScriptSource.scriptCalldata, opWithScriptSource.nonce, false
         );
         aliceWallet.executeQuarkOperation(opWithScriptSource, v2, r2, s2);
     }
@@ -169,7 +169,7 @@ contract QuarkWalletTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
-        emit ExecuteQuarkScript(true, address(aliceAccount), scriptAddress, call, nonce);
+        emit ExecuteQuarkScript(address(aliceAccount), scriptAddress, call, nonce, true);
         aliceWalletExecutable.executeScript(nonce, scriptAddress, call);
     }
 
