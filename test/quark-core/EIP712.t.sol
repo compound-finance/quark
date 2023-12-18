@@ -7,14 +7,15 @@ import "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
 
-import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
 import {Counter} from "test/lib/Counter.sol";
+import {ExecuteWithRequirements} from "test/lib/ExecuteWithRequirements.sol";
+
 import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
-import {ExecuteWithRequirements} from "test/lib/ExecuteWithRequirements.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
 contract EIP712Test is Test {
@@ -39,7 +40,7 @@ contract EIP712Test is Test {
         console.log("Counter deployed to: %s", address(counter));
 
         alice = vm.addr(alicePrivateKey);
-        wallet = new QuarkWallet(alice, address(0), codeJar, stateManager);
+        wallet = new QuarkWalletStandalone(alice, address(0), codeJar, stateManager);
     }
 
     function incrementCounterOperation(QuarkWallet targetWallet) public returns (QuarkWallet.QuarkOperation memory) {

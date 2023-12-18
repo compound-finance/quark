@@ -6,8 +6,8 @@ import {Test} from "forge-std/Test.sol";
 
 import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
-import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, QuarkWalletStubbed} from "quark-core/src/QuarkWallet.sol";
 
 import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
@@ -29,7 +29,7 @@ contract QuarkMinimalProxyTest is Test {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to %s", address(stateManager));
 
-        walletImplementation = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        walletImplementation = new QuarkWalletStubbed(codeJar, stateManager);
         console.log("QuarkWallet implementation deployed to %s", address(walletImplementation));
 
         aliceAccount = vm.addr(alicePrivateKey);
@@ -40,8 +40,13 @@ contract QuarkMinimalProxyTest is Test {
     }
 
     function testSignerExecutor() public {
-        assertEq(walletImplementation.signer(), address(0));
-        assertEq(walletImplementation.executor(), address(0));
+        // NOTE: this test crashes the runtime due to infinite recursion.
+        // vm.expectRevert();
+        // walletImplementation.signer(); // infinite recursion: no wrapper to stop the stub getter from calling itself
+
+        // NOTE: this test crashes the runtime due to infinite recursion.
+        // vm.expectRevert();
+        // walletImplementation.executor(); // infinite recursion: no wrapper to stop the sub getter from calling itself
 
         assertEq(aliceWalletProxy.signer(), aliceAccount);
         assertEq(aliceWalletProxy.executor(), address(0xabc));

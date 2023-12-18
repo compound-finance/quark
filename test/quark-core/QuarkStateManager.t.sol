@@ -4,15 +4,16 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "quark-core/src/CodeJar.sol";
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkStateManager.sol";
+import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
-import "test/lib/Counter.sol";
-import "test/lib/YulHelper.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/MaxCounterScript.sol";
-import "test/lib/QuarkOperationHelper.sol";
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
+
+import {Counter} from "test/lib/Counter.sol";
+import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
 
 contract QuarkStateManagerTest is Test {
     CodeJar public codeJar;
@@ -52,7 +53,7 @@ contract QuarkStateManagerTest is Test {
 
         // a QuarkWallet can use nonce 0 as the active nonce
         vm.pauseGasMetering(); // do not meter deployment gas
-        QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, stateManager);
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         address scriptAddress = codeJar.saveCode(getMessageDetails);
         bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
@@ -80,7 +81,7 @@ contract QuarkStateManagerTest is Test {
     function testRevertsIfScriptAddressIsNull() public {
         // the null script is not allowed, it will revert with EmptyCode
         vm.pauseGasMetering();
-        QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, stateManager);
         vm.resumeGasMetering();
         vm.prank(address(wallet));
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
@@ -91,7 +92,7 @@ contract QuarkStateManagerTest is Test {
     function testRevertsIfScriptAddressIsEOA() public {
         // an EOA can be passed as scriptAddress and it will just return empty bytes
         vm.pauseGasMetering();
-        QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, stateManager);
         vm.resumeGasMetering();
         vm.prank(address(wallet));
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
@@ -109,7 +110,7 @@ contract QuarkStateManagerTest is Test {
         address maxCounterScriptAddress = codeJar.saveCode(maxCounterScript);
         bytes memory call = abi.encodeWithSignature("run(address)", address(counter));
 
-        QuarkWallet wallet = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, stateManager);
 
         vm.resumeGasMetering();
 

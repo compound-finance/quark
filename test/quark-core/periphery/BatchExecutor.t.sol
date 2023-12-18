@@ -6,8 +6,8 @@ import "forge-std/console.sol";
 
 import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
 import {CodeJar} from "quark-core/src/CodeJar.sol";
-import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
 import {Counter} from "test/lib/Counter.sol";
 import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
@@ -46,10 +46,10 @@ contract BatchExecutorTest is Test {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
-        aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, stateManager);
         console.log("Alice wallet at: %s", address(aliceWallet));
 
-        bobWallet = new QuarkWallet(bobAccount, address(0), codeJar, stateManager);
+        bobWallet = new QuarkWalletStandalone(bobAccount, address(0), codeJar, stateManager);
         console.log("Bob wallet at: %s", address(bobWallet));
     }
 

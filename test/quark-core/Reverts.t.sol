@@ -4,17 +4,17 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "quark-core/src/CodeJar.sol";
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkStateManager.sol";
+import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
-import "test/lib/Counter.sol";
-import "test/lib/MaxCounterScript.sol";
-import "test/lib/Reverts.sol";
+import {Counter} from "test/lib/Counter.sol";
+import {Reverts} from "test/lib/Reverts.sol";
+import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
 
-import "test/lib/YulHelper.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/QuarkOperationHelper.sol";
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
 contract RevertsTest is Test {
     CodeJar public codeJar;
@@ -36,7 +36,7 @@ contract RevertsTest is Test {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
-        aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, stateManager);
         console.log("Alice signer: %s", aliceAccount);
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
