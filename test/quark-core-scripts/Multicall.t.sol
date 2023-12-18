@@ -5,18 +5,19 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkWalletFactory.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
 
-import "quark-core-scripts/src/Multicall.sol";
-import "quark-core-scripts/src/Ethcall.sol";
+import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
+import {Multicall} from "quark-core-scripts/src/Multicall.sol";
+
+import {Counter} from "test/lib/Counter.sol";
+
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
 import "terminal-scripts/src/TerminalScript.sol";
-
-import "test/lib/YulHelper.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/Counter.sol";
-import "test/lib/QuarkOperationHelper.sol";
 
 contract MulticallTest is Test {
     QuarkWalletFactory public factory;

@@ -6,23 +6,25 @@ import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
 
-import "quark-core/src/CodeJar.sol";
-import "quark-core/src/QuarkScript.sol";
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkWalletFactory.sol";
+import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkScript} from "quark-core/src/QuarkScript.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
 
-import "quark-core-scripts/src/Multicall.sol";
+import {Multicall} from "quark-core-scripts/src/Multicall.sol";
+
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
+
+import {Counter} from "test/lib/Counter.sol";
+import {EvilReceiver} from "test/lib/EvilReceiver.sol";
+import {VictimERC777} from "test/lib/VictimERC777.sol";
+import {AllowCallbacks} from "test/lib/AllowCallbacks.sol";
+import {ReentrantTransfer} from "test/lib/ReentrantTransfer.sol";
 
 import "terminal-scripts/src/TerminalScript.sol";
-
-import "test/lib/AllowCallbacks.sol";
-import "test/lib/YulHelper.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/Counter.sol";
-import "test/lib/ReentrantTransfer.sol";
-import "test/lib/QuarkOperationHelper.sol";
-import "test/lib/EvilReceiver.sol";
-import "test/lib/VictimERC777.sol";
 
 /**
  * Tests for transferring assets

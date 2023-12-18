@@ -6,15 +6,16 @@ import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
 
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkWalletFactory.sol";
+import {QuarkWallet} from  "quark-core/src/QuarkWallet.sol";
+import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
+
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
+
+import {Counter} from "test/lib/Counter.sol";
 
 import "terminal-scripts/src/TerminalScript.sol";
-
-import "test/lib/YulHelper.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/Counter.sol";
-import "test/lib/QuarkOperationHelper.sol";
 
 /**
  * Tests for claiming COMP rewards

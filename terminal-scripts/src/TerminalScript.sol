@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import "v3-periphery/interfaces/ISwapRouter.sol";
-import "openzeppelin/token/ERC20/IERC20.sol";
-import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import {ISwapRouter} from "v3-periphery/interfaces/ISwapRouter.sol";
 
-import "quark-core/src/QuarkScript.sol";
+import {QuarkScript} from "quark-core/src/QuarkScript.sol";
 
-import "terminal-scripts/src/interfaces/IComet.sol";
-import "terminal-scripts/src/interfaces/ICometRewards.sol";
+import {IComet} from "terminal-scripts/src/interfaces/IComet.sol";
+import {ICometRewards} from "terminal-scripts/src/interfaces/ICometRewards.sol";
 
 library TerminalErrors {
     error InvalidInput();
