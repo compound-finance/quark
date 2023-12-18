@@ -32,6 +32,11 @@ library QuarkWalletMetadata {
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 }
 
+interface HasSignerExecutor {
+    function signer() external view returns (address);
+    function executor() external view returns (address);
+}
+
 /**
  * @title Quark Wallet abstract base class
  * @notice A smart wallet that can run transaction scripts
@@ -96,22 +101,6 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
-     * @dev This is a stub getter for a member that should be defined by a proxy wrapper that delegatecalls this contract
-     */
-    function signer() external virtual view returns (address) {
-        return QuarkWallet(payable(address(this))).signer();
-    }
-
-    /**
-     * @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
-     * @dev This is a stub getter for a member that should be defined by a proxy wrapper that delegatecalls this contract
-     */
-    function executor() external virtual view returns (address) {
-        return QuarkWallet(payable(address(this))).executor();
-    }
-
-    /**
      * @notice Construct a new QuarkWalletImplementation
      * @param codeJar_ The CodeJar contract used to deploy scripts
      * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
@@ -166,7 +155,7 @@ contract QuarkWallet is IERC1271 {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
 
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(this.signer(), digest, v, r, s);
+        checkValidSignatureInternal(HasSignerExecutor(address(this)).signer(), digest, v, r, s);
 
         // if scriptAddress not given, derive deterministic address from bytecode
         address scriptAddress = op.scriptAddress;
@@ -190,7 +179,7 @@ contract QuarkWallet is IERC1271 {
         returns (bytes memory)
     {
         // only allow the executor for the wallet to use unsigned execution
-        if (msg.sender != this.executor()) {
+        if (msg.sender != HasSignerExecutor(address(this)).executor()) {
             revert Unauthorized();
         }
         return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
@@ -249,7 +238,7 @@ contract QuarkWallet is IERC1271 {
         // to prevent signature replayability for Quark wallets owned by the same `signer`
         bytes32 messageHash = getMessageHashForQuark(abi.encode(hash));
         // If the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(this.signer(), messageHash, v, r, s);
+        checkValidSignatureInternal(HasSignerExecutor(address(this)).signer(), messageHash, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 
@@ -356,10 +345,10 @@ contract QuarkWallet is IERC1271 {
  */
 contract QuarkWalletStandalone is QuarkWallet {
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
-    address public override immutable signer;
+    address public immutable signer;
 
     /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
-    address public override immutable executor;
+    address public immutable executor;
 
     /**
      * @notice Construct a new QuarkWallet
