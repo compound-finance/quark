@@ -27,14 +27,19 @@ import {GetMessageDetails} from "test/lib/GetMessageDetails.sol";
 import {CancelOtherScript} from "test/lib/CancelOtherScript.sol";
 
 contract QuarkWalletTest is Test {
+    enum ExecutionType {
+        Signature,
+        Direct
+    }
+
     event Ping(uint256);
     event ClearNonce(address indexed wallet, uint96 nonce);
     event ExecuteQuarkScript(
-        address indexed submitter,
+        address indexed executor,
         address indexed scriptAddress,
         bytes scriptCalldata,
         uint96 nonce,
-        bool isDirectExecute
+        ExecutionType executionType
     );
 
     CodeJar public codeJar;
@@ -144,13 +149,21 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
         emit ExecuteQuarkScript(
-            address(this), scriptAddress, opWithScriptAddress.scriptCalldata, opWithScriptAddress.nonce, false
+            address(this),
+            scriptAddress,
+            opWithScriptAddress.scriptCalldata,
+            opWithScriptAddress.nonce,
+            ExecutionType.Signature
         );
         aliceWallet.executeQuarkOperation(opWithScriptAddress, v, r, s);
 
         vm.expectEmit(true, true, true, true);
         emit ExecuteQuarkScript(
-            address(this), scriptAddress, opWithScriptSource.scriptCalldata, opWithScriptSource.nonce, false
+            address(this),
+            scriptAddress,
+            opWithScriptSource.scriptCalldata,
+            opWithScriptSource.nonce,
+            ExecutionType.Signature
         );
         aliceWallet.executeQuarkOperation(opWithScriptSource, v2, r2, s2);
     }
@@ -169,7 +182,7 @@ contract QuarkWalletTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
-        emit ExecuteQuarkScript(address(aliceAccount), scriptAddress, call, nonce, true);
+        emit ExecuteQuarkScript(address(aliceAccount), scriptAddress, call, nonce, ExecutionType.Direct);
         aliceWalletExecutable.executeScript(nonce, scriptAddress, call);
     }
 
