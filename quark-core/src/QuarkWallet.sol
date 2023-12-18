@@ -63,7 +63,7 @@ contract QuarkWallet is IERC1271 {
     enum ExecutionType { Signature, Direct }
 
     /// @notice Event emitted when a Quark script is executed by this Quark wallet
-    event ExecuteQuarkScript(address indexed executor, address indexed scriptAddress, uint96 nonce, ExecutionType executionType);
+    event ExecuteQuarkScript(address indexed executor, address indexed scriptAddress, uint96 indexed nonce, ExecutionType executionType);
 
     /// @notice Address of CodeJar contract used to deploy transaction script source code
     CodeJar public immutable codeJar;

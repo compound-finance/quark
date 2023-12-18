@@ -35,7 +35,7 @@ contract QuarkWalletTest is Test {
     event Ping(uint256);
     event ClearNonce(address indexed wallet, uint96 nonce);
     event ExecuteQuarkScript(
-        address indexed executor, address indexed scriptAddress, uint96 nonce, ExecutionType executionType
+        address indexed executor, address indexed scriptAddress, uint96 indexed nonce, ExecutionType executionType
     );
 
     CodeJar public codeJar;
