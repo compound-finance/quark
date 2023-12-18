@@ -70,9 +70,115 @@ contract MulticallTest is Test {
         terminalUniswapSwapScriptAddress = codeJar.saveCode(terminalUniswapSwapScript);
     }
 
+    /* ===== call context-based tests ===== */
+
+    function testInitializesStorageProperly() public {
+        bytes32 slot = keccak256("quark.scripts.multicall.v1");
+        address storedMulticallAddress = address(uint160(uint256(vm.load(multicallAddress, slot))));
+        bytes32 initialized = vm.load(address(multicallAddress), bytes32(0));
+
+        assertEq(storedMulticallAddress, address(0));
+        assertEq(initialized, bytes32(0));
+
+        Multicall(multicallAddress).initialize();
+
+        storedMulticallAddress = address(uint160(uint256(vm.load(multicallAddress, slot))));
+        initialized = vm.load(address(multicallAddress), bytes32(0));
+
+        assertEq(storedMulticallAddress, multicallAddress);
+        assertNotEq(initialized, bytes32(0));
+    }
+
+    function testCanOnlyInitializeOnce() public {
+        Multicall(multicallAddress).initialize();
+
+        vm.expectRevert(abi.encodeWithSelector(Multicall.AlreadyInitialized.selector));
+        Multicall(multicallAddress).initialize();
+    }
+
+    function testRevertsForInvalidCallContext() public {
+        // Direct calls succeed when uninitialized
+        address[] memory callContracts = new address[](0);
+        bytes[] memory callDatas = new bytes[](0);
+        Multicall multicallContract = Multicall(multicallAddress);
+        multicallContract.run(callContracts, callDatas);
+
+        multicallContract.initialize();
+
+        // Direct calls fail once initialized
+        vm.expectRevert(abi.encodeWithSelector(Multicall.InvalidCallContext.selector));
+        multicallContract.run(callContracts, callDatas);
+    }
+
+    function testCanBeGriefedByWritingAddressToQuarkWalletStorage() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        Multicall(multicallAddress).initialize();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        // Compose array of parameters
+        address[] memory callContracts = new address[](0);
+        bytes[] memory callDatas = new bytes[](0);
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // Write multicall address to storage slot in Quark wallet
+        bytes32 slot = keccak256("quark.scripts.multicall.v1");
+        vm.store(address(wallet), slot, bytes32(uint256(uint160(address(wallet)))));
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectRevert(abi.encodeWithSelector(Multicall.InvalidCallContext.selector));
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    function testCallcodeToMulticallSucceedsWhenUninitialized() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        // Compose array of parameters
+        address[] memory callContracts = new address[](2);
+        bytes[] memory callDatas = new bytes[](2);
+        callContracts[0] = ethcallAddress;
+        callDatas[0] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            address(counter),
+            abi.encodeWithSignature("increment(uint256)", (20)),
+            0 // value
+        );
+        callContracts[1] = ethcallAddress;
+        callDatas[1] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            address(counter),
+            abi.encodeWithSignature("decrement(uint256)", (5)),
+            0 // value
+        );
+        assertEq(counter.number(), 0);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 15);
+    }
+
+    /* ===== general tests ===== */
+
     function testInvokeCounterTwice() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
+        Multicall(multicallAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
@@ -110,6 +216,7 @@ contract MulticallTest is Test {
     function testSupplyWETHWithdrawUSDCOnComet() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
+        Multicall(multicallAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
@@ -162,6 +269,7 @@ contract MulticallTest is Test {
     function testInvalidInput() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
+        Multicall(multicallAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
@@ -192,6 +300,7 @@ contract MulticallTest is Test {
     function testMulticallError() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
+        Multicall(multicallAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
@@ -258,6 +367,7 @@ contract MulticallTest is Test {
     function testEmptyInputIsValid() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
+        Multicall(multicallAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Compose array of parameters
         address[] memory callContracts = new address[](0);
@@ -280,6 +390,7 @@ contract MulticallTest is Test {
     function testMulticallShouldReturnCallResults() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
+        Multicall(multicallAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         counter.setNumber(0);
         // Compose array of parameters
@@ -324,6 +435,7 @@ contract MulticallTest is Test {
     function testExecutorCanMulticallAcrossSubwallets() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
+        Multicall(multicallAddress).initialize();
 
         QuarkWallet primary = QuarkWallet(factory.create(alice, address(0)));
         QuarkWallet walletA = QuarkWallet(factory.create(alice, address(primary), bytes32("a")));
@@ -432,6 +544,7 @@ contract MulticallTest is Test {
     // It's a proof of concept that user can create and execute on new subwallet with the help of Multicall without needing to do in two transactions
     function testCreateSubWalletAndExecute() public {
         vm.pauseGasMetering();
+        Multicall(multicallAddress).initialize();
         // User will borrow USDC from Comet in the primary wallet and supply to a subwallet
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Set up some funds for test
