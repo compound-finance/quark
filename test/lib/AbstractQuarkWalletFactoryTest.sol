@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import {CodeJar} from "quark-core/src/CodeJar.sol";
-import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet, HasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 import {AbstractQuarkWalletFactory} from "quark-core/src/AbstractQuarkWalletFactory.sol";
 
@@ -270,7 +270,7 @@ abstract contract AbstractQuarkWalletFactoryTest is Test {
 
     function testDefaultWalletHasNoExecutor() public {
         QuarkWallet aliceWallet = QuarkWallet(factory.create(alice));
-        assertEq(aliceWallet.executor(), address(0));
+        assertEq(HasSignerExecutor(address(aliceWallet)).executor(), address(0));
     }
 
     function testDefaultWalletIsSubwalletExecutor() public {

@@ -10,7 +10,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 
 import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, QuarkWalletMetadata, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet, HasSignerExecutor, QuarkWalletMetadata, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
 import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 
@@ -54,11 +54,11 @@ contract QuarkWalletTest is Test {
     /* ===== immutable getters tests ===== */
 
     function testGetSigner() public {
-        assertEq(aliceWallet.signer(), aliceAccount);
+        assertEq(HasSignerExecutor(address(aliceWallet)).signer(), aliceAccount);
     }
 
     function testGetExecutor() public {
-        assertEq(aliceWallet.executor(), address(0));
+        assertEq(HasSignerExecutor(address(aliceWallet)).executor(), address(0));
     }
 
     function testGetCodeJar() public {
@@ -135,7 +135,7 @@ contract QuarkWalletTest is Test {
 
         // direct execution of the null script with no calldata will revert
         uint96 nonce = stateManager.nextNonce(address(aliceWallet));
-        vm.prank(aliceWallet.executor());
+        vm.prank(HasSignerExecutor(address(aliceWallet)).executor());
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
         aliceWallet.executeScript(nonce, address(0), bytes(""));
     }
@@ -342,7 +342,7 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 0);
 
         // act as the signer for the wallet
-        vm.startPrank(aliceWallet.signer());
+        vm.startPrank(HasSignerExecutor(address(aliceWallet)).signer());
 
         // pre-compute execution parameters so that the revert is expected from the right call
         uint96 nonce = stateManager.nextNonce(address(aliceWallet));
