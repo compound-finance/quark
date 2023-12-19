@@ -15,7 +15,7 @@ import {ExecuteOtherOperation} from "test/lib/ExecuteOtherOperation.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-import {CounterScript} from  "test/lib/CounterScript.sol";
+import {CounterScript} from "test/lib/CounterScript.sol";
 import {ExecuteOnBehalf} from "test/lib/ExecuteOnBehalf.sol";
 import {CallbackFromCounter} from "test/lib/CallbackFromCounter.sol";
 import {CallbackCaller, ExploitableScript, ProtectedScript} from "test/lib/CallcodeReentrancy.sol";

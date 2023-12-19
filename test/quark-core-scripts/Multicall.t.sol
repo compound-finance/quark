@@ -351,7 +351,8 @@ contract MulticallTest is Test {
         );
 
         // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
-        uint96 walletBNextNonce = QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(address(walletB));
+        uint96 walletBNextNonce =
+            QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(address(walletB));
         wallets[1] = address(walletB);
         walletCalls[1] = abi.encodeWithSignature(
             "executeScript(uint96,address,bytes)",

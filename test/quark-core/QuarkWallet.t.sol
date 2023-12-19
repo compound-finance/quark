@@ -10,7 +10,9 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 
 import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, HasSignerExecutor, QuarkWalletMetadata, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
+import {
+    QuarkWallet, HasSignerExecutor, QuarkWalletMetadata, QuarkWalletStandalone
+} from "quark-core/src/QuarkWallet.sol";
 
 import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 
@@ -303,7 +305,8 @@ contract QuarkWalletTest is Test {
     function testDirectExecuteFromOtherQuarkWallet() public {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
-        QuarkWallet aliceWalletExecutable = new QuarkWalletStandalone(aliceAccount, address(aliceWallet), codeJar, stateManager);
+        QuarkWallet aliceWalletExecutable =
+            new QuarkWalletStandalone(aliceAccount, address(aliceWallet), codeJar, stateManager);
         bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
         bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
         address incrementerAddress = codeJar.saveCode(incrementer);

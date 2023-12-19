@@ -6,9 +6,9 @@ import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
 
-import {CodeJar} from  "quark-core/src/CodeJar.sol";
-import {QuarkWallet} from  "quark-core/src/QuarkWallet.sol";
-import {QuarkStateManager} from  "quark-core/src/QuarkStateManager.sol";
+import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 

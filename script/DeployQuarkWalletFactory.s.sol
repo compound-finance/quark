@@ -38,7 +38,8 @@ contract DeployQuarkWalletFactory is Script {
         console.log("=============================================================");
         console.log("Deploying QuarkWalletProxyFactory");
 
-        quarkWalletProxyFactory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
+        quarkWalletProxyFactory =
+            new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
 
         console.log("QuarkWalletProxyFactory Deployed:", address(quarkWalletProxyFactory));
 

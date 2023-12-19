@@ -183,7 +183,8 @@ contract isValidSignatureTest is Test {
 
         // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
-        QuarkWallet contractWallet = new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
+        QuarkWallet contractWallet =
+            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will approve anything
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
@@ -198,7 +199,8 @@ contract isValidSignatureTest is Test {
 
         // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
-        QuarkWallet contractWallet = new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
+        QuarkWallet contractWallet =
+            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will reject everything
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
@@ -214,7 +216,8 @@ contract isValidSignatureTest is Test {
 
         // QuarkWallet is owned by a smart contract that always reverts
         EIP1271Reverter signatureApprover = new EIP1271Reverter();
-        QuarkWallet contractWallet = new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
+        QuarkWallet contractWallet =
+            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
         // signature from bob; doesn't matter because the EIP1271Signer will revert
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute

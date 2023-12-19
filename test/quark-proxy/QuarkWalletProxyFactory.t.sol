@@ -60,10 +60,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         // Salted
         vm.expectEmit(true, true, true, true);
         emit WalletDeploy(
-            alice,
-            address(0),
-            factory.walletAddressForSalt(alice, address(0), bytes32("1")),
-            bytes32("1")
+            alice, address(0), factory.walletAddressForSalt(alice, address(0), bytes32("1")), bytes32("1")
         );
         address aliceWalletSalted = factory.create(alice, address(0), bytes32("1"));
         assertEq(aliceWalletSalted, factory.walletAddressForSalt(alice, address(0), bytes32("1")));
@@ -166,9 +163,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         // operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet (with salt)
-        emit WalletDeploy(
-            alice, address(0), factory.walletAddressForSalt(alice, address(0), salt), salt
-        );
+        emit WalletDeploy(alice, address(0), factory.walletAddressForSalt(alice, address(0), salt), salt);
         factory.createAndExecute(alice, address(0), salt, op, v, r, s);
 
         // operation was executed
