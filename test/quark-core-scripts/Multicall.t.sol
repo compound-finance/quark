@@ -303,6 +303,8 @@ contract MulticallTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
+        console.log("Contract bytes length***");
+        console.log(ethcallAddress.code.length);
         // gas: meter execute
         vm.resumeGasMetering();
         bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);

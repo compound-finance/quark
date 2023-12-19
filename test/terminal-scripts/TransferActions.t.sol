@@ -150,6 +150,10 @@ contract TransferActionsTest is Test {
         evilReceiver.setAttack(
             EvilReceiver.ReentryAttack(EvilReceiver.AttackType.REINVOKE_TRANSFER, address(evilReceiver), 1 ether, 2)
         );
+        console.log("evilReceiver: %s", address(evilReceiver));
+        console.logBytes(address(evilReceiver).code);
+        console.log("reentrantTransferAddress: %s", reentrantTransferAddress);
+        console.logBytes(reentrantTransferAddress.code);
         deal(address(wallet), 10 ether);
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
