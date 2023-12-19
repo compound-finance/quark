@@ -8,8 +8,11 @@ import "forge-std/StdMath.sol";
 
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 
+import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+
+import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 
 import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 
@@ -22,7 +25,7 @@ import {Counter} from "test/lib/Counter.sol";
 import {IComet} from "test/quark-core-scripts/interfaces/IComet.sol";
 
 contract EthcallTest is Test {
-    QuarkWalletFactory public factory;
+    QuarkWalletProxyFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
@@ -44,15 +47,15 @@ contract EthcallTest is Test {
         );
 
         counter = new Counter();
-        factory = new QuarkWalletFactory();
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
         counter.setNumber(0);
-        factory.codeJar().saveCode(ethcall);
+        QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(ethcall);
     }
 
     function testEthcallCounter() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             ethcall,
@@ -74,7 +77,7 @@ contract EthcallTest is Test {
     function testEthcallSupplyUSDCToComet() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
         deal(USDC, address(wallet), 1000e6);
@@ -119,7 +122,7 @@ contract EthcallTest is Test {
     function testEthcallWithdrawUSDCFromComet() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
@@ -179,7 +182,7 @@ contract EthcallTest is Test {
     function testEthcallCallReraiseError() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
         deal(USDC, address(wallet), 1000e6);
@@ -204,7 +207,7 @@ contract EthcallTest is Test {
     function testEthcallShouldReturnCallResult() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         counter.setNumber(5);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(

@@ -9,7 +9,6 @@ import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 import {QuarkWallet, HasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
-import {AbstractQuarkWalletFactory} from "quark-core/src/AbstractQuarkWalletFactory.sol";
 
 import {Counter} from "test/lib/Counter.sol";
 

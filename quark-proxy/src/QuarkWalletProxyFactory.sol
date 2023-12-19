@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {CodeJar} from "quark-core/src/CodeJar.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 import {QuarkWallet, QuarkWalletMetadata} from "quark-core/src/QuarkWallet.sol";
-
-import {AbstractQuarkWalletFactory} from "quark-core/src/AbstractQuarkWalletFactory.sol";
 
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 
@@ -14,7 +10,7 @@ import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
  * @notice A factory for deploying new Quark Proxys at deterministic addresses
  * @author Compound Labs, Inc.
  */
-contract QuarkWalletProxyFactory  {
+contract QuarkWalletProxyFactory {
     event WalletDeploy(address indexed signer, address indexed executor, address walletAddress, bytes32 salt);
 
     /// @notice Major version of the contract
@@ -26,7 +22,7 @@ contract QuarkWalletProxyFactory  {
     /// @notice Address of QuarkWallet implementation contract
     address public immutable walletImplementation;
 
-    /// @notice Construct a new QuarkProxyFactory, deploying a CodeJar, QuarkStateManager, and implementation QuarkWallet as well
+    /// @notice Construct a new QuarkProxyFactory with the provided QuarkWallet implementation address
     constructor(address walletImplementation_) {
         walletImplementation = walletImplementation_;
     }

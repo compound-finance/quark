@@ -5,8 +5,11 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
-import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+
+import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 
 import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 import {Multicall} from "quark-core-scripts/src/Multicall.sol";
@@ -22,7 +25,7 @@ import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 // ETHERSCAN_KEY
 
 contract DeployQuarkWalletFactory is Script {
-    QuarkWalletFactory quarkWalletFactory;
+    QuarkWalletProxyFactory quarkWalletProxyFactory;
     BatchExecutor batchExecutor;
     Ethcall ethcall;
     Multicall multicall;
@@ -33,11 +36,11 @@ contract DeployQuarkWalletFactory is Script {
         vm.startBroadcast(deployer);
 
         console.log("=============================================================");
-        console.log("Deploying QuarkWalletFactory");
+        console.log("Deploying QuarkWalletProxyFactory");
 
-        quarkWalletFactory = new QuarkWalletFactory();
+        quarkWalletProxyFactory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
 
-        console.log("QuarkWalletFactory Deployed:", address(quarkWalletFactory));
+        console.log("QuarkWalletProxyFactory Deployed:", address(quarkWalletProxyFactory));
 
         console.log("Deploying BatchExecutor");
 
@@ -47,7 +50,7 @@ contract DeployQuarkWalletFactory is Script {
 
         console.log("Deploying Core Scripts");
 
-        CodeJar codeJar = quarkWalletFactory.codeJar();
+        CodeJar codeJar = QuarkWallet(payable(quarkWalletProxyFactory.walletImplementation())).codeJar();
 
         ethcall = Ethcall(codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "Ethcall.sol/Ethcall.json"))));
         console.log("Ethcall Deployed:", address(ethcall));
