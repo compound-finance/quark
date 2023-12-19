@@ -32,6 +32,11 @@ library QuarkWalletMetadata {
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 }
 
+/**
+ * @title Has Signer Executor
+ * @notice A helper interface that represents a shell for a QuarkWallet providing an executor and signer
+ * @author Compound Labs, Inc.
+ */
 interface HasSignerExecutor {
     function signer() external view returns (address);
     function executor() external view returns (address);
@@ -343,7 +348,7 @@ contract QuarkWallet is IERC1271 {
  * @notice Standalone extension of the Quark Wallet base class that does not require a proxy
  * @author Compound Labs, Inc.
  */
-contract QuarkWalletStandalone is QuarkWallet {
+contract QuarkWalletStandalone is QuarkWallet, HasSignerExecutor {
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
     address public immutable signer;
 
