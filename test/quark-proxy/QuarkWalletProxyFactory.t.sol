@@ -18,12 +18,12 @@ import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 contract QuarkWalletProxyFactoryTest is Test {
     event WalletDeploy(address indexed account, address indexed executor, address walletAddress, bytes32 salt);
 
-    CodeJar public codeJar; // implementation test suite should set this in constructor
-    QuarkStateManager public stateManager; // implementation test suite should set this in constructor
-    QuarkWalletProxyFactory public factory; // implementation test suite should set this in constructor
+    CodeJar public codeJar;
+    QuarkStateManager public stateManager;
+    QuarkWalletProxyFactory public factory;
 
     uint256 alicePrivateKey = 0xa11ce;
-    address alice; // see setup()
+    address alice; // see constructor()
     address bob = address(11);
 
     constructor() {
