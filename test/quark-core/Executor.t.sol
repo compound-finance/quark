@@ -5,9 +5,10 @@ import "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
 
-import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
+
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
 import {Counter} from "test/lib/Counter.sol";
 import {YulHelper} from "test/lib/YulHelper.sol";
@@ -38,11 +39,11 @@ contract ExecutorTest is Test {
         console.log("Counter deployed to: %s", address(counter));
 
         // alice sets her EOA to be her wallet's executor
-        aliceWallet = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(aliceAccount, aliceAccount, codeJar, stateManager);
         console.log("aliceWallet at: %s", address(aliceWallet));
 
         // bob sets alice's wallet as his wallet's executor
-        bobWallet = new QuarkWallet(bobAccount, address(aliceWallet), codeJar, stateManager);
+        bobWallet = new QuarkWalletStandalone(bobAccount, address(aliceWallet), codeJar, stateManager);
         console.log("bobWallet at: %s", address(bobWallet));
     }
 

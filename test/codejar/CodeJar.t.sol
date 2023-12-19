@@ -4,9 +4,9 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "test/lib/Counter.sol";
+import {Counter} from "test/lib/Counter.sol";
 
-import "quark-core/src/CodeJar.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
 
 contract CodeJarTest is Test {
     event Ping(uint256 value);

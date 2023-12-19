@@ -5,24 +5,30 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 
-import "quark-core/src/CodeJar.sol";
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkWalletFactory.sol";
+import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 
-import "quark-core-scripts/src/Ethcall.sol";
-import "quark-core-scripts/src/Multicall.sol";
-import "quark-core-scripts/src/UniswapFlashSwapExactOut.sol";
-import "quark-core-scripts/src/vendor/uniswap_v3_periphery/PoolAddress.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import "test/lib/YulHelper.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/Counter.sol";
-import "test/lib/QuarkOperationHelper.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 
-import "test/quark-core-scripts/interfaces/IComet.sol";
+import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
+
+import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
+import {Multicall} from "quark-core-scripts/src/Multicall.sol";
+import {PoolAddress} from "quark-core-scripts/src/vendor/uniswap_v3_periphery/PoolAddress.sol";
+import {UniswapFlashSwapExactOut} from "quark-core-scripts/src/UniswapFlashSwapExactOut.sol";
+
+import {Counter} from "test/lib/Counter.sol";
+
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
+
+import {IComet} from "test/quark-core-scripts/interfaces/IComet.sol";
 
 contract UniswapFlashSwapExactOutTest is Test {
-    QuarkWalletFactory public factory;
+    QuarkWalletProxyFactory public factory;
     // For signature to QuarkWallet
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
@@ -45,14 +51,14 @@ contract UniswapFlashSwapExactOutTest is Test {
             ),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletFactory();
-        ethcallAddress = factory.codeJar().saveCode(ethcall);
-        multicallAddress = factory.codeJar().saveCode(multicall);
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
+        ethcallAddress = QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(ethcall);
+        multicallAddress = QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(multicall);
     }
 
     function testUniswapFlashSwapExactOutLeverageComet() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
         deal(WETH, address(wallet), 10 ether);
@@ -113,7 +119,7 @@ contract UniswapFlashSwapExactOutTest is Test {
 
     function testInvalidCallerFlashSwap() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         deal(WETH, address(wallet), 100 ether);
         deal(USDC, address(wallet), 1000e6);
@@ -144,7 +150,7 @@ contract UniswapFlashSwapExactOutTest is Test {
 
     function testNotEnoughToPayFlashSwap() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
         deal(WETH, address(wallet), 10 ether);

@@ -5,9 +5,10 @@ import "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
 
-import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
+
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
 import {Counter} from "test/lib/Counter.sol";
 import {YulHelper} from "test/lib/YulHelper.sol";
@@ -15,12 +16,12 @@ import {ExecuteOtherOperation} from "test/lib/ExecuteOtherOperation.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-import "test/lib/CounterScript.sol";
-import "test/lib/ExecuteOnBehalf.sol";
-import "test/lib/CallbackFromCounter.sol";
-import "test/lib/CallcodeReentrancy.sol";
+import {CounterScript} from "test/lib/CounterScript.sol";
+import {ExecuteOnBehalf} from "test/lib/ExecuteOnBehalf.sol";
+import {CallbackFromCounter} from "test/lib/CallbackFromCounter.sol";
+import {CallbackCaller, ExploitableScript, ProtectedScript} from "test/lib/CallcodeReentrancy.sol";
 
-import "quark-core-scripts/src/Ethcall.sol";
+import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 
 contract CallbacksTest is Test {
     CodeJar public codeJar;
@@ -43,7 +44,7 @@ contract CallbacksTest is Test {
         console.log("Counter deployed to: %s", address(counter));
 
         aliceAccount = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWallet(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, stateManager);
     }
 
     function testCallbackFromCounter() public {

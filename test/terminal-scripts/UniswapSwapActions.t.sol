@@ -6,21 +6,26 @@ import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
 
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkWalletFactory.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
+
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+
+import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
+
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
+
+import {Counter} from "test/lib/Counter.sol";
 
 import "terminal-scripts/src/TerminalScript.sol";
-
-import "test/lib/YulHelper.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/Counter.sol";
-import "test/lib/QuarkOperationHelper.sol";
 
 /**
  * Tests for purchasing assets from Uniswap V3
  */
 contract UniswapSwapActionsTest is Test {
-    QuarkWalletFactory public factory;
+    QuarkWalletProxyFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
@@ -42,7 +47,7 @@ contract UniswapSwapActionsTest is Test {
             ),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletFactory();
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
     }
 
     // Usually one stop is sufficient for pairs with high liquidity
@@ -50,7 +55,7 @@ contract UniswapSwapActionsTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         deal(USDC, address(wallet), 10000e6);
 
         // ExactIn: Limit the amount of USDC you want to spend and receive as much WETH as possible
@@ -111,7 +116,7 @@ contract UniswapSwapActionsTest is Test {
     // Lower liquidity asset may require to have two stops (USDC -> ETH -> COMP)
     function testBuyAssetTwoStops() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         deal(USDC, address(wallet), 10000e6);
 
@@ -170,7 +175,7 @@ contract UniswapSwapActionsTest is Test {
     // Usually one stop is sufficient for pairs with high liquidity
     function testSellAssetOneStop() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         deal(WETH, address(wallet), 2 ether);
 
@@ -228,7 +233,7 @@ contract UniswapSwapActionsTest is Test {
     // Lower liquidity asset may require to have two stops (COMP -> ETH -> USDC)
     function testSellAssetTwoStops() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         deal(COMP, address(wallet), 100e18);
 
@@ -287,7 +292,7 @@ contract UniswapSwapActionsTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         deal(USDC, address(wallet), 10000e6);
         uint256 wethBalance = IERC20(WETH).balanceOf(address(wallet));
         uint256 usdcBalance = IERC20(USDC).balanceOf(address(wallet));

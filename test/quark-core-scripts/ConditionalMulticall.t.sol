@@ -4,23 +4,29 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
-import "forge-std/interfaces/IERC20.sol";
 
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkWalletFactory.sol";
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
 
-import "quark-core-scripts/src/Ethcall.sol";
-import "quark-core-scripts/src/ConditionalMulticall.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import "test/lib/YulHelper.sol";
-import "test/lib/Counter.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/QuarkOperationHelper.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 
-import "test/quark-core-scripts/interfaces/IComet.sol";
+import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
+
+import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
+import {ConditionalMulticall, ConditionalChecker} from "quark-core-scripts/src/ConditionalMulticall.sol";
+
+import {Counter} from "test/lib/Counter.sol";
+
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
+
+import {IComet} from "test/quark-core-scripts/interfaces/IComet.sol";
 
 contract ConditionalMulticallTest is Test {
-    QuarkWalletFactory public factory;
+    QuarkWalletProxyFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
@@ -42,16 +48,16 @@ contract ConditionalMulticallTest is Test {
             ),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletFactory();
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
         counter = new Counter();
         counter.setNumber(0);
-        ethcallAddress = factory.codeJar().saveCode(ethcall);
-        factory.codeJar().saveCode(conditionalMulticall);
+        ethcallAddress = QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(ethcall);
+        QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(conditionalMulticall);
     }
 
     function testConditionalRunPassed() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
@@ -130,7 +136,7 @@ contract ConditionalMulticallTest is Test {
 
     function testConditionalRunUnmet() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
@@ -183,7 +189,7 @@ contract ConditionalMulticallTest is Test {
 
     function testConditionalRunInvalidInput() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
@@ -212,7 +218,7 @@ contract ConditionalMulticallTest is Test {
 
     function testConditionalRunMulticallError() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
@@ -285,7 +291,7 @@ contract ConditionalMulticallTest is Test {
 
     function testConditionalRunEmptyInputIsValid() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Compose array of parameters
         address[] memory callContracts = new address[](0);
@@ -308,7 +314,7 @@ contract ConditionalMulticallTest is Test {
 
     function testConditionalRunOnPeriodicRepay() public {
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);

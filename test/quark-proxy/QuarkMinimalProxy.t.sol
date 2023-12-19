@@ -4,23 +4,24 @@ pragma solidity 0.8.19;
 import "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
 
-import {CodeJar} from "quark-core/src/CodeJar.sol";
-import {ProxyDirect} from "quark-proxy/src/ProxyDirect.sol";
-import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
+
+import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkWallet, HasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 
 import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-contract ProxyDirectTest is Test {
+contract QuarkMinimalProxyTest is Test {
     CodeJar public codeJar;
     QuarkWallet public walletImplementation;
     QuarkStateManager public stateManager;
 
     uint256 alicePrivateKey = 0x8675309;
     address aliceAccount;
-    ProxyDirect public aliceWalletProxy;
+    QuarkMinimalProxy public aliceWalletProxy;
 
     constructor() {
         codeJar = new CodeJar();
@@ -29,24 +30,27 @@ contract ProxyDirectTest is Test {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to %s", address(stateManager));
 
-        walletImplementation = new QuarkWallet(address(0), address(0), codeJar, stateManager);
+        walletImplementation = new QuarkWallet(codeJar, stateManager);
         console.log("QuarkWallet implementation deployed to %s", address(walletImplementation));
 
         aliceAccount = vm.addr(alicePrivateKey);
         console.log("aliceAccount: %s", aliceAccount);
 
-        aliceWalletProxy = new ProxyDirect(address(walletImplementation), aliceAccount, address(0xabc));
+        aliceWalletProxy = new QuarkMinimalProxy(address(walletImplementation), aliceAccount, address(0xabc));
         console.log("aliceWalletProxy deployed to %s", address(aliceWalletProxy));
     }
 
     function testSignerExecutor() public {
-        assertEq(walletImplementation.signer(), address(0));
-        assertEq(walletImplementation.executor(), address(0));
+        vm.expectRevert();
+        HasSignerExecutor(address(walletImplementation)).signer();
+
+        vm.expectRevert();
+        HasSignerExecutor(address(walletImplementation)).executor();
 
         assertEq(aliceWalletProxy.signer(), aliceAccount);
         assertEq(aliceWalletProxy.executor(), address(0xabc));
 
-        bytes memory testScript = new YulHelper().getDeployed("ProxyDirect.t.sol/TestHarness.json");
+        bytes memory testScript = new YulHelper().getDeployed("QuarkMinimalProxy.t.sol/TestHarness.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             QuarkWallet(payable(aliceWalletProxy)),
             testScript,

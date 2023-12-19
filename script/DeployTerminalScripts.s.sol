@@ -4,8 +4,12 @@ pragma solidity 0.8.19;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-import {CodeJar} from "../quark-core/src/CodeJar.sol";
-import {QuarkWalletFactory} from "../quark-core/src/QuarkWalletFactory.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
+
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+
+import {QuarkWalletProxyFactory} from "../quark-proxy/src/QuarkWalletProxyFactory.sol";
 
 import {
     CometSupplyActions,
@@ -39,8 +43,8 @@ contract DeployTerminalScripts is Script {
 
     function run() public {
         address deployer = vm.addr(vm.envUint("DEPLOYER_PK"));
-        QuarkWalletFactory factory = QuarkWalletFactory(vm.envAddress("QUARK_WALLET_FACTORY_ADDRESS"));
-        CodeJar codeJar = factory.codeJar();
+        QuarkWalletProxyFactory factory = QuarkWalletProxyFactory(vm.envAddress("QUARK_WALLET_FACTORY_ADDRESS"));
+        CodeJar codeJar = QuarkWallet(payable(factory.walletImplementation())).codeJar();
 
         vm.startBroadcast(deployer);
 

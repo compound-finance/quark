@@ -5,21 +5,26 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "forge-std/StdUtils.sol";
 
-import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkWalletFactory.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import "quark-core-scripts/src/Multicall.sol";
-import "quark-core-scripts/src/Ethcall.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+
+import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
+
+import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
+import {Multicall} from "quark-core-scripts/src/Multicall.sol";
+
+import {Counter} from "test/lib/Counter.sol";
+
+import {YulHelper} from "test/lib/YulHelper.sol";
+import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
 import "terminal-scripts/src/TerminalScript.sol";
 
-import "test/lib/YulHelper.sol";
-import "test/lib/SignatureHelper.sol";
-import "test/lib/Counter.sol";
-import "test/lib/QuarkOperationHelper.sol";
-
 contract MulticallTest is Test {
-    QuarkWalletFactory public factory;
+    QuarkWalletProxyFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
@@ -53,20 +58,22 @@ contract MulticallTest is Test {
             ),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletFactory();
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
         counter = new Counter();
         counter.setNumber(0);
-        ethcallAddress = factory.codeJar().saveCode(ethcall);
-        multicallAddress = factory.codeJar().saveCode(multicall);
-        terminalCometSupplyScriptAddress = factory.codeJar().saveCode(terminalCometSupplyScript);
-        terminalCometWithdrawScriptAddress = factory.codeJar().saveCode(terminalCometWithdrawScript);
-        terminalUniswapSwapScriptAddress = factory.codeJar().saveCode(terminalUniswapSwapScript);
+
+        CodeJar codeJar = QuarkWallet(payable(factory.walletImplementation())).codeJar();
+        ethcallAddress = codeJar.saveCode(ethcall);
+        multicallAddress = codeJar.saveCode(multicall);
+        terminalCometSupplyScriptAddress = codeJar.saveCode(terminalCometSupplyScript);
+        terminalCometWithdrawScriptAddress = codeJar.saveCode(terminalCometWithdrawScript);
+        terminalUniswapSwapScriptAddress = codeJar.saveCode(terminalUniswapSwapScript);
     }
 
     function testInvokeCounterTwice() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](2);
@@ -103,7 +110,7 @@ contract MulticallTest is Test {
     function testSupplyWETHWithdrawUSDCOnComet() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
@@ -155,7 +162,7 @@ contract MulticallTest is Test {
     function testInvalidInput() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](1);
@@ -185,7 +192,7 @@ contract MulticallTest is Test {
     function testMulticallError() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
@@ -251,7 +258,7 @@ contract MulticallTest is Test {
     function testEmptyInputIsValid() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Compose array of parameters
         address[] memory callContracts = new address[](0);
         bytes[] memory callDatas = new bytes[](0);
@@ -273,7 +280,7 @@ contract MulticallTest is Test {
     function testMulticallShouldReturnCallResults() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         counter.setNumber(0);
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
@@ -318,9 +325,9 @@ contract MulticallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        QuarkWallet primary = QuarkWallet(factory.create(alice, 0));
-        QuarkWallet walletA = QuarkWallet(factory.create(alice, bytes32("a")));
-        QuarkWallet walletB = QuarkWallet(factory.create(alice, bytes32("b")));
+        QuarkWallet primary = QuarkWallet(factory.create(alice, address(0)));
+        QuarkWallet walletA = QuarkWallet(factory.create(alice, address(primary), bytes32("a")));
+        QuarkWallet walletB = QuarkWallet(factory.create(alice, address(primary), bytes32("b")));
 
         // give sub-wallet A 1 WETH
         deal(WETH, address(walletA), 1 ether);
@@ -333,7 +340,7 @@ contract MulticallTest is Test {
         wallets[0] = address(walletA);
         walletCalls[0] = abi.encodeWithSignature(
             "executeScript(uint96,address,bytes)",
-            factory.stateManager().nextNonce(address(walletA)),
+            QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(address(walletA)),
             ethcallAddress,
             abi.encodeWithSelector(
                 Ethcall.run.selector,
@@ -344,7 +351,8 @@ contract MulticallTest is Test {
         );
 
         // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
-        uint96 walletBNextNonce = factory.stateManager().nextNonce(address(walletB));
+        uint96 walletBNextNonce =
+            QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(address(walletB));
         wallets[1] = address(walletB);
         walletCalls[1] = abi.encodeWithSignature(
             "executeScript(uint96,address,bytes)",
@@ -425,12 +433,12 @@ contract MulticallTest is Test {
     function testCreateSubWalletAndExecute() public {
         vm.pauseGasMetering();
         // User will borrow USDC from Comet in the primary wallet and supply to a subwallet
-        QuarkWallet wallet = QuarkWallet(factory.create(alice));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Set up some funds for test
         deal(WETH, address(wallet), 100 ether);
 
-        address subWallet1 = factory.walletAddressForSignerWithSalt(alice, bytes32("1"));
-        uint96 nonce = factory.stateManager().nextNonce(subWallet1);
+        address subWallet1 = factory.walletAddressForSalt(alice, address(wallet), bytes32("1"));
+        uint96 nonce = QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(subWallet1);
         // Steps: Wallet#1: Supply WETH to Comet -> Borrow USDC from Comet(USDC) to subwallet -> Create subwallet
         // -> Swap USDC to WETH on Uniswap -> Supply WETH to Comet(WETH)
         address[] memory callContracts = new address[](5);
@@ -445,7 +453,7 @@ contract MulticallTest is Test {
         callDatas[2] = abi.encodeWithSelector(
             Ethcall.run.selector,
             address(factory),
-            abi.encodeWithSignature("create(address,bytes32)", alice, bytes32("1")),
+            abi.encodeWithSignature("create(address,address,bytes32)", alice, address(wallet), bytes32("1")),
             0 // value
         );
 
