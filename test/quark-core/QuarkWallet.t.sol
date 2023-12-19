@@ -155,7 +155,7 @@ contract QuarkWalletTest is Test {
     function testEmitsEventsInDirectExecute() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet aliceWalletExecutable = new QuarkWallet(aliceAccount, aliceAccount, codeJar, stateManager);
+        QuarkWallet aliceWalletExecutable = new QuarkWalletStandalone(aliceAccount, aliceAccount, codeJar, stateManager);
         bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
         address scriptAddress = codeJar.saveCode(getMessageDetails);
