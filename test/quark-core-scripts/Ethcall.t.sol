@@ -8,7 +8,8 @@ import "forge-std/StdMath.sol";
 
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 
-import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
+
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 

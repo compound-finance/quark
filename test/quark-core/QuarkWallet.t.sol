@@ -8,7 +8,8 @@ import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
+
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 import {
     QuarkWallet, HasSignerExecutor, QuarkWalletMetadata, QuarkWalletStandalone
