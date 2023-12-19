@@ -114,7 +114,7 @@ contract MulticallTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         Multicall(multicallAddress).initialize();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Compose array of parameters
         address[] memory callContracts = new address[](0);
         bytes[] memory callDatas = new bytes[](0);
@@ -139,7 +139,7 @@ contract MulticallTest is Test {
     function testCallcodeToMulticallSucceedsWhenUninitialized() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         // Compose array of parameters
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](2);
