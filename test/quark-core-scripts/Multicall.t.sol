@@ -17,6 +17,7 @@ import "test/lib/YulHelper.sol";
 import "test/lib/SignatureHelper.sol";
 import "test/lib/Counter.sol";
 import "test/lib/QuarkOperationHelper.sol";
+import "test/lib/EvilSelfdestruct.sol";
 
 contract MulticallTest is Test {
     QuarkWalletFactory public factory;
@@ -507,5 +508,34 @@ contract MulticallTest is Test {
         assertEq(IComet(cUSDCv3).collateralBalanceOf(address(wallet), WETH), 100 ether);
         assertEq(IComet(cUSDCv3).borrowBalanceOf(address(wallet)), 10_000e6);
         assertApproxEqAbs(IComet(cWETHv3).balanceOf(address(subWallet1)), 2 ether, 1);
+    }
+
+    // Prevent selfdestruct in multicall
+    function testMulticallPreventSelfdestruct() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, 0));
+        EvilSelfdestruct evilSelfDestruct = new EvilSelfdestruct();
+        // Compose array of parameters
+        address[] memory callContracts = new address[](1);
+        bytes[] memory callDatas = new bytes[](1);
+        callContracts[0] = address(evilSelfDestruct);
+        callDatas[0] = abi.encodeWithSelector(EvilSelfdestruct.attack.selector);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            multicall,
+            abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        console.log("Contract bytes length***");
+        console.log(address(evilSelfDestruct).code.length);
+        console.log("Contract doe **");
+        console.logBytes(address(evilSelfDestruct).code);
+        // gas: meter execute
+        vm.resumeGasMetering();
+        wallet.executeQuarkOperation(op, v, r, s);
     }
 }
