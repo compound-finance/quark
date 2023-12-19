@@ -38,7 +38,7 @@ interface HasSignerExecutor {
 }
 
 /**
- * @title Quark Wallet abstract base class
+ * @title Quark Wallet base class
  * @notice A smart wallet that can run transaction scripts
  * @dev An implementor needs only to provide a public signer and executor: these could be constants, immutables, or address getters of any kind
  * @author Compound Labs, Inc.
@@ -340,7 +340,7 @@ contract QuarkWallet is IERC1271 {
 
 /**
  * @title Quark Wallet Standalone
- * @notice Standalone implementation of the Abstract Quark Wallet interface that does not require a proxy wrapper
+ * @notice Standalone extension of the Quark Wallet base class that does not require a proxy
  * @author Compound Labs, Inc.
  */
 contract QuarkWalletStandalone is QuarkWallet {
