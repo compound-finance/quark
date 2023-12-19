@@ -70,7 +70,7 @@ contract QuarkWalletProxyFactoryTest is Test {
     }
 
     function testCreateAdditionalWalletWithSalt() public {
-        // inital wallet is created
+        // initial wallet is created
         vm.expectEmit(true, true, true, true);
         emit WalletDeploy(alice, address(0), factory.walletAddressFor(alice, address(0)), bytes32(0));
         factory.create(alice, address(0));
