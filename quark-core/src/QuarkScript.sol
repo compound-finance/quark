@@ -27,29 +27,6 @@ abstract contract QuarkScript {
     }
 
     /**
-     * @notice A gas optimized reentrancy guard that writes to the wallet's storage instead of the QuarkStateManager
-     * @dev Note: Use with caution; make sure that the slot is not overwritten by other scripts
-     */
-    modifier nonReentrantOptimized() {
-        bytes32 slot = REENTRANCY_FLAG_SLOT;
-        uint256 status;
-        assembly ("memory-safe") {
-            status := sload(slot)
-        }
-
-        if (status != 0) revert ReentrantCall();
-        assembly ("memory-safe") {
-            sstore(slot, 1)
-        }
-
-        _;
-
-        assembly ("memory-safe") {
-            sstore(slot, 0)
-        }
-    }
-
-    /**
      * @notice A cheaper, but weaker reentrancy guard that does not prevent recursive reentrancy (e.g. script calling itself)
      * @dev Use with caution; this guard should only be used if the function being guarded cannot recursively call itself
      *      There are currently two ways to do this from a script:
