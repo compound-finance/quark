@@ -536,6 +536,7 @@ contract MulticallTest is Test {
         console.logBytes(address(evilSelfDestruct).code);
         // gas: meter execute
         vm.resumeGasMetering();
+        vm.expectRevert(abi.encodeWithSelector(Multicall.SelfdestructableScript.selector));
         wallet.executeQuarkOperation(op, v, r, s);
     }
 }
