@@ -49,6 +49,23 @@ abstract contract QuarkScript {
         }
     }
 
+    /**
+     * @notice A cheaper, but weaker reentrancy guard that does not prevent recursive reentrancy (e.g. script calling itself)
+     * @dev Use with caution; this guard should only be used if the function being guarded cannot recursively call itself
+     *      There are currently two ways to do this from a script:
+     *         1. The script uses `delegatecall` and the target can be itself (technically the wallet). The script
+     *            script has to also enable callbacks for this reentrancy to succeed.
+     *         2. The script defines circular codepaths that can be used to reenter the function using internal
+     *            functions.
+     */
+    modifier onlyWallet() {
+        if (msg.sender != address(this)) {
+            revert ReentrantCall();
+        }
+
+        _;
+    }
+
     function signer() internal view returns (address) {
         return HasSignerExecutor(address(this)).signer();
     }
