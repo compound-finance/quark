@@ -23,14 +23,42 @@ contract ExploitableScript is QuarkScript, CallbackReceiver {
         return result;
     }
 
+    // protected by `onlyWallet`, but still susceptible to recursive re-entrancy due to using `delegatecall`
+    function callMeBackDelegateCall(address target, bytes calldata call, uint256 fee)
+        external
+        payable
+        onlyWallet
+        returns (bytes memory)
+    {
+        allowCallback();
+        (bool success, bytes memory result) = target.call{value: fee}("");
+        if (!success) {
+            assembly {
+                revert(add(result, 0x20), mload(result))
+            }
+        }
+
+        (success, result) = target.delegatecall(call);
+        if (!success) {
+            assembly {
+                revert(add(result, 0x20), mload(result))
+            }
+        }
+        return result;
+    }
+
     // one could imagine that we are repaying a flash loan, for example, here
     function receiveCallback() external {}
 }
 
 contract ProtectedScript is QuarkScript, CallbackReceiver {
     // we expect a callback, guarding against re-entrancy, so we only pay the target once
-    function callMeBack(address target, bytes calldata call, uint256 fee) external payable returns (bytes memory) {
-        require(msg.sender == address(this));
+    function callMeBack(address target, bytes calldata call, uint256 fee)
+        external
+        payable
+        onlyWallet
+        returns (bytes memory)
+    {
         allowCallback();
         (bool success, bytes memory result) = target.call{value: fee}(call);
         if (!success) {
@@ -56,7 +84,22 @@ contract CallbackCaller {
         }
     }
 
+    function doubleDipDelegateCall(bool dipped, address dipReceiver) external {
+        if (!dipped) {
+            msg.sender.delegatecall(
+                abi.encodeCall(
+                    ExploitableScript.callMeBackDelegateCall,
+                    (dipReceiver, abi.encodeCall(CallbackCaller.doubleDipDelegateCall, (true, dipReceiver)), 1 ether)
+                )
+            );
+        } else {
+            CallbackReceiver(msg.sender).receiveCallback();
+        }
+    }
+
     function beGood() external payable {
         CallbackReceiver(msg.sender).receiveCallback();
     }
+
+    receive() external payable {}
 }
