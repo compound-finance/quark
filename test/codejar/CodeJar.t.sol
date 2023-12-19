@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import {Counter} from "test/lib/Counter.sol";
 
-import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
 
 contract CodeJarTest is Test {
     event Ping(uint256 value);

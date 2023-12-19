@@ -4,7 +4,8 @@ pragma solidity 0.8.19;
 import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
 
-import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
+
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 
 /**

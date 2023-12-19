@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {CodeJar} from "codejar/src/CodeJar.sol";
 
 contract Reverts {
     error Whoops();

@@ -1,4 +1,5 @@
 test=../test
+codejar=../codejar/
 quark-core=../quark-core/
 quark-proxy=../quark-proxy/
 quark-core-scripts=../quark-core-scripts/
