@@ -43,6 +43,7 @@ contract UniswapFlashSwapExactOutTest is Test {
         new YulHelper().getDeployed("UniswapFlashSwapExactOut.sol/UniswapFlashSwapExactOut.json");
     address ethcallAddress;
     address multicallAddress;
+    address uniswapFlashSwapExactOutAddress;
 
     function setUp() public {
         vm.createSelectFork(
@@ -54,6 +55,8 @@ contract UniswapFlashSwapExactOutTest is Test {
         factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
         ethcallAddress = QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(ethcall);
         multicallAddress = QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(multicall);
+        uniswapFlashSwapExactOutAddress =
+            QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(uniswapFlashSwapExactOut);
     }
 
     function testUniswapFlashSwapExactOutLeverageComet() public {
@@ -190,5 +193,26 @@ contract UniswapFlashSwapExactOutTest is Test {
         vm.expectRevert("ERC20: transfer amount exceeds balance");
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    function testRevertsIfCalledDirectly() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        UniswapFlashSwapExactOut.UniswapFlashSwapExactOutPayload memory payload = UniswapFlashSwapExactOut
+            .UniswapFlashSwapExactOutPayload({
+            tokenOut: WETH,
+            tokenIn: USDC,
+            fee: 500,
+            amountOut: 1,
+            sqrtPriceLimitX96: 0,
+            callContract: address(0),
+            callData: bytes("")
+        });
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        // Reverts when calling `allowCallback()`, which tries to get the `stateManager` from self
+        vm.expectRevert();
+        UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress).run(payload);
     }
 }
