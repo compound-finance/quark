@@ -60,6 +60,11 @@ abstract contract QuarkScript {
         self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(self.stateManager().getActiveScript()))));
     }
 
+    function clearCallback() internal {
+        QuarkWallet self = QuarkWallet(payable(address(this)));
+        self.stateManager().write(self.CALLBACK_KEY(), bytes32(0));
+    }
+
     function allowReplay() internal {
         return QuarkWallet(payable(address(this))).stateManager().clearNonce();
     }
