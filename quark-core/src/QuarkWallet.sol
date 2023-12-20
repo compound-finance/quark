@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.19;
+pragma solidity 0.8.23;
 
 import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
