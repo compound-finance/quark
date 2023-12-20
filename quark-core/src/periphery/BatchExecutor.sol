@@ -10,7 +10,7 @@ import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
  * @author Compound Labs, Inc.
  */
 contract BatchExecutor {
-    /// @notice The parameters used for processing a Quark operation
+    /// @notice The parameters used for processing a QuarkOperation
     struct OperationParams {
         address account;
         QuarkWallet.QuarkOperation op;
@@ -39,7 +39,7 @@ contract BatchExecutor {
         return (successes, returnData);
     }
 
-    /// @notice Execute a single QuarkOperations via signature
+    /// @notice Execute a single QuarkOperation via signature
     function executeOperation(OperationParams memory op)
         internal returns (bool, bytes memory)
     {
