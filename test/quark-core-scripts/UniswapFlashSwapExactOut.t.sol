@@ -32,7 +32,6 @@ contract UniswapFlashSwapExactOutTest is Test {
     // For signature to QuarkWallet
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
-    bytes32 constant CONTRACT_ADDRESS_SLOT = keccak256("quark.scripts.uniswapflashswap.exactout.address.v1");
 
     // Comet address in mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
@@ -44,7 +43,6 @@ contract UniswapFlashSwapExactOutTest is Test {
         new YulHelper().getDeployed("UniswapFlashSwapExactOut.sol/UniswapFlashSwapExactOut.json");
     address ethcallAddress;
     address multicallAddress;
-    address uniswapFlashSwapExactOutAddress;
 
     function setUp() public {
         vm.createSelectFork(
@@ -56,87 +54,10 @@ contract UniswapFlashSwapExactOutTest is Test {
         factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
         ethcallAddress = QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(ethcall);
         multicallAddress = QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(multicall);
-        uniswapFlashSwapExactOutAddress =
-            QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(uniswapFlashSwapExactOut);
     }
-
-    /* ===== call context-based tests ===== */
-
-    function testInitializesStorageProperly() public {
-        address storedAddress =
-            address(uint160(uint256(vm.load(uniswapFlashSwapExactOutAddress, CONTRACT_ADDRESS_SLOT))));
-        assertEq(storedAddress, address(0));
-
-        UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress).initialize();
-
-        storedAddress = address(uint160(uint256(vm.load(uniswapFlashSwapExactOutAddress, CONTRACT_ADDRESS_SLOT))));
-        assertEq(storedAddress, uniswapFlashSwapExactOutAddress);
-    }
-
-    function testNoOpWhenInitializedMultipleTimes() public {
-        address storedAddress =
-            address(uint160(uint256(vm.load(uniswapFlashSwapExactOutAddress, CONTRACT_ADDRESS_SLOT))));
-        assertEq(storedAddress, address(0));
-
-        UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress).initialize();
-
-        storedAddress = address(uint160(uint256(vm.load(uniswapFlashSwapExactOutAddress, CONTRACT_ADDRESS_SLOT))));
-        assertEq(storedAddress, uniswapFlashSwapExactOutAddress);
-
-        UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress).initialize();
-
-        storedAddress = address(uint160(uint256(vm.load(uniswapFlashSwapExactOutAddress, CONTRACT_ADDRESS_SLOT))));
-        assertEq(storedAddress, uniswapFlashSwapExactOutAddress);
-    }
-
-    function testRevertsForInvalidCallContext() public {
-        UniswapFlashSwapExactOut uniswapFlashSwapExactOutContract =
-            UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress);
-        uniswapFlashSwapExactOutContract.initialize();
-
-        // Direct calls fail once initialized
-        vm.expectRevert(abi.encodeWithSelector(UniswapFlashSwapExactOut.InvalidCallContext.selector));
-        uniswapFlashSwapExactOutContract.uniswapV3SwapCallback(0, 0, bytes(""));
-    }
-
-    function testCanBeGriefedByWritingAddressToQuarkWalletStorage() public {
-        // gas: do not meter set-up
-        vm.pauseGasMetering();
-        UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress).initialize();
-        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-
-        UniswapFlashSwapExactOut.UniswapFlashSwapExactOutPayload memory payload = UniswapFlashSwapExactOut
-            .UniswapFlashSwapExactOutPayload({
-            tokenOut: WETH,
-            tokenIn: USDC,
-            fee: 500,
-            amountOut: 1,
-            sqrtPriceLimitX96: 0,
-            callContract: address(0),
-            callData: bytes("")
-        });
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            wallet,
-            uniswapFlashSwapExactOut,
-            abi.encodeWithSelector(UniswapFlashSwapExactOut.run.selector, payload),
-            ScriptType.ScriptAddress
-        );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-
-        // Write multicall address to storage slot in Quark wallet
-        vm.store(address(wallet), CONTRACT_ADDRESS_SLOT, bytes32(uint256(uint160(address(wallet)))));
-
-        // gas: meter execute
-        vm.resumeGasMetering();
-        vm.expectRevert(abi.encodeWithSelector(Multicall.InvalidCallContext.selector));
-        wallet.executeQuarkOperation(op, v, r, s);
-    }
-
-    /* ===== general tests ===== */
 
     function testUniswapFlashSwapExactOutLeverageComet() public {
         vm.pauseGasMetering();
-        UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
@@ -198,7 +119,6 @@ contract UniswapFlashSwapExactOutTest is Test {
 
     function testInvalidCallerFlashSwap() public {
         vm.pauseGasMetering();
-        UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         deal(WETH, address(wallet), 100 ether);
@@ -230,7 +150,6 @@ contract UniswapFlashSwapExactOutTest is Test {
 
     function testNotEnoughToPayFlashSwap() public {
         vm.pauseGasMetering();
-        UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test

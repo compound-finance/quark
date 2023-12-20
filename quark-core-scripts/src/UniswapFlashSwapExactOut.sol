@@ -22,7 +22,6 @@ contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
     /// Reference: https://github.com/Uniswap/v3-core/blob/main/contracts/libraries/TickMath.sol
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
-    error InvalidCallContext();
     error InvalidCaller();
 
     /// @notice Input for flash swap when interacting with UniswapV3 Pool swap function
@@ -41,17 +40,6 @@ contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
         uint160 sqrtPriceLimitX96;
         address callContract;
         bytes callData;
-    }
-
-    /// @notice Storage location at which to cache this contract's address
-    bytes32 internal constant CONTRACT_ADDRESS_SLOT = keccak256("quark.scripts.uniswapflashswap.exactout.address.v1");
-
-    /// @notice Initialize by storing the contract address
-    function initialize() external {
-        bytes32 slot = CONTRACT_ADDRESS_SLOT;
-        assembly ("memory-safe") {
-            sstore(slot, address())
-        }
     }
 
     /**
@@ -86,16 +74,6 @@ contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
      * @param data FlashSwap encoded to bytes passed from UniswapV3Pool.swap(); contains script info to execute (possibly with checks) before returning the owed amount
      */
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
-        bytes32 slot = CONTRACT_ADDRESS_SLOT;
-        address thisAddress;
-        assembly ("memory-safe") {
-            thisAddress := sload(slot)
-        }
-
-        if (address(this) == thisAddress) {
-            revert InvalidCallContext();
-        }
-
         FlashSwapExactOutInput memory input = abi.decode(data, (FlashSwapExactOutInput));
         IUniswapV3Pool pool =
             IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), input.poolKey));
