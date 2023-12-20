@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.19;
+pragma solidity 0.8.23;
 
 interface IExecutor {
     function executeScriptWithNonceLock(address scriptAddress, bytes calldata scriptCalldata)
