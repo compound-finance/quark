@@ -28,6 +28,7 @@ contract MulticallTest is Test {
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
+    bytes32 constant CONTRACT_ADDRESS_SLOT = keccak256("quark.scripts.multicall.address.v1");
 
     // Comet address in mainnet
     address constant cUSDCv3 = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
@@ -73,27 +74,28 @@ contract MulticallTest is Test {
     /* ===== call context-based tests ===== */
 
     function testInitializesStorageProperly() public {
-        bytes32 slot = keccak256("quark.scripts.multicall.v1");
-        address storedMulticallAddress = address(uint160(uint256(vm.load(multicallAddress, slot))));
-        bytes32 initialized = vm.load(address(multicallAddress), bytes32(0));
-
+        address storedMulticallAddress = address(uint160(uint256(vm.load(multicallAddress, CONTRACT_ADDRESS_SLOT))));
         assertEq(storedMulticallAddress, address(0));
-        assertEq(initialized, bytes32(0));
 
         Multicall(multicallAddress).initialize();
 
-        storedMulticallAddress = address(uint160(uint256(vm.load(multicallAddress, slot))));
-        initialized = vm.load(address(multicallAddress), bytes32(0));
-
+        storedMulticallAddress = address(uint160(uint256(vm.load(multicallAddress, CONTRACT_ADDRESS_SLOT))));
         assertEq(storedMulticallAddress, multicallAddress);
-        assertNotEq(initialized, bytes32(0));
     }
 
-    function testCanOnlyInitializeOnce() public {
+    function testNoOpWhenInitializedMultipleTimes() public {
+        address storedMulticallAddress = address(uint160(uint256(vm.load(multicallAddress, CONTRACT_ADDRESS_SLOT))));
+        assertEq(storedMulticallAddress, address(0));
+
         Multicall(multicallAddress).initialize();
 
-        vm.expectRevert(abi.encodeWithSelector(Multicall.AlreadyInitialized.selector));
+        storedMulticallAddress = address(uint160(uint256(vm.load(multicallAddress, CONTRACT_ADDRESS_SLOT))));
+        assertEq(storedMulticallAddress, multicallAddress);
+
         Multicall(multicallAddress).initialize();
+
+        storedMulticallAddress = address(uint160(uint256(vm.load(multicallAddress, CONTRACT_ADDRESS_SLOT))));
+        assertEq(storedMulticallAddress, multicallAddress);
     }
 
     function testRevertsForInvalidCallContext() public {
@@ -127,8 +129,7 @@ contract MulticallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // Write multicall address to storage slot in Quark wallet
-        bytes32 slot = keccak256("quark.scripts.multicall.v1");
-        vm.store(address(wallet), slot, bytes32(uint256(uint160(address(wallet)))));
+        vm.store(address(wallet), CONTRACT_ADDRESS_SLOT, bytes32(uint256(uint160(address(wallet)))));
 
         // gas: meter execute
         vm.resumeGasMetering();

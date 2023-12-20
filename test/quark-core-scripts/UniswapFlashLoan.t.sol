@@ -33,6 +33,7 @@ contract UniswapFlashLoanTest is Test {
     // For signature to QuarkWallet
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
+    bytes32 constant CONTRACT_ADDRESS_SLOT = keccak256("quark.scripts.uniswapflashloan.address.v1");
 
     // Comet address in mainnet
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
@@ -63,8 +64,79 @@ contract UniswapFlashLoanTest is Test {
         uniswapFlashLoanAddress = codeJar.saveCode(uniswapFlashLoan);
     }
 
+    /* ===== call context-based tests ===== */
+
+    function testInitializesStorageProperly() public {
+        address storedAddress = address(uint160(uint256(vm.load(uniswapFlashLoanAddress, CONTRACT_ADDRESS_SLOT))));
+        assertEq(storedAddress, address(0));
+
+        UniswapFlashLoan(uniswapFlashLoanAddress).initialize();
+
+        storedAddress = address(uint160(uint256(vm.load(uniswapFlashLoanAddress, CONTRACT_ADDRESS_SLOT))));
+        assertEq(storedAddress, uniswapFlashLoanAddress);
+    }
+
+    function testNoOpWhenInitializedMultipleTimes() public {
+        address storedAddress = address(uint160(uint256(vm.load(uniswapFlashLoanAddress, CONTRACT_ADDRESS_SLOT))));
+        assertEq(storedAddress, address(0));
+
+        UniswapFlashLoan(uniswapFlashLoanAddress).initialize();
+
+        storedAddress = address(uint160(uint256(vm.load(uniswapFlashLoanAddress, CONTRACT_ADDRESS_SLOT))));
+        assertEq(storedAddress, uniswapFlashLoanAddress);
+
+        UniswapFlashLoan(uniswapFlashLoanAddress).initialize();
+
+        storedAddress = address(uint160(uint256(vm.load(uniswapFlashLoanAddress, CONTRACT_ADDRESS_SLOT))));
+        assertEq(storedAddress, uniswapFlashLoanAddress);
+    }
+
+    function testRevertsForInvalidCallContext() public {
+        UniswapFlashLoan uniswapFlashLoanContract = UniswapFlashLoan(uniswapFlashLoanAddress);
+        uniswapFlashLoanContract.initialize();
+
+        // Direct calls fail once initialized
+        vm.expectRevert(abi.encodeWithSelector(UniswapFlashLoan.InvalidCallContext.selector));
+        uniswapFlashLoanContract.uniswapV3FlashCallback(0, 0, bytes(""));
+    }
+
+    function testCanBeGriefedByWritingAddressToQuarkWalletStorage() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        UniswapFlashLoan(uniswapFlashLoanAddress).initialize();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
+
+        UniswapFlashLoan.UniswapFlashLoanPayload memory payload = UniswapFlashLoan.UniswapFlashLoanPayload({
+            token0: USDC,
+            token1: DAI,
+            fee: 100,
+            amount0: 0,
+            amount1: 0,
+            callContract: address(0),
+            callData: bytes("")
+        });
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            uniswapFlashLoan,
+            abi.encodeWithSelector(UniswapFlashLoan.run.selector, payload),
+            ScriptType.ScriptAddress
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // Write multicall address to storage slot in Quark wallet
+        vm.store(address(wallet), CONTRACT_ADDRESS_SLOT, bytes32(uint256(uint160(address(wallet)))));
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectRevert(abi.encodeWithSelector(Multicall.InvalidCallContext.selector));
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    /* ===== general tests ===== */
+
     function testFlashLoanForCollateralSwapOnCompound() public {
         vm.pauseGasMetering();
+        UniswapFlashLoan(uniswapFlashLoanAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Set up some funds for test
@@ -191,6 +263,7 @@ contract UniswapFlashLoanTest is Test {
 
     function testRevertsForInvalidCaller() public {
         vm.pauseGasMetering();
+        UniswapFlashLoan(uniswapFlashLoanAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         deal(WETH, address(wallet), 100 ether);
@@ -224,6 +297,7 @@ contract UniswapFlashLoanTest is Test {
 
     function testRevertsForInsufficientFundsToRepayFlashLoan() public {
         vm.pauseGasMetering();
+        UniswapFlashLoan(uniswapFlashLoanAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         // Send USDC to random address
@@ -253,6 +327,7 @@ contract UniswapFlashLoanTest is Test {
 
     function testTokensOrderInvariant() public {
         vm.pauseGasMetering();
+        UniswapFlashLoan(uniswapFlashLoanAddress).initialize();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
         deal(USDC, address(wallet), 10_000e6);

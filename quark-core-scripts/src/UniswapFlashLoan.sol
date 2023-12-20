@@ -13,6 +13,7 @@ import "quark-core-scripts/src/lib/UniswapFactoryAddress.sol";
 contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
     using SafeERC20 for IERC20;
 
+    error InvalidCallContext();
     error InvalidCaller();
 
     /// @notice Input for flash loan when interacting with UniswapV3 Pool contract
@@ -33,6 +34,17 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
         uint256 amount1;
         address callContract;
         bytes callData;
+    }
+
+    /// @notice Storage location at which to cache this contract's address
+    bytes32 internal constant CONTRACT_ADDRESS_SLOT = keccak256("quark.scripts.uniswapflashloan.address.v1");
+
+    /// @notice Initialize by storing the contract address
+    function initialize() external {
+        bytes32 slot = CONTRACT_ADDRESS_SLOT;
+        assembly ("memory-safe") {
+            sstore(slot, address())
+        }
     }
 
     /**
@@ -70,6 +82,16 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
      * @param data FlashLoanCallbackPayload encoded to bytes passed from IUniswapV3Pool.flash(); contains scripts info to execute before repaying the flash loan
      */
     function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {
+        bytes32 slot = CONTRACT_ADDRESS_SLOT;
+        address thisAddress;
+        assembly ("memory-safe") {
+            thisAddress := sload(slot)
+        }
+
+        if (address(this) == thisAddress) {
+            revert InvalidCallContext();
+        }
+
         FlashLoanCallbackPayload memory input = abi.decode(data, (FlashLoanCallbackPayload));
         IUniswapV3Pool pool =
             IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), input.poolKey));
