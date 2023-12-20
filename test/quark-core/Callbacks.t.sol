@@ -189,7 +189,9 @@ contract CallbacksTest is Test {
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
-    function testCallcodeReentrancyExploit() public {
+    /* ===== callback reentrancy tests ===== */
+
+    function testCallcodeReentrancyExploitWithUnprotectedScript() public {
         /*
          * Notably, Quark uses `callcode` instead of `delegatecall` to execute script bytecode in
          * the context of a wallet. Consequently, it is possible to construct a sort of "only-self"
@@ -249,7 +251,7 @@ contract CallbacksTest is Test {
         assertEq(callbackCallerAddress.balance, 1000 wei);
     }
 
-    function testCallcodeReentrancyProtection() public {
+    function testCallcodeReentrancyProtectionWithProtectedScript() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory protectedScript = new YulHelper().getDeployed("CallcodeReentrancy.sol/ProtectedScript.json");
@@ -299,5 +301,35 @@ contract CallbacksTest is Test {
         aliceWallet.executeQuarkOperation(behavedOp, behaved_v, behaved_r, behaved_s);
         // the well-behaved callback caller gets the correct fee
         assertEq(callbackCallerAddress.balance, 500 wei);
+    }
+
+    // This exploit is possible despite the use of `onlyWallet` guard because it uses recursive reentrancy (using delegatecalls)
+    function testCallcodeReentrancyExploitWithProtectedScript() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory exploitableScript = new YulHelper().getDeployed("CallcodeReentrancy.sol/ExploitableScript.json");
+        bytes memory callbackCaller = new YulHelper().getDeployed("CallcodeReentrancy.sol/CallbackCaller.json");
+
+        address callbackCallerAddress = codeJar.saveCode(callbackCaller);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            exploitableScript,
+            abi.encodeWithSignature(
+                "callMeBackDelegateCall(address,bytes,uint256)",
+                callbackCallerAddress,
+                abi.encodeWithSignature("doubleDipDelegateCall(bool,address)", false, callbackCallerAddress),
+                1 ether /* fee */
+            ),
+            ScriptType.ScriptAddress
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        deal(address(aliceWallet), 2 ether);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(callbackCallerAddress.balance, 2 ether);
     }
 }

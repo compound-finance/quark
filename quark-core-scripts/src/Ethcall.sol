@@ -9,6 +9,7 @@ pragma solidity 0.8.19;
 contract Ethcall {
     /**
      * @notice Execute a single call
+     * @dev Note: Does not use a reentrancy guard, so make sure to only call into trusted contracts
      * @param callContract Contract to call
      * @param callData Encoded calldata for call
      * @param callValue Value for call
