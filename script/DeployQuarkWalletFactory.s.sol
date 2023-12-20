@@ -7,8 +7,9 @@ import "forge-std/console.sol";
 import {CodeJar} from "quark-core/src/CodeJar.sol";
 import {CodeJarFactory} from "quark-core/src/CodeJarFactory.sol";
 import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
+import {QuarkFactory} from "quark-factory/src/QuarkFactory.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
-
 import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 
@@ -23,7 +24,10 @@ import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 // ETHERSCAN_KEY
 
 contract DeployQuarkWalletFactory is Script {
+    QuarkFactory quarkFactory;
     QuarkWalletFactory quarkWalletFactory;
+    QuarkStateManager quarkSatateManager;
+    CodeJar codeJar;
     BatchExecutor batchExecutor;
     Ethcall ethcall;
     Multicall multicall;
@@ -34,16 +38,16 @@ contract DeployQuarkWalletFactory is Script {
         vm.startBroadcast(deployer);
 
         console.log("=============================================================");
-        console.log("Deploying CodeJar");
+        console.log("Deploying QuarkFactory");
 
-        CodeJarFactory codeJarFactory = new CodeJarFactory();
-        CodeJar codeJar = codeJarFactory.codeJar();
+        quarkFactory = new QuarkFactory();
+        codeJar = quarkFactory.codeJar();
+        quarkSatateManager = quarkFactory.stateManager();
+        quarkWalletFactory = quarkFactory.quarkWalletFactory();
 
-        console.log("=============================================================");
-        console.log("Deploying QuarkWalletFactory");
-
-        quarkWalletFactory = new QuarkWalletFactory(codeJar);
-
+        console.log("QuarkFactory Deployed:", address(quarkFactory));
+        console.log("CodeJar Deployed:", address(codeJar));
+        console.log("QuarkStateManager Deployed:", address(quarkSatateManager));
         console.log("QuarkWalletFactory Deployed:", address(quarkWalletFactory));
 
         console.log("Deploying BatchExecutor");

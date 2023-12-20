@@ -7,6 +7,7 @@ import "forge-std/StdUtils.sol";
 
 import "quark-core/src/CodeJar.sol";
 import "quark-core/src/CodeJarFactory.sol";
+import "quark-core/src/QuarkStateManager.sol";
 import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkWalletFactory.sol";
 
@@ -48,7 +49,8 @@ contract UniswapFlashSwapExactOutTest is Test {
         );
         CodeJarFactory codeJarFactory = new CodeJarFactory();
         CodeJar codeJar = codeJarFactory.codeJar();
-        factory = new QuarkWalletFactory(codeJar);
+        QuarkStateManager stateManager = new QuarkStateManager();
+        factory = new QuarkWalletFactory(codeJar, stateManager);
         ethcallAddress = factory.codeJar().saveCode(ethcall);
         multicallAddress = factory.codeJar().saveCode(multicall);
     }

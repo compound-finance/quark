@@ -26,9 +26,9 @@ contract QuarkWalletFactory {
     QuarkStateManager public immutable stateManager;
 
     /// @notice Construct a new QuarkWalletFactory, deploying a CodeJar and QuarkStateManager as well
-    constructor(CodeJar codeJar_) {
+    constructor(CodeJar codeJar_, QuarkStateManager codeStateManager_) {
         codeJar = codeJar_;
-        stateManager = new QuarkStateManager();
+        stateManager = codeStateManager_;
     }
 
     /**

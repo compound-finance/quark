@@ -1,6 +1,7 @@
 test=test/
 quark-core=quark-core/
 quark-proxy=quark-proxy/
+quark-factory=quark-factory/
 @uniswap/=lib/
 ds-test/=lib/forge-std/lib/ds-test/src/
 erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/

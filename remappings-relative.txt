@@ -2,6 +2,7 @@ test=../test
 quark-core=../quark-core/
 quark-proxy=../quark-proxy/
 quark-core-scripts=../quark-core-scripts/
+quark-factory=../quark-factory/
 terminal-scripts=../terminal-scripts/
 @uniswap/=../lib/
 ds-test/=../lib/forge-std/lib/ds-test/src/

@@ -7,6 +7,7 @@ import "forge-std/StdUtils.sol";
 import "forge-std/interfaces/IERC20.sol";
 
 import "quark-core/src/CodeJarFactory.sol";
+import "quark-core/src/QuarkStateManager.sol";
 import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkWalletFactory.sol";
 
@@ -45,7 +46,8 @@ contract ConditionalMulticallTest is Test {
         );
         CodeJarFactory codeJarFactory = new CodeJarFactory();
         CodeJar codeJar = codeJarFactory.codeJar();
-        factory = new QuarkWalletFactory(codeJar);
+        QuarkStateManager stateManager = new QuarkStateManager();
+        factory = new QuarkWalletFactory(codeJar, stateManager);
         counter = new Counter();
         counter.setNumber(0);
         ethcallAddress = factory.codeJar().saveCode(ethcall);

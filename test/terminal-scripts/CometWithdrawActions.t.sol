@@ -7,6 +7,7 @@ import "forge-std/StdUtils.sol";
 import "forge-std/StdMath.sol";
 
 import "quark-core/src/CodeJarFactory.sol";
+import "quark-core/src/QuarkStateManager.sol";
 import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkWalletFactory.sol";
 
@@ -43,7 +44,8 @@ contract WithdrawActionsTest is Test {
         );
         CodeJarFactory codeJarFactory = new CodeJarFactory();
         CodeJar codeJar = codeJarFactory.codeJar();
-        factory = new QuarkWalletFactory(codeJar);
+        QuarkStateManager stateManager = new QuarkStateManager();
+        factory = new QuarkWalletFactory(codeJar, stateManager);
     }
 
     function testWithdraw() public {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.19;
 
-import {CodeJarStub} from "./CodeJarStub.sol";
+import {CodeJarStub} from "quark-core/src/CodeJarStub.sol";
 
 /**
  * @title Code Jar
@@ -52,7 +52,18 @@ contract CodeJar {
      */
     function getCodeAddress(bytes memory code) internal view returns (address) {
         return address(
-            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), uint256(0), keccak256(abi.encodePacked(type(CodeJarStub).creationCode, abi.encode(code)))))))
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            bytes1(0xff),
+                            address(this),
+                            uint256(0),
+                            keccak256(abi.encodePacked(type(CodeJarStub).creationCode, abi.encode(code)))
+                        )
+                    )
+                )
+            )
         );
     }
 }

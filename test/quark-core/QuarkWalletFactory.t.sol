@@ -10,6 +10,7 @@ import {YulHelper} from "test/lib/YulHelper.sol";
 
 import {CodeJarFactory} from "quark-core/src/CodeJarFactory.sol";
 import {CodeJar} from "quark-core/src/CodeJar.sol";
+import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkWalletFactory} from "quark-core/src/QuarkWalletFactory.sol";
 
@@ -28,7 +29,8 @@ contract QuarkWalletFactoryTest is Test {
     constructor() {
         CodeJarFactory codeJarFactory = new CodeJarFactory();
         CodeJar codeJar = codeJarFactory.codeJar();
-        factory = new QuarkWalletFactory(codeJar);
+        QuarkStateManager stateManager = new QuarkStateManager();
+        factory = new QuarkWalletFactory(codeJar, stateManager);
         console.log("QuarkWalletFactory deployed to: %s", address(factory));
 
         counter = new Counter();
