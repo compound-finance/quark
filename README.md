@@ -169,7 +169,7 @@ You can accept the diff and update the baseline if the increased gas usage
 is intentional. Just run the following command:
 
 ```sh
-$ NODE_PROVIDER_BYPASS_KEY=... forge snapshot
+$ NODE_PROVIDER_BYPASS_KEY=... ./script/update-snapshot.sh
 ```
 
 Then commit the updated snapshot file:
