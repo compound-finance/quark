@@ -165,6 +165,34 @@ contract CallbacksTest is Test {
         assertEq(counter.number(), 2);
     }
 
+    function testClearCallback() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes32 callbackKey = aliceWallet.CALLBACK_KEY();
+        bytes memory allowCallbacks = new YulHelper().getDeployed("AllowCallbacks.sol/AllowCallbacks.json");
+
+        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, allowCallbacks, abi.encodeWithSignature("allowCallbackAndReplay()"), ScriptType.ScriptSource
+        );
+        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
+        QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, allowCallbacks, abi.encodeWithSignature("clear()"), ScriptType.ScriptSource
+        );
+        op2.nonce = op1.nonce;
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
+
+        assertEq(stateManager.walletStorage(address(aliceWallet), op1.nonce, callbackKey), bytes32(0));
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+
+        assertNotEq(stateManager.walletStorage(address(aliceWallet), op1.nonce, callbackKey), bytes32(0));
+
+        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+        assertEq(stateManager.walletStorage(address(aliceWallet), op1.nonce, callbackKey), bytes32(0));
+    }
+
     function testRevertsOnCallbackWhenNoActiveCallback() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
