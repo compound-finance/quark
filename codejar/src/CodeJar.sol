@@ -24,10 +24,14 @@ contract CodeJar {
             return codeAddress;
         } else {
             // The code has not been deployed here (or it was deployed and destructed).
-            CodeJarStub codeCreateAddress = new CodeJarStub{salt: 0}(code);
+            CodeJarStub script;
+            bytes memory initCode = abi.encodePacked(type(CodeJarStub).creationCode, code);
+            assembly {
+                script := create2(0, add(initCode, 0x20), mload(initCode), 0)
+            }
 
             // Posit: these cannot fail and are purely defense-in-depth
-            require(address(codeCreateAddress) == codeAddress);
+            require(address(script) == codeAddress);
 
             return codeAddress;
         }
@@ -45,12 +49,12 @@ contract CodeJar {
     }
 
     /**
-     * @dev Returns the create2 address based on the given initCode
-     * @return The create2 address based on running the initCode constructor
+     * @dev Returns the create2 address based on CodeJarStub
+     * @return The create2 address to deploy this code (via CodeJarStub)
      */
     function getCodeAddress(bytes memory code) internal view returns (address) {
         return address(
-            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), uint256(0), keccak256(abi.encodePacked(type(CodeJarStub).creationCode, abi.encode(code)))))))
+            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), uint256(0), keccak256(abi.encodePacked(type(CodeJarStub).creationCode, code))))))
         );
     }
 }
