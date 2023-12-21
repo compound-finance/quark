@@ -7,6 +7,7 @@ import "forge-std/console.sol";
 import {Counter} from "test/lib/Counter.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
+import {CodeJarStub} from "codejar/src/CodeJarStub.sol";
 
 contract CodeJarTest is Test {
     event Ping(uint256 value);
@@ -31,6 +32,10 @@ contract CodeJarTest is Test {
         assertEq(success, true);
         // Selfdestruct state changes do not take effect until after setUp
         assertEq(destructingAddress.code, destructingCode);
+    }
+
+    function testCodeJarInitCodeLength() public {
+        assertEq(type(CodeJarStub).creationCode.length, 20);
     }
 
     function testCodeJarSelfDestruct() public {
