@@ -53,7 +53,7 @@ contract DeployQuarkWalletFactory is Script {
 
         console.log("Deploying Core Scripts");
 
-        CodeJar codeJar = QuarkWallet(payable(quarkWalletProxyFactory.walletImplementation())).codeJar();
+        CodeJar codeJar = QuarkWallet(payable(quarkFactory.quarkWalletProxyFactory().walletImplementation())).codeJar();
 
         ethcall = Ethcall(codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "Ethcall.sol/Ethcall.json"))));
         console.log("Ethcall Deployed:", address(ethcall));
