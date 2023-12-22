@@ -24,25 +24,18 @@ contract BatchExecutor {
      * @notice Execute a list of QuarkOperations via signatures
      * @param ops List of QuarkOperations to execute via signature
      */
-    function batchExecuteOperations(
-        OperationParams[] calldata ops
-    ) external {
+    function batchExecuteOperations(OperationParams[] calldata ops) external {
         for (uint256 i = 0; i < ops.length;) {
-                executeOperation(ops[i]);
-                unchecked {
-                    ++i;
+            executeOperation(ops[i]);
+            unchecked {
+                ++i;
             }
         }
     }
 
     /// @notice Execute a single QuarkOperation via signature
-    function executeOperation(OperationParams memory op)
-        internal
-    {
-        bytes memory data = abi.encodeWithSelector(
-            QuarkWallet.executeQuarkOperation.selector,
-            op.op, op.v, op.r, op.s
-        );
+    function executeOperation(OperationParams memory op) internal {
+        bytes memory data = abi.encodeWithSelector(QuarkWallet.executeQuarkOperation.selector, op.op, op.v, op.r, op.s);
         // We purposely ignore success and return values since the BatchExecutor will most likely be called by an EOA
         op.account.call{gas: op.gasLimit}(data);
     }
