@@ -41,7 +41,6 @@ contract QuarkFactoryTest is Test {
             bytes32(0),
             abi.encodePacked(type(QuarkWalletProxyFactory).creationCode, abi.encode(expectedQuarkWalletImplAddress))
         );
-
         address expectedBatchExecutorAddress =
             getCreate2AddressHelper(address(factory), bytes32(0), abi.encodePacked(type(BatchExecutor).creationCode));
 
