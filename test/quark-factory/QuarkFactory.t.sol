@@ -23,10 +23,9 @@ contract QuarkFactoryTest is Test {
     function testQuarkFactoryDeployToDeterministicAddresses() public {
         vm.pauseGasMetering();
         address expectedCodeJarAddress =
-            getCreate2AddressHelper(address(factory), bytes32(0), abi.encodePacked(type(CodeJar).creationCode));
-        address expectedQuarkStateManagerAddress = getCreate2AddressHelper(
-            address(factory), bytes32(0), abi.encodePacked(type(QuarkStateManager).creationCode)
-        );
+            getCreate2AddressHelper(address(factory), bytes32(0), type(CodeJar).creationCode);
+        address expectedQuarkStateManagerAddress =
+            getCreate2AddressHelper(address(factory), bytes32(0), type(QuarkStateManager).creationCode);
         address expectedQuarkWalletImplAddress = getCreate2AddressHelper(
             address(factory),
             bytes32(0),
@@ -42,7 +41,7 @@ contract QuarkFactoryTest is Test {
             abi.encodePacked(type(QuarkWalletProxyFactory).creationCode, abi.encode(expectedQuarkWalletImplAddress))
         );
         address expectedBatchExecutorAddress =
-            getCreate2AddressHelper(address(factory), bytes32(0), abi.encodePacked(type(BatchExecutor).creationCode));
+            getCreate2AddressHelper(address(factory), bytes32(0), type(BatchExecutor).creationCode);
 
         vm.resumeGasMetering();
         factory.deployQuarkContracts();
@@ -76,7 +75,7 @@ contract QuarkFactoryTest is Test {
         );
 
         address expectedBatchExecutorAddress =
-            getCreate2AddressHelper(address(factory), bytes32(0), abi.encodePacked(type(BatchExecutor).creationCode));
+            getCreate2AddressHelper(address(factory), bytes32(0), type(BatchExecutor).creationCode);
 
         vm.resumeGasMetering();
         factory.deployQuarkContracts();
@@ -93,10 +92,9 @@ contract QuarkFactoryTest is Test {
     function testInvariantAddressesBetweenNonces() public {
         vm.pauseGasMetering();
         address expectedCodeJarAddress =
-            getCreate2AddressHelper(address(factory), bytes32(0), abi.encodePacked(type(CodeJar).creationCode));
-        address expectedQuarkStateManagerAddress = getCreate2AddressHelper(
-            address(factory), bytes32(0), abi.encodePacked(type(QuarkStateManager).creationCode)
-        );
+            getCreate2AddressHelper(address(factory), bytes32(0), type(CodeJar).creationCode);
+        address expectedQuarkStateManagerAddress =
+            getCreate2AddressHelper(address(factory), bytes32(0), type(QuarkStateManager).creationCode);
         address expectedQuarkWalletImplAddress = getCreate2AddressHelper(
             address(factory),
             bytes32(0),
@@ -113,7 +111,7 @@ contract QuarkFactoryTest is Test {
         );
 
         address expectedBatchExecutorAddress =
-            getCreate2AddressHelper(address(factory), bytes32(0), abi.encodePacked(type(BatchExecutor).creationCode));
+            getCreate2AddressHelper(address(factory), bytes32(0), type(BatchExecutor).creationCode);
 
         // Set a different nonce on the account, assuming some unaware ations done to the deployer eoa cuasing nonces to change
         vm.setNonce(address(this), 20);
