@@ -47,7 +47,7 @@ contract DeployQuarkWalletFactory is Script {
         quarkFactory.deployQuarkContracts();
         console.log("Code Jar Deployed:", address(quarkFactory.codeJar()));
         console.log("Quark State Manager Deployed:", address(quarkFactory.quarkStateManager()));
-        console.log("Quark Wallet Implementation Deployed:", address(quarkFactory.quarkWalletImp()));
+        console.log("Quark Wallet Implementation Deployed:", address(quarkFactory.quarkWalletImpl()));
         console.log("Quark Wallet Proxy Factory Deployed:", address(quarkFactory.quarkWalletProxyFactory()));
         console.log("Batch Executor Deployed:", address(quarkFactory.batchExecutor()));
 

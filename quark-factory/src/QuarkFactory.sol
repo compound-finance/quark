@@ -14,7 +14,7 @@ import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
  */
 contract QuarkFactory {
     CodeJar public codeJar;
-    QuarkWallet public quarkWalletImp;
+    QuarkWallet public quarkWalletImpl;
     QuarkWalletProxyFactory public quarkWalletProxyFactory;
     QuarkStateManager public quarkStateManager;
     BatchExecutor public batchExecutor;
@@ -24,8 +24,8 @@ contract QuarkFactory {
     function deployQuarkContracts() external {
         codeJar = new CodeJar{salt: 0}();
         quarkStateManager = new QuarkStateManager{salt: 0}();
-        quarkWalletImp = new QuarkWallet{salt: 0}(codeJar, quarkStateManager);
-        quarkWalletProxyFactory = new QuarkWalletProxyFactory{salt: 0}(address(quarkWalletImp));
+        quarkWalletImpl = new QuarkWallet{salt: 0}(codeJar, quarkStateManager);
+        quarkWalletProxyFactory = new QuarkWalletProxyFactory{salt: 0}(address(quarkWalletImpl));
         batchExecutor = new BatchExecutor{salt: 0}();
     }
 }

@@ -27,7 +27,7 @@ contract QuarkFactoryTest is Test {
         address expectedQuarkStateManagerAddress = getCreate2AddressHelper(
             address(factory), bytes32(0), abi.encodePacked(type(QuarkStateManager).creationCode)
         );
-        address expectedQuarkWalletImpAddress = getCreate2AddressHelper(
+        address expectedQuarkWalletImplAddress = getCreate2AddressHelper(
             address(factory),
             bytes32(0),
             abi.encodePacked(
@@ -39,7 +39,7 @@ contract QuarkFactoryTest is Test {
         address expectedQuarkWalletProxyFactoryAddress = getCreate2AddressHelper(
             address(factory),
             bytes32(0),
-            abi.encodePacked(type(QuarkWalletProxyFactory).creationCode, abi.encode(expectedQuarkWalletImpAddress))
+            abi.encodePacked(type(QuarkWalletProxyFactory).creationCode, abi.encode(expectedQuarkWalletImplAddress))
         );
 
         address expectedBatchExecutorAddress =
@@ -48,7 +48,7 @@ contract QuarkFactoryTest is Test {
         vm.resumeGasMetering();
         factory.deployQuarkContracts();
         assertEq(address(factory.codeJar()), expectedCodeJarAddress);
-        assertEq(address(factory.quarkWalletImp()), expectedQuarkWalletImpAddress);
+        assertEq(address(factory.quarkWalletImpl()), expectedQuarkWalletImplAddress);
         assertEq(address(factory.quarkWalletProxyFactory()), expectedQuarkWalletProxyFactoryAddress);
         assertEq(address(factory.quarkStateManager()), expectedQuarkStateManagerAddress);
         assertEq(address(factory.batchExecutor()), expectedBatchExecutorAddress);
@@ -61,7 +61,7 @@ contract QuarkFactoryTest is Test {
         address expectedQuarkStateManagerAddress = getCreate2AddressHelper(
             address(factory), bytes32(0), abi.encodePacked(type(QuarkStateManager).creationCode)
         );
-        address expectedQuarkWalletImpAddress = getCreate2AddressHelper(
+        address expectedQuarkWalletImplAddress = getCreate2AddressHelper(
             address(factory),
             bytes32(0),
             abi.encodePacked(
@@ -73,7 +73,7 @@ contract QuarkFactoryTest is Test {
         address expectedQuarkWalletProxyFactoryAddress = getCreate2AddressHelper(
             address(factory),
             bytes32(0),
-            abi.encodePacked(type(QuarkWalletProxyFactory).creationCode, abi.encode(expectedQuarkWalletImpAddress))
+            abi.encodePacked(type(QuarkWalletProxyFactory).creationCode, abi.encode(expectedQuarkWalletImplAddress))
         );
 
         address expectedBatchExecutorAddress =
@@ -82,7 +82,7 @@ contract QuarkFactoryTest is Test {
         vm.resumeGasMetering();
         factory.deployQuarkContracts();
         assertEq(address(factory.codeJar()), expectedCodeJarAddress);
-        assertEq(address(factory.quarkWalletImp()), expectedQuarkWalletImpAddress);
+        assertEq(address(factory.quarkWalletImpl()), expectedQuarkWalletImplAddress);
         assertEq(address(factory.quarkWalletProxyFactory()), expectedQuarkWalletProxyFactoryAddress);
         assertEq(address(factory.quarkStateManager()), expectedQuarkStateManagerAddress);
         assertEq(address(factory.batchExecutor()), expectedBatchExecutorAddress);
@@ -98,7 +98,7 @@ contract QuarkFactoryTest is Test {
         address expectedQuarkStateManagerAddress = getCreate2AddressHelper(
             address(factory), bytes32(0), abi.encodePacked(type(QuarkStateManager).creationCode)
         );
-        address expectedQuarkWalletImpAddress = getCreate2AddressHelper(
+        address expectedQuarkWalletImplAddress = getCreate2AddressHelper(
             address(factory),
             bytes32(0),
             abi.encodePacked(
@@ -110,7 +110,7 @@ contract QuarkFactoryTest is Test {
         address expectedQuarkWalletProxyFactoryAddress = getCreate2AddressHelper(
             address(factory),
             bytes32(0),
-            abi.encodePacked(type(QuarkWalletProxyFactory).creationCode, abi.encode(expectedQuarkWalletImpAddress))
+            abi.encodePacked(type(QuarkWalletProxyFactory).creationCode, abi.encode(expectedQuarkWalletImplAddress))
         );
 
         address expectedBatchExecutorAddress =
@@ -122,7 +122,7 @@ contract QuarkFactoryTest is Test {
         vm.resumeGasMetering();
         factory.deployQuarkContracts();
         assertEq(address(factory.codeJar()), expectedCodeJarAddress);
-        assertEq(address(factory.quarkWalletImp()), expectedQuarkWalletImpAddress);
+        assertEq(address(factory.quarkWalletImpl()), expectedQuarkWalletImplAddress);
         assertEq(address(factory.quarkWalletProxyFactory()), expectedQuarkWalletProxyFactoryAddress);
         assertEq(address(factory.quarkStateManager()), expectedQuarkStateManagerAddress);
         assertEq(address(factory.batchExecutor()), expectedBatchExecutorAddress);
