@@ -11,7 +11,7 @@ import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
-
+import {QuarkFactory} from "quark-factory/src/QuarkFactory.sol";
 import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 
@@ -30,6 +30,7 @@ contract DeployQuarkWalletFactory is Script {
     BatchExecutor batchExecutor;
     Ethcall ethcall;
     Multicall multicall;
+    QuarkFactory quarkFactory;
 
     function run() public {
         address deployer = vm.addr(vm.envUint("DEPLOYER_PK"));
@@ -37,22 +38,22 @@ contract DeployQuarkWalletFactory is Script {
         vm.startBroadcast(deployer);
 
         console.log("=============================================================");
-        console.log("Deploying QuarkWalletProxyFactory");
 
-        quarkWalletProxyFactory =
-            new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
+        console.log("Deploying Quark Factory");
+        quarkFactory = new QuarkFactory();
+        console.log("Quark Factory Deployed:", address(quarkFactory));
 
-        console.log("QuarkWalletProxyFactory Deployed:", address(quarkWalletProxyFactory));
-
-        console.log("Deploying BatchExecutor");
-
-        batchExecutor = new BatchExecutor();
-
-        console.log("BatchExecutor Deployed:", address(batchExecutor));
+        console.log("Deploying Quark Contracts via Quark Factory");
+        quarkFactory.deployQuarkContracts();
+        console.log("Code Jar Deployed:", address(quarkFactory.codeJar()));
+        console.log("Quark State Manager Deployed:", address(quarkFactory.quarkStateManager()));
+        console.log("Quark Wallet Implementation Deployed:", address(quarkFactory.quarkWalletImpl()));
+        console.log("Quark Wallet Proxy Factory Deployed:", address(quarkFactory.quarkWalletProxyFactory()));
+        console.log("Batch Executor Deployed:", address(quarkFactory.batchExecutor()));
 
         console.log("Deploying Core Scripts");
 
-        CodeJar codeJar = QuarkWallet(payable(quarkWalletProxyFactory.walletImplementation())).codeJar();
+        CodeJar codeJar = QuarkWallet(payable(quarkFactory.quarkWalletProxyFactory().walletImplementation())).codeJar();
 
         ethcall = Ethcall(codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "Ethcall.sol/Ethcall.json"))));
         console.log("Ethcall Deployed:", address(ethcall));
