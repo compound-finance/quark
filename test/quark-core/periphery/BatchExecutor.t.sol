@@ -73,21 +73,23 @@ contract BatchExecutorTest is Test {
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
 
         // Construct list of operations and signatures
-        address[] memory accounts = new address[](2);
-        QuarkWallet.QuarkOperation[] memory operations = new QuarkWallet.QuarkOperation[](2);
-        uint8[] memory v = new uint8[](2);
-        bytes32[] memory r = new bytes32[](2);
-        bytes32[] memory s = new bytes32[](2);
-        accounts[0] = address(aliceWallet);
-        accounts[1] = address(bobWallet);
-        operations[0] = aliceOp;
-        operations[1] = bobOp;
-        v[0] = v0;
-        v[1] = v1;
-        r[0] = r0;
-        r[1] = r1;
-        s[0] = s0;
-        s[1] = s1;
+        BatchExecutor.OperationParams[] memory ops = new BatchExecutor.OperationParams[](2);
+        ops[0] = BatchExecutor.OperationParams({
+            account: address(aliceWallet),
+            op: aliceOp,
+            v: v0,
+            r: r0,
+            s: s0,
+            gasLimit: 0.1 ether
+        });
+        ops[1] = BatchExecutor.OperationParams({
+            account: address(bobWallet),
+            op: bobOp,
+            v: v1,
+            r: r1,
+            s: s1,
+            gasLimit: 0.1 ether
+        });
 
         assertEq(counter.number(), 0);
 
@@ -95,12 +97,12 @@ contract BatchExecutorTest is Test {
         vm.resumeGasMetering();
         vm.expectEmit(false, false, false, true);
         emit Ping(55);
-        batchExecutor.batchExecuteOperations(accounts, operations, v, r, s);
+        batchExecutor.batchExecuteOperations(ops);
 
         assertEq(counter.number(), 3);
     }
 
-    function testBatchExecuteRevertsIfAnyCallReverts() public {
+    function testBatchExecuteDoesNotRevertIfAnyCallsRevert() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
@@ -112,60 +114,45 @@ contract BatchExecutorTest is Test {
         QuarkWallet.QuarkOperation memory bobOp =
             new QuarkOperationHelper().newBasicOp(bobWallet, reverts, ScriptType.ScriptSource);
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
+        QuarkWallet.QuarkOperation memory aliceOp2 =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp2);
 
         // Construct list of operations and signatures
-        address[] memory accounts = new address[](2);
-        QuarkWallet.QuarkOperation[] memory operations = new QuarkWallet.QuarkOperation[](2);
-        uint8[] memory v = new uint8[](2);
-        bytes32[] memory r = new bytes32[](2);
-        bytes32[] memory s = new bytes32[](2);
-        accounts[0] = address(aliceWallet);
-        accounts[1] = address(bobWallet);
-        operations[0] = aliceOp;
-        operations[1] = bobOp;
-        v[0] = v0;
-        v[1] = v1;
-        r[0] = r0;
-        r[1] = r1;
-        s[0] = s0;
-        s[1] = s1;
+        BatchExecutor.OperationParams[] memory ops = new BatchExecutor.OperationParams[](3);
+        ops[0] = BatchExecutor.OperationParams({
+            account: address(aliceWallet),
+            op: aliceOp,
+            v: v0,
+            r: r0,
+            s: s0,
+            gasLimit: 0.1 ether
+        });
+        ops[1] = BatchExecutor.OperationParams({
+            account: address(bobWallet),
+            op: bobOp,
+            v: v1,
+            r: r1,
+            s: s1,
+            gasLimit: 0.1 ether
+        });
+        ops[2] = BatchExecutor.OperationParams({
+            account: address(aliceWallet),
+            op: aliceOp2,
+            v: v2,
+            r: r2,
+            s: s2,
+            gasLimit: 1 wei // To trigger OOG
+        });
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectRevert(abi.encodeWithSelector(Reverts.Whoops.selector));
-        batchExecutor.batchExecuteOperations(accounts, operations, v, r, s);
-    }
+        batchExecutor.batchExecuteOperations(ops);
 
-    function testBatchExecuteRevertsOnBadInput() public {
-        // gas: do not meter set-up
-        vm.pauseGasMetering();
-        address[] memory accounts = new address[](2);
-        QuarkWallet.QuarkOperation[] memory operations = new QuarkWallet.QuarkOperation[](2);
-        uint8[] memory v = new uint8[](2);
-        bytes32[] memory r = new bytes32[](2);
-        bytes32[] memory s = new bytes32[](2);
-
-        address[] memory invalidAccounts = new address[](3);
-        QuarkWallet.QuarkOperation[] memory invalidOperations = new QuarkWallet.QuarkOperation[](1);
-        uint8[] memory invalidV = new uint8[](0);
-        bytes32[] memory invalidR = new bytes32[](5);
-        bytes32[] memory invalidS = new bytes32[](10);
-
-        // gas: meter execute
-        vm.resumeGasMetering();
-        vm.expectRevert(abi.encodeWithSelector(BatchExecutor.BadData.selector));
-        batchExecutor.batchExecuteOperations(invalidAccounts, operations, v, r, s);
-
-        vm.expectRevert(abi.encodeWithSelector(BatchExecutor.BadData.selector));
-        batchExecutor.batchExecuteOperations(accounts, invalidOperations, v, r, s);
-
-        vm.expectRevert(abi.encodeWithSelector(BatchExecutor.BadData.selector));
-        batchExecutor.batchExecuteOperations(accounts, operations, invalidV, r, s);
-
-        vm.expectRevert(abi.encodeWithSelector(BatchExecutor.BadData.selector));
-        batchExecutor.batchExecuteOperations(accounts, operations, v, invalidR, s);
-
-        vm.expectRevert(abi.encodeWithSelector(BatchExecutor.BadData.selector));
-        batchExecutor.batchExecuteOperations(accounts, operations, v, r, invalidS);
+        // Note: We removed returning success as a gas optimization, but these are the expected successes
+        // assertEq(successes[0], true);
+        // assertEq(successes[1], false);
+        // // Should fail with OOG
+        // assertEq(successes[2], false);
     }
 }
