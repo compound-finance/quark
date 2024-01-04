@@ -19,7 +19,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 
 import {Counter} from "test/lib/Counter.sol";
 
-import "terminal-scripts/src/TerminalScript.sol";
+import "legend-scripts/src/LegendScript.sol";
 
 /**
  * Tests for supplying and borrowing multiple assets from Comet
@@ -50,8 +50,8 @@ contract CometSupplyMultipleAssetsAndBorrowTest is Test {
     function testSupplyMultipleAssetsAndBorrow() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory terminalScript =
-            new YulHelper().getDeployed("TerminalScript.sol/CometSupplyMultipleAssetsAndBorrow.json");
+        bytes memory legendScript =
+            new YulHelper().getDeployed("LegendScript.sol/CometSupplyMultipleAssetsAndBorrow.json");
 
         deal(WETH, address(wallet), 10 ether);
         deal(LINK, address(wallet), 10e18);
@@ -65,7 +65,7 @@ contract CometSupplyMultipleAssetsAndBorrowTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometSupplyMultipleAssetsAndBorrow.run.selector, comet, assets, amounts, USDC, 100e6),
             ScriptType.ScriptSource
         );
@@ -84,8 +84,8 @@ contract CometSupplyMultipleAssetsAndBorrowTest is Test {
     function testInvalidInput() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory terminalScript =
-            new YulHelper().getDeployed("TerminalScript.sol/CometSupplyMultipleAssetsAndBorrow.json");
+        bytes memory legendScript =
+            new YulHelper().getDeployed("LegendScript.sol/CometSupplyMultipleAssetsAndBorrow.json");
 
         address[] memory assets = new address[](2);
         uint256[] memory amounts = new uint256[](1);
@@ -95,7 +95,7 @@ contract CometSupplyMultipleAssetsAndBorrowTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometSupplyMultipleAssetsAndBorrow.run.selector, comet, assets, amounts, USDC, 100e6),
             ScriptType.ScriptSource
         );

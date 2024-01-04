@@ -26,7 +26,7 @@ import {VictimERC777} from "test/lib/VictimERC777.sol";
 import {AllowCallbacks} from "test/lib/AllowCallbacks.sol";
 import {ReentrantTransfer} from "test/lib/ReentrantTransfer.sol";
 
-import "terminal-scripts/src/TerminalScript.sol";
+import "legend-scripts/src/LegendScript.sol";
 
 /**
  * Tests for transferring assets
@@ -39,7 +39,7 @@ contract TransferActionsTest is Test {
     address alice = vm.addr(alicePrivateKey);
     uint256 bobPrivateKey = 0xb0b;
     address bob = vm.addr(bobPrivateKey);
-    bytes terminalScript = new YulHelper().getDeployed("TerminalScript.sol/TransferActions.json");
+    bytes legendScript = new YulHelper().getDeployed("LegendScript.sol/TransferActions.json");
     bytes multicall = new YulHelper().getDeployed("Multicall.sol/Multicall.json");
     bytes allowCallbacks = new YulHelper().getDeployed("AllowCallbacks.sol/AllowCallbacks.json");
 
@@ -68,7 +68,7 @@ contract TransferActionsTest is Test {
         assertEq(IERC20(WETH).balanceOf(bob), 0 ether);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(TransferActions.transferERC20Token.selector, WETH, bob, 10 ether),
             ScriptType.ScriptSource
         );
@@ -90,7 +90,7 @@ contract TransferActionsTest is Test {
         assertEq(IERC20(WETH).balanceOf(bob), 0 ether);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(TransferActions.transferERC20Token.selector, WETH, address(walletBob), 10 ether),
             ScriptType.ScriptSource
         );
@@ -111,7 +111,7 @@ contract TransferActionsTest is Test {
         assertEq(bob.balance, 0 ether);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(TransferActions.transferNativeToken.selector, bob, 10 ether),
             ScriptType.ScriptSource
         );
@@ -130,7 +130,7 @@ contract TransferActionsTest is Test {
         deal(address(wallet), 10 ether);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(walletBob), 10 ether),
             ScriptType.ScriptSource
         );
@@ -224,7 +224,7 @@ contract TransferActionsTest is Test {
     function testTransferSuccessWithEvilReceiverWithoutAttackAttempt() public {
         vm.pauseGasMetering();
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
-        address terminalScriptAddress = codeJar.saveCode(terminalScript);
+        address legendScriptAddress = codeJar.saveCode(legendScript);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         EvilReceiver evilReceiver = new EvilReceiver();
         // Attack maxCalls set to 0, so no attack will be attempted
@@ -236,8 +236,8 @@ contract TransferActionsTest is Test {
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](2);
         callContracts[0] = allowCallbacksAddress;
-        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(terminalScriptAddress));
-        callContracts[1] = terminalScriptAddress;
+        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(legendScriptAddress));
+        callContracts[1] = legendScriptAddress;
         callDatas[1] =
             abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether);
 
@@ -260,7 +260,7 @@ contract TransferActionsTest is Test {
     function testTransferERC777SuccessWithEvilReceiverWithoutAttackAttempt() public {
         vm.pauseGasMetering();
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
-        address terminalScriptAddress = codeJar.saveCode(terminalScript);
+        address legendScriptAddress = codeJar.saveCode(legendScript);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         EvilReceiver evilReceiver = new EvilReceiver();
         // Attack maxCalls set to 0, so no attack will be attempted
@@ -275,8 +275,8 @@ contract TransferActionsTest is Test {
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](2);
         callContracts[0] = allowCallbacksAddress;
-        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(terminalScriptAddress));
-        callContracts[1] = terminalScriptAddress;
+        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(legendScriptAddress));
+        callContracts[1] = legendScriptAddress;
         callDatas[1] = abi.encodeWithSelector(
             ReentrantTransfer.transferERC20Token.selector, address(victimERC777), address(evilReceiver), 1 ether
         );
@@ -300,7 +300,7 @@ contract TransferActionsTest is Test {
     function testRevertsForTransferReentrancyAttackWithReentrancyGuard() public {
         vm.pauseGasMetering();
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
-        address terminalScriptAddress = codeJar.saveCode(terminalScript);
+        address legendScriptAddress = codeJar.saveCode(legendScript);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         EvilReceiver evilReceiver = new EvilReceiver();
         evilReceiver.setAttack(
@@ -311,8 +311,8 @@ contract TransferActionsTest is Test {
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](2);
         callContracts[0] = allowCallbacksAddress;
-        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(terminalScriptAddress));
-        callContracts[1] = terminalScriptAddress;
+        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(legendScriptAddress));
+        callContracts[1] = legendScriptAddress;
         callDatas[1] =
             abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether);
 
@@ -345,7 +345,7 @@ contract TransferActionsTest is Test {
     function testRevertsForTransferERC777ReentrancyAttackWithReentrancyGuard() public {
         vm.pauseGasMetering();
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
-        address terminalScriptAddress = codeJar.saveCode(terminalScript);
+        address legendScriptAddress = codeJar.saveCode(legendScript);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
         EvilReceiver evilReceiver = new EvilReceiver();
         evilReceiver.setAttack(
@@ -359,8 +359,8 @@ contract TransferActionsTest is Test {
         address[] memory callContracts = new address[](2);
         bytes[] memory callDatas = new bytes[](2);
         callContracts[0] = allowCallbacksAddress;
-        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(terminalScriptAddress));
-        callContracts[1] = terminalScriptAddress;
+        callDatas[0] = abi.encodeWithSelector(AllowCallbacks.run.selector, address(legendScriptAddress));
+        callContracts[1] = legendScriptAddress;
         callDatas[1] = abi.encodeWithSelector(
             ReentrantTransfer.transferERC20Token.selector, address(victimERC777), address(evilReceiver), 1 ether
         );
@@ -399,7 +399,7 @@ contract TransferActionsTest is Test {
         deal(address(wallet), 10 ether);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether),
             ScriptType.ScriptSource
         );
@@ -429,7 +429,7 @@ contract TransferActionsTest is Test {
         deal(address(wallet), 10 ether);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(TransferActions.transferNativeToken.selector, address(evilReceiver), 1 ether),
             ScriptType.ScriptSource
         );

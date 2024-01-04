@@ -19,7 +19,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 
 import {Counter} from "test/lib/Counter.sol";
 
-import "terminal-scripts/src/TerminalScript.sol";
+import "legend-scripts/src/LegendScript.sol";
 
 /**
  * Tests for withdrawing assets from Comet
@@ -35,7 +35,7 @@ contract WithdrawActionsTest is Test {
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
-    bytes terminalScript = new YulHelper().getDeployed("TerminalScript.sol/CometWithdrawActions.json");
+    bytes legendScript = new YulHelper().getDeployed("LegendScript.sol/CometWithdrawActions.json");
 
     function setUp() public {
         // Fork setup
@@ -63,7 +63,7 @@ contract WithdrawActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometWithdrawActions.withdraw.selector, comet, WETH, 10 ether),
             ScriptType.ScriptSource
         );
@@ -91,7 +91,7 @@ contract WithdrawActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometWithdrawActions.withdrawTo.selector, comet, address(wallet2), WETH, 10 ether),
             ScriptType.ScriptSource
         );
@@ -120,7 +120,7 @@ contract WithdrawActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 CometWithdrawActions.withdrawFrom.selector, comet, address(wallet2), address(wallet), WETH, 10 ether
             ),
@@ -147,7 +147,7 @@ contract WithdrawActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometWithdrawActions.withdraw.selector, comet, USDC, 100e6),
             ScriptType.ScriptSource
         );
@@ -197,7 +197,7 @@ contract WithdrawActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometWithdrawActions.withdrawMultipleAssets.selector, comet, assets, amounts),
             ScriptType.ScriptSource
         );
@@ -231,7 +231,7 @@ contract WithdrawActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometWithdrawActions.withdrawMultipleAssets.selector, comet, assets, amounts),
             ScriptType.ScriptSource
         );

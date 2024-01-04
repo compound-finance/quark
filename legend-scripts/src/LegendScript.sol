@@ -7,8 +7,8 @@ import {ISwapRouter} from "v3-periphery/interfaces/ISwapRouter.sol";
 
 import {QuarkScript} from "quark-core/src/QuarkScript.sol";
 
-import {IComet} from "terminal-scripts/src/interfaces/IComet.sol";
-import {ICometRewards} from "terminal-scripts/src/interfaces/ICometRewards.sol";
+import {IComet} from "legend-scripts/src/interfaces/IComet.sol";
+import {ICometRewards} from "legend-scripts/src/interfaces/ICometRewards.sol";
 
 library TerminalErrors {
     error InvalidInput();

@@ -21,7 +21,7 @@ import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-import "terminal-scripts/src/TerminalScript.sol";
+import "legend-scripts/src/LegendScript.sol";
 
 contract MulticallTest is Test {
     QuarkWalletProxyFactory public factory;
@@ -40,17 +40,17 @@ contract MulticallTest is Test {
     bytes multicall = new YulHelper().getDeployed("Multicall.sol/Multicall.json");
     bytes ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
 
-    bytes terminalCometSupplyScript = new YulHelper().getDeployed("TerminalScript.sol/CometSupplyActions.json");
+    bytes legendCometSupplyScript = new YulHelper().getDeployed("LegendScript.sol/CometSupplyActions.json");
 
-    bytes terminalCometWithdrawScript = new YulHelper().getDeployed("TerminalScript.sol/CometWithdrawActions.json");
+    bytes legendCometWithdrawScript = new YulHelper().getDeployed("LegendScript.sol/CometWithdrawActions.json");
 
-    bytes terminalUniswapSwapScript = new YulHelper().getDeployed("TerminalScript.sol/UniswapSwapActions.json");
+    bytes legendUniswapSwapScript = new YulHelper().getDeployed("LegendScript.sol/UniswapSwapActions.json");
 
     address ethcallAddress;
     address multicallAddress;
-    address terminalCometSupplyScriptAddress;
-    address terminalCometWithdrawScriptAddress;
-    address terminalUniswapSwapScriptAddress;
+    address legendCometSupplyScriptAddress;
+    address legendCometWithdrawScriptAddress;
+    address legendUniswapSwapScriptAddress;
 
     function setUp() public {
         vm.createSelectFork(
@@ -66,9 +66,9 @@ contract MulticallTest is Test {
         CodeJar codeJar = QuarkWallet(payable(factory.walletImplementation())).codeJar();
         ethcallAddress = codeJar.saveCode(ethcall);
         multicallAddress = codeJar.saveCode(multicall);
-        terminalCometSupplyScriptAddress = codeJar.saveCode(terminalCometSupplyScript);
-        terminalCometWithdrawScriptAddress = codeJar.saveCode(terminalCometWithdrawScript);
-        terminalUniswapSwapScriptAddress = codeJar.saveCode(terminalUniswapSwapScript);
+        legendCometSupplyScriptAddress = codeJar.saveCode(legendCometSupplyScript);
+        legendCometWithdrawScriptAddress = codeJar.saveCode(legendCometWithdrawScript);
+        legendUniswapSwapScriptAddress = codeJar.saveCode(legendUniswapSwapScript);
     }
 
     /* ===== call context-based tests ===== */
@@ -558,9 +558,9 @@ contract MulticallTest is Test {
         address[] memory callContracts = new address[](5);
         bytes[] memory callDatas = new bytes[](5);
 
-        callContracts[0] = terminalCometSupplyScriptAddress;
+        callContracts[0] = legendCometSupplyScriptAddress;
         callDatas[0] = abi.encodeCall(CometSupplyActions.supply, (cUSDCv3, WETH, 100 ether));
-        callContracts[1] = terminalCometWithdrawScriptAddress;
+        callContracts[1] = legendCometWithdrawScriptAddress;
         callDatas[1] = abi.encodeCall(CometWithdrawActions.withdrawTo, (cUSDCv3, subWallet1, USDC, 10_000e6));
 
         callContracts[2] = ethcallAddress;
@@ -579,7 +579,7 @@ contract MulticallTest is Test {
                 QuarkWallet.executeScript,
                 (
                     nonce,
-                    terminalUniswapSwapScriptAddress,
+                    legendUniswapSwapScriptAddress,
                     abi.encodeCall(
                         UniswapSwapActions.swapAssetExactIn,
                         (
@@ -607,7 +607,7 @@ contract MulticallTest is Test {
                 QuarkWallet.executeScript,
                 (
                     nonce + 1,
-                    terminalCometSupplyScriptAddress,
+                    legendCometSupplyScriptAddress,
                     abi.encodeCall(CometSupplyActions.supply, (cWETHv3, WETH, 2 ether))
                 )
             ),

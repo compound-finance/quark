@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkScript.sol";
 
-import "terminal-scripts/src/TerminalScript.sol";
+import "legend-scripts/src/LegendScript.sol";
 
 contract EvilReceiver {
     enum AttackType {

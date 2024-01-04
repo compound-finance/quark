@@ -101,7 +101,7 @@ You can still `forge build` and `forge test` from the root directory and expect 
 
 - quark-core
 - quark-core-scripts
-- terminal-scripts (NOTE that this project will likely be removed into a standalone repo at some point)
+- legend-scripts (NOTE that this project will likely be removed into a standalone repo at some point)
 
 By separating contracts into these sub-projects, it is possible to use per-project compilation settings to optimize and deploy different sets of contracts with different configurations. Moreover, builds and test runs can be faster for individual sub-projects: from a sub-project directory, `forge build` builds only that sub-project's contracts, and `forge test` runs only the tests that pertain to it. For example:
 

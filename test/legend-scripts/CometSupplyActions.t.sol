@@ -19,7 +19,7 @@ import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-import "terminal-scripts/src/TerminalScript.sol";
+import "legend-scripts/src/LegendScript.sol";
 
 /**
  * Tests for supplying assets to Comet
@@ -35,7 +35,7 @@ contract SupplyActionsTest is Test {
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
-    bytes terminalScript = new YulHelper().getDeployed("TerminalScript.sol/CometSupplyActions.json");
+    bytes legendScript = new YulHelper().getDeployed("LegendScript.sol/CometSupplyActions.json");
 
     function setUp() public {
         // Fork setup
@@ -56,7 +56,7 @@ contract SupplyActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometSupplyActions.supply.selector, comet, WETH, 10 ether),
             ScriptType.ScriptSource
         );
@@ -78,7 +78,7 @@ contract SupplyActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometSupplyActions.supplyTo.selector, comet, address(wallet2), WETH, 10 ether),
             ScriptType.ScriptSource
         );
@@ -104,7 +104,7 @@ contract SupplyActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 CometSupplyActions.supplyFrom.selector, comet, address(wallet2), address(wallet), WETH, 10 ether
             ),
@@ -133,7 +133,7 @@ contract SupplyActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometSupplyActions.supply.selector, comet, USDC, 1000e6),
             ScriptType.ScriptSource
         );
@@ -165,7 +165,7 @@ contract SupplyActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometSupplyActions.supplyMultipleAssets.selector, comet, assets, amounts),
             ScriptType.ScriptSource
         );
@@ -193,7 +193,7 @@ contract SupplyActionsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(CometSupplyActions.supplyMultipleAssets.selector, comet, assets, amounts),
             ScriptType.ScriptSource
         );

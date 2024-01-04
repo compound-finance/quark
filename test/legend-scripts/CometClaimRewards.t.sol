@@ -19,7 +19,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 
 import {Counter} from "test/lib/Counter.sol";
 
-import "terminal-scripts/src/TerminalScript.sol";
+import "legend-scripts/src/LegendScript.sol";
 
 /**
  * Tests for claiming COMP rewards
@@ -50,7 +50,7 @@ contract CometClaimRewardsTest is Test {
     function testClaimComp() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory terminalScript = new YulHelper().getDeployed("TerminalScript.sol/CometClaimRewards.json");
+        bytes memory legendScript = new YulHelper().getDeployed("LegendScript.sol/CometClaimRewards.json");
 
         deal(USDC, address(wallet), 1_000_000e6);
 
@@ -64,7 +64,7 @@ contract CometClaimRewardsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeCall(CometClaimRewards.claim, (cometReward, comet, address(wallet))),
             ScriptType.ScriptSource
         );

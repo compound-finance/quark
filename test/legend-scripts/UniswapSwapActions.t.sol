@@ -19,7 +19,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 
 import {Counter} from "test/lib/Counter.sol";
 
-import "terminal-scripts/src/TerminalScript.sol";
+import "legend-scripts/src/LegendScript.sol";
 
 /**
  * Tests for purchasing assets from Uniswap V3
@@ -37,7 +37,7 @@ contract UniswapSwapActionsTest is Test {
     address constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     // Uniswap router info on mainnet
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-    bytes terminalScript = new YulHelper().getDeployed("TerminalScript.sol/UniswapSwapActions.json");
+    bytes legendScript = new YulHelper().getDeployed("LegendScript.sol/UniswapSwapActions.json");
 
     function setUp() public {
         // Fork setup
@@ -61,7 +61,7 @@ contract UniswapSwapActionsTest is Test {
         // ExactIn: Limit the amount of USDC you want to spend and receive as much WETH as possible
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactIn.selector,
                 UniswapSwapActions.SwapParamsExactIn({
@@ -90,7 +90,7 @@ contract UniswapSwapActionsTest is Test {
         // ExactOut: Limit the amount of WETH you want to receive and spend as much USDC as necessary
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
                 UniswapSwapActions.SwapParamsExactOut({
@@ -123,7 +123,7 @@ contract UniswapSwapActionsTest is Test {
         // ExactIn: Limit the amount of USDC you want to spend and receive as much COMP as possible
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactIn.selector,
                 UniswapSwapActions.SwapParamsExactIn({
@@ -150,7 +150,7 @@ contract UniswapSwapActionsTest is Test {
         // ExactOut: Limit the amount of COMP you want to receive and spend as much USDC as necessary
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
                 UniswapSwapActions.SwapParamsExactOut({
@@ -182,7 +182,7 @@ contract UniswapSwapActionsTest is Test {
         // ExactIn: Limit the amount of WETH you want to spend and receive as much USDC as possible
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactIn.selector,
                 UniswapSwapActions.SwapParamsExactIn({
@@ -208,7 +208,7 @@ contract UniswapSwapActionsTest is Test {
         // ExactOut: Limit the amount of USDC you want to receive and spend as much WETH as necessary
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
                 UniswapSwapActions.SwapParamsExactOut({
@@ -240,7 +240,7 @@ contract UniswapSwapActionsTest is Test {
         // ExactIn: Limit the amount of COMP you want to spend and spend as much USDC as possible
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactIn.selector,
                 UniswapSwapActions.SwapParamsExactIn({
@@ -266,7 +266,7 @@ contract UniswapSwapActionsTest is Test {
         // ExactOut: Limit the amount of USDC you want to spend and spend as much COMP as necessary
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
                 UniswapSwapActions.SwapParamsExactOut({
@@ -300,7 +300,7 @@ contract UniswapSwapActionsTest is Test {
         // ExactOut: Limit the amount of WETH you want to receive and spend as much USDC as necessary
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeWithSelector(
                 UniswapSwapActions.swapAssetExactOut.selector,
                 UniswapSwapActions.SwapParamsExactOut({

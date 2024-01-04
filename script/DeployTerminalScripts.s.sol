@@ -19,7 +19,7 @@ import {
     CometClaimRewards,
     CometSupplyMultipleAssetsAndBorrow,
     CometRepayAndWithdrawMultipleAssets
-} from "../terminal-scripts/src/TerminalScript.sol";
+} from "../legend-scripts/src/LegendScript.sol";
 
 // Deploy with:
 // $ set -a && source .env && ./script/deploy.sh --broadcast
@@ -52,40 +52,40 @@ contract DeployTerminalScripts is Script {
         console.log("Deploying Terminal Scripts");
 
         cometSupplyActions = CometSupplyActions(
-            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "TerminalScript.sol/CometSupplyActions.json")))
+            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "LegendScript.sol/CometSupplyActions.json")))
         );
         console.log("CometSupplyActions Deployed:", address(cometSupplyActions));
 
         cometWithdrawActions = CometWithdrawActions(
-            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "TerminalScript.sol/CometWithdrawActions.json")))
+            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "LegendScript.sol/CometWithdrawActions.json")))
         );
         console.log("CometWithdrawActions Deployed:", address(cometWithdrawActions));
 
         uniswapSwapActions = UniswapSwapActions(
-            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "TerminalScript.sol/UniswapSwapActions.json")))
+            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "LegendScript.sol/UniswapSwapActions.json")))
         );
         console.log("UniswapSwapActions Deployed:", address(uniswapSwapActions));
 
         transferActions = TransferActions(
-            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "TerminalScript.sol/TransferActions.json")))
+            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "LegendScript.sol/TransferActions.json")))
         );
         console.log("TransferActions Deployed:", address(transferActions));
 
         cometClaimRewards = CometClaimRewards(
-            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "TerminalScript.sol/CometClaimRewards.json")))
+            codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "LegendScript.sol/CometClaimRewards.json")))
         );
         console.log("CometClaimRewards Deployed:", address(cometClaimRewards));
 
         cometSupplyMultipleAssetsAndBorrow = CometSupplyMultipleAssetsAndBorrow(
             codeJar.saveCode(
-                vm.getDeployedCode(string.concat("out/", "TerminalScript.sol/CometSupplyMultipleAssetsAndBorrow.json"))
+                vm.getDeployedCode(string.concat("out/", "LegendScript.sol/CometSupplyMultipleAssetsAndBorrow.json"))
             )
         );
         console.log("CometSupplyMultipleAssetsAndBorrow Deployed:", address(cometSupplyMultipleAssetsAndBorrow));
 
         cometRepayAndWithdrawMultipleAssets = CometRepayAndWithdrawMultipleAssets(
             codeJar.saveCode(
-                vm.getDeployedCode(string.concat("out/", "TerminalScript.sol/CometRepayAndWithdrawMultipleAssets.json"))
+                vm.getDeployedCode(string.concat("out/", "LegendScript.sol/CometRepayAndWithdrawMultipleAssets.json"))
             )
         );
         console.log("CometRepayAndWithdrawMultipleAssets Deployed:", address(cometRepayAndWithdrawMultipleAssets));
