@@ -19,7 +19,7 @@ import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
-import "terminal-scripts/src/TerminalScript.sol";
+import "legend-scripts/src/LegendScript.sol";
 
 /**
  * Tests for repaying and withdrawing multiple assets from Comet
@@ -50,8 +50,8 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
     function testRepayAndWithdrawMultipleAssets() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory terminalScript =
-            new YulHelper().getDeployed("TerminalScript.sol/CometRepayAndWithdrawMultipleAssets.json");
+        bytes memory legendScript =
+            new YulHelper().getDeployed("LegendScript.sol/CometRepayAndWithdrawMultipleAssets.json");
 
         deal(WETH, address(wallet), 10 ether);
         deal(LINK, address(wallet), 10e18);
@@ -71,7 +71,7 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
         amounts[1] = 10e18;
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeCall(CometRepayAndWithdrawMultipleAssets.run, (comet, assets, amounts, USDC, 100e6)),
             ScriptType.ScriptSource
         );
@@ -89,8 +89,8 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
     function testInvalidInput() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory terminalScript =
-            new YulHelper().getDeployed("TerminalScript.sol/CometRepayAndWithdrawMultipleAssets.json");
+        bytes memory legendScript =
+            new YulHelper().getDeployed("LegendScript.sol/CometRepayAndWithdrawMultipleAssets.json");
 
         address[] memory assets = new address[](2);
         uint256[] memory amounts = new uint256[](1);
@@ -100,7 +100,7 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            terminalScript,
+            legendScript,
             abi.encodeCall(CometRepayAndWithdrawMultipleAssets.run, (comet, assets, amounts, USDC, 100e6)),
             ScriptType.ScriptSource
         );

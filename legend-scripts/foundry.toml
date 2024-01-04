@@ -6,4 +6,4 @@ libs = [ "../lib" ]
 
 src = "src"
 out = "out"
-test = "../test/terminal-scripts/"
+test = "../test/legend-scripts/"
