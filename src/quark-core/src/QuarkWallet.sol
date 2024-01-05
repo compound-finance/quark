@@ -60,10 +60,15 @@ contract QuarkWallet is IERC1271 {
     error Unauthorized();
 
     /// @notice Enum specifying the method of execution for running a Quark script
-    enum ExecutionType { Signature, Direct }
+    enum ExecutionType {
+        Signature,
+        Direct
+    }
 
     /// @notice Event emitted when a Quark script is executed by this Quark wallet
-    event ExecuteQuarkScript(address indexed executor, address indexed scriptAddress, uint96 indexed nonce, ExecutionType executionType);
+    event ExecuteQuarkScript(
+        address indexed executor, address indexed scriptAddress, uint96 indexed nonce, ExecutionType executionType
+    );
 
     /// @notice Address of CodeJar contract used to deploy transaction script source code
     CodeJar public immutable codeJar;
@@ -374,7 +379,9 @@ contract QuarkWalletStandalone is QuarkWallet, HasSignerExecutor {
      * @param codeJar_ The CodeJar contract used to deploy scripts
      * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
      */
-    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_) QuarkWallet(codeJar_, stateManager_) {
+    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_)
+        QuarkWallet(codeJar_, stateManager_)
+    {
         signer = signer_;
         executor = executor_;
     }

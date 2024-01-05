@@ -83,10 +83,14 @@ contract QuarkWalletProxyFactory {
      * @param s EIP-712 Signature `s` value
      * @return bytes Return value of executing the operation
      */
-    function createAndExecute(address signer, address executor, QuarkWallet.QuarkOperation memory op, uint8 v, bytes32 r, bytes32 s)
-        external
-        returns (bytes memory)
-    {
+    function createAndExecute(
+        address signer,
+        address executor,
+        QuarkWallet.QuarkOperation memory op,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (bytes memory) {
         return createAndExecute(signer, executor, DEFAULT_SALT, op, v, r, s);
     }
 
@@ -137,7 +141,11 @@ contract QuarkWalletProxyFactory {
      * @param salt Salt value for which to derive a QuarkWallet address
      * @return address Address of the derived QuarkWallet for (signer, executor, salt) triple
      */
-    function walletAddressForSalt(address signer, address executor, bytes32 salt) public view returns (address payable) {
+    function walletAddressForSalt(address signer, address executor, bytes32 salt)
+        public
+        view
+        returns (address payable)
+    {
         return walletAddressForInternal(signer, executor, salt);
     }
 
