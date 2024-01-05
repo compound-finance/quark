@@ -9,7 +9,7 @@ import {CodeJar} from "codejar/src/CodeJar.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 
-import {QuarkWalletProxyFactory} from "../quark-proxy/src/QuarkWalletProxyFactory.sol";
+import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 
 import {
     CometSupplyActions,
@@ -19,7 +19,7 @@ import {
     CometClaimRewards,
     CometSupplyMultipleAssetsAndBorrow,
     CometRepayAndWithdrawMultipleAssets
-} from "../legend-scripts/src/LegendScript.sol";
+} from "legend-scripts/src/LegendScript.sol";
 
 // Deploy with:
 // $ set -a && source .env && ./script/deploy.sh --broadcast
