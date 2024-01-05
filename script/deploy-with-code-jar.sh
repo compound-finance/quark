@@ -3,7 +3,7 @@
 set -eo pipefail
 
 # Initialize variables
-code_jar="0x5251d54781B64E2e17510f51AFEbEEF489Db49b3"
+code_jar="0xdDA99fE7DF072e2db3543159ac70DeF88d24397C"
 contract=""
 constructor_abi=""
 constructor_args=()

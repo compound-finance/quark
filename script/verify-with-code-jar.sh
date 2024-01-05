@@ -10,6 +10,17 @@ cons=`cat <<-EOM
     }
 EOM`
 
+# cons=`cat <<-EOM
+#     constructor() payable {
+#         assembly {
+#             let programSz := 20 // It's magic. It's pure darned magic. Please don't look behind the curtain.
+#             let argSz := sub(codesize(), programSz)
+#             codecopy(0, programSz, argSz)
+#             return(0, argSz)
+#         }
+#     }
+# EOM`
+
 # Initialize variables
 chain=""
 contract=""
