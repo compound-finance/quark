@@ -95,13 +95,16 @@ As of yet, there is no way to automatically keep these in sync. We may explore o
 
 ## Project Structure and Sub-projects
 
-Quark is not quite a typical foundry project. While there is a root `foundry.toml` that combines all the contracts into a single project, related source files are split across sub-directories containing their own, smaller `foundry.toml` projects. We call these "sub-projects."
+Quark is not quite a typical foundry project. While there is a root `foundry.toml` that combines all the contracts into a single project, related source files are split across sub-directories containing their own, smaller `foundry.toml` projects. We call these "sub-projects." These sub-projects all live in `src`.
 
 You can still `forge build` and `forge test` from the root directory and expect things to work normally. However, sub-projects can also be developed, built, and tested independently. These sub-projects are:
 
-- quark-core
-- quark-core-scripts
-- legend-scripts (NOTE that this project will likely be removed into a standalone repo at some point)
+- src/codejar
+- src/legend-scripts (NOTE that this project will likely be removed into a standalone repo at some point)
+- src/quark-core
+- src/quark-core-scripts
+- src/quark-factory
+- src/quark-proxy
 
 By separating contracts into these sub-projects, it is possible to use per-project compilation settings to optimize and deploy different sets of contracts with different configurations. Moreover, builds and test runs can be faster for individual sub-projects: from a sub-project directory, `forge build` builds only that sub-project's contracts, and `forge test` runs only the tests that pertain to it. For example:
 

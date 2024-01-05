@@ -26,7 +26,7 @@ contract QuarkMinimalProxy {
     /**
      * @notice Proxy calls to the underlying wallet implementation
      */
-    fallback(bytes calldata /* data */) external payable returns (bytes memory) {
+    fallback(bytes calldata /* data */ ) external payable returns (bytes memory) {
         address walletImplementation_ = walletImplementation;
         assembly {
             let calldataLen := calldatasize()
@@ -34,9 +34,7 @@ contract QuarkMinimalProxy {
             let success := delegatecall(gas(), walletImplementation_, 0x00, calldataLen, 0x00, 0)
             let returnSize := returndatasize()
             returndatacopy(0, 0, returnSize)
-            if success {
-                return(0, returnSize)
-            }
+            if success { return(0, returnSize) }
 
             revert(0, returnSize)
         }
