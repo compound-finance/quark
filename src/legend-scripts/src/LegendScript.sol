@@ -51,7 +51,6 @@ contract CometSupplyActions {
      *   @param amount The amount to supply
      */
     function supplyFrom(address comet, address from, address to, address asset, uint256 amount) external {
-        IERC20(asset).forceApprove(comet, amount);
         IComet(comet).supplyFrom(from, to, asset, amount);
     }
 
