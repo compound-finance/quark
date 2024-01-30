@@ -52,7 +52,7 @@ contract ZeroXSwapActionTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             legendScript,
-            abi.encodeCall(ZeroXSwapAction.run, (ZEROX_PROXY, ZEROX_PROXY, USDC, sellAmount, data)),
+            abi.encodeCall(ZeroXSwapAction.run, (ZEROX_PROXY, USDC, sellAmount, data)),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);

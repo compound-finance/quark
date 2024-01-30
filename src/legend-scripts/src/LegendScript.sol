@@ -289,10 +289,8 @@ contract ZeroXSwapAction {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
-    function run(address allowanceTarget, address to, address sellToken, uint256 sellAmount, bytes calldata data)
-        external
-    {
-        IERC20(sellToken).forceApprove(allowanceTarget, sellAmount);
+    function run(address to, address sellToken, uint256 sellAmount, bytes calldata data) external {
+        IERC20(sellToken).forceApprove(to, sellAmount);
         (bool success, bytes memory returnData) = to.call(data);
         if (!success) {
             revert TerminalErrors.SwapFailed(returnData);
