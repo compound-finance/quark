@@ -22,7 +22,7 @@ contract ZeroXSwapActionTest is Test {
     address alice = vm.addr(alicePrivateKey);
 
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant ZEROX_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     function setUp() public {
@@ -37,6 +37,7 @@ contract ZeroXSwapActionTest is Test {
         factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
     }
 
+    // Tests a swap from USDC to WETH
     function testSwap() public {
         vm.pauseGasMetering();
 
@@ -56,8 +57,12 @@ contract ZeroXSwapActionTest is Test {
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-        wallet.executeQuarkOperation(op, v, r, s);
 
         vm.resumeGasMetering();
+
+        wallet.executeQuarkOperation(op, v, r, s);
+
+        // The swap will always yield the same amount of WETH since we test at a specific block
+        assertEq(IERC20(WETH).balanceOf(address(wallet)), 420691117291334340);
     }
 }
