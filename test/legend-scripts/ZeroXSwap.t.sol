@@ -32,7 +32,7 @@ contract ZeroXSwapActionTest is Test {
                 "https://node-provider.compound.finance/ethereum-mainnet/", vm.envString("NODE_PROVIDER_BYPASS_KEY")
             ),
             // Warp to the block where the quote is valid
-            19121945 // 2023-10-25 13:24:00 PST
+            19121945
         );
         factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
     }
