@@ -13,7 +13,7 @@ import {ICometRewards} from "legend-scripts/src/interfaces/ICometRewards.sol";
 library TerminalErrors {
     error InvalidInput();
     error TransferFailed(bytes data);
-    error SwapFailed(bytes data);
+    error ApproveAndExecuteFailed(bytes data);
 }
 
 // TODO: Will need to add support for E-Comet once E-Comet has been deployed
@@ -285,15 +285,23 @@ contract CometRepayAndWithdrawMultipleAssets {
     }
 }
 
-contract ZeroXSwapAction {
+contract ApproveAndExecute {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
-    function run(address to, address sellToken, uint256 sellAmount, bytes calldata data) external {
-        IERC20(sellToken).forceApprove(to, sellAmount);
+    /**
+     * Approve a specified contract for an amount of token and execute the data against it
+     * @param to The contract address to approve execute on
+     * @param token The token address to approve
+     * @param amount The amount to approve
+     * @param data The data to execute
+     */
+    function run(address to, address token, uint256 amount, bytes calldata data) external {
+        IERC20(token).forceApprove(to, amount);
+
         (bool success, bytes memory returnData) = to.call(data);
         if (!success) {
-            revert TerminalErrors.SwapFailed(returnData);
+            revert TerminalErrors.ApproveAndExecuteFailed(returnData);
         }
     }
 }
