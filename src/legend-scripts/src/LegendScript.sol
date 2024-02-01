@@ -13,7 +13,8 @@ import {ICometRewards} from "legend-scripts/src/interfaces/ICometRewards.sol";
 library TerminalErrors {
     error InvalidInput();
     error TransferFailed(bytes data);
-    error ApproveAndExecuteFailed(bytes data);
+    error ApproveAndSwapFailed(bytes data);
+    error TooMuchSlippage();
 }
 
 // TODO: Will need to add support for E-Comet once E-Comet has been deployed
@@ -285,23 +286,41 @@ contract CometRepayAndWithdrawMultipleAssets {
     }
 }
 
-contract ApproveAndExecute {
+contract ApproveAndSwap {
     // To handle non-standard ERC20 tokens (i.e. USDT)
     using SafeERC20 for IERC20;
 
     /**
      * Approve a specified contract for an amount of token and execute the data against it
      * @param to The contract address to approve execute on
-     * @param token The token address to approve
-     * @param amount The amount to approve
+     * @param sellToken The token address to approve
+     * @param sellAmount The amount to approve
+     * @param buyToken The token that is being bought
      * @param data The data to execute
      */
-    function run(address to, address token, uint256 amount, bytes calldata data) external {
-        IERC20(token).forceApprove(to, amount);
+    function run(
+        address to,
+        address sellToken,
+        uint256 sellAmount,
+        address buyToken,
+        uint256 expectedBuyAmount,
+        bytes calldata data
+    ) external {
+        IERC20(sellToken).forceApprove(to, sellAmount);
+        uint256 buyTokenBalanceBefore = IERC20(buyToken).balanceOf(address(this));
 
         (bool success, bytes memory returnData) = to.call(data);
         if (!success) {
-            revert TerminalErrors.ApproveAndExecuteFailed(returnData);
+            revert TerminalErrors.ApproveAndSwapFailed(returnData);
         }
+
+        uint256 buyTokenBalanceAfter = IERC20(buyToken).balanceOf(address(this));
+        uint256 buyAmount = buyTokenBalanceAfter - buyTokenBalanceBefore;
+        if (buyAmount < expectedBuyAmount) {
+            revert TerminalErrors.TooMuchSlippage();
+        }
+
+        // Approvals to external contracts should always be reset to 0
+        IERC20(sellToken).forceApprove(to, 0);
     }
 }
