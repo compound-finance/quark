@@ -55,8 +55,7 @@ contract CallbacksTest is Test {
         vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
-        bytes memory callbackFromCounter =
-            new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+        bytes memory callbackFromCounter = new YulHelper().getCode("CallbackFromCounter.sol/CallbackFromCounter.json");
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -81,8 +80,7 @@ contract CallbacksTest is Test {
         assertEq(address(counter).balance, 1000 wei);
         assertEq(address(aliceWallet).balance, 0 wei);
 
-        bytes memory callbackFromCounter =
-            new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+        bytes memory callbackFromCounter = new YulHelper().getCode("CallbackFromCounter.sol/CallbackFromCounter.json");
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -105,10 +103,9 @@ contract CallbacksTest is Test {
     function testAllowNestedCallbacks() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory callbackFromCounter =
-            new YulHelper().getDeployed("CallbackFromCounter.sol/CallbackFromCounter.json");
+        bytes memory callbackFromCounter = new YulHelper().getCode("CallbackFromCounter.sol/CallbackFromCounter.json");
         bytes memory executeOtherScript =
-            new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
+            new YulHelper().getCode("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
         QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -141,9 +138,9 @@ contract CallbacksTest is Test {
         vm.pauseGasMetering();
         assertEq(counter.number(), 0);
 
-        bytes memory counterScript = new YulHelper().getDeployed("CounterScript.sol/CounterScript.json");
+        bytes memory counterScript = new YulHelper().getCode("CounterScript.sol/CounterScript.json");
         bytes memory executeOtherScript =
-            new YulHelper().getDeployed("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
+            new YulHelper().getCode("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
 
         QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, counterScript, abi.encodeWithSignature("run(address)", counter), ScriptType.ScriptAddress
@@ -172,7 +169,7 @@ contract CallbacksTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes32 callbackKey = aliceWallet.CALLBACK_KEY();
-        bytes memory allowCallbacks = new YulHelper().getDeployed("AllowCallbacks.sol/AllowCallbacks.json");
+        bytes memory allowCallbacks = new YulHelper().getCode("AllowCallbacks.sol/AllowCallbacks.json");
 
         QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, allowCallbacks, abi.encodeWithSignature("allowCallbackAndReplay()"), ScriptType.ScriptSource
@@ -199,7 +196,7 @@ contract CallbacksTest is Test {
     function testRevertsOnCallbackWhenNoActiveCallback() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        bytes memory ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -256,8 +253,8 @@ contract CallbacksTest is Test {
          * recursive callbacks and exploiting the wallet.
          */
         vm.pauseGasMetering();
-        bytes memory exploitableScript = new YulHelper().getDeployed("CallcodeReentrancy.sol/ExploitableScript.json");
-        bytes memory callbackCaller = new YulHelper().getDeployed("CallcodeReentrancy.sol/CallbackCaller.json");
+        bytes memory exploitableScript = new YulHelper().getCode("CallcodeReentrancy.sol/ExploitableScript.json");
+        bytes memory callbackCaller = new YulHelper().getCode("CallcodeReentrancy.sol/CallbackCaller.json");
 
         address callbackCallerAddress = codeJar.saveCode(callbackCaller);
 
@@ -285,8 +282,8 @@ contract CallbacksTest is Test {
     function testCallcodeReentrancyProtectionWithProtectedScript() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory protectedScript = new YulHelper().getDeployed("CallcodeReentrancy.sol/ProtectedScript.json");
-        bytes memory callbackCaller = new YulHelper().getDeployed("CallcodeReentrancy.sol/CallbackCaller.json");
+        bytes memory protectedScript = new YulHelper().getCode("CallcodeReentrancy.sol/ProtectedScript.json");
+        bytes memory callbackCaller = new YulHelper().getCode("CallcodeReentrancy.sol/CallbackCaller.json");
 
         address callbackCallerAddress = codeJar.saveCode(callbackCaller);
 
@@ -338,8 +335,8 @@ contract CallbacksTest is Test {
     function testCallcodeReentrancyExploitWithProtectedScript() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory exploitableScript = new YulHelper().getDeployed("CallcodeReentrancy.sol/ExploitableScript.json");
-        bytes memory callbackCaller = new YulHelper().getDeployed("CallcodeReentrancy.sol/CallbackCaller.json");
+        bytes memory exploitableScript = new YulHelper().getCode("CallcodeReentrancy.sol/ExploitableScript.json");
+        bytes memory callbackCaller = new YulHelper().getCode("CallcodeReentrancy.sol/CallbackCaller.json");
 
         address callbackCallerAddress = codeJar.saveCode(callbackCaller);
 

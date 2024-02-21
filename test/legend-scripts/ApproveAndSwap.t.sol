@@ -42,7 +42,7 @@ contract ApproveAndSwapTest is Test {
         vm.pauseGasMetering();
 
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory legendScript = new YulHelper().getDeployed("LegendScript.sol/ApproveAndSwap.json");
+        bytes memory legendScript = new YulHelper().getCode("LegendScript.sol/ApproveAndSwap.json");
 
         deal(USDC, address(wallet), 1_000_000e6);
         uint256 sellAmount = 1_000e6;
@@ -73,7 +73,7 @@ contract ApproveAndSwapTest is Test {
         vm.pauseGasMetering();
 
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory legendScript = new YulHelper().getDeployed("LegendScript.sol/ApproveAndSwap.json");
+        bytes memory legendScript = new YulHelper().getCode("LegendScript.sol/ApproveAndSwap.json");
 
         deal(USDC, address(wallet), 1_000_000e6);
 
@@ -107,7 +107,7 @@ contract ApproveAndSwapTest is Test {
         vm.pauseGasMetering();
 
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory legendScript = new YulHelper().getDeployed("LegendScript.sol/ApproveAndSwap.json");
+        bytes memory legendScript = new YulHelper().getCode("LegendScript.sol/ApproveAndSwap.json");
 
         deal(USDC, address(wallet), 1_000_000e6);
 

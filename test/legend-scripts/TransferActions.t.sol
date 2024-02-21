@@ -39,9 +39,9 @@ contract TransferActionsTest is Test {
     address alice = vm.addr(alicePrivateKey);
     uint256 bobPrivateKey = 0xb0b;
     address bob = vm.addr(bobPrivateKey);
-    bytes legendScript = new YulHelper().getDeployed("LegendScript.sol/TransferActions.json");
-    bytes multicall = new YulHelper().getDeployed("Multicall.sol/Multicall.json");
-    bytes allowCallbacks = new YulHelper().getDeployed("AllowCallbacks.sol/AllowCallbacks.json");
+    bytes legendScript = new YulHelper().getCode("LegendScript.sol/TransferActions.json");
+    bytes multicall = new YulHelper().getCode("Multicall.sol/Multicall.json");
+    bytes allowCallbacks = new YulHelper().getCode("AllowCallbacks.sol/AllowCallbacks.json");
 
     // Contracts address on mainnet
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -146,7 +146,7 @@ contract TransferActionsTest is Test {
 
     function testTransferReentrancyAttackSuccessWithCallbackEnabled() public {
         vm.pauseGasMetering();
-        bytes memory reentrantTransfer = new YulHelper().getDeployed("ReentrantTransfer.sol/ReentrantTransfer.json");
+        bytes memory reentrantTransfer = new YulHelper().getCode("ReentrantTransfer.sol/ReentrantTransfer.json");
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
         address reentrantTransferAddress = codeJar.saveCode(reentrantTransfer);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
@@ -182,7 +182,7 @@ contract TransferActionsTest is Test {
 
     function testTransferERC777TokenReentrancyAttackSuccessWithCallbackEnabled() public {
         vm.pauseGasMetering();
-        bytes memory reentrantTransfer = new YulHelper().getDeployed("ReentrantTransfer.sol/ReentrantTransfer.json");
+        bytes memory reentrantTransfer = new YulHelper().getCode("ReentrantTransfer.sol/ReentrantTransfer.json");
         address allowCallbacksAddress = codeJar.saveCode(allowCallbacks);
         address reentrantTransferAddress = codeJar.saveCode(reentrantTransfer);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));

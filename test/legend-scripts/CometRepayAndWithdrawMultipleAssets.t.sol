@@ -50,8 +50,7 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
     function testRepayAndWithdrawMultipleAssets() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory legendScript =
-            new YulHelper().getDeployed("LegendScript.sol/CometRepayAndWithdrawMultipleAssets.json");
+        bytes memory legendScript = new YulHelper().getCode("LegendScript.sol/CometRepayAndWithdrawMultipleAssets.json");
 
         deal(WETH, address(wallet), 10 ether);
         deal(LINK, address(wallet), 10e18);
@@ -89,8 +88,7 @@ contract CometRepayAndWithdrawMultipleAssetsTest is Test {
     function testInvalidInput() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
-        bytes memory legendScript =
-            new YulHelper().getDeployed("LegendScript.sol/CometRepayAndWithdrawMultipleAssets.json");
+        bytes memory legendScript = new YulHelper().getCode("LegendScript.sol/CometRepayAndWithdrawMultipleAssets.json");
 
         address[] memory assets = new address[](2);
         uint256[] memory amounts = new uint256[](1);

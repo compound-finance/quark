@@ -36,7 +36,7 @@ contract GetDripTest is Test {
         QuarkWallet wallet = QuarkWallet(factory.create(alice, alice));
         new YulHelper().deploy("GetDrip.sol/GetDrip.json");
 
-        bytes memory legendScript = new YulHelper().getDeployed("GetDrip.sol/GetDrip.json");
+        bytes memory legendScript = new YulHelper().getCode("GetDrip.sol/GetDrip.json");
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet, legendScript, abi.encodeCall(GetDrip.drip, (USDC)), ScriptType.ScriptSource

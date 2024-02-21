@@ -94,7 +94,7 @@ contract QuarkWalletTest is Test {
     function testSetsMsgSender() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptSource
         );
@@ -113,7 +113,7 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet aliceWalletExecutable = newWallet(aliceAccount, aliceAccount);
-        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
         address scriptAddress = codeJar.saveCode(getMessageDetails);
         bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
@@ -136,7 +136,7 @@ contract QuarkWalletTest is Test {
     function testEmitsEventsInExecuteQuarkOperation() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         QuarkWallet.QuarkOperation memory opWithScriptAddress = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptAddress
         );
@@ -165,7 +165,7 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet aliceWalletExecutable = newWallet(aliceAccount, aliceAccount);
-        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
         address scriptAddress = codeJar.saveCode(getMessageDetails);
         bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
@@ -233,7 +233,7 @@ contract QuarkWalletTest is Test {
     function testCanReplaySameScriptWithDifferentCall() public {
         // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
 
         // 1. use nonce to increment a counter
         QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -272,7 +272,7 @@ contract QuarkWalletTest is Test {
     function testRevertsForReusedNonceWithChangedScript() public {
         // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
 
         // 1. use nonce to increment a counter
         QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -307,8 +307,8 @@ contract QuarkWalletTest is Test {
     function testRevertsForReplayOfCanceledScript() public {
         // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        bytes memory cancelOtherScript = new YulHelper().getDeployed("CancelOtherScript.sol/CancelOtherScript.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+        bytes memory cancelOtherScript = new YulHelper().getCode("CancelOtherScript.sol/CancelOtherScript.json");
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -349,7 +349,7 @@ contract QuarkWalletTest is Test {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
         QuarkWallet aliceWalletExecutable = newWallet(aliceAccount, aliceAccount);
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         address incrementerAddress = codeJar.saveCode(incrementer);
         uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
         bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
@@ -372,8 +372,8 @@ contract QuarkWalletTest is Test {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
         QuarkWallet aliceWalletExecutable = newWallet(aliceAccount, address(aliceWallet));
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
-        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+        bytes memory ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
         address incrementerAddress = codeJar.saveCode(incrementer);
         bytes memory ethcallCalldata = abi.encodeWithSelector(
             Ethcall.run.selector,
@@ -406,7 +406,7 @@ contract QuarkWalletTest is Test {
     function testRevertsForDirectExecuteByNonExecutorSigner() public {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         assertEq(counter.number(), 0);
 
         // act as the signer for the wallet
@@ -431,7 +431,7 @@ contract QuarkWalletTest is Test {
     function testRevertsForUnauthorizedDirectExecuteByRandomAddress() public {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         assertEq(counter.number(), 0);
 
         // pre-compute execution parameters so that the revert is expected from the right call
@@ -459,7 +459,7 @@ contract QuarkWalletTest is Test {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
 
-        bytes memory maxCounterScript = new YulHelper().getDeployed("MaxCounterScript.sol/MaxCounterScript.json");
+        bytes memory maxCounterScript = new YulHelper().getCode("MaxCounterScript.sol/MaxCounterScript.json");
         assertEq(counter.number(), 0);
 
         vm.startPrank(address(aliceAccount));
@@ -553,7 +553,7 @@ contract QuarkWalletTest is Test {
     function _testQuarkOperationRevertsIfCallReverts(ScriptType scriptType) internal {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
+        bytes memory revertsCode = new YulHelper().getCode("Reverts.sol/Reverts.json");
         QuarkWallet.QuarkOperation memory op =
             new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, scriptType);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -575,7 +575,7 @@ contract QuarkWalletTest is Test {
     function _testAtomicPing(ScriptType scriptType) internal {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
+        bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOp(aliceWallet, ping, scriptType);
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -598,7 +598,7 @@ contract QuarkWalletTest is Test {
     function _testAtomicIncrementer(ScriptType scriptType) internal {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         assertEq(counter.number(), 0);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, incrementer, abi.encodeWithSignature("incrementCounter(address)", counter), scriptType
@@ -624,7 +624,7 @@ contract QuarkWalletTest is Test {
 
     function testPrecompileEcRecover() public {
         vm.pauseGasMetering();
-        bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
+        bytes memory preCompileCaller = new YulHelper().getCode("PrecompileCaller.sol/PrecompileCaller.json");
         bytes32 testHash = keccak256("test");
         (uint8 vt, bytes32 rt, bytes32 st) = vm.sign(alicePrivateKey, testHash);
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -660,7 +660,7 @@ contract QuarkWalletTest is Test {
 
     function testPrecompileSha256() public {
         vm.pauseGasMetering();
-        bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
+        bytes memory preCompileCaller = new YulHelper().getCode("PrecompileCaller.sol/PrecompileCaller.json");
         uint256 numberToHash = 123;
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -694,7 +694,7 @@ contract QuarkWalletTest is Test {
 
     function testPrecompileRipemd160() public {
         vm.pauseGasMetering();
-        bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
+        bytes memory preCompileCaller = new YulHelper().getCode("PrecompileCaller.sol/PrecompileCaller.json");
         bytes memory testBytes = abi.encodePacked(keccak256("test"));
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -726,7 +726,7 @@ contract QuarkWalletTest is Test {
 
     function testPrecompileDataCopy() public {
         vm.pauseGasMetering();
-        bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
+        bytes memory preCompileCaller = new YulHelper().getCode("PrecompileCaller.sol/PrecompileCaller.json");
         bytes memory testBytes = abi.encodePacked(keccak256("testDataCopy"));
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -758,7 +758,7 @@ contract QuarkWalletTest is Test {
 
     function testPrecompileBigModExp() public {
         vm.pauseGasMetering();
-        bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
+        bytes memory preCompileCaller = new YulHelper().getCode("PrecompileCaller.sol/PrecompileCaller.json");
         bytes32 base = bytes32(uint256(7));
         bytes32 exponent = bytes32(uint256(3));
         bytes32 modulus = bytes32(uint256(11));
@@ -798,7 +798,7 @@ contract QuarkWalletTest is Test {
 
     function testPrecompileBn256Add() public {
         vm.pauseGasMetering();
-        bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
+        bytes memory preCompileCaller = new YulHelper().getCode("PrecompileCaller.sol/PrecompileCaller.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             preCompileCaller,
@@ -837,7 +837,7 @@ contract QuarkWalletTest is Test {
 
     function testPrecompileBn256ScalarMul() public {
         vm.pauseGasMetering();
-        bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
+        bytes memory preCompileCaller = new YulHelper().getCode("PrecompileCaller.sol/PrecompileCaller.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             preCompileCaller,
@@ -875,7 +875,7 @@ contract QuarkWalletTest is Test {
 
     function testPrecompileBlake2F() public {
         vm.pauseGasMetering();
-        bytes memory preCompileCaller = new YulHelper().getDeployed("PrecompileCaller.sol/PrecompileCaller.json");
+        bytes memory preCompileCaller = new YulHelper().getCode("PrecompileCaller.sol/PrecompileCaller.json");
         uint32 rounds = 12;
 
         bytes32[2] memory h;

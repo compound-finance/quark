@@ -5,15 +5,21 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import {Counter} from "test/lib/Counter.sol";
+import {TickCounter} from "test/lib/TickCounter.sol";
+import {Mememe} from "test/lib/Mememe.sol";
+import {ConstructorReverter} from "test/lib/ConstructorReverter.sol";
+import {Redeployer} from "test/lib/Redeployer.sol";
+import {Wacky,WackyBeacon,WackyCode,WackyFun} from "test/lib/Wacky.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
-import {CodeJarStub} from "codejar/src/CodeJarStub.sol";
 
 contract CodeJarTest is Test {
     event Ping(uint256 value);
 
     CodeJar public codeJar;
     address destructingAddress;
+    WackyBeacon wackyBeacon;
+    address wackyAddress;
     bytes destructingCode = hex"6000ff"; // PUSH1 [60]; 0 [00]; SELFDESTRUCT [FF]
 
     constructor() {
@@ -21,43 +27,53 @@ contract CodeJarTest is Test {
         console.log("CodeJar deployed to: %s", address(codeJar));
     }
 
+    /// EVM opcodes to simply return the code as a very simple `initCode` / "constructor"
+    function stub(bytes memory code) public pure returns (bytes memory) {
+        uint32 codeLen = uint32(code.length);
+        return abi.encodePacked(hex"63", codeLen, hex"80600e6000396000f3", code);
+    }
+
     function setUp() public {
         // This setUp is only used for `testCodeJarSelfDestruct`. To test the state changes
         // from a selfdestruct in forge, the selfdestruct must be done in the setUp.
         // See: https://github.com/foundry-rs/foundry/issues/1543
 
-        destructingAddress = codeJar.saveCode(destructingCode);
+        destructingAddress = codeJar.saveCode(stub(destructingCode));
         assertEq(destructingAddress.code, destructingCode);
         (bool success,) = destructingAddress.call(hex"");
         assertEq(success, true);
         // Selfdestruct state changes do not take effect until after setUp
         assertEq(destructingAddress.code, destructingCode);
-    }
 
-    function testCodeJarInitCodeLength() public {
-        assertEq(type(CodeJarStub).creationCode.length, 20);
+        wackyBeacon = new WackyBeacon();
+        wackyBeacon.setCode(type(WackyCode).runtimeCode);
+        wackyAddress = codeJar.saveCode(abi.encodePacked(type(Wacky).creationCode, abi.encode(wackyBeacon)));
+        assertEq(wackyAddress.code, type(WackyCode).runtimeCode);
+        assertEq(WackyCode(wackyAddress).hello(), 72);
+        WackyCode(wackyAddress).destruct();
     }
 
     function testCodeJarSelfDestruct() public {
         assertEq(destructingAddress.code, hex"");
         assertEq(destructingAddress.codehash, 0);
-        assertEq(destructingAddress, codeJar.saveCode(destructingCode));
+        assertEq(destructingAddress, codeJar.saveCode(stub(destructingCode)));
         assertEq(destructingAddress.code, destructingCode);
         assertEq(destructingAddress.codehash, keccak256(destructingCode));
     }
 
     function testCodeJarFirstDeploy() public {
         uint256 gasLeft = gasleft();
-        address scriptAddress = codeJar.saveCode(hex"11223344");
+        address scriptAddress = codeJar.saveCode(stub(hex"11223344"));
         uint256 gasUsed = gasLeft - gasleft();
         assertEq(scriptAddress.code, hex"11223344");
         assertApproxEqAbs(gasUsed, 42000, 3000);
     }
 
     function testCodeJarDeployNotAffectedByChangedCodeHash() public {
+        // TODO: This test is more complex?
         vm.deal(address(0xbab), 10 ether);
         bytes memory code = hex"11223344";
-        bytes memory initCode = abi.encodePacked(hex"63", uint32(code.length), hex"80600e6000396000f3", code);
+        bytes memory initCode = stub(code);
         address targetAddress = address(
             uint160(
                 uint256(keccak256(abi.encodePacked(bytes1(0xff), address(codeJar), uint256(0), keccak256(initCode))))
@@ -70,17 +86,17 @@ contract CodeJarTest is Test {
         assertNotEq(targetAddress.codehash, 0);
         uint256 gasLeft = gasleft();
         // CodeJar will detect the codehash diff, but it will still be able to deploy the code
-        address scriptAddress = codeJar.saveCode(code);
+        address scriptAddress = codeJar.saveCode(initCode);
         uint256 gasUsed = gasLeft - gasleft();
         assertEq(scriptAddress.code, code);
         assertApproxEqAbs(gasUsed, 40000, 3000);
     }
 
     function testCodeJarSecondDeploy() public {
-        address scriptAddress = codeJar.saveCode(hex"11223344");
+        address scriptAddress = codeJar.saveCode(stub(hex"11223344"));
 
         uint256 gasLeft = gasleft();
-        address scriptAddressNext = codeJar.saveCode(hex"11223344");
+        address scriptAddressNext = codeJar.saveCode(stub(hex"11223344"));
         uint256 gasUsed = gasLeft - gasleft();
         assertEq(scriptAddress, scriptAddressNext);
         assertEq(scriptAddressNext.code, hex"11223344");
@@ -101,10 +117,10 @@ contract CodeJarTest is Test {
             hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
 
         for (uint8 i = 0; i < scripts.length; i++) {
-            assertEq(codeJar.codeExists(scripts[i]), false);
-            address codeAddress = codeJar.saveCode(scripts[i]);
+            assertEq(codeJar.codeExists(stub(scripts[i])), false);
+            address codeAddress = codeJar.saveCode(stub(scripts[i]));
             assertEq(codeAddress.code, scripts[i]);
-            assertEq(codeJar.codeExists(scripts[i]), true);
+            assertEq(codeJar.codeExists(stub(scripts[i])), true);
         }
     }
 
@@ -125,16 +141,19 @@ contract CodeJarTest is Test {
 
         assertEq(address(0xaa).codehash, 0);
 
-        address zeroDeploy = codeJar.saveCode(hex"");
-        assertEq(zeroDeploy.codehash, keccak256(hex""));
+        // This cannot deploy now
+        vm.expectRevert();
+        address zeroDeploy = codeJar.saveCode(stub(hex""));
+        assertEq(zeroDeploy.codehash, 0);
         assertEq(zeroDeploy.code, hex"");
 
-        address nonZeroDeploy = codeJar.saveCode(hex"00");
+        address nonZeroDeploy = codeJar.saveCode(stub(hex"00"));
+        assertEq(nonZeroDeploy.codehash, keccak256(hex"00"));
         assertEq(nonZeroDeploy.code, hex"00");
     }
 
     function testCodeJarCounter() public {
-        address scriptAddress = codeJar.saveCode(type(Counter).runtimeCode);
+        address scriptAddress = codeJar.saveCode(type(Counter).creationCode);
         assertEq(scriptAddress.code, type(Counter).runtimeCode);
 
         Counter counter = Counter(scriptAddress);
@@ -143,32 +162,96 @@ contract CodeJarTest is Test {
         assertEq(counter.number(), 1);
     }
 
+    function testCodeJarTickCounter() public {
+        address scriptAddress = codeJar.saveCode(abi.encodePacked(type(TickCounter).creationCode, abi.encode(55)));
+
+        // Note: runtime code is modified by immutable
+        // assertEq(scriptAddress.code, type(Counter).runtimeCode);
+
+        Counter counter = Counter(scriptAddress);
+        assertEq(counter.number(), 55);
+        counter.increment();
+        assertEq(counter.number(), 56);
+    }
+
+    function testCodeJarStoresSelfReference() public {
+        Mememe mememe = Mememe(codeJar.saveCode(type(Mememe).creationCode));
+
+        vm.expectRevert("it's me, mario");
+        mememe.hello();
+
+        (bool success, bytes memory returnData) = address(mememe).delegatecall(abi.encodeCall(mememe.hello, ()));
+        assert(success == true);
+
+        assertEq(55, abi.decode(returnData, (uint256)));
+    }
+
+    function testCodeJarDeploysAnother() public {
+        Redeployer redeployer = Redeployer(
+            codeJar.saveCode(
+                abi.encodePacked(
+                    type(Redeployer).creationCode,
+                    abi.encode(abi.encodePacked(type(TickCounter).creationCode, abi.encode(62)))
+                )
+            )
+        );
+
+        TickCounter counter = TickCounter(redeployer.deployed());
+
+        assertEq(counter.number(), 62);
+    }
+
     function testCodeJarLarge() public {
         bytes32[] memory script = new bytes32[](10000);
         bytes memory code = abi.encodePacked(script);
-        codeJar.saveCode(code);
+        codeJar.saveCode(stub(code));
     }
 
-    function testCodeJarDeployConstructor() public {
-        // This is the initCode used in CodeJar. It's a constructor code that returns "0xabcd".
-        bytes memory contructorByteCode = abi.encodePacked(hex"63", hex"00000002", hex"80600e6000396000f3", hex"abcd");
-        address scriptAddress = codeJar.saveCode(contructorByteCode);
-
-        (bool success, bytes memory returnData) = scriptAddress.call(hex"");
-
-        assertEq(returnData, hex"abcd");
-    }
-
-    function testCodeJarCodeDoesNotExistOnEmptyScriptWithETH() public {
+    function testCodeJarRefusesToDeployEmptyCode() public {
         bytes memory code = hex"";
-        assertEq(codeJar.codeExists(code), false);
-        address scriptAddress = codeJar.saveCode(code);
+        assertEq(codeJar.codeExists(stub(code)), false);
+        vm.expectRevert();
+        codeJar.saveCode(stub(code));
+        assertEq(codeJar.codeExists(stub(code)), false);
+    }
+
+    function testRevertsOnConstructorRevert() public {
+        vm.expectRevert();
+        codeJar.saveCode(type(ConstructorReverter).creationCode);
+        assertEq(codeJar.codeExists(type(ConstructorReverter).creationCode), false);
+
+        vm.expectRevert();
+        codeJar.saveCode(type(ConstructorReverter).creationCode);
+        assertEq(codeJar.codeExists(type(ConstructorReverter).creationCode), false);
+    }
+
+    function testCodeJarCanDeployCodeThatHadEthSent() public {
+        bytes memory code = hex"112233";
+        assertEq(codeJar.codeExists(stub(code)), false);
+        address codeAddress = codeJar.getCodeAddress(stub(code));
         vm.deal(address(this), 1 ether);
-        scriptAddress.call{value: 1}("");
+        codeAddress.call{value: 1}("");
 
         // Ensure codeExists correctness holds for empty code with ETH
-        assertEq(codeJar.codeExists(code), false);
+        assertEq(codeJar.codeExists(stub(code)), false);
+        assertEq(codeAddress.code, hex"");
+
+        codeJar.saveCode(stub(code));
+
+        assertEq(codeJar.codeExists(stub(code)), true);
+        assertEq(codeAddress.code, code);
     }
 
-    // Note: cannot test code too large, as overflow impossible to test
+    function testCodeJarCanBeWacky() public {
+        wackyBeacon.setCode(type(WackyFun).runtimeCode);
+        codeJar.saveCode(abi.encodePacked(type(Wacky).creationCode, abi.encode(wackyBeacon)));
+        assertEq(wackyAddress.code, type(WackyFun).runtimeCode);
+        assertEq(WackyFun(wackyAddress).cool(), 88);
+    }
+
+    function testCodeJarOnSelfDestructingConstructor() public {
+        vm.expectRevert();
+        codeJar.saveCode(abi.encodePacked(type(WackyCode).creationCode));
+        assertEq(codeJar.codeExists(abi.encodePacked(type(WackyCode).creationCode)), false);
+    }
 }

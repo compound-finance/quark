@@ -101,7 +101,7 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testCreateAndExecuteCreatesWallet() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         Counter counter = new Counter();
 
         uint96 nonce = stateManager.nextNonce(factory.walletAddressFor(alice, address(0)));
@@ -138,7 +138,7 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testCreateAndExecuteWithSalt() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         Counter counter = new Counter();
 
         uint96 nonce = stateManager.nextNonce(factory.walletAddressFor(alice, address(0)));
@@ -177,7 +177,7 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testExecuteOnExistingWallet() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         Counter counter = new Counter();
 
         uint96 nonce = stateManager.nextNonce(factory.walletAddressFor(alice, address(0)));
@@ -218,7 +218,7 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testCreateAndExecuteSetsMsgSender() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         address aliceWallet = factory.walletAddressFor(alice, address(0));
         uint96 nonce = stateManager.nextNonce(aliceWallet);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
@@ -250,7 +250,7 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testCreateAndExecuteWithSaltSetsMsgSender() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         bytes32 salt = bytes32("salty salt salt");
         address aliceWallet = factory.walletAddressForSalt(alice, address(0), salt);
         uint96 nonce = stateManager.nextNonce(aliceWallet);
@@ -291,10 +291,10 @@ contract QuarkWalletProxyFactoryTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        bytes memory ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
         address ethcallAddress = codeJar.saveCode(ethcall);
 
-        bytes memory executeOnBehalf = new YulHelper().getDeployed("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
+        bytes memory executeOnBehalf = new YulHelper().getCode("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
 
         Counter counter = new Counter();
 

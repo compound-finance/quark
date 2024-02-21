@@ -46,7 +46,7 @@ contract EIP712Test is Test {
     }
 
     function incrementCounterOperation(QuarkWallet targetWallet) public returns (QuarkWallet.QuarkOperation memory) {
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
 
         return new QuarkOperationHelper().newBasicOpWithCalldata(
             targetWallet,
@@ -214,7 +214,7 @@ contract EIP712Test is Test {
     function testNonceIsNotSetForReplayableOperation() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
 
         assertEq(counter.number(), 0);
 
@@ -251,9 +251,9 @@ contract EIP712Test is Test {
     function testRevertBadRequirements() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         bytes memory executeWithRequirements =
-            new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
+            new YulHelper().getCode("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
 
         address incrementerAddress = codeJar.saveCode(incrementer);
 
@@ -290,9 +290,9 @@ contract EIP712Test is Test {
     function testRequirements() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         bytes memory executeWithRequirements =
-            new YulHelper().getDeployed("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
+            new YulHelper().getCode("ExecuteWithRequirements.sol/ExecuteWithRequirements.json");
 
         address incrementerAddress = codeJar.saveCode(incrementer);
 

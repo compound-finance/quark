@@ -37,8 +37,8 @@ contract ConditionalMulticallTest is Test {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     // Uniswap router info on mainnet
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-    bytes ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
-    bytes conditionalMulticall = new YulHelper().getDeployed("ConditionalMulticall.sol/ConditionalMulticall.json");
+    bytes ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
+    bytes conditionalMulticall = new YulHelper().getCode("ConditionalMulticall.sol/ConditionalMulticall.json");
     address ethcallAddress;
 
     function setUp() public {

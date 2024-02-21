@@ -56,7 +56,7 @@ contract QuarkStateManagerTest is Test {
         // a QuarkWallet can use nonce 0 as the active nonce
         vm.pauseGasMetering(); // do not meter deployment gas
         QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, stateManager);
-        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         address scriptAddress = codeJar.saveCode(getMessageDetails);
         bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
         vm.resumeGasMetering();
@@ -108,7 +108,7 @@ contract QuarkStateManagerTest is Test {
         Counter counter = new Counter();
         assertEq(counter.number(), 0);
 
-        bytes memory maxCounterScript = new YulHelper().getDeployed("MaxCounterScript.sol/MaxCounterScript.json");
+        bytes memory maxCounterScript = new YulHelper().getCode("MaxCounterScript.sol/MaxCounterScript.json");
         address maxCounterScriptAddress = codeJar.saveCode(maxCounterScript);
         bytes memory call = abi.encodeWithSignature("run(address)", address(counter));
 

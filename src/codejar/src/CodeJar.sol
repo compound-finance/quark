@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.23;
 
-import {CodeJarStub} from "./CodeJarStub.sol";
-
 /**
  * @title Code Jar
  * @notice Deploys contract code to deterministic addresses
@@ -12,26 +10,33 @@ contract CodeJar {
     /**
      * @notice Deploys the code via Code Jar, no-op if it already exists
      * @dev This call is meant to be idemponent and fairly inexpensive on a second call
-     * @param code The runtime bytecode of the code to save
-     * @return The address of the contract that matches the input code
+     * @param code The creation bytecode of the code to save
+     * @return The address of the contract that matches the input code's contructor output
      */
-    function saveCode(bytes calldata code) external returns (address) {
+    function saveCode(bytes memory code) external returns (address) {
         address codeAddress = getCodeAddress(code);
-        bytes32 codeAddressHash = codeAddress.codehash;
 
-        if (codeAddressHash == keccak256(code)) {
-            // Code is already deployed and matches expected code
+        if (codeAddress.code.length > 0) {
+            // Code is already deployed
             return codeAddress;
         } else {
             // The code has not been deployed here (or it was deployed and destructed).
-            CodeJarStub script;
-            bytes memory initCode = abi.encodePacked(type(CodeJarStub).creationCode, code);
+            address script;
             assembly {
-                script := create2(0, add(initCode, 0x20), mload(initCode), 0)
+                script := create2(0, add(code, 0x20), mload(code), 0)
             }
 
             // Posit: these cannot fail and are purely defense-in-depth
-            require(address(script) == codeAddress);
+            require(script == codeAddress);
+
+            uint256 scriptSz;
+            assembly {
+                scriptSz := extcodesize(script)
+            }
+
+            // Disallow the empty code
+            // Note: script can still selfdestruct
+            require(scriptSz > 0);
 
             return codeAddress;
         }
@@ -45,27 +50,16 @@ contract CodeJar {
     function codeExists(bytes calldata code) external view returns (bool) {
         address codeAddress = getCodeAddress(code);
 
-        return codeAddress.code.length != 0 && codeAddress.codehash == keccak256(code);
+        return codeAddress.code.length > 0;
     }
 
     /**
-     * @dev Returns the create2 address based on CodeJarStub
-     * @return The create2 address to deploy this code (via CodeJarStub)
+     * @dev Returns the create2 address based on the creation code
+     * @return The create2 address to deploy this code (via init code)
      */
-    function getCodeAddress(bytes memory code) internal view returns (address) {
+    function getCodeAddress(bytes memory code) public view returns (address) {
         return address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            bytes1(0xff),
-                            address(this),
-                            uint256(0),
-                            keccak256(abi.encodePacked(type(CodeJarStub).creationCode, code))
-                        )
-                    )
-                )
-            )
+            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), uint256(0), keccak256(code)))))
         );
     }
 }
