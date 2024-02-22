@@ -143,9 +143,11 @@ contract QuarkWallet is IERC1271 {
         }
 
         bytes memory encodedArray;
-        for (uint i = 0; i < op.scriptSources.length;) {
+        for (uint256 i = 0; i < op.scriptSources.length;) {
             encodedArray = abi.encodePacked(encodedArray, keccak256(op.scriptSources[i]));
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         bytes32 structHash = keccak256(
