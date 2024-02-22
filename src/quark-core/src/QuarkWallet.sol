@@ -142,12 +142,18 @@ contract QuarkWallet is IERC1271 {
             revert InvalidScriptAddress();
         }
 
+        bytes memory encodedArray;
+        for (uint i = 0; i < op.scriptSources.length;) {
+            encodedArray = abi.encodePacked(encodedArray, keccak256(op.scriptSources[i]));
+            unchecked { ++i; }
+        }
+
         bytes32 structHash = keccak256(
             abi.encode(
                 QUARK_OPERATION_TYPEHASH,
                 op.nonce,
                 op.scriptAddress,
-                op.scriptSources, // NOTE: this is bytes[] now, not bytes, so it should not be keccack'ed
+                keccak256(encodedArray),
                 keccak256(op.scriptCalldata), // NOTE: this is bytes, must keccak -- see https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct
                 op.expiry
             )

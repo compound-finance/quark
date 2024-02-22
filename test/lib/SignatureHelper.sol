@@ -26,13 +26,19 @@ contract SignatureHelper is Test {
         return vm.sign(privateKey, digest);
     }
 
-    function structHash(QuarkWallet.QuarkOperation memory op) internal pure returns (bytes32) {
+    function structHash(QuarkWallet.QuarkOperation memory op) public view returns (bytes32) {
+        bytes memory encodedArray;
+        for (uint i = 0; i < op.scriptSources.length;) {
+            encodedArray = abi.encodePacked(encodedArray, keccak256(op.scriptSources[i]));
+            unchecked { ++i; }
+        }
+
         return keccak256(
             abi.encode(
                 QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH,
                 op.nonce,
                 op.scriptAddress,
-                op.scriptSources,
+                keccak256(encodedArray),
                 keccak256(op.scriptCalldata),
                 op.expiry
             )
