@@ -13,6 +13,7 @@ import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 
+import {Logger} from "test/lib/Logger.sol";
 import {Counter} from "test/lib/Counter.sol";
 import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
 

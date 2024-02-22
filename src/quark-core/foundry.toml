@@ -2,8 +2,8 @@
 solc = "0.8.23"
 evm_version = "paris"
 
-libs = [ "../lib" ]
+libs = [ "../../lib" ]
 
 src = "src"
 out = "out"
-test = "../test/quark-core"
+test = "../../test/quark-core"

@@ -13,6 +13,7 @@ import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
 import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
 
 import {Counter} from "test/lib/Counter.sol";
+import {Incrementer} from "test/lib/Incrementer.sol";
 import {ExecuteWithRequirements} from "test/lib/ExecuteWithRequirements.sol";
 
 import {YulHelper} from "test/lib/YulHelper.sol";

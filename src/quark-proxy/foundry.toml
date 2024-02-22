@@ -2,11 +2,11 @@
 solc = "0.8.23"
 evm_version = "paris"
 
-libs = [ "../lib" ]
+libs = [ "../../lib" ]
 
 src = "src"
 out = "out"
-test = "../test/quark-proxy"
+test = "../../test/quark-proxy"
 
 # optimizer config
 optimizer = true
