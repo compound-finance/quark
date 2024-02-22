@@ -9,7 +9,7 @@ import {TickCounter} from "test/lib/TickCounter.sol";
 import {Mememe} from "test/lib/Mememe.sol";
 import {ConstructorReverter} from "test/lib/ConstructorReverter.sol";
 import {Redeployer} from "test/lib/Redeployer.sol";
-import {Wacky,WackyBeacon,WackyCode,WackyFun} from "test/lib/Wacky.sol";
+import {Wacky, WackyBeacon, WackyCode, WackyFun} from "test/lib/Wacky.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
