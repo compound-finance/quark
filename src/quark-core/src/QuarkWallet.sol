@@ -22,7 +22,7 @@ library QuarkWalletMetadata {
 
     /// @notice The EIP-712 typehash for authorizing an operation for this version of QuarkWallet
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(uint96 nonce,address scriptAddress,bytes scriptSource,bytes scriptCalldata,uint256 expiry)"
+        "QuarkOperation(uint96 nonce,address scriptAddress,bytes[] scriptSources,bytes scriptCalldata,uint256 expiry)"
     );
 
     /// @notice The EIP-712 typehash for authorizing an EIP-1271 signature for this version of QuarkWallet
@@ -50,7 +50,7 @@ interface HasSignerExecutor {
  * @author Compound Labs, Inc.
  */
 contract QuarkWallet is IERC1271 {
-    error AmbiguousScript();
+    error InvalidScriptAddress();
     error BadSignatory();
     error EmptyCode();
     error InvalidEIP1271Signature();
@@ -101,16 +101,10 @@ contract QuarkWallet is IERC1271 {
     struct QuarkOperation {
         /// @notice Nonce identifier for the operation
         uint96 nonce;
-        /**
-         * @notice The address of the transaction script to run
-         * @dev Should be set as address(0) when `scriptSource` is non-empty
-         */
+        /// @notice The address of the transaction script to run
         address scriptAddress;
-        /**
-         * @notice The runtime bytecode of the transaction script to run
-         * @dev Should be set to empty bytes when `scriptAddress` is non-zero
-         */
-        bytes scriptSource;
+        /// @notice Creation codes (init codes) Quark must ensure are deployed before executing this operation
+        bytes[] scriptSources;
         /// @notice Encoded function selector + arguments to invoke on the script contract
         bytes scriptCalldata;
         /// @notice Expiration time for the signature corresponding to this operation
@@ -144,19 +138,8 @@ contract QuarkWallet is IERC1271 {
             revert SignatureExpired();
         }
 
-        /*
-         * At most one of scriptAddress or scriptSource may be provided;
-         * specifying both adds cost (ie. wasted bytecode) for no benefit.
-         */
-        if ((op.scriptAddress != address(0)) && (op.scriptSource.length > 0)) {
-            revert AmbiguousScript();
-        }
-
-        /*
-         * If scriptAddress is not given, scriptSource must be non-empty
-         */
-        if (op.scriptAddress == address(0) && op.scriptSource.length == 0) {
-            revert EmptyCode();
+        if (op.scriptAddress == address(0)) {
+            revert InvalidScriptAddress();
         }
 
         bytes32 structHash = keccak256(
@@ -164,8 +147,8 @@ contract QuarkWallet is IERC1271 {
                 QUARK_OPERATION_TYPEHASH,
                 op.nonce,
                 op.scriptAddress,
-                keccak256(op.scriptSource),
-                keccak256(op.scriptCalldata),
+                op.scriptSources, // NOTE: this is bytes[] now, not bytes, so it should not be keccack'ed
+                keccak256(op.scriptCalldata), // NOTE: this is bytes, must keccak -- see https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct
                 op.expiry
             )
         );
@@ -174,15 +157,17 @@ contract QuarkWallet is IERC1271 {
         // if the signature check does not revert, the signature is valid
         checkValidSignatureInternal(HasSignerExecutor(address(this)).signer(), digest, v, r, s);
 
-        // if scriptAddress not given, derive deterministic address from bytecode
-        address scriptAddress = op.scriptAddress;
-        if (scriptAddress == address(0)) {
-            scriptAddress = codeJar.saveCode(op.scriptSource);
+        // guarantee every script in scriptSources is deployed
+        for (uint256 i; i < op.scriptSources.length;) {
+            codeJar.saveCode(op.scriptSources[i]);
+            unchecked {
+                ++i;
+            }
         }
 
-        emit ExecuteQuarkScript(msg.sender, scriptAddress, op.nonce, ExecutionType.Signature);
+        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
 
-        return stateManager.setActiveNonceAndCallback(op.nonce, scriptAddress, op.scriptCalldata);
+        return stateManager.setActiveNonceAndCallback(op.nonce, op.scriptAddress, op.scriptCalldata);
     }
 
     /**
@@ -200,6 +185,10 @@ contract QuarkWallet is IERC1271 {
         // only allow the executor for the wallet to use unsigned execution
         if (msg.sender != HasSignerExecutor(address(this)).executor()) {
             revert Unauthorized();
+        }
+
+        if (scriptAddress == address(0)) {
+            revert InvalidScriptAddress();
         }
 
         emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);

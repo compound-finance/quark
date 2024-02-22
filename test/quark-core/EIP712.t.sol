@@ -84,7 +84,8 @@ contract EIP712Test is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // bad actor modifies script source to selfdestruct the wallet
-        op.scriptSource = hex"6000ff";
+        op.scriptSources = new bytes[](1);
+        op.scriptSources[0] = bytes(hex"6000ff");
 
         // gas: meter execute
         vm.resumeGasMetering();

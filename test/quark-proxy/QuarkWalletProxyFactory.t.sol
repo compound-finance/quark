@@ -104,10 +104,15 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         Counter counter = new Counter();
 
+        // FIXME: does this still make sense?
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = incrementer;
+
+        address incrementerAddress = codeJar.getCodeAddress(incrementer);
         uint96 nonce = stateManager.nextNonce(factory.walletAddressFor(alice, address(0)));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: incrementer,
+            scriptAddress: incrementerAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -141,10 +146,15 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         Counter counter = new Counter();
 
+        // FIXME: does this still make sense?
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = incrementer;
+
+        address incrementerAddress = codeJar.getCodeAddress(incrementer);
         uint96 nonce = stateManager.nextNonce(factory.walletAddressFor(alice, address(0)));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: incrementer,
+            scriptAddress: incrementerAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -180,10 +190,15 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         Counter counter = new Counter();
 
+        // FIXME: does this still make sense?
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = incrementer;
+
         uint96 nonce = stateManager.nextNonce(factory.walletAddressFor(alice, address(0)));
+        address incrementerAddress = codeJar.getCodeAddress(incrementer);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: incrementer,
+            scriptAddress: incrementerAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -221,9 +236,16 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         address aliceWallet = factory.walletAddressFor(alice, address(0));
         uint96 nonce = stateManager.nextNonce(aliceWallet);
+
+        address getMessageDetailsAddress = codeJar.getCodeAddress(getMessageDetails);
+
+        // FIXME: does this still make sense?
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = getMessageDetails;
+
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: getMessageDetails,
+            scriptAddress: getMessageDetailsAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -254,9 +276,15 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes32 salt = bytes32("salty salt salt");
         address aliceWallet = factory.walletAddressForSalt(alice, address(0), salt);
         uint96 nonce = stateManager.nextNonce(aliceWallet);
+        address getMessageDetailsAddress = codeJar.getCodeAddress(getMessageDetails);
+
+        // FIXME: does this still make sense?
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = getMessageDetails;
+
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: getMessageDetails,
+            scriptAddress: getMessageDetailsAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -302,9 +330,15 @@ contract QuarkWalletProxyFactoryTest is Test {
         QuarkWallet aliceWalletPrimary = QuarkWallet(factory.create(alice, address(0)));
         QuarkWallet aliceWalletSecondary = QuarkWallet(factory.create(alice, address(aliceWalletPrimary), bytes32("1")));
 
+        address executeOnBehalfAddress = codeJar.getCodeAddress(executeOnBehalf);
+
+        // FIXME: does this still make sense?
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = executeOnBehalf;
+
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: executeOnBehalf,
+            scriptAddress: executeOnBehalfAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature(
                 "run(address,uint96,address,bytes)",
                 address(aliceWalletSecondary),
