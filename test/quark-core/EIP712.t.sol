@@ -101,6 +101,29 @@ contract EIP712Test is Test {
         assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
     }
 
+    // FIXME: this test is too indirect and weird; we aren't really testing the wallet's signatures at all...
+    function testStructHash() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        assertEq(counter.number(), 0);
+
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+        address incrementerAddress = codeJar.getCodeAddress(incrementer);
+
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = incrementer;
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            nonce: stateManager.nextNonce(address(wallet)),
+            scriptAddress: incrementerAddress,
+            scriptSources: scriptSources,
+            scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
+            expiry: block.timestamp + 1000
+        });
+        bytes32 structHash = new SignatureHelper().structHash(op);
+        assertEq(structHash, hex"59adfe368a0dea9fc11a9e67b1882c167165a63cd6413edb9513401a6f9257f7");
+    }
+
     function testRevertsForBadCalldata() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
