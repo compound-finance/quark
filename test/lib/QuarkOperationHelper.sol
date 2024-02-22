@@ -14,7 +14,7 @@ contract QuarkOperationHelper is Test {
         external
         returns (QuarkWallet.QuarkOperation memory)
     {
-        return newBasicOpWithCalldata(wallet, scriptSource, abi.encode(), scriptType);
+        return newBasicOpWithCalldata(wallet, scriptSource, abi.encode(), new bytes[](0), scriptType);
     }
 
     function newBasicOpWithCalldata(
@@ -23,19 +23,29 @@ contract QuarkOperationHelper is Test {
         bytes memory scriptCalldata,
         ScriptType scriptType
     ) public returns (QuarkWallet.QuarkOperation memory) {
+        return newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, new bytes[](0), scriptType);
+    }
+
+    function newBasicOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        bytes[] memory ensureScripts,
+        ScriptType scriptType
+    ) public returns (QuarkWallet.QuarkOperation memory) {
         address scriptAddress = wallet.codeJar().saveCode(scriptSource);
         if (scriptType == ScriptType.ScriptAddress) {
             return QuarkWallet.QuarkOperation({
                 scriptAddress: scriptAddress,
-                scriptSource: "",
+                scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
                 nonce: wallet.stateManager().nextNonce(address(wallet)),
                 expiry: block.timestamp + 1000
             });
         } else {
             return QuarkWallet.QuarkOperation({
-                scriptAddress: address(0),
-                scriptSource: scriptSource,
+                scriptAddress: scriptAddress,
+                scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
                 nonce: wallet.stateManager().nextNonce(address(wallet)),
                 expiry: block.timestamp + 1000

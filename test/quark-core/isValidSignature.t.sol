@@ -233,18 +233,8 @@ contract isValidSignatureTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
+        vm.expectRevert();
         address emptyCodeContract = codeJar.saveCode(hex"");
-        QuarkWallet contractWallet = new QuarkWalletStandalone(emptyCodeContract, address(0), codeJar, stateManager);
-        // signature from bob; doesn't matter because the empty contract will be treated as an EOA and revert
-        ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
-        // gas: meter execute
-        vm.resumeGasMetering();
-
-        // call reverts with BadSignatory since the empty contract appears to
-        // have no code; request will go down the code path for EIP-712
-        // signatures and will revert as bad signature
-        vm.expectRevert(QuarkWallet.BadSignatory.selector);
-        contractWallet.isValidSignature(bytes32(""), signature);
     }
 
     /* ===== re-use signature tests ===== */
