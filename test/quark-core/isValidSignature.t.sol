@@ -12,6 +12,7 @@ import {QuarkWallet, QuarkWalletStandalone, QuarkWalletMetadata} from "quark-cor
 
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 
+import {Logger} from "test/lib/Logger.sol";
 import {Counter} from "test/lib/Counter.sol";
 import {Permit2, Permit2Helper} from "test/lib/Permit2Helper.sol";
 import {EIP1271Signer, EIP1271Reverter} from "test/lib/EIP1271Signer.sol";
