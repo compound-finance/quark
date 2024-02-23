@@ -16,7 +16,7 @@ contract WackyCode {
         }
     }
 
-    function hello() external returns (uint256) {
+    function hello() external pure returns (uint256) {
         return 72;
     }
 
@@ -28,7 +28,7 @@ contract WackyCode {
 }
 
 contract WackyFun {
-    function cool() external returns (uint256) {
+    function cool() external pure returns (uint256) {
         return 88;
     }
 }
