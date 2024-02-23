@@ -37,10 +37,10 @@ contract UniswapFlashSwapExactOutTest is Test {
     address constant comet = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    bytes multicall = new YulHelper().getDeployed("Multicall.sol/Multicall.json");
-    bytes ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+    bytes multicall = new YulHelper().getCode("Multicall.sol/Multicall.json");
+    bytes ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
     bytes uniswapFlashSwapExactOut =
-        new YulHelper().getDeployed("UniswapFlashSwapExactOut.sol/UniswapFlashSwapExactOut.json");
+        new YulHelper().getCode("UniswapFlashSwapExactOut.sol/UniswapFlashSwapExactOut.json");
     address ethcallAddress;
     address multicallAddress;
     address uniswapFlashSwapExactOutAddress;

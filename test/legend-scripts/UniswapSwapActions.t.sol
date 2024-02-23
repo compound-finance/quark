@@ -37,7 +37,7 @@ contract UniswapSwapActionsTest is Test {
     address constant COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     // Uniswap router info on mainnet
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-    bytes legendScript = new YulHelper().getDeployed("LegendScript.sol/UniswapSwapActions.json");
+    bytes legendScript = new YulHelper().getCode("LegendScript.sol/UniswapSwapActions.json");
 
     function setUp() public {
         // Fork setup

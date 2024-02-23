@@ -55,11 +55,11 @@ contract BatchExecutorTest is Test {
     }
 
     function testBatchExecute() public {
-        // We test multiple operations with different wallets, covering both `scriptAddress` and `scriptSource` use-cases
+        // We test multiple operations with different wallets
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
 
         QuarkWallet.QuarkOperation memory aliceOp =
             new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
@@ -105,8 +105,8 @@ contract BatchExecutorTest is Test {
     function testBatchExecuteDoesNotRevertIfAnyCallsRevert() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory ping = new YulHelper().getDeployed("Logger.sol/Logger.json");
-        bytes memory reverts = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
+        bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
+        bytes memory reverts = new YulHelper().getCode("Reverts.sol/Reverts.json");
 
         QuarkWallet.QuarkOperation memory aliceOp =
             new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);

@@ -14,6 +14,7 @@ import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 
 import {Logger} from "test/lib/Logger.sol";
 import {Counter} from "test/lib/Counter.sol";
+import {EmptyCode} from "test/lib/EmptyCode.sol";
 import {Permit2, Permit2Helper} from "test/lib/Permit2Helper.sol";
 import {EIP1271Signer, EIP1271Reverter} from "test/lib/EIP1271Signer.sol";
 
@@ -233,7 +234,7 @@ contract isValidSignatureTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        address emptyCodeContract = codeJar.saveCode(hex"");
+        address emptyCodeContract = address(new EmptyCode());
         QuarkWallet contractWallet = new QuarkWalletStandalone(emptyCodeContract, address(0), codeJar, stateManager);
         // signature from bob; doesn't matter because the empty contract will be treated as an EOA and revert
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
@@ -262,7 +263,7 @@ contract isValidSignatureTest is Test {
         });
         Permit2Helper.PermitSingle memory permitSingle =
             Permit2Helper.PermitSingle({details: permitDetails, spender: bob, sigDeadline: block.timestamp + 100});
-        (bytes32 digest, bytes memory signature) = createPermit2Signature(alicePrivateKey, permitSingle);
+        ( /* bytes32 digest */ , bytes memory signature) = createPermit2Signature(alicePrivateKey, permitSingle);
 
         // gas: meter execute
         vm.resumeGasMetering();

@@ -55,11 +55,10 @@ contract DeployQuarkWalletFactory is Script {
 
         CodeJar codeJar = QuarkWallet(payable(quarkFactory.quarkWalletProxyFactory().walletImplementation())).codeJar();
 
-        ethcall = Ethcall(codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "Ethcall.sol/Ethcall.json"))));
+        ethcall = Ethcall(codeJar.saveCode(vm.getCode(string.concat("out/", "Ethcall.sol/Ethcall.json"))));
         console.log("Ethcall Deployed:", address(ethcall));
 
-        multicall =
-            Multicall(codeJar.saveCode(vm.getDeployedCode(string.concat("out/", "Multicall.sol/Multicall.json"))));
+        multicall = Multicall(codeJar.saveCode(vm.getCode(string.concat("out/", "Multicall.sol/Multicall.json"))));
         console.log("Multicall Deployed:", address(multicall));
 
         console.log("=============================================================");

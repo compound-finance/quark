@@ -47,7 +47,7 @@ contract RevertsTest is Test {
     function testRevertsWhenDividingByZero() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
+        bytes memory revertsCode = new YulHelper().getCode("Reverts.sol/Reverts.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, revertsCode, abi.encodeWithSelector(Reverts.divideByZero.selector), ScriptType.ScriptAddress
         );
@@ -63,7 +63,7 @@ contract RevertsTest is Test {
     function testRevertsInteger() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
+        bytes memory revertsCode = new YulHelper().getCode("Reverts.sol/Reverts.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, revertsCode, abi.encodeWithSelector(Reverts.revertSeven.selector), ScriptType.ScriptAddress
         );
@@ -78,7 +78,7 @@ contract RevertsTest is Test {
     function testRevertsOutOfGas() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
+        bytes memory revertsCode = new YulHelper().getCode("Reverts.sol/Reverts.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, revertsCode, abi.encodeWithSelector(Reverts.outOfGas.selector), ScriptType.ScriptAddress
         );
@@ -94,7 +94,7 @@ contract RevertsTest is Test {
     function testRevertsInvalidOpcode() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory revertsCode = new YulHelper().getDeployed("Reverts.sol/Reverts.json");
+        bytes memory revertsCode = new YulHelper().getCode("Reverts.sol/Reverts.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             revertsCode,

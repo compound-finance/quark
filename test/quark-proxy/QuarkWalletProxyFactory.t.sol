@@ -13,8 +13,12 @@ import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.s
 
 import {Counter} from "test/lib/Counter.sol";
 
+import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 import {YulHelper} from "test/lib/YulHelper.sol";
+import {Incrementer} from "test/lib/Incrementer.sol";
+import {ExecuteOnBehalf} from "test/lib/ExecuteOnBehalf.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
+import {GetMessageDetails} from "test/lib/GetMessageDetails.sol";
 
 contract QuarkWalletProxyFactoryTest is Test {
     event WalletDeploy(address indexed account, address indexed executor, address walletAddress, bytes32 salt);
@@ -101,13 +105,17 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testCreateAndExecuteCreatesWallet() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         Counter counter = new Counter();
 
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = incrementer;
+
+        address incrementerAddress = codeJar.getCodeAddress(incrementer);
         uint96 nonce = stateManager.nextNonce(factory.walletAddressFor(alice, address(0)));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: incrementer,
+            scriptAddress: incrementerAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -138,13 +146,17 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testCreateAndExecuteWithSalt() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         Counter counter = new Counter();
 
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = incrementer;
+
+        address incrementerAddress = codeJar.getCodeAddress(incrementer);
         uint96 nonce = stateManager.nextNonce(factory.walletAddressFor(alice, address(0)));
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: incrementer,
+            scriptAddress: incrementerAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -177,13 +189,17 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testExecuteOnExistingWallet() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getDeployed("Incrementer.sol/Incrementer.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
         Counter counter = new Counter();
 
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = incrementer;
+
         uint96 nonce = stateManager.nextNonce(factory.walletAddressFor(alice, address(0)));
+        address incrementerAddress = codeJar.getCodeAddress(incrementer);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: incrementer,
+            scriptAddress: incrementerAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -218,12 +234,18 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testCreateAndExecuteSetsMsgSender() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         address aliceWallet = factory.walletAddressFor(alice, address(0));
         uint96 nonce = stateManager.nextNonce(aliceWallet);
+
+        address getMessageDetailsAddress = codeJar.getCodeAddress(getMessageDetails);
+
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = getMessageDetails;
+
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: getMessageDetails,
+            scriptAddress: getMessageDetailsAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -250,13 +272,15 @@ contract QuarkWalletProxyFactoryTest is Test {
     function testCreateAndExecuteWithSaltSetsMsgSender() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory getMessageDetails = new YulHelper().getDeployed("GetMessageDetails.sol/GetMessageDetails.json");
+        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         bytes32 salt = bytes32("salty salt salt");
         address aliceWallet = factory.walletAddressForSalt(alice, address(0), salt);
         uint96 nonce = stateManager.nextNonce(aliceWallet);
+        address getMessageDetailsAddress = codeJar.getCodeAddress(getMessageDetails);
+
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: getMessageDetails,
+            scriptAddress: getMessageDetailsAddress,
+            scriptSources: new bytes[](0),
             scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
             nonce: nonce,
             expiry: block.timestamp + 1000
@@ -266,7 +290,22 @@ contract QuarkWalletProxyFactoryTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
 
-        // operation is executed
+        // we didn't include the script source in scriptSources and we never deployed it!
+        vm.expectRevert(QuarkWallet.EmptyCode.selector);
+        factory.createAndExecute(alice, address(0), salt, op, v, r, s);
+
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+
+        // but if we do add it...
+        op.scriptSources = new bytes[](1);
+        op.scriptSources[0] = getMessageDetails;
+        (v, r, s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+
+        // then the script gets deployed and the operation is executed
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
         emit WalletDeploy(alice, address(0), aliceWallet, salt);
@@ -291,10 +330,10 @@ contract QuarkWalletProxyFactoryTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        bytes memory ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
         address ethcallAddress = codeJar.saveCode(ethcall);
 
-        bytes memory executeOnBehalf = new YulHelper().getDeployed("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
+        bytes memory executeOnBehalf = new YulHelper().getCode("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
 
         Counter counter = new Counter();
 
@@ -302,9 +341,15 @@ contract QuarkWalletProxyFactoryTest is Test {
         QuarkWallet aliceWalletPrimary = QuarkWallet(factory.create(alice, address(0)));
         QuarkWallet aliceWalletSecondary = QuarkWallet(factory.create(alice, address(aliceWalletPrimary), bytes32("1")));
 
+        address executeOnBehalfAddress = codeJar.getCodeAddress(executeOnBehalf);
+
+        // NOTE: necessary to pass this into scriptSources or it will be EmptyCode()!
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = executeOnBehalf;
+
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
-            scriptAddress: address(0),
-            scriptSource: executeOnBehalf,
+            scriptAddress: executeOnBehalfAddress,
+            scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature(
                 "run(address,uint96,address,bytes)",
                 address(aliceWalletSecondary),

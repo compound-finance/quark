@@ -42,9 +42,9 @@ contract UniswapFlashLoanTest is Test {
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     // Router info on mainnet
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-    bytes multicall = new YulHelper().getDeployed("Multicall.sol/Multicall.json");
-    bytes ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
-    bytes uniswapFlashLoan = new YulHelper().getDeployed("UniswapFlashLoan.sol/UniswapFlashLoan.json");
+    bytes multicall = new YulHelper().getCode("Multicall.sol/Multicall.json");
+    bytes ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
+    bytes uniswapFlashLoan = new YulHelper().getCode("UniswapFlashLoan.sol/UniswapFlashLoan.json");
     address ethcallAddress;
     address multicallAddress;
     address uniswapFlashLoanAddress;

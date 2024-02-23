@@ -51,10 +51,10 @@ contract ExecutorTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        bytes memory ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
         address ethcallAddress = codeJar.saveCode(ethcall);
 
-        bytes memory executeOnBehalf = new YulHelper().getDeployed("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
+        bytes memory executeOnBehalf = new YulHelper().getCode("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
         address executeOnBehalfAddress = codeJar.saveCode(executeOnBehalf);
 
         vm.startPrank(aliceAccount);
@@ -84,10 +84,10 @@ contract ExecutorTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        bytes memory ethcall = new YulHelper().getDeployed("Ethcall.sol/Ethcall.json");
+        bytes memory ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
         address ethcallAddress = codeJar.saveCode(ethcall);
 
-        bytes memory executeOnBehalf = new YulHelper().getDeployed("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
+        bytes memory executeOnBehalf = new YulHelper().getCode("ExecuteOnBehalf.sol/ExecuteOnBehalf.json");
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,

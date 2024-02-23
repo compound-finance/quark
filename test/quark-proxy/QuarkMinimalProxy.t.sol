@@ -52,7 +52,7 @@ contract QuarkMinimalProxyTest is Test {
 
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory testScript = new YulHelper().getDeployed("QuarkMinimalProxy.t.sol/TestHarness.json");
+        bytes memory testScript = new YulHelper().getCode("QuarkMinimalProxy.t.sol/TestHarness.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             QuarkWallet(payable(aliceWalletProxy)),
             testScript,
