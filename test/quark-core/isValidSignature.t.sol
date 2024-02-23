@@ -263,7 +263,7 @@ contract isValidSignatureTest is Test {
         });
         Permit2Helper.PermitSingle memory permitSingle =
             Permit2Helper.PermitSingle({details: permitDetails, spender: bob, sigDeadline: block.timestamp + 100});
-        (/* bytes32 digest */, bytes memory signature) = createPermit2Signature(alicePrivateKey, permitSingle);
+        ( /* bytes32 digest */ , bytes memory signature) = createPermit2Signature(alicePrivateKey, permitSingle);
 
         // gas: meter execute
         vm.resumeGasMetering();
