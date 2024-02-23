@@ -103,7 +103,7 @@ contract QuarkWallet is IERC1271 {
         uint96 nonce;
         /// @notice The address of the transaction script to run
         address scriptAddress;
-        /// @notice Creation codes (init codes) Quark must ensure are deployed before executing this operation
+        /// @notice Creation codes Quark must ensure are deployed before executing this operation
         bytes[] scriptSources;
         /// @notice Encoded function selector + arguments to invoke on the script contract
         bytes scriptCalldata;
@@ -156,7 +156,7 @@ contract QuarkWallet is IERC1271 {
                 op.nonce,
                 op.scriptAddress,
                 keccak256(encodedArray),
-                keccak256(op.scriptCalldata), // NOTE: this is bytes, must keccak -- see https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct
+                keccak256(op.scriptCalldata),
                 op.expiry
             )
         );
@@ -166,7 +166,7 @@ contract QuarkWallet is IERC1271 {
         checkValidSignatureInternal(HasSignerExecutor(address(this)).signer(), digest, v, r, s);
 
         // guarantee every script in scriptSources is deployed
-        for (uint256 i; i < op.scriptSources.length;) {
+        for (uint256 i = 0; i < op.scriptSources.length;) {
             codeJar.saveCode(op.scriptSources[i]);
             unchecked {
                 ++i;
