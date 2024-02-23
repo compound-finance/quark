@@ -9,6 +9,8 @@ enum ScriptType {
     ScriptSource
 }
 
+// TODO: QuarkOperationHelper ScriptType doesn't really make sense anymore, since scriptSource
+// has been replaced with scriptSources and scriptAddress is now always required.
 contract QuarkOperationHelper is Test {
     function newBasicOp(QuarkWallet wallet, bytes memory scriptSource, ScriptType scriptType)
         external
