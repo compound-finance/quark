@@ -238,18 +238,12 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeScript(nonce2, emptyCodeAddress, bytes(""));
     }
 
-    /// EVM opcodes to simply return the code as a very simple `initCode` / "constructor"
-    function stub(bytes memory code) public pure returns (bytes memory) {
-        uint32 codeLen = uint32(code.length);
-        return abi.encodePacked(hex"63", codeLen, hex"80600e6000396000f3", code);
-    }
-
     function testRevertsForRandomEmptyScriptAddress() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
         bytes[] memory scriptSources = new bytes[](1);
-        scriptSources[0] = stub(hex"f00f00");
+        scriptSources[0] = new YulHelper().stub(hex"f00f00");
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             nonce: stateManager.nextNonce(address(aliceWallet)),
@@ -588,6 +582,89 @@ contract QuarkWalletTest is Test {
         // TODO: Check who emitted.
         vm.expectEmit(false, false, false, true);
         emit Ping(55);
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
+
+    function testAtomicPingWithExternalSignature() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        assertEq(address(codeJar), address(0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f));
+
+        /*
+        Run `cat test/lib/Ping.yul0 | solc --bin --yul --evm-version paris -`
+        */
+
+        uint96 nonce = aliceWallet.stateManager().nextNonce(address(aliceWallet));
+        bytes memory pingCode =
+            hex"6000356000527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206000a1600080f3";
+        bytes memory pingInitCode = new YulHelper().stub(pingCode);
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = pingInitCode;
+        address ping = codeJar.getCodeAddress(pingInitCode);
+        address scriptAddress = ping;
+        bytes memory scriptCalldata = hex"00000000000000000000000000000000000000000000000000000000000000dd";
+        uint256 expiry = 9999999999999;
+
+        // Note: these valueas are test so that if the test case changes any extrinsic values, we have
+        //       a log of those values and can change the test accordingly.
+
+        assertEq(aliceWallet.NAME(), "Quark Wallet");
+        assertEq(aliceWallet.VERSION(), "1");
+        assertEq(block.chainid, 31337);
+        assertEq(address(aliceWallet), address(0xc7183455a4C133Ae270771860664b6B7ec320bB1));
+
+        assertEq(nonce, 0); // nonce
+        assertEq(scriptAddress, address(0x4a925cF75dcc5708671004d9bbFAf4DCF2C762B0)); // scriptAddress
+        assertEq(scriptSources.length, 1); // scriptSources
+        assertEq(
+            scriptSources[0],
+            hex"630000003080600e6000396000f36000356000527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206000a1600080f3"
+        ); // scriptSources
+        assertEq(scriptCalldata, hex"00000000000000000000000000000000000000000000000000000000000000dd");
+        assertEq(expiry, 9999999999999);
+
+        QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
+            scriptAddress: scriptAddress,
+            scriptSources: scriptSources,
+            scriptCalldata: scriptCalldata,
+            nonce: nonce,
+            expiry: expiry
+        });
+
+        /*
+        ethers.TypedDataEncoder.encode(
+           {
+               name: 'Quark Wallet',
+               version: '1',
+               chainId: 31337,
+               verifyingContract: '0xc7183455a4C133Ae270771860664b6B7ec320bB1'
+           },
+           { QuarkOperation: [
+               { name: 'nonce', type: 'uint96' },
+               { name: 'scriptAddress', type: 'address' },
+               { name: 'scriptSources', type: 'bytes[]' },
+               { name: 'scriptCalldata', type: 'bytes' },
+               { name: 'expiry', type: 'uint256' }
+           ]},
+           {
+                nonce: 0,
+                scriptAddress: '0x4a925cF75dcc5708671004d9bbFAf4DCF2C762B0',
+                scriptSources: ['0x630000003080600e6000396000f36000356000527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206000a1600080f3'],
+                scriptCalldata: '0x00000000000000000000000000000000000000000000000000000000000000dd',
+                expiry: 9999999999999
+           }
+        )
+        */
+
+        bytes memory sigHash =
+            hex"1901420cb4769bd47ac11897b8b69b8d80a84b9ec8b69437cd42529681d583a6b5216eda58953a1afd7dbc4ddbbef80dbca893fb0a87251b79a6b856708f619d9fcc";
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, keccak256(sigHash));
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        // TODO: Check who emitted.
+        vm.expectEmit(true, true, true, true);
+        emit Ping(0xdd);
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 

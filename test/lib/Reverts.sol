@@ -6,11 +6,11 @@ import {CodeJar} from "codejar/src/CodeJar.sol";
 contract Reverts {
     error Whoops();
 
-    function divideByZero() external {
+    function divideByZero() external pure {
         uint256(100) / uint256(0);
     }
 
-    function revertSeven() external {
+    function revertSeven() external pure {
         uint256 p;
         assembly {
             p := mload(0x40) // free-memory pointer
@@ -20,7 +20,7 @@ contract Reverts {
         }
     }
 
-    function outOfGas() external {
+    function outOfGas() external view {
         while (gasleft() >= 0) {}
     }
 
