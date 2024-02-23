@@ -14,7 +14,7 @@ artifact_name="quark-out.${release_name}.zip"
 artifact_note="Compiled ABI"
 
 printf 'building full project...\n'
-forge build
+forge build --via-ir
 
 printf 'preparing release archive "%s"...\n' ${release_name}
 zip --recurse-paths "${artifact_name}" out/*
