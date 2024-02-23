@@ -55,8 +55,7 @@ contract BatchExecutorTest is Test {
     }
 
     function testBatchExecute() public {
-        // FIXME: this comment below doesnt probably make sense
-        // We test multiple operations with different wallets, covering both `scriptAddress` and `scriptSource` use-cases
+        // We test multiple operations with different wallets
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
