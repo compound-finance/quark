@@ -199,13 +199,13 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
 
         // operation containing no script will revert
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidScriptAddress.selector));
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
         // direct execution of the null script will revert
         uint96 nonce = stateManager.nextNonce(address(aliceWallet));
         vm.prank(HasSignerExecutor(address(aliceWallet)).executor());
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidScriptAddress.selector));
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
         aliceWallet.executeScript(nonce, address(0), bytes(""));
 
         // gas: do not meter set-up
