@@ -1,0 +1,7 @@
+object "Ping" {
+    code {
+        mstore(0x00, calldataload(0x00))
+        log1(0x00, 0x20, 0x48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f) /* cast sig-event "Ping(uint256)" */
+        return(0x00, 0x00)
+    }
+}

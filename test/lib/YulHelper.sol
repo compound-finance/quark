@@ -30,4 +30,10 @@ contract YulHelper is Test {
     function getDeployed(string memory jsonFileName) public view returns (bytes memory) {
         return vm.getDeployedCode(string.concat("out/", jsonFileName));
     }
+
+    /// EVM opcodes to simply return the code as a very simple `initCode` / "constructor"
+    function stub(bytes memory code) public pure returns (bytes memory) {
+        uint32 codeLen = uint32(code.length);
+        return abi.encodePacked(hex"63", codeLen, hex"80600e6000396000f3", code);
+    }
 }

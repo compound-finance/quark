@@ -26,7 +26,7 @@ contract SignatureHelper is Test {
         return vm.sign(privateKey, digest);
     }
 
-    function structHash(QuarkWallet.QuarkOperation memory op) public view returns (bytes32) {
+    function structHash(QuarkWallet.QuarkOperation memory op) public pure returns (bytes32) {
         bytes memory encodedArray;
         for (uint256 i = 0; i < op.scriptSources.length;) {
             encodedArray = abi.encodePacked(encodedArray, keccak256(op.scriptSources[i]));

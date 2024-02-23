@@ -4,6 +4,8 @@ pragma solidity 0.8.23;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import {YulHelper} from "test/lib/YulHelper.sol";
+
 import {Counter} from "test/lib/Counter.sol";
 import {TickCounter} from "test/lib/TickCounter.sol";
 import {Mememe} from "test/lib/Mememe.sol";
@@ -27,18 +29,12 @@ contract CodeJarTest is Test {
         console.log("CodeJar deployed to: %s", address(codeJar));
     }
 
-    /// EVM opcodes to simply return the code as a very simple `initCode` / "constructor"
-    function stub(bytes memory code) public pure returns (bytes memory) {
-        uint32 codeLen = uint32(code.length);
-        return abi.encodePacked(hex"63", codeLen, hex"80600e6000396000f3", code);
-    }
-
     function setUp() public {
         // This setUp is only used for `testCodeJarSelfDestruct`. To test the state changes
         // from a selfdestruct in forge, the selfdestruct must be done in the setUp.
         // See: https://github.com/foundry-rs/foundry/issues/1543
 
-        destructingAddress = codeJar.saveCode(stub(destructingCode));
+        destructingAddress = codeJar.saveCode(new YulHelper().stub(destructingCode));
         assertEq(destructingAddress.code, destructingCode);
         (bool success,) = destructingAddress.call(hex"");
         assertEq(success, true);
@@ -56,14 +52,15 @@ contract CodeJarTest is Test {
     function testCodeJarSelfDestruct() public {
         assertEq(destructingAddress.code, hex"");
         assertEq(destructingAddress.codehash, 0);
-        assertEq(destructingAddress, codeJar.saveCode(stub(destructingCode)));
+        assertEq(destructingAddress, codeJar.saveCode(new YulHelper().stub(destructingCode)));
         assertEq(destructingAddress.code, destructingCode);
         assertEq(destructingAddress.codehash, keccak256(destructingCode));
     }
 
     function testCodeJarFirstDeploy() public {
+        bytes memory stubbed = new YulHelper().stub(hex"11223344");
         uint256 gasLeft = gasleft();
-        address scriptAddress = codeJar.saveCode(stub(hex"11223344"));
+        address scriptAddress = codeJar.saveCode(stubbed);
         uint256 gasUsed = gasLeft - gasleft();
         assertEq(scriptAddress.code, hex"11223344");
         assertApproxEqAbs(gasUsed, 42000, 3000);
@@ -73,7 +70,7 @@ contract CodeJarTest is Test {
         // TODO: This test is more complex?
         vm.deal(address(0xbab), 10 ether);
         bytes memory code = hex"11223344";
-        bytes memory initCode = stub(code);
+        bytes memory initCode = new YulHelper().stub(code);
         address targetAddress = address(
             uint160(
                 uint256(keccak256(abi.encodePacked(bytes1(0xff), address(codeJar), uint256(0), keccak256(initCode))))
@@ -93,15 +90,17 @@ contract CodeJarTest is Test {
     }
 
     function testCodeJarSecondDeploy() public {
-        address scriptAddress = codeJar.saveCode(stub(hex"11223344"));
+        bytes memory stubbed = new YulHelper().stub(hex"11223344");
+
+        address scriptAddress = codeJar.saveCode(stubbed);
 
         uint256 gasLeft = gasleft();
-        address scriptAddressNext = codeJar.saveCode(stub(hex"11223344"));
+        address scriptAddressNext = codeJar.saveCode(stubbed);
         uint256 gasUsed = gasLeft - gasleft();
         assertEq(scriptAddress, scriptAddressNext);
         assertEq(scriptAddressNext.code, hex"11223344");
 
-        assertApproxEqAbs(gasUsed, 3000, 1000);
+        assertApproxEqAbs(gasUsed, 2000, 1000);
     }
 
     function testCodeJarInputVariety() public {
@@ -117,10 +116,10 @@ contract CodeJarTest is Test {
             hex"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff11";
 
         for (uint8 i = 0; i < scripts.length; i++) {
-            assertEq(codeJar.codeExists(stub(scripts[i])), false);
-            address codeAddress = codeJar.saveCode(stub(scripts[i]));
+            assertEq(codeJar.codeExists(new YulHelper().stub(scripts[i])), false);
+            address codeAddress = codeJar.saveCode(new YulHelper().stub(scripts[i]));
             assertEq(codeAddress.code, scripts[i]);
-            assertEq(codeJar.codeExists(stub(scripts[i])), true);
+            assertEq(codeJar.codeExists(new YulHelper().stub(scripts[i])), true);
         }
     }
 
@@ -142,12 +141,13 @@ contract CodeJarTest is Test {
         assertEq(address(0xaa).codehash, 0);
 
         // This cannot deploy now
+        bytes memory stubbed = new YulHelper().stub(hex"");
         vm.expectRevert();
-        address zeroDeploy = codeJar.saveCode(stub(hex""));
+        address zeroDeploy = codeJar.saveCode(stubbed);
         assertEq(zeroDeploy.codehash, 0);
         assertEq(zeroDeploy.code, hex"");
 
-        address nonZeroDeploy = codeJar.saveCode(stub(hex"00"));
+        address nonZeroDeploy = codeJar.saveCode(new YulHelper().stub(hex"00"));
         assertEq(nonZeroDeploy.codehash, keccak256(hex"00"));
         assertEq(nonZeroDeploy.code, hex"00");
     }
@@ -204,15 +204,16 @@ contract CodeJarTest is Test {
     function testCodeJarLarge() public {
         bytes32[] memory script = new bytes32[](10000);
         bytes memory code = abi.encodePacked(script);
-        codeJar.saveCode(stub(code));
+        codeJar.saveCode(new YulHelper().stub(code));
     }
 
     function testCodeJarRefusesToDeployEmptyCode() public {
         bytes memory code = hex"";
-        assertEq(codeJar.codeExists(stub(code)), false);
+        assertEq(codeJar.codeExists(new YulHelper().stub(code)), false);
+        bytes memory stubbed = new YulHelper().stub(code);
         vm.expectRevert();
-        codeJar.saveCode(stub(code));
-        assertEq(codeJar.codeExists(stub(code)), false);
+        codeJar.saveCode(stubbed);
+        assertEq(codeJar.codeExists(new YulHelper().stub(code)), false);
     }
 
     function testRevertsOnConstructorRevert() public {
@@ -227,18 +228,19 @@ contract CodeJarTest is Test {
 
     function testCodeJarCanDeployCodeThatHadEthSent() public {
         bytes memory code = hex"112233";
-        assertEq(codeJar.codeExists(stub(code)), false);
-        address codeAddress = codeJar.getCodeAddress(stub(code));
+        assertEq(codeJar.codeExists(new YulHelper().stub(code)), false);
+        address codeAddress = codeJar.getCodeAddress(new YulHelper().stub(code));
         vm.deal(address(this), 1 ether);
-        codeAddress.call{value: 1}("");
+        (bool success,) = codeAddress.call{value: 1}("");
+        assertEq(success, true);
 
         // Ensure codeExists correctness holds for empty code with ETH
-        assertEq(codeJar.codeExists(stub(code)), false);
+        assertEq(codeJar.codeExists(new YulHelper().stub(code)), false);
         assertEq(codeAddress.code, hex"");
 
-        codeJar.saveCode(stub(code));
+        codeJar.saveCode(new YulHelper().stub(code));
 
-        assertEq(codeJar.codeExists(stub(code)), true);
+        assertEq(codeJar.codeExists(new YulHelper().stub(code)), true);
         assertEq(codeAddress.code, code);
     }
 
