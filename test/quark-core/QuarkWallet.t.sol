@@ -238,13 +238,18 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeScript(nonce2, emptyCodeAddress, bytes(""));
     }
 
-    function testRevertsForOperationWithAddressAndSource() public {
+    /// EVM opcodes to simply return the code as a very simple `initCode` / "constructor"
+    function stub(bytes memory code) public pure returns (bytes memory) {
+        uint32 codeLen = uint32(code.length);
+        return abi.encodePacked(hex"63", codeLen, hex"80600e6000396000f3", code);
+    }
+
+    function testRevertsForRandomEmptyScriptAddress() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        // FIXME: does this still make sense?
         bytes[] memory scriptSources = new bytes[](1);
-        scriptSources[0] = bytes("f00f00");
+        scriptSources[0] = stub(hex"f00f00");
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             nonce: stateManager.nextNonce(address(aliceWallet)),
@@ -258,9 +263,7 @@ contract QuarkWalletTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
 
-        // FIXME: wrong revert?
-        // vm.expectRevert(abi.encodeWithSelector(QuarkWallet.AmbiguousScript.selector));
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
         aliceWallet.executeQuarkOperation(op, v, r, s);
     }
 
@@ -280,16 +283,12 @@ contract QuarkWalletTest is Test {
         );
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
-        // FIXME: does this still make sense?
-        bytes[] memory scriptSources = new bytes[](1);
-        scriptSources[0] = incrementer;
-
         address incrementerAddress = codeJar.saveCode(incrementer);
 
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             nonce: op1.nonce,
             scriptAddress: incrementerAddress,
-            scriptSources: scriptSources,
+            scriptSources: new bytes[](0),
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", address(counter)),
             expiry: block.timestamp + 1000
         });
