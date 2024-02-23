@@ -50,7 +50,6 @@ interface HasSignerExecutor {
  * @author Compound Labs, Inc.
  */
 contract QuarkWallet is IERC1271 {
-    error InvalidScriptAddress();
     error BadSignatory();
     error EmptyCode();
     error InvalidEIP1271Signature();
@@ -138,10 +137,6 @@ contract QuarkWallet is IERC1271 {
             revert SignatureExpired();
         }
 
-        if (op.scriptAddress == address(0)) {
-            revert InvalidScriptAddress();
-        }
-
         bytes memory encodedArray;
         for (uint256 i = 0; i < op.scriptSources.length;) {
             encodedArray = abi.encodePacked(encodedArray, keccak256(op.scriptSources[i]));
@@ -193,10 +188,6 @@ contract QuarkWallet is IERC1271 {
         // only allow the executor for the wallet to use unsigned execution
         if (msg.sender != HasSignerExecutor(address(this)).executor()) {
             revert Unauthorized();
-        }
-
-        if (scriptAddress == address(0)) {
-            revert InvalidScriptAddress();
         }
 
         emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
