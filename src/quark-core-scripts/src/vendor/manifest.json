@@ -82,6 +82,15 @@
                     ]
                 }
             ]
+        },
+        "chainlink/AggregatorV3Interface.sol": {
+            "source": {
+                "git": {
+                    "repo": "org-25111032@github.com:smartcontractkit/chainlink.git",
+                    "commit": "dd2c5ef1a71d821d97f199573b04df71dcab6172",
+                    "path": "contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol"
+                }
+            }
         }
     }
 }
