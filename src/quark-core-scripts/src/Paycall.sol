@@ -43,12 +43,11 @@ contract Paycall {
 
     /**
      * @notice Execute multiple delegatecalls to contracts in a single transaction
-     * @param paycallScriptAddress Address of the paycall script (need for access pricefeed and payment token initiated in consturctor() due to callcode can't access the paycall storages directly)
      * @param callContract Contract to call
      * @param callData Encoded calldata for call
      * @return Return data from call
      */
-    function run(address paycallScriptAddress, address callContract, bytes calldata callData)
+    function run(address callContract, bytes calldata callData)
         external
         returns (bytes memory)
     {
@@ -63,9 +62,6 @@ contract Paycall {
             revert InvalidCallContext();
         }
 
-        address ethPriceFeed = Paycall(paycallScriptAddress).ethPriceFeedAddress();
-        address paymentToken = Paycall(paycallScriptAddress).paymentTokenAddress();
-
         (bool success, bytes memory returnData) = callContract.delegatecall(callData);
         if (!success) {
             assembly {
@@ -73,12 +69,12 @@ contract Paycall {
             }
         }
 
-        (, int256 price,,,) = AggregatorV3Interface(ethPriceFeed).latestRoundData();
+        (, int256 price,,,) = AggregatorV3Interface(ethPriceFeedAddress).latestRoundData();
         uint256 decimalDiff =
-            uint8(18) + AggregatorV3Interface(ethPriceFeed).decimals() - IERC20Metadata(paymentToken).decimals();
+            uint8(18) + AggregatorV3Interface(ethPriceFeedAddress).decimals() - IERC20Metadata(paymentTokenAddress).decimals();
         uint256 gasUsed = gasInitial - gasleft() + GAS_OVERHEAD;
         uint256 paymentAmount = gasUsed * tx.gasprice * uint256(price) / (10 ** uint256(decimalDiff));
-        IERC20(paymentToken).safeTransfer(tx.origin, paymentAmount);
+        IERC20(paymentTokenAddress).safeTransfer(tx.origin, paymentAmount);
 
         return returnData;
     }
