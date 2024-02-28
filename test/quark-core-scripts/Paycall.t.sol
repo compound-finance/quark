@@ -98,12 +98,16 @@ contract PaycallTest is Test {
         Paycall paycallContract = Paycall(paycallAddress);
         // Direct calls fail when called directly
         vm.expectRevert(abi.encodeWithSelector(Paycall.InvalidCallContext.selector));
-        paycallContract.run(paycallAddress, ethcallAddress, abi.encodeWithSelector(
-            Paycall.run.selector,
-            address(counter),
-            abi.encodeCall(Counter.setNumber, (1)),
-            0 // value
-        ));
+        paycallContract.run(
+            paycallAddress,
+            ethcallAddress,
+            abi.encodeWithSelector(
+                Paycall.run.selector,
+                address(counter),
+                abi.encodeCall(Counter.setNumber, (1)),
+                0 // value
+            )
+        );
     }
 
     function testCanBeGriefedByWritingAddressToQuarkWalletStorage() public {
@@ -115,12 +119,11 @@ contract PaycallTest is Test {
             wallet,
             paycall,
             abi.encodeWithSelector(
-                Paycall.run.selector, 
+                Paycall.run.selector,
                 paycallAddress,
-                ethcallAddress, 
+                ethcallAddress,
                 abi.encodeWithSelector(
-                    Ethcall.run.selector,
-                    address(counter), abi.encode(Counter.setNumber.selector, 1),0 
+                    Ethcall.run.selector, address(counter), abi.encode(Counter.setNumber.selector, 1), 0
                 )
             ),
             ScriptType.ScriptSource
@@ -169,7 +172,12 @@ contract PaycallTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             paycall,
-            abi.encodeWithSelector(Paycall.run.selector, paycallAddress, multicallAddress, abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)),
+            abi.encodeWithSelector(
+                Paycall.run.selector,
+                paycallAddress,
+                multicallAddress,
+                abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)
+            ),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -193,7 +201,17 @@ contract PaycallTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             paycall,
-            abi.encodeWithSelector(Paycall.run.selector, paycallAddress, ethcallAddress, abi.encodeWithSelector(Ethcall.run.selector, USDC, abi.encodeWithSignature("transfer(address,uint256)", address(this), 10e6), 0)),
+            abi.encodeWithSelector(
+                Paycall.run.selector,
+                paycallAddress,
+                ethcallAddress,
+                abi.encodeWithSelector(
+                    Ethcall.run.selector,
+                    USDC,
+                    abi.encodeWithSignature("transfer(address,uint256)", address(this), 10e6),
+                    0
+                )
+            ),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -242,12 +260,16 @@ contract PaycallTest is Test {
             0 // value
         );
 
-
         // Execute through paycall
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             paycall,
-            abi.encodeWithSelector(Paycall.run.selector, paycallAddress, multicallAddress, abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)),
+            abi.encodeWithSelector(
+                Paycall.run.selector,
+                paycallAddress,
+                multicallAddress,
+                abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)
+            ),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -271,9 +293,14 @@ contract PaycallTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             paycall,
-            abi.encodeWithSelector(Paycall.run.selector, paycallAddress, ethcallAddress, abi.encodeWithSelector(
-                Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (1)), 0
-            )),
+            abi.encodeWithSelector(
+                Paycall.run.selector,
+                paycallAddress,
+                ethcallAddress,
+                abi.encodeWithSelector(
+                    Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (1)), 0
+                )
+            ),
             ScriptType.ScriptSource
         );
 
@@ -310,7 +337,17 @@ contract PaycallTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             paycallUSDT,
-            abi.encodeWithSelector(Paycall.run.selector, paycallUSDTAddress, ethcallAddress, abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeWithSignature("transfer(address,uint256)", address(this), 1 ether), 0)),
+            abi.encodeWithSelector(
+                Paycall.run.selector,
+                paycallUSDTAddress,
+                ethcallAddress,
+                abi.encodeWithSelector(
+                    Ethcall.run.selector,
+                    WETH,
+                    abi.encodeWithSignature("transfer(address,uint256)", address(this), 1 ether),
+                    0
+                )
+            ),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
@@ -322,7 +359,17 @@ contract PaycallTest is Test {
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             paycallWBTC,
-            abi.encodeWithSelector(Paycall.run.selector, paycallWBTCAddress, ethcallAddress, abi.encodeWithSelector(Ethcall.run.selector, WETH, abi.encodeWithSignature("transfer(address,uint256)", address(this), 1 ether), 0)),
+            abi.encodeWithSelector(
+                Paycall.run.selector,
+                paycallWBTCAddress,
+                ethcallAddress,
+                abi.encodeWithSelector(
+                    Ethcall.run.selector,
+                    WETH,
+                    abi.encodeWithSignature("transfer(address,uint256)", address(this), 1 ether),
+                    0
+                )
+            ),
             ScriptType.ScriptSource
         );
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);

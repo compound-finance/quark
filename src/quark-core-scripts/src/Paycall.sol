@@ -35,7 +35,7 @@ contract Paycall {
         bytes32 slot = CONTRACT_ADDRESS_SLOT;
         ethPriceFeedAddress = ethPriceFeed;
         paymentTokenAddress = paymentToken;
-        
+
         assembly ("memory-safe") {
             sstore(slot, address())
         }
@@ -48,7 +48,10 @@ contract Paycall {
      * @param callData Encoded calldata for call
      * @return Return data from call
      */
-    function run(address paycallScriptAddress, address callContract, bytes calldata callData) external returns (bytes memory) {
+    function run(address paycallScriptAddress, address callContract, bytes calldata callData)
+        external
+        returns (bytes memory)
+    {
         uint256 gasInitial = gasleft();
         bytes32 slot = CONTRACT_ADDRESS_SLOT;
         address thisAddress;
@@ -70,10 +73,11 @@ contract Paycall {
             }
         }
 
-        (, int price, , , ) = AggregatorV3Interface(ethPriceFeed).latestRoundData();
-        uint256 decimalDiff = uint8(18) + AggregatorV3Interface(ethPriceFeed).decimals() - IERC20Metadata(paymentToken).decimals();
+        (, int256 price,,,) = AggregatorV3Interface(ethPriceFeed).latestRoundData();
+        uint256 decimalDiff =
+            uint8(18) + AggregatorV3Interface(ethPriceFeed).decimals() - IERC20Metadata(paymentToken).decimals();
         uint256 gasUsed = gasInitial - gasleft() + GAS_OVERHEAD;
-        uint256 paymentAmount = gasUsed * tx.gasprice * uint256(price) / (10**uint256(decimalDiff));
+        uint256 paymentAmount = gasUsed * tx.gasprice * uint256(price) / (10 ** uint256(decimalDiff));
         IERC20(paymentToken).safeTransfer(tx.origin, paymentAmount);
 
         return returnData;
