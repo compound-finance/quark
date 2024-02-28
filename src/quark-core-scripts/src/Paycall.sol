@@ -18,13 +18,13 @@ contract Paycall {
     error InvalidInput();
     error MulticallError(uint256 callIndex, address callContract, bytes err);
 
-    /// @notice Storage location at which to cache this contract's address
-    bytes32 internal constant CONTRACT_ADDRESS_SLOT = keccak256("quark.scripts.paycall.address.v1");
+    /// @notice This contract's address
+    address public immutable scriptAddress;
 
     /// @notice ETH price feed address
     address public immutable ethPriceFeedAddress;
 
-    /// @notice payment token address
+    /// @notice Payment token address
     address public immutable paymentTokenAddress;
 
     /// @notice Constant buffer for gas overhead
@@ -32,13 +32,9 @@ contract Paycall {
     uint256 internal constant GAS_OVERHEAD = 75000;
 
     constructor(address ethPriceFeed, address paymentToken) {
-        bytes32 slot = CONTRACT_ADDRESS_SLOT;
         ethPriceFeedAddress = ethPriceFeed;
         paymentTokenAddress = paymentToken;
-
-        assembly ("memory-safe") {
-            sstore(slot, address())
-        }
+        scriptAddress = address(this);
     }
 
     /**
@@ -47,18 +43,9 @@ contract Paycall {
      * @param callData Encoded calldata for call
      * @return Return data from call
      */
-    function run(address callContract, bytes calldata callData)
-        external
-        returns (bytes memory)
-    {
+    function run(address callContract, bytes calldata callData) external returns (bytes memory) {
         uint256 gasInitial = gasleft();
-        bytes32 slot = CONTRACT_ADDRESS_SLOT;
-        address thisAddress;
-        assembly ("memory-safe") {
-            thisAddress := sload(slot)
-        }
-
-        if (address(this) == thisAddress) {
+        if (address(this) == scriptAddress) {
             revert InvalidCallContext();
         }
 
@@ -70,8 +57,8 @@ contract Paycall {
         }
 
         (, int256 price,,,) = AggregatorV3Interface(ethPriceFeedAddress).latestRoundData();
-        uint256 decimalDiff =
-            uint8(18) + AggregatorV3Interface(ethPriceFeedAddress).decimals() - IERC20Metadata(paymentTokenAddress).decimals();
+        uint256 decimalDiff = uint8(18) + AggregatorV3Interface(ethPriceFeedAddress).decimals()
+            - IERC20Metadata(paymentTokenAddress).decimals();
         uint256 gasUsed = gasInitial - gasleft() + GAS_OVERHEAD;
         uint256 paymentAmount = gasUsed * tx.gasprice * uint256(price) / (10 ** uint256(decimalDiff));
         IERC20(paymentTokenAddress).safeTransfer(tx.origin, paymentAmount);
