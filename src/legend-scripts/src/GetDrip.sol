@@ -13,7 +13,7 @@ contract GetDrip {
     /**
      *   @notice Drip tokens from goerli faucet
      */
-    function drip(address token) external {
-        Fauceteer(0x75442Ac771a7243433e033F3F8EaB2631e22938f).drip(token);
+    function drip(address faucet, address token) external {
+        Fauceteer(faucet).drip(token);
     }
 }

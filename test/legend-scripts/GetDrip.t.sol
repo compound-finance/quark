@@ -19,13 +19,14 @@ import {SignatureHelper} from "test/lib/SignatureHelper.sol";
  */
 contract GetDripTest is Test {
     QuarkWalletProxyFactory public factory;
-    uint256 alicePrivateKey = 0xa11ce;
+    uint256 alicePrivateKey = 0xa11cee;
     address alice = vm.addr(alicePrivateKey);
-    address constant USDC = 0x07865c6E87B9F70255377e024ace6630C1Eaa37F;
+    address constant USDC = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+    address constant fauceteer = 0x68793eA49297eB75DFB4610B68e076D2A5c7646C;
 
     function setUp() public {
         // Fork setup
-        vm.createSelectFork("https://goerli.infura.io/v3/531e3eb124194de5a88caec726d10bea");
+        vm.createSelectFork("https://sepolia.infura.io/v3/531e3eb124194de5a88caec726d10bea");
         factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
     }
 
@@ -39,7 +40,7 @@ contract GetDripTest is Test {
         bytes memory legendScript = new YulHelper().getCode("GetDrip.sol/GetDrip.json");
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            wallet, legendScript, abi.encodeCall(GetDrip.drip, (USDC)), ScriptType.ScriptSource
+            wallet, legendScript, abi.encodeCall(GetDrip.drip, (fauceteer, USDC)), ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
