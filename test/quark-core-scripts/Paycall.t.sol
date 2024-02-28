@@ -30,7 +30,6 @@ contract PaycallTest is Test {
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
     address alice = vm.addr(alicePrivateKey);
-    bytes32 constant CONTRACT_ADDRESS_SLOT = keccak256("quark.scripts.paycall.address.v1");
     CodeJar codeJar;
 
     // Comet address in mainnet
