@@ -13,14 +13,10 @@ contract Multicall {
     error MulticallError(uint256 callIndex, address callContract, bytes err);
 
     /// @notice Storage location at which to cache this contract's address
-    bytes32 internal constant CONTRACT_ADDRESS_SLOT = keccak256("quark.scripts.multicall.address.v1");
+    address public immutable scriptAddress;
 
-    /// @notice Initialize by storing the contract address
-    function initialize() external {
-        bytes32 slot = CONTRACT_ADDRESS_SLOT;
-        assembly ("memory-safe") {
-            sstore(slot, address())
-        }
+    constructor() {
+        scriptAddress = address(this);
     }
 
     /**
@@ -30,13 +26,7 @@ contract Multicall {
      * @return Array of return data from each call
      */
     function run(address[] calldata callContracts, bytes[] calldata callDatas) external returns (bytes[] memory) {
-        bytes32 slot = CONTRACT_ADDRESS_SLOT;
-        address thisAddress;
-        assembly ("memory-safe") {
-            thisAddress := sload(slot)
-        }
-
-        if (address(this) == thisAddress) {
+        if (address(this) == scriptAddress) {
             revert InvalidCallContext();
         }
         if (callContracts.length != callDatas.length) {
