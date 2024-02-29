@@ -50,6 +50,8 @@ contract PaycallTest is Test {
     bytes ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
     // Paycall has its contructor with 2 parameters
     bytes paycall;
+    bytes paycallUSDT;
+    bytes paycallWBTC;
 
     bytes legendCometSupplyScript = new YulHelper().getCode("LegendScript.sol/CometSupplyActions.json");
 
@@ -60,6 +62,8 @@ contract PaycallTest is Test {
     address ethcallAddress;
     address multicallAddress;
     address paycallAddress;
+    address paycallUSDTAddress;
+    address paycallWBTCAddress;
     address legendCometSupplyScriptAddress;
     address legendCometWithdrawScriptAddress;
     address legendUniswapSwapScriptAddress;
@@ -79,8 +83,13 @@ contract PaycallTest is Test {
         ethcallAddress = codeJar.saveCode(ethcall);
         multicallAddress = codeJar.saveCode(multicall);
         paycall = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_PRICE_FEED, USDC));
+        paycallUSDT = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_PRICE_FEED, USDT));
+        paycallWBTC = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_BTC_PRICE_FEED, WBTC));
 
         paycallAddress = codeJar.saveCode(paycall);
+        paycallUSDTAddress = codeJar.saveCode(paycallUSDT);
+        paycallWBTCAddress = codeJar.saveCode(paycallWBTC);
+
         legendCometSupplyScriptAddress = codeJar.saveCode(legendCometSupplyScript);
         legendCometWithdrawScriptAddress = codeJar.saveCode(legendCometWithdrawScript);
         legendUniswapSwapScriptAddress = codeJar.saveCode(legendUniswapSwapScript);
@@ -89,10 +98,8 @@ contract PaycallTest is Test {
     /* ===== call context-based tests ===== */
 
     function testInitializeProperlyFromConstructor() public {
-        address storedPaycallAddress = Paycall(paycallAddress).scriptAddress();
-        address storedPriceFeedAddress = Paycall(paycallAddress).ethPriceFeedAddress();
+        address storedPriceFeedAddress = Paycall(paycallAddress).ethBasedPriceFeedAddress();
         address stpredPaymentTokenAddress = Paycall(paycallAddress).paymentTokenAddress();
-        assertEq(storedPaycallAddress, paycallAddress);
         assertEq(storedPriceFeedAddress, ETH_PRICE_FEED);
         assertEq(stpredPaymentTokenAddress, USDC);
     }
@@ -112,7 +119,7 @@ contract PaycallTest is Test {
         );
     }
 
-    // // /* ===== general tests ===== */
+    /* ===== general tests ===== */
 
     function testSimpleCounterAndPayWithUSDC() public {
         // gas: do not meter set-up
@@ -285,22 +292,14 @@ contract PaycallTest is Test {
         assertEq(abi.decode(returnData2, (uint256)), 4);
     }
 
-    function testPaycallForPayWithOtherToken() public {
+    function testPaycallForPayWithUSDT() public {
         vm.pauseGasMetering();
         vm.txGasPrice(32 gwei);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
-        // Deploy a Paycall with USDT as payment token
-        bytes memory paycallUSDT = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_PRICE_FEED, USDT));
-        codeJar.saveCode(paycallUSDT);
-        // Deploy a Paycall with WBTC as payment token
-        bytes memory paycallWBTC = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_BTC_PRICE_FEED, WBTC));
-        codeJar.saveCode(paycallWBTC);
-
         // Deal some USDT and WBTC
         deal(USDT, address(wallet), 1000e6);
-        deal(WBTC, address(wallet), 1e8);
-        deal(WETH, address(wallet), 2 ether);
+        deal(WETH, address(wallet), 1 ether);
 
         // Pay with USDT
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -322,9 +321,22 @@ contract PaycallTest is Test {
 
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(IERC20(WETH).balanceOf(address(this)), 1 ether);
+        // About $8 in USD fees
+        assertApproxEqAbs(IERC20(USDT).balanceOf(address(wallet)), 992e6, 1e6);
+    }
+
+    function testPaycallForPayWithWBTC() public {
         vm.pauseGasMetering();
+        vm.txGasPrice(32 gwei);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
+
+        // Deal some USDT and WBTC
+        deal(WBTC, address(wallet), 1e8);
+        deal(WETH, address(wallet), 1 ether);
+
         // Pay with WBTC
-        QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             paycallWBTC,
             abi.encodeWithSelector(
@@ -339,14 +351,12 @@ contract PaycallTest is Test {
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op2, v2, r2, s2);
-        assertEq(IERC20(WETH).balanceOf(address(this)), 2 ether);
-        // About $8 in USD fees
-        assertApproxEqAbs(IERC20(USDT).balanceOf(address(wallet)), 992e6, 1e6);
-        // About $8 in USD fees in WBTC will be around ~ 0.00017 WBTC
-        assertApproxEqAbs(IERC20(WBTC).balanceOf(address(wallet)), 99983e3, 1e3);
+        wallet.executeQuarkOperation(op, v, r, s);
+        assertEq(IERC20(WETH).balanceOf(address(this)), 1 ether);
+        // Fees in WBTC will be around ~ 0.00021 WBTC
+        assertApproxEqAbs(IERC20(WBTC).balanceOf(address(wallet)), 99979e3, 1e3);
     }
 }
