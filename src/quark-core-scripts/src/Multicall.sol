@@ -12,9 +12,13 @@ contract Multicall {
     error InvalidInput();
     error MulticallError(uint256 callIndex, address callContract, bytes err);
 
-    /// @notice Storage location at which to cache this contract's address
-    address public immutable scriptAddress;
+    /// @notice This contract's address
+    address private immutable scriptAddress;
 
+    /**
+     * @notice Constructor
+     * In constructo it will set the scriptAddress to the this address
+     */
     constructor() {
         scriptAddress = address(this);
     }

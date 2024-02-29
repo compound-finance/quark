@@ -72,12 +72,6 @@ contract MulticallTest is Test {
     }
 
     /* ===== call context-based tests ===== */
-
-    function testInitializesStorageProperly() public {
-        address storedMulticallAddress = Multicall(multicallAddress).scriptAddress();
-        assertEq(storedMulticallAddress, multicallAddress);
-    }
-
     function testRevertsForInvalidCallContext() public {
         // Direct calls succeed when uninitialized
         address[] memory callContracts = new address[](0);
