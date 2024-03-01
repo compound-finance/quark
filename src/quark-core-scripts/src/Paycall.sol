@@ -7,7 +7,7 @@ import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 
 /**
  * @title Paycall Core Script
- * @notice Paycall script that can be used to execute actions via delegatecall and pay for gas in a single transaction, by sending to the tx.origin
+ * @notice Core script that executes an action via delegatecall and then pays for the gas using an ERC20 token.
  * @author Compound Labs, Inc.
  */
 contract Paycall {
