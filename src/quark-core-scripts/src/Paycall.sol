@@ -44,7 +44,7 @@ contract Paycall {
 
         divisorScale = 10
             ** uint256(
-                uint8(18) + AggregatorV3Interface(ethBasedPriceFeedAddress).decimals()
+                18 + AggregatorV3Interface(ethBasedPriceFeedAddress).decimals()
                     - IERC20Metadata(paymentTokenAddress).decimals()
             );
     }
