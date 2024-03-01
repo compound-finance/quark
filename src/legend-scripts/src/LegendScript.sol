@@ -229,12 +229,21 @@ contract TransferActions is QuarkScript {
 contract CometClaimRewards {
     /**
      * @notice Claim rewards
-     * @param cometRewards The CometRewards address
-     * @param comet The Comet address
+     * @param cometRewards The CometRewards addresses
+     * @param comets The Comet addresses
      * @param recipient The recipient address, that will receive the COMP rewards
      */
-    function claim(address cometRewards, address comet, address recipient) external {
-        ICometRewards(cometRewards).claim(comet, recipient, true);
+    function claim(address[] calldata cometRewards, address[] calldata comets, address recipient) external {
+        if (cometRewards.length != comets.length) {
+            revert TerminalErrors.InvalidInput();
+        }
+
+        for (uint256 i = 0; i < cometRewards.length;) {
+            ICometRewards(cometRewards[i]).claim(comets[i], recipient, true);
+            unchecked {
+                ++i;
+            }
+        }
     }
 }
 

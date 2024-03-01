@@ -62,10 +62,16 @@ contract CometClaimRewardsTest is Test {
         // Fastforward 180 days block to accrue COMP
         vm.warp(block.timestamp + 180 days);
 
+        address[] memory comets = new address[](1);
+        comets[0] = comet;
+
+        address[] memory cometRewards = new address[](1);
+        cometRewards[0] = cometReward;
+
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
             legendScript,
-            abi.encodeCall(CometClaimRewards.claim, (cometReward, comet, address(wallet))),
+            abi.encodeCall(CometClaimRewards.claim, (cometRewards, comets, address(wallet))),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
