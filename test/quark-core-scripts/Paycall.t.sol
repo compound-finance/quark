@@ -41,7 +41,7 @@ contract PaycallTest is Test {
     address constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
 
     // Mainnet ETH / USD pricefeed
-    address constant ETH_PRICE_FEED = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address constant ETH_USD_PRICE_FEED = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address constant ETH_BTC_PRICE_FEED = 0xAc559F25B1619171CbC396a50854A3240b6A4e99;
 
     // Uniswap router info on mainnet
@@ -82,8 +82,8 @@ contract PaycallTest is Test {
         codeJar = QuarkWallet(payable(factory.walletImplementation())).codeJar();
         ethcallAddress = codeJar.saveCode(ethcall);
         multicallAddress = codeJar.saveCode(multicall);
-        paycall = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_PRICE_FEED, USDC));
-        paycallUSDT = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_PRICE_FEED, USDT));
+        paycall = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDC));
+        paycallUSDT = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDT));
         paycallWBTC = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_BTC_PRICE_FEED, WBTC));
 
         paycallAddress = codeJar.saveCode(paycall);
@@ -100,7 +100,7 @@ contract PaycallTest is Test {
     function testInitializeProperlyFromConstructor() public {
         address storedPriceFeedAddress = Paycall(paycallAddress).ethBasedPriceFeedAddress();
         address stpredPaymentTokenAddress = Paycall(paycallAddress).paymentTokenAddress();
-        assertEq(storedPriceFeedAddress, ETH_PRICE_FEED);
+        assertEq(storedPriceFeedAddress, ETH_USD_PRICE_FEED);
         assertEq(stpredPaymentTokenAddress, USDC);
     }
 
