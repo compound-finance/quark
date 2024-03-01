@@ -50,7 +50,7 @@ contract Paycall {
     }
 
     /**
-     * @notice Execute delegatecall to contracts and pay tx.origin for gas
+     * @notice Execute delegatecall on a contract and pay tx.origin for gas
      * @param callContract Contract to call
      * @param callData Encoded calldata for call
      * @return Return data from call
