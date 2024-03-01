@@ -17,7 +17,7 @@ contract Multicall {
 
     /**
      * @notice Constructor
-     * In constructo it will set the scriptAddress to the this address
+     * @dev Sets the `scriptAddress` to the this contract's address
      */
     constructor() {
         scriptAddress = address(this);
