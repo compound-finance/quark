@@ -28,7 +28,7 @@ contract Paycall {
     /// This is a constant to accounted for the gas used by the Paycall contract itself that's not tracked by gasleft()
     uint256 internal constant GAS_OVERHEAD = 75000;
 
-    /// @notice Decimal difference between the payment token and ETH
+    /// @notice Difference in scale between the payment token and ETH, used to scale the payment token.
     /// Will be used to scale decimals to the correct amount for payment token
     uint256 internal immutable divisorScale;
 
