@@ -13,19 +13,33 @@ import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
  * @author Compound Labs, Inc.
  */
 contract QuarkFactory {
-    CodeJar public codeJar;
+    CodeJar public immutable codeJar;
     QuarkWallet public quarkWalletImpl;
     QuarkWalletProxyFactory public quarkWalletProxyFactory;
     QuarkStateManager public quarkStateManager;
     BatchExecutor public batchExecutor;
 
-    constructor() {}
+    constructor(CodeJar codeJar_) {
+        codeJar = codeJar_;
+    }
 
     function deployQuarkContracts() external {
-        codeJar = new CodeJar{salt: 0}();
-        quarkStateManager = new QuarkStateManager{salt: 0}();
-        quarkWalletImpl = new QuarkWallet{salt: 0}(codeJar, quarkStateManager);
-        quarkWalletProxyFactory = new QuarkWalletProxyFactory{salt: 0}(address(quarkWalletImpl));
-        batchExecutor = new BatchExecutor{salt: 0}();
+        quarkStateManager =
+            QuarkStateManager(payable(codeJar.saveCode(abi.encodePacked(type(QuarkStateManager).creationCode))));
+        quarkWalletImpl = QuarkWallet(
+            payable(
+                codeJar.saveCode(
+                    abi.encodePacked(type(QuarkWallet).creationCode, abi.encode(codeJar, quarkStateManager))
+                )
+            )
+        );
+        quarkWalletProxyFactory = QuarkWalletProxyFactory(
+            payable(
+                codeJar.saveCode(
+                    abi.encodePacked(type(QuarkWalletProxyFactory).creationCode, abi.encode(quarkWalletImpl))
+                )
+            )
+        );
+        batchExecutor = BatchExecutor(payable(codeJar.saveCode(abi.encodePacked(type(BatchExecutor).creationCode))));
     }
 }
