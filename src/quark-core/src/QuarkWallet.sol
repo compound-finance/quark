@@ -133,6 +133,24 @@ contract QuarkWallet is IERC1271 {
         external
         returns (bytes memory)
     {
+        return executeQuarkOperationWithPad(op, "", "", v, r, s);
+    }
+
+    /**
+     * @notice Execute a QuarkOperation via signature and a pad
+     * @dev Can only be called with signatures from the wallet's signer
+     * @param op A QuarkOperation struct
+     * @param prepad A signature pre-pad
+     * @param postpad A signature post-pad
+     * @param v EIP-712 signature v value
+     * @param r EIP-712 signature r value
+     * @param s EIP-712 signature s value
+     * @return return value from the executed operation
+     */
+    function executeQuarkOperationWithPad(QuarkOperation calldata op, bytes memory prepad, bytes memory postpad, uint8 v, bytes32 r, bytes32 s)
+        public
+        returns (bytes memory)
+    {
         if (block.timestamp >= op.expiry) {
             revert SignatureExpired();
         }
@@ -156,6 +174,10 @@ contract QuarkWallet is IERC1271 {
             )
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
+
+        if (prepad.length > 0 || postpad.length > 0) {
+            digest = keccak256(abi.encodePacked(prepad, digest, postpad));
+        }
 
         // if the signature check does not revert, the signature is valid
         checkValidSignatureInternal(HasSignerExecutor(address(this)).signer(), digest, v, r, s);
