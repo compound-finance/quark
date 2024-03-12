@@ -16,7 +16,7 @@ import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 
 // Deploy with:
-// $ set -a && source .env && ./script/deploy.sh --broadcast
+// $ set -a && source .env && ./script/deploy-quark.sh --broadcast
 
 // Required ENV vars:
 // RPC_URL
