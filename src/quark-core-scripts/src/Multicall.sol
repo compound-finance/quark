@@ -30,6 +30,7 @@ contract Multicall {
      * @return Array of return data from each call
      */
     function run(address[] calldata callContracts, bytes[] calldata callDatas) external returns (bytes[] memory) {
+        // Ensures that this script cannot be called directly and self-destructed
         if (address(this) == scriptAddress) {
             revert InvalidCallContext();
         }

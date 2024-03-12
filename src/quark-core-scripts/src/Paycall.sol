@@ -57,6 +57,7 @@ contract Paycall {
      */
     function run(address callContract, bytes calldata callData) external returns (bytes memory) {
         uint256 gasInitial = gasleft();
+        // Ensures that this script cannot be called directly and self-destructed
         if (address(this) == scriptAddress) {
             revert InvalidCallContext();
         }
