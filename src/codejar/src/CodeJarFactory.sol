@@ -5,7 +5,7 @@ import {CodeJar} from "codejar/src/CodeJar.sol";
 
 /**
  * @title Code Jar Factory
- * @notice A factory for deploying Code Jar to a content-determinstic address
+ * @notice A factory for deploying Code Jar to a content-deterministic address
  * @author Compound Labs, Inc.
  */
 contract CodeJarFactory {
