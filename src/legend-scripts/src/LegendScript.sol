@@ -10,6 +10,9 @@ import {QuarkScript} from "quark-core/src/QuarkScript.sol";
 import {IComet} from "legend-scripts/src/interfaces/IComet.sol";
 import {ICometRewards} from "legend-scripts/src/interfaces/ICometRewards.sol";
 
+import {ITokenMessenger} from "legend-scripts/src/interfaces/ITokenMessenger.sol";
+import {IStandardBridge} from "legend-scripts/src/interfaces/IStandardBridge.sol";
+
 library TerminalErrors {
     error InvalidInput();
     error TransferFailed(bytes data);
@@ -331,5 +334,47 @@ contract ApproveAndSwap {
 
         // Approvals to external contracts should always be reset to 0
         IERC20(sellToken).forceApprove(to, 0);
+    }
+}
+
+contract StandardBridger {
+    IStandardBridge immutable bridge;
+
+    constructor(IStandardBridge bridge_) {
+        bridge = bridge_;
+    }
+
+    /**
+     *   @notice Bridge token over standard bridge.
+     */
+    function bridgeToken(
+            address localToken,
+            address remoteToken,
+            address to,
+            uint256 amount,
+            uint32 minGasLimit,
+            bytes calldata extraData) external {
+        IERC20(localToken).approve(address(bridge), amount);
+        bridge.bridgeERC20To(localToken, remoteToken, to, amount, minGasLimit, extraData);
+    }
+}
+
+contract CCTPBridger {
+    ITokenMessenger immutable bridge;
+
+    constructor(ITokenMessenger bridge_) {
+        bridge = bridge_;
+    }
+
+    /**
+     *   @notice Bridge token over standard bridge.
+     */
+    function bridgeToken(
+            uint256 amount,
+            uint32 destinationDomain,
+            bytes32 mintRecipient,
+            address burnToken) external {
+        IERC20(burnToken).approve(address(bridge), amount);
+        bridge.depositForBurn(amount, destinationDomain, mintRecipient, burnToken);
     }
 }
