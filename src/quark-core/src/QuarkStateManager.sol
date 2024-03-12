@@ -69,7 +69,7 @@ contract QuarkStateManager {
             uint96 bucketValue = uint96(bucket << 8);
             uint256 bucketNonces = nonces[wallet][bucket];
             // Move on to the next bucket if all bits in this bucket are already set
-            if (bucketValue == type(uint256).max) continue;
+            if (bucketNonces == type(uint256).max) continue;
             for (uint256 maskOffset = 0; maskOffset < 256;) {
                 uint256 mask = 1 << maskOffset;
                 if ((bucketNonces & mask) == 0) {
