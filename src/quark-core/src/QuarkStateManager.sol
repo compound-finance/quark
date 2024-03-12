@@ -65,23 +65,20 @@ contract QuarkStateManager {
      */
     function nextNonce(address wallet) external view returns (uint96) {
         // Any bucket larger than `type(uint88).max` will result in unsafe undercast when converting to nonce
-        for (uint256 bucket = 0; bucket <= type(uint88).max;) {
-            uint256 bucketNonces = nonces[wallet][bucket];
+        for (uint256 bucket = 0; bucket <= type(uint88).max; ++bucket) {
             uint96 bucketValue = uint96(bucket << 8);
-            for (uint256 maskOffset = 0; maskOffset < 256;) {
+            uint256 bucketNonces = nonces[wallet][bucket];
+            // Move on to the next bucket if all bits in this bucket are already set
+            if (bucketNonces == type(uint256).max) continue;
+            for (uint256 maskOffset = 0; maskOffset < 256; ++maskOffset) {
                 uint256 mask = 1 << maskOffset;
                 if ((bucketNonces & mask) == 0) {
                     uint96 nonce = uint96(bucketValue + maskOffset);
+                    // The next available nonce should not be reserved for a replayable transaction
                     if (nonceScriptAddress[wallet][nonce] == address(0)) {
                         return nonce;
                     }
                 }
-                unchecked {
-                    ++maskOffset;
-                }
-            }
-            unchecked {
-                ++bucket;
             }
         }
 
