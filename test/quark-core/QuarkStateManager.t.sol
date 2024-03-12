@@ -128,4 +128,24 @@ contract QuarkStateManagerTest is Test {
 
         assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(2)));
     }
+
+    function testSetsAndGetsNextNonces() public {
+        assertEq(stateManager.nextNonce(address(this)), 0);
+
+        for (uint96 i = 0; i <= 550; i++) {
+            stateManager.setNonce(i);
+        }
+
+        assertEq(stateManager.nextNonce(address(this)), 551);
+
+        for (uint96 i = 552; i <= 570; i++) {
+            stateManager.setNonce(i);
+        }
+
+        assertEq(stateManager.nextNonce(address(this)), 551);
+
+        stateManager.setNonce(551);
+
+        assertEq(stateManager.nextNonce(address(this)), 571);
+    }
 }
