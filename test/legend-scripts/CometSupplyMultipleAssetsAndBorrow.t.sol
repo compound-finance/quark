@@ -19,6 +19,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 
 import {Counter} from "test/lib/Counter.sol";
 
+import {LegendErrors} from "legend-scripts/src/LegendErrors.sol";
 import "legend-scripts/src/LegendScript.sol";
 
 /**
@@ -99,7 +100,7 @@ contract CometSupplyMultipleAssetsAndBorrowTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        vm.expectRevert(abi.encodeWithSelector(TerminalErrors.InvalidInput.selector));
+        vm.expectRevert(abi.encodeWithSelector(LegendErrors.InvalidInput.selector));
         vm.resumeGasMetering();
         wallet.executeQuarkOperation(op, v, r, s);
     }

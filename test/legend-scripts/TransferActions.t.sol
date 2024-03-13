@@ -26,6 +26,7 @@ import {VictimERC777} from "test/lib/VictimERC777.sol";
 import {AllowCallbacks} from "test/lib/AllowCallbacks.sol";
 import {ReentrantTransfer} from "test/lib/ReentrantTransfer.sol";
 
+import {LegendErrors} from "legend-scripts/src/LegendErrors.sol";
 import "legend-scripts/src/LegendScript.sol";
 
 /**
@@ -333,7 +334,7 @@ contract TransferActionsTest is Test {
                 1,
                 callContracts[1],
                 abi.encodeWithSelector(
-                    TerminalErrors.TransferFailed.selector, abi.encodeWithSelector(QuarkScript.ReentrantCall.selector)
+                    LegendErrors.TransferFailed.selector, abi.encodeWithSelector(QuarkScript.ReentrantCall.selector)
                 )
             )
         );
@@ -410,7 +411,7 @@ contract TransferActionsTest is Test {
         // Reentering into the QuarkWallet fails due to there being no active callback
         vm.expectRevert(
             abi.encodeWithSelector(
-                TerminalErrors.TransferFailed.selector, abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
+                LegendErrors.TransferFailed.selector, abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
             )
         );
         vm.resumeGasMetering();
@@ -442,8 +443,7 @@ contract TransferActionsTest is Test {
         // Not replayable signature will blocked by QuarkWallet during executeQuarkOperation
         vm.expectRevert(
             abi.encodeWithSelector(
-                TerminalErrors.TransferFailed.selector,
-                abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector)
+                LegendErrors.TransferFailed.selector, abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector)
             )
         );
         wallet.executeQuarkOperation(op, v, r, s);
