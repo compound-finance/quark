@@ -35,7 +35,7 @@ contract CodeJar {
             }
 
             // Disallow the empty code and self-destructing constructors
-            // Note: Script can still self-destruct after being deployed
+            // Note: Script can still self-destruct after being deployed until Dencun
             require(scriptSz > 0);
 
             return codeAddress;
