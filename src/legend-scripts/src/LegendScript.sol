@@ -9,13 +9,7 @@ import {QuarkScript} from "quark-core/src/QuarkScript.sol";
 
 import {IComet} from "legend-scripts/src/interfaces/IComet.sol";
 import {ICometRewards} from "legend-scripts/src/interfaces/ICometRewards.sol";
-
-library TerminalErrors {
-    error InvalidInput();
-    error TransferFailed(bytes data);
-    error ApproveAndSwapFailed(bytes data);
-    error TooMuchSlippage();
-}
+import {LegendErrors} from "legend-scripts/src/LegendErrors.sol";
 
 // TODO: Will need to add support for E-Comet once E-Comet has been deployed
 contract CometSupplyActions {
@@ -64,7 +58,7 @@ contract CometSupplyActions {
      */
     function supplyMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
         if (assets.length != amounts.length) {
-            revert TerminalErrors.InvalidInput();
+            revert LegendErrors.InvalidInput();
         }
 
         for (uint256 i = 0; i < assets.length;) {
@@ -121,7 +115,7 @@ contract CometWithdrawActions {
      */
     function withdrawMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
         if (assets.length != amounts.length) {
-            revert TerminalErrors.InvalidInput();
+            revert LegendErrors.InvalidInput();
         }
 
         for (uint256 i = 0; i < assets.length;) {
@@ -221,7 +215,7 @@ contract TransferActions is QuarkScript {
     function transferNativeToken(address recipient, uint256 amount) external onlyWallet {
         (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
         if (!success) {
-            revert TerminalErrors.TransferFailed(data);
+            revert LegendErrors.TransferFailed(data);
         }
     }
 }
@@ -235,7 +229,7 @@ contract CometClaimRewards {
      */
     function claim(address[] calldata cometRewards, address[] calldata comets, address recipient) external {
         if (cometRewards.length != comets.length) {
-            revert TerminalErrors.InvalidInput();
+            revert LegendErrors.InvalidInput();
         }
 
         for (uint256 i = 0; i < cometRewards.length;) {
@@ -259,7 +253,7 @@ contract CometSupplyMultipleAssetsAndBorrow {
         uint256 borrow
     ) external {
         if (assets.length != amounts.length) {
-            revert TerminalErrors.InvalidInput();
+            revert LegendErrors.InvalidInput();
         }
 
         for (uint256 i = 0; i < assets.length;) {
@@ -281,7 +275,7 @@ contract CometRepayAndWithdrawMultipleAssets {
         external
     {
         if (assets.length != amounts.length) {
-            revert TerminalErrors.InvalidInput();
+            revert LegendErrors.InvalidInput();
         }
 
         IERC20(baseAsset).forceApprove(comet, repay);
@@ -320,13 +314,13 @@ contract ApproveAndSwap {
 
         (bool success, bytes memory returnData) = to.call(data);
         if (!success) {
-            revert TerminalErrors.ApproveAndSwapFailed(returnData);
+            revert LegendErrors.ApproveAndSwapFailed(returnData);
         }
 
         uint256 buyTokenBalanceAfter = IERC20(buyToken).balanceOf(address(this));
         uint256 buyAmount = buyTokenBalanceAfter - buyTokenBalanceBefore;
         if (buyAmount < expectedBuyAmount) {
-            revert TerminalErrors.TooMuchSlippage();
+            revert LegendErrors.TooMuchSlippage();
         }
 
         // Approvals to external contracts should always be reset to 0
