@@ -60,7 +60,8 @@ contract ReplayableTransactionsTest is Test {
         walletImplementation = new QuarkWallet(codeJar, stateManager);
         console.log("QuarkWallet implementation: %s", address(walletImplementation));
 
-        aliceWallet = QuarkWallet(payable(new QuarkMinimalProxy(address(walletImplementation), aliceAccount, address(0))));
+        aliceWallet =
+            QuarkWallet(payable(new QuarkMinimalProxy(address(walletImplementation), aliceAccount, address(0))));
         console.log("Alice signer: %s", aliceAccount);
         console.log("Alice wallet at: %s", address(aliceWallet));
     }

@@ -53,7 +53,8 @@ contract CallbacksTest is Test {
         console.log("QuarkWallet implementation: %s", address(walletImplementation));
 
         aliceAccount = vm.addr(alicePrivateKey);
-        aliceWallet = QuarkWallet(payable(new QuarkMinimalProxy(address(walletImplementation), aliceAccount, address(0))));
+        aliceWallet =
+            QuarkWallet(payable(new QuarkMinimalProxy(address(walletImplementation), aliceAccount, address(0))));
         console.log("Alice signer: %s", aliceAccount);
     }
 
