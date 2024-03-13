@@ -21,11 +21,13 @@ import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 // Required ENV vars:
 // RPC_URL
 // DEPLOYER_PK
+// CODE_JAR
 
 // Optional ENV vars:
 // ETHERSCAN_KEY
 
 contract DeployQuarkWalletFactory is Script {
+    CodeJar codeJar;
     QuarkWalletProxyFactory quarkWalletProxyFactory;
     BatchExecutor batchExecutor;
     Ethcall ethcall;
@@ -34,17 +36,16 @@ contract DeployQuarkWalletFactory is Script {
 
     function run() public {
         address deployer = vm.addr(vm.envUint("DEPLOYER_PK"));
+        codeJar = CodeJar(vm.addr(vm.envUint("CODE_JAR")));
 
         vm.startBroadcast(deployer);
 
         console.log("=============================================================");
 
         console.log("Deploying Quark Factory");
-        quarkFactory = new QuarkFactory();
+        quarkFactory = new QuarkFactory(codeJar);
         console.log("Quark Factory Deployed:", address(quarkFactory));
 
-        console.log("Deploying Quark Contracts via Quark Factory");
-        quarkFactory.deployQuarkContracts();
         console.log("Code Jar Deployed:", address(quarkFactory.codeJar()));
         console.log("Quark State Manager Deployed:", address(quarkFactory.quarkStateManager()));
         console.log("Quark Wallet Implementation Deployed:", address(quarkFactory.quarkWalletImpl()));
@@ -53,12 +54,10 @@ contract DeployQuarkWalletFactory is Script {
 
         console.log("Deploying Core Scripts");
 
-        CodeJar codeJar = QuarkWallet(payable(quarkFactory.quarkWalletProxyFactory().walletImplementation())).codeJar();
-
-        ethcall = Ethcall(codeJar.saveCode(vm.getCode(string.concat("out/", "Ethcall.sol/Ethcall.json"))));
+        ethcall = Ethcall(payable(codeJar.saveCode(abi.encodePacked(type(Ethcall).creationCode))));
         console.log("Ethcall Deployed:", address(ethcall));
 
-        multicall = Multicall(codeJar.saveCode(vm.getCode(string.concat("out/", "Multicall.sol/Multicall.json"))));
+        multicall = Multicall(payable(codeJar.saveCode(abi.encodePacked(type(Multicall).creationCode))));
         console.log("Multicall Deployed:", address(multicall));
 
         console.log("=============================================================");
