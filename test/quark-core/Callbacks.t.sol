@@ -8,7 +8,9 @@ import {Test} from "forge-std/Test.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+
+import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 
 import {Logger} from "test/lib/Logger.sol";
 import {Counter} from "test/lib/Counter.sol";
@@ -30,6 +32,7 @@ contract CallbacksTest is Test {
     CodeJar public codeJar;
     Counter public counter;
     QuarkStateManager public stateManager;
+    QuarkWallet public walletImplementation;
 
     uint256 alicePrivateKey = 0x9810473;
     address aliceAccount; // see constructor()
@@ -46,8 +49,12 @@ contract CallbacksTest is Test {
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
+        walletImplementation = new QuarkWallet(codeJar, stateManager);
+        console.log("QuarkWallet implementation: %s", address(walletImplementation));
+
         aliceAccount = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet = QuarkWallet(payable(new QuarkMinimalProxy(address(walletImplementation), aliceAccount, address(0))));
+        console.log("Alice signer: %s", aliceAccount);
     }
 
     function testCallbackFromCounter() public {

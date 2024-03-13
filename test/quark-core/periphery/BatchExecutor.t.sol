@@ -8,7 +8,9 @@ import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+
+import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 
 import {Counter} from "test/lib/Counter.sol";
 import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
@@ -25,6 +27,7 @@ contract BatchExecutorTest is Test {
     CodeJar public codeJar;
     Counter public counter;
     QuarkStateManager public stateManager;
+    QuarkWallet public walletImplementation;
 
     uint256 alicePrivateKey = 0x8675309;
     uint256 bobPrivateKey = 0xb0b5309;
@@ -47,11 +50,14 @@ contract BatchExecutorTest is Test {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
-        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, stateManager);
+        walletImplementation = new QuarkWallet(codeJar, stateManager);
+        console.log("QuarkWallet implementation: %s", address(walletImplementation));
+
+        aliceWallet = QuarkWallet(payable(new QuarkMinimalProxy(address(walletImplementation), aliceAccount, address(0))));
         console.log("Alice wallet at: %s", address(aliceWallet));
 
-        bobWallet = new QuarkWalletStandalone(bobAccount, address(0), codeJar, stateManager);
-        console.log("Bob wallet at: %s", address(bobWallet));
+        bobWallet = QuarkWallet(payable(new QuarkMinimalProxy(address(walletImplementation), bobAccount, address(0))));
+        console.log("Bob wallet at: %s", address(aliceWallet));
     }
 
     function testBatchExecute() public {

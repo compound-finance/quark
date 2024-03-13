@@ -11,7 +11,8 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, HasSignerExecutor, QuarkWalletMetadata} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet, QuarkWalletMetadata} from "quark-core/src/QuarkWallet.sol";
+import {HasSignerExecutor} from "quark-core/src/interfaces/HasSignerExecutor.sol";
 
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 

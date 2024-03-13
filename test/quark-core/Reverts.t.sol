@@ -7,7 +7,8 @@ import "forge-std/console.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWalletStandalone} from "quark-core/src/QuarkWalletStandalone.sol";
 
 import {Counter} from "test/lib/Counter.sol";
 import {Reverts} from "test/lib/Reverts.sol";

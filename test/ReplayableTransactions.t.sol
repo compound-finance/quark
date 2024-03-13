@@ -7,7 +7,9 @@ import "forge-std/console.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, QuarkWalletStandalone} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
+
+import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 
 import {RecurringPurchase} from "test/lib/RecurringPurchase.sol";
 
@@ -25,6 +27,7 @@ contract ReplayableTransactionsTest is Test {
 
     CodeJar public codeJar;
     QuarkStateManager public stateManager;
+    QuarkWallet public walletImplementation;
 
     uint256 alicePrivateKey = 0x8675309;
     address aliceAccount = vm.addr(alicePrivateKey);
@@ -54,7 +57,10 @@ contract ReplayableTransactionsTest is Test {
         stateManager = new QuarkStateManager();
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
 
-        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, stateManager);
+        walletImplementation = new QuarkWallet(codeJar, stateManager);
+        console.log("QuarkWallet implementation: %s", address(walletImplementation));
+
+        aliceWallet = QuarkWallet(payable(new QuarkMinimalProxy(address(walletImplementation), aliceAccount, address(0))));
         console.log("Alice signer: %s", aliceAccount);
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
