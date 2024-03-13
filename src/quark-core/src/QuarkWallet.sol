@@ -7,7 +7,7 @@ import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {HasSignerExecutor} from "quark-core/src/interfaces/HasSignerExecutor.sol";
+import {IHasSignerExecutor} from "quark-core/src/interfaces/IHasSignerExecutor.sol";
 
 /**
  * @title Quark Wallet Metadata
@@ -149,7 +149,7 @@ contract QuarkWallet is IERC1271 {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
 
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(HasSignerExecutor(address(this)).signer(), digest, v, r, s);
+        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
 
         // guarantee every script in scriptSources is deployed
         for (uint256 i = 0; i < op.scriptSources.length;) {
@@ -177,7 +177,7 @@ contract QuarkWallet is IERC1271 {
         returns (bytes memory)
     {
         // only allow the executor for the wallet to use unsigned execution
-        if (msg.sender != HasSignerExecutor(address(this)).executor()) {
+        if (msg.sender != IHasSignerExecutor(address(this)).executor()) {
             revert Unauthorized();
         }
 
@@ -239,7 +239,7 @@ contract QuarkWallet is IERC1271 {
         // to prevent signature replayability for Quark wallets owned by the same `signer`
         bytes32 messageHash = getMessageHashForQuark(abi.encode(hash));
         // If the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(HasSignerExecutor(address(this)).signer(), messageHash, v, r, s);
+        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), messageHash, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 

@@ -4,15 +4,14 @@ pragma solidity 0.8.23;
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {HasSignerExecutor} from "quark-core/src/interfaces/HasSignerExecutor.sol";
+import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 
 /**
  * @title Quark Wallet Standalone
  * @notice Standalone extension of the Quark Wallet base class that does not require a proxy
  * @author Compound Labs, Inc.
  */
-contract QuarkWalletStandalone is QuarkWallet, HasSignerExecutor {
+contract QuarkWalletStandalone is QuarkWallet, IHasSignerExecutor {
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
     address public immutable signer;
 

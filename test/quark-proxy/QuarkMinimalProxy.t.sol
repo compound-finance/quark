@@ -8,7 +8,7 @@ import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, HasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 
 import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
@@ -42,10 +42,10 @@ contract QuarkMinimalProxyTest is Test {
 
     function testSignerExecutor() public {
         vm.expectRevert();
-        HasSignerExecutor(address(walletImplementation)).signer();
+        IHasSignerExecutor(address(walletImplementation)).signer();
 
         vm.expectRevert();
-        HasSignerExecutor(address(walletImplementation)).executor();
+        IHasSignerExecutor(address(walletImplementation)).executor();
 
         assertEq(aliceWalletProxy.signer(), aliceAccount);
         assertEq(aliceWalletProxy.executor(), address(0xabc));

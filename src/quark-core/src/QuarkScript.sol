@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.23;
 
-import {QuarkWallet, HasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 
 /**
  * @title Quark Script
@@ -49,11 +49,11 @@ abstract contract QuarkScript {
     }
 
     function signer() internal view returns (address) {
-        return HasSignerExecutor(address(this)).signer();
+        return IHasSignerExecutor(address(this)).signer();
     }
 
     function executor() internal view returns (address) {
-        return HasSignerExecutor(address(this)).executor();
+        return IHasSignerExecutor(address(this)).executor();
     }
 
     function allowCallback() internal {
