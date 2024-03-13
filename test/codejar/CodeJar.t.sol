@@ -251,9 +251,10 @@ contract CodeJarTest is Test {
         assertEq(WackyFun(wackyAddress).cool(), 88);
     }
 
-    function testCodeJarOnSelfDestructingConstructor() public {
+    function testRevertsOnSelfDestructingConstructor() public {
         vm.expectRevert();
         codeJar.saveCode(abi.encodePacked(type(WackyCode).creationCode));
+
         assertEq(codeJar.codeExists(abi.encodePacked(type(WackyCode).creationCode)), false);
     }
 }

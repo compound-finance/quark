@@ -34,8 +34,8 @@ contract CodeJar {
                 scriptSz := extcodesize(script)
             }
 
-            // Disallow the empty code
-            // Note: script can still selfdestruct
+            // Disallow the empty code and self-destructing constructors
+            // Note: Script can still self-destruct after being deployed
             require(scriptSz > 0);
 
             return codeAddress;
