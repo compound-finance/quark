@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
-import {QuarkWallet, HasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 
@@ -323,7 +323,7 @@ contract QuarkWalletProxyFactoryTest is Test {
 
     function testExecutorSetInCreate() public {
         QuarkWallet aliceWallet = QuarkWallet(factory.create(alice, address(0xabc)));
-        assertEq(HasSignerExecutor(address(aliceWallet)).executor(), address(0xabc));
+        assertEq(IHasSignerExecutor(address(aliceWallet)).executor(), address(0xabc));
     }
 
     function testExecutorIsOtherWallet() public {

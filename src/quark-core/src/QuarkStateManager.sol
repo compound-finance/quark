@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.23;
 
-interface IExecutor {
-    function executeScriptWithNonceLock(address scriptAddress, bytes calldata scriptCalldata)
-        external
-        returns (bytes memory);
-}
+import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
 
 /**
  * @title Quark State Manager
@@ -164,7 +160,7 @@ contract QuarkStateManager {
         NonceScript memory previousNonceScript = activeNonceScript[msg.sender];
         activeNonceScript[msg.sender] = NonceScript({nonce: nonce, scriptAddress: scriptAddress});
 
-        bytes memory result = IExecutor(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
+        bytes memory result = IQuarkWallet(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
 
         // if a nonce was cleared, set the nonceScriptAddress to lock nonce re-use to the same script address
         if (cachedScriptAddress == address(0) && !isNonceSetInternal(msg.sender, bucket, setMask)) {

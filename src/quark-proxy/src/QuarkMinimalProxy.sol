@@ -23,9 +23,7 @@ contract QuarkMinimalProxy {
         walletImplementation = implementation_;
     }
 
-    /**
-     * @notice Proxy calls to the underlying wallet implementation
-     */
+    /// @notice Proxy calls to the underlying wallet implementation
     fallback(bytes calldata /* data */ ) external payable returns (bytes memory) {
         address walletImplementation_ = walletImplementation;
         assembly {
@@ -40,5 +38,6 @@ contract QuarkMinimalProxy {
         }
     }
 
+    /// @notice Fallback for receiving native token
     receive() external payable {}
 }

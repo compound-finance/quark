@@ -7,6 +7,7 @@ import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {IHasSignerExecutor} from "quark-core/src/interfaces/IHasSignerExecutor.sol";
 
 /**
  * @title Quark Wallet Metadata
@@ -31,16 +32,6 @@ library QuarkWalletMetadata {
     /// @notice The EIP-712 domain typehash for this version of QuarkWallet
     bytes32 internal constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-}
-
-/**
- * @title Has Signer Executor
- * @notice A helper interface that represents a shell for a QuarkWallet providing an executor and signer
- * @author Compound Labs, Inc.
- */
-interface HasSignerExecutor {
-    function signer() external view returns (address);
-    function executor() external view returns (address);
 }
 
 /**
@@ -158,7 +149,7 @@ contract QuarkWallet is IERC1271 {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
 
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(HasSignerExecutor(address(this)).signer(), digest, v, r, s);
+        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
 
         // guarantee every script in scriptSources is deployed
         for (uint256 i = 0; i < op.scriptSources.length;) {
@@ -186,7 +177,7 @@ contract QuarkWallet is IERC1271 {
         returns (bytes memory)
     {
         // only allow the executor for the wallet to use unsigned execution
-        if (msg.sender != HasSignerExecutor(address(this)).executor()) {
+        if (msg.sender != IHasSignerExecutor(address(this)).executor()) {
             revert Unauthorized();
         }
 
@@ -248,7 +239,7 @@ contract QuarkWallet is IERC1271 {
         // to prevent signature replayability for Quark wallets owned by the same `signer`
         bytes32 messageHash = getMessageHashForQuark(abi.encode(hash));
         // If the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(HasSignerExecutor(address(this)).signer(), messageHash, v, r, s);
+        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), messageHash, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 
@@ -345,32 +336,6 @@ contract QuarkWallet is IERC1271 {
         }
     }
 
+    /// @notice Fallback for receiving native token
     receive() external payable {}
-}
-
-/**
- * @title Quark Wallet Standalone
- * @notice Standalone extension of the Quark Wallet base class that does not require a proxy
- * @author Compound Labs, Inc.
- */
-contract QuarkWalletStandalone is QuarkWallet, HasSignerExecutor {
-    /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
-    address public immutable signer;
-
-    /// @notice Address of the executor contract, if any, empowered to direct-execute unsigned operations for this wallet
-    address public immutable executor;
-
-    /**
-     * @notice Construct a new QuarkWallet
-     * @param signer_ The address that is allowed to sign QuarkOperations for this wallet
-     * @param executor_ The address that is allowed to directly execute Quark scripts for this wallet
-     * @param codeJar_ The CodeJar contract used to deploy scripts
-     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
-     */
-    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_)
-        QuarkWallet(codeJar_, stateManager_)
-    {
-        signer = signer_;
-        executor = executor_;
-    }
 }

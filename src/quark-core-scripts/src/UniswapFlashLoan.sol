@@ -44,8 +44,8 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
         PoolAddress.PoolKey memory poolKey = PoolAddress.getPoolKey(payload.token0, payload.token1, payload.fee);
         // Reorder token0, token1 to ensure token1 > token0
         if (payload.token0 > payload.token1) {
-            (payload.token0, payload.token1) = (payload.token1, payload.token0);
-            (payload.amount0, payload.amount1) = (payload.amount1, payload.amount0);
+            (payload.token0, payload.token1, payload.amount0, payload.amount1) =
+                (payload.token1, payload.token0, payload.amount1, payload.amount0);
         }
         IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), poolKey)).flash(
             address(this),
@@ -85,12 +85,14 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
         }
 
         // Attempt to pay back amount owed after execution
-        if (input.amount0 + fee0 > 0) {
-            IERC20(input.poolKey.token0).safeTransfer(address(pool), input.amount0 + fee0);
+        uint256 repayAmount = input.amount0 + fee0;
+        if (repayAmount > 0) {
+            IERC20(input.poolKey.token0).safeTransfer(address(pool), repayAmount);
         }
 
-        if (input.amount1 + fee1 > 0) {
-            IERC20(input.poolKey.token1).safeTransfer(address(pool), input.amount1 + fee1);
+        repayAmount = input.amount1 + fee1;
+        if (repayAmount > 0) {
+            IERC20(input.poolKey.token1).safeTransfer(address(pool), repayAmount);
         }
     }
 }
