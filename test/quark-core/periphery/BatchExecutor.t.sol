@@ -61,7 +61,7 @@ contract BatchExecutorTest is Test {
         console.log("Bob wallet at: %s", address(aliceWallet));
     }
 
-    function testBatchExecute() public {
+    function testBatchExecuteWithPartialFailures() public {
         // We test multiple operations with different wallets
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -104,12 +104,12 @@ contract BatchExecutorTest is Test {
         vm.resumeGasMetering();
         vm.expectEmit(false, false, false, true);
         emit Ping(55);
-        batchExecutor.batchExecuteOperations(ops);
+        batchExecutor.batchExecuteOperations(ops, true);
 
         assertEq(counter.number(), 3);
     }
 
-    function testBatchExecuteDoesNotRevertIfAnyCallsRevert() public {
+    function testBatchExecuteWithPartialFailuresDoesNotRevertIfAnyCallsRevert() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
@@ -154,7 +154,112 @@ contract BatchExecutorTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        batchExecutor.batchExecuteOperations(ops);
+        batchExecutor.batchExecuteOperations(ops, true);
+
+        // Note: We removed returning success as a gas optimization, but these are the expected successes
+        // assertEq(successes[0], true);
+        // assertEq(successes[1], false);
+        // // Should fail with OOG
+        // assertEq(successes[2], false);
+    }
+
+    function testBatchExecuteWithoutPartialFailures() public {
+        // We test multiple operations with different wallets
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+
+        QuarkWallet.QuarkOperation memory aliceOp =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
+        (uint8 v0, bytes32 r0, bytes32 s0) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
+        QuarkWallet.QuarkOperation memory bobOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            bobWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptSource
+        );
+        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
+
+        // Construct list of operations and signatures
+        BatchExecutor.OperationParams[] memory ops = new BatchExecutor.OperationParams[](2);
+        ops[0] = BatchExecutor.OperationParams({
+            account: address(aliceWallet),
+            op: aliceOp,
+            v: v0,
+            r: r0,
+            s: s0,
+            gasLimit: 0.1 ether
+        });
+        ops[1] = BatchExecutor.OperationParams({
+            account: address(bobWallet),
+            op: bobOp,
+            v: v1,
+            r: r1,
+            s: s1,
+            gasLimit: 0.1 ether
+        });
+
+        assertEq(counter.number(), 0);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectEmit(false, false, false, true);
+        emit Ping(55);
+        batchExecutor.batchExecuteOperations(ops, false);
+
+        assertEq(counter.number(), 3);
+    }
+
+    function testBatchExecuteWithoutPartialFailuresRevertsIfAnyCallsRevert() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
+        bytes memory reverts = new YulHelper().getCode("Reverts.sol/Reverts.json");
+
+        QuarkWallet.QuarkOperation memory aliceOp =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
+        (uint8 v0, bytes32 r0, bytes32 s0) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
+        QuarkWallet.QuarkOperation memory bobOp =
+            new QuarkOperationHelper().newBasicOp(bobWallet, reverts, ScriptType.ScriptSource);
+        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
+        QuarkWallet.QuarkOperation memory aliceOp2 =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
+        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp2);
+
+        // Construct list of operations and signatures
+        BatchExecutor.OperationParams[] memory ops = new BatchExecutor.OperationParams[](3);
+        ops[0] = BatchExecutor.OperationParams({
+            account: address(aliceWallet),
+            op: aliceOp,
+            v: v0,
+            r: r0,
+            s: s0,
+            gasLimit: 0.1 ether
+        });
+        ops[1] = BatchExecutor.OperationParams({
+            account: address(bobWallet),
+            op: bobOp,
+            v: v1,
+            r: r1,
+            s: s1,
+            gasLimit: 0.1 ether
+        });
+        ops[2] = BatchExecutor.OperationParams({
+            account: address(aliceWallet),
+            op: aliceOp2,
+            v: v2,
+            r: r2,
+            s: s2,
+            gasLimit: 1 wei // To trigger OOG
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(BatchExecutor.BatchExecutionError.selector, 1, abi.encodeWithSignature("Whoops()"))
+        );
+        // gas: meter execute
+        vm.resumeGasMetering();
+        batchExecutor.batchExecuteOperations(ops, false);
 
         // Note: We removed returning success as a gas optimization, but these are the expected successes
         // assertEq(successes[0], true);
