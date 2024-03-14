@@ -36,7 +36,7 @@ contract DeployQuarkWalletFactory is Script {
 
     function run() public {
         address deployer = vm.addr(vm.envUint("DEPLOYER_PK"));
-        codeJar = CodeJar(vm.addr(vm.envUint("CODE_JAR")));
+        codeJar = CodeJar(vm.envAddress("CODE_JAR"));
 
         vm.startBroadcast(deployer);
 
