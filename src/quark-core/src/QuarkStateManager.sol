@@ -151,14 +151,14 @@ contract QuarkStateManager {
             revert NonceAlreadySet();
         }
 
-        // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
-        setNonceInternal(bucket, setMask);
-
         address cachedScriptAddress = nonceScriptAddress[msg.sender][nonce];
         // if the nonce has been used before, check if the script address matches, and revert if not
         if ((cachedScriptAddress != address(0)) && (cachedScriptAddress != scriptAddress)) {
             revert NonceScriptMismatch();
         }
+
+        // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
+        setNonceInternal(bucket, setMask);
 
         // set the nonce-script pair active and yield to the wallet callback
         NonceScript memory previousNonceScript = activeNonceScript[msg.sender];
