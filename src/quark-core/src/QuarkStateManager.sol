@@ -137,6 +137,7 @@ contract QuarkStateManager {
      * @param nonce Nonce to activate for the transaction
      * @param scriptAddress Address of script to invoke with nonce lock
      * @param scriptCalldata Calldata for script call to invoke with nonce lock
+     * @return Return value from the executed operation
      * @dev The script is expected to clearNonce() if it wishes to be replayable
      */
     function setActiveNonceAndCallback(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
