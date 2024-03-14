@@ -94,7 +94,6 @@ contract QuarkStateManager {
         if (scriptAddress == address(0)) {
             revert NoActiveNonce();
         }
-        // the last 20 bytes is the address
         return scriptAddress;
     }
 
