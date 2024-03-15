@@ -688,6 +688,39 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 3);
     }
 
+    /* ===== caching unintended script address edge case ===== */
+
+    // Script A clears nonce -> Call script B -> Script B clears nonce -> Returns to script A -> Script A sets nonce -> Script B is cached
+    // Note: This is not desired behavior. It is a benign edge-case that would be gassy (~15k gas overhead) to prevent.
+    function testSingleNonceCanCallDifferentScriptsAndCacheNonTargetScript() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory callOtherScript = new YulHelper().getCode("CallOtherScript.sol/CallOtherScript.json");
+        // We just need to call any script that allows replays (clears the nonce)
+        bytes memory allowReplay = new YulHelper().getCode("AllowCallbacks.sol/AllowCallbacks.json");
+        address allowReplayAddress = codeJar.saveCode(allowReplay);
+        uint96 nonce = stateManager.nextNonce(address(aliceWallet));
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            callOtherScript,
+            abi.encodeWithSignature(
+                "call(uint96,address,bytes)",
+                nonce,
+                allowReplayAddress,
+                abi.encodeWithSignature("allowCallbackAndReplay()")
+            ),
+            ScriptType.ScriptAddress
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+
+        // The cached script address is different from the script address in the Quark Operation
+        assertEq(stateManager.nonceScriptAddress(address(aliceWallet), nonce), allowReplayAddress);
+    }
+
     /* ===== execution on Precompiles ===== */
     // Quark is no longer able call precompiles directly due to empty code check, so these tests are commented out
 
