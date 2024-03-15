@@ -118,7 +118,7 @@ contract QuarkWallet is IERC1271 {
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value
      * @param s EIP-712 signature s value
-     * @return return value from the executed operation
+     * @return Return value from the executed operation
      */
     function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
         external
@@ -214,7 +214,7 @@ contract QuarkWallet is IERC1271 {
      * smart contract
      * @param hash Hash of the signed data
      * @param signature Signature byte array associated with data
-     * @return bytes4 Returns the ERC-1271 "magic value" that indicates that the signature is valid
+     * @return The ERC-1271 "magic value" that indicates the signature is valid
      */
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
         /*

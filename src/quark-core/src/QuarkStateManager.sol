@@ -90,7 +90,6 @@ contract QuarkStateManager {
         if (scriptAddress == address(0)) {
             revert NoActiveNonce();
         }
-        // the last 20 bytes is the address
         return scriptAddress;
     }
 
@@ -133,6 +132,7 @@ contract QuarkStateManager {
      * @param nonce Nonce to activate for the transaction
      * @param scriptAddress Address of script to invoke with nonce lock
      * @param scriptCalldata Calldata for script call to invoke with nonce lock
+     * @return Return value from the executed operation
      * @dev The script is expected to clearNonce() if it wishes to be replayable
      */
     function setActiveNonceAndCallback(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
@@ -147,14 +147,14 @@ contract QuarkStateManager {
             revert NonceAlreadySet();
         }
 
-        // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
-        setNonceInternal(bucket, setMask);
-
         address cachedScriptAddress = nonceScriptAddress[msg.sender][nonce];
         // if the nonce has been used before, check if the script address matches, and revert if not
         if ((cachedScriptAddress != address(0)) && (cachedScriptAddress != scriptAddress)) {
             revert NonceScriptMismatch();
         }
+
+        // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
+        setNonceInternal(bucket, setMask);
 
         // set the nonce-script pair active and yield to the wallet callback
         NonceScript memory previousNonceScript = activeNonceScript[msg.sender];
