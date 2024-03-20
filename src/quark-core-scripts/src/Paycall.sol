@@ -14,6 +14,7 @@ contract Paycall {
     using SafeERC20 for IERC20;
 
     error InvalidCallContext();
+    error TransactionTooExpensive();
 
     /// @notice This contract's address
     address internal immutable scriptAddress;
@@ -53,9 +54,13 @@ contract Paycall {
      * @notice Execute delegatecall on a contract and pay tx.origin for gas
      * @param callContract Contract to call
      * @param callData Encoded calldata for call
+     * @param maxPaymentCost The maximum amount of payment tokens allowed for this transaction
      * @return Return data from call
      */
-    function run(address callContract, bytes calldata callData) external returns (bytes memory) {
+    function run(address callContract, bytes calldata callData, uint256 maxPaymentCost)
+        external
+        returns (bytes memory)
+    {
         uint256 gasInitial = gasleft();
         // Ensures that this script cannot be called directly and self-destructed
         if (address(this) == scriptAddress) {
@@ -72,6 +77,9 @@ contract Paycall {
         (, int256 price,,,) = AggregatorV3Interface(ethBasedPriceFeedAddress).latestRoundData();
         uint256 gasUsed = gasInitial - gasleft() + GAS_OVERHEAD;
         uint256 paymentAmount = gasUsed * tx.gasprice * uint256(price) / divisorScale;
+        if (paymentAmount > maxPaymentCost) {
+            revert TransactionTooExpensive();
+        }
         IERC20(paymentTokenAddress).safeTransfer(tx.origin, paymentAmount);
 
         return returnData;

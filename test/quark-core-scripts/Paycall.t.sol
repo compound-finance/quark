@@ -115,7 +115,8 @@ contract PaycallTest is Test {
                 address(counter),
                 abi.encodeCall(Counter.setNumber, (1)),
                 0 // value
-            )
+            ),
+            10e6
         );
     }
 
@@ -155,7 +156,8 @@ contract PaycallTest is Test {
             abi.encodeWithSelector(
                 Paycall.run.selector,
                 multicallAddress,
-                abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)
+                abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+                10e6
             ),
             ScriptType.ScriptSource
         );
@@ -188,7 +190,8 @@ contract PaycallTest is Test {
                     USDC,
                     abi.encodeWithSignature("transfer(address,uint256)", address(this), 10e6),
                     0
-                )
+                ),
+                20e6
             ),
             ScriptType.ScriptSource
         );
@@ -245,7 +248,8 @@ contract PaycallTest is Test {
             abi.encodeWithSelector(
                 Paycall.run.selector,
                 multicallAddress,
-                abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)
+                abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
+                20e6
             ),
             ScriptType.ScriptSource
         );
@@ -275,7 +279,8 @@ contract PaycallTest is Test {
                 ethcallAddress,
                 abi.encodeWithSelector(
                     Ethcall.run.selector, address(counter), abi.encodeWithSignature("decrement(uint256)", (1)), 0
-                )
+                ),
+                20e6
             ),
             ScriptType.ScriptSource
         );
@@ -297,7 +302,7 @@ contract PaycallTest is Test {
         vm.txGasPrice(32 gwei);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
-        // Deal some USDT and WBTC
+        // Deal some USDT and WETH
         deal(USDT, address(wallet), 1000e6);
         deal(WETH, address(wallet), 1 ether);
 
@@ -313,7 +318,8 @@ contract PaycallTest is Test {
                     WETH,
                     abi.encodeWithSignature("transfer(address,uint256)", address(this), 1 ether),
                     0
-                )
+                ),
+                10e6
             ),
             ScriptType.ScriptSource
         );
@@ -331,7 +337,7 @@ contract PaycallTest is Test {
         vm.txGasPrice(32 gwei);
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
 
-        // Deal some USDT and WBTC
+        // Deal some WBTC and WETH
         deal(WBTC, address(wallet), 1e8);
         deal(WETH, address(wallet), 1 ether);
 
@@ -347,7 +353,8 @@ contract PaycallTest is Test {
                     WETH,
                     abi.encodeWithSignature("transfer(address,uint256)", address(this), 1 ether),
                     0
-                )
+                ),
+                30e3
             ),
             ScriptType.ScriptSource
         );
@@ -358,5 +365,40 @@ contract PaycallTest is Test {
         assertEq(IERC20(WETH).balanceOf(address(this)), 1 ether);
         // Fees in WBTC will be around ~ 0.00021 WBTC
         assertApproxEqAbs(IERC20(WBTC).balanceOf(address(wallet)), 99979e3, 1e3);
+    }
+
+    function testRevertsWhenCostIsMoreThanMaxPaymentCost() public {
+        vm.pauseGasMetering();
+        vm.txGasPrice(32 gwei);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
+
+        // Deal some USDC and WETH
+        deal(USDC, address(wallet), 1000e6);
+        deal(WETH, address(wallet), 1 ether);
+
+        // Pay with USDC
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            paycall,
+            abi.encodeWithSelector(
+                Paycall.run.selector,
+                ethcallAddress,
+                abi.encodeWithSelector(
+                    Ethcall.run.selector,
+                    WETH,
+                    abi.encodeWithSignature("transfer(address,uint256)", address(this), 1 ether),
+                    0
+                ),
+                5e6
+            ),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        vm.resumeGasMetering();
+        vm.expectRevert(abi.encodeWithSelector(Paycall.TransactionTooExpensive.selector));
+        wallet.executeQuarkOperation(op, v, r, s);
+
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
 }
