@@ -10,7 +10,7 @@ import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
  * @author Compound Labs, Inc.
  */
 contract BatchExecutor {
-    error BatchExecutionError(uint256 opsIndex, bytes err);
+    error BatchExecutionError(uint256 opIndex, bytes err);
 
     /// @notice The parameters used for processing a QuarkOperation
     struct OperationParams {

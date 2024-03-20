@@ -5,6 +5,7 @@ import {QuarkWallet, QuarkWalletMetadata} from "quark-core/src/QuarkWallet.sol";
 
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 
+// TODO: Add new functions for MultiQuarkOperation
 /**
  * @title Quark Wallet Proxy Factory
  * @notice A factory for deploying Quark Wallet Proxy instances at deterministic addresses
