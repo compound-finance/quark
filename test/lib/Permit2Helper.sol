@@ -61,7 +61,7 @@ library Permit2Helper {
     }
 
     /// @notice Creates an EIP-712 typed data hash
-    function _hashTypedData(bytes32 dataHash, bytes32 domainSeparator) internal view returns (bytes32) {
+    function _hashTypedData(bytes32 dataHash, bytes32 domainSeparator) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator, dataHash));
     }
 

@@ -67,18 +67,19 @@ contract isValidSignatureTest is Test {
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         bytes32 digest =
             keccak256(abi.encodePacked("\x19\x01", new SignatureHelper().domainSeparator(address(wallet)), structHash));
-        bytes32 quarkMsgDigest = aliceWallet.getMessageHashForQuark(abi.encode(digest));
+        bytes32 quarkMsgDigest = aliceWallet.getDigestForQuarkMessage(abi.encode(digest));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, quarkMsgDigest);
         return (digest, abi.encodePacked(r, s, v));
     }
 
     function createPermit2Signature(uint256 privateKey, Permit2Helper.PermitSingle memory permitSingle)
         internal
+        view
         returns (bytes32, bytes memory)
     {
         bytes32 domainSeparator = Permit2Helper.DOMAIN_SEPARATOR(PERMIT2_ADDRESS);
         bytes32 digest = Permit2Helper._hashTypedData(Permit2Helper.hash(permitSingle), domainSeparator);
-        bytes32 quarkMsgDigest = aliceWallet.getMessageHashForQuark(abi.encode(digest));
+        bytes32 quarkMsgDigest = aliceWallet.getDigestForQuarkMessage(abi.encode(digest));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, quarkMsgDigest);
         return (digest, abi.encodePacked(r, s, v));
     }
@@ -168,7 +169,7 @@ contract isValidSignatureTest is Test {
 
         bytes32 structHash = keccak256(abi.encode(TEST_TYPEHASH, 1, 2, 3));
         // We skip the step of encoding a domain separator around the message
-        bytes32 quarkMsgDigest = aliceWallet.getMessageHashForQuark(abi.encode(structHash));
+        bytes32 quarkMsgDigest = aliceWallet.getDigestForQuarkMessage(abi.encode(structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, quarkMsgDigest);
         bytes memory signature = abi.encodePacked(r, s, v);
 

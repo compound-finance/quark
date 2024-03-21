@@ -208,7 +208,6 @@ contract QuarkWallet is IERC1271 {
             }
         }
 
-        // TODO: Separate event for multi operation?
         emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
 
         return stateManager.setActiveNonceAndCallback(op.nonce, op.scriptAddress, op.scriptCalldata);
@@ -281,7 +280,7 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @dev Returns the EIP-712 digest for a QuarkOperation
+     * @dev Returns the EIP-712 digest for a MultiQuarkOperation
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
      * @return EIP-712 digest
      */
@@ -295,13 +294,12 @@ contract QuarkWallet is IERC1271 {
         return keccak256(abi.encodePacked("\x19\x01", getDomainSeparatorForMultiQuarkOperation(), structHash));
     }
 
-    // TODO: rename
     /**
-     * @dev Returns the hash of a message that can be signed by `signer`
+     * @dev Returns the EIP-712 digest of a QuarkMessage that can be signed by `signer`
      * @param message Message that should be hashed
      * @return Message hash
      */
-    function getMessageHashForQuark(bytes memory message) public view returns (bytes32) {
+    function getDigestForQuarkMessage(bytes memory message) public view returns (bytes32) {
         bytes32 quarkMessageHash = keccak256(abi.encode(QUARK_MSG_TYPEHASH, keccak256(message)));
         return keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), quarkMessageHash));
     }
@@ -337,9 +335,9 @@ contract QuarkWallet is IERC1271 {
         }
         // Note: The following logic further encodes the provided `hash` with the wallet's domain
         // to prevent signature replayability for Quark wallets owned by the same `signer`
-        bytes32 messageHash = getMessageHashForQuark(abi.encode(hash));
+        bytes32 digest = getDigestForQuarkMessage(abi.encode(hash));
         // If the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), messageHash, v, r, s);
+        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 
