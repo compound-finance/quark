@@ -10,7 +10,7 @@ contract SignatureHelper is Test {
         view
         returns (uint8, bytes32, bytes32)
     {
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator(address(wallet)), structHash(op)));
+        bytes32 digest = opDigest(address(wallet), op);
         return vm.sign(privateKey, digest);
     }
 
@@ -22,17 +22,33 @@ contract SignatureHelper is Test {
         view
         returns (uint8, bytes32, bytes32)
     {
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator(walletAddress), structHash(op)));
+        bytes32 digest = opDigest(walletAddress, op);
         return vm.sign(privateKey, digest);
     }
 
-    function structHash(QuarkWallet.QuarkOperation memory op) public pure returns (bytes32) {
+    function signMultiOp(uint256 privateKey, bytes32[] memory opDigests)
+        external
+        pure
+        returns (uint8, bytes32, bytes32)
+    {
+        bytes32 digest = multiOpDigest(opDigests);
+        return vm.sign(privateKey, digest);
+    }
+
+    function opDigest(address walletAddress, QuarkWallet.QuarkOperation memory op) public view returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator(walletAddress), opStructHash(op)));
+    }
+
+    function multiOpDigest(bytes32[] memory opDigests) public pure returns (bytes32) {
+        return keccak256(
+            abi.encodePacked("\x19\x01", domainSeparatorForMultiQuarkOperation(), multiOpStructHash(opDigests))
+        );
+    }
+
+    function opStructHash(QuarkWallet.QuarkOperation memory op) public pure returns (bytes32) {
         bytes memory encodedArray;
-        for (uint256 i = 0; i < op.scriptSources.length;) {
+        for (uint256 i = 0; i < op.scriptSources.length; ++i) {
             encodedArray = abi.encodePacked(encodedArray, keccak256(op.scriptSources[i]));
-            unchecked {
-                ++i;
-            }
         }
 
         return keccak256(
@@ -47,6 +63,15 @@ contract SignatureHelper is Test {
         );
     }
 
+    function multiOpStructHash(bytes32[] memory opDigests) public pure returns (bytes32) {
+        bytes memory encodedArray;
+        for (uint256 i = 0; i < opDigests.length; ++i) {
+            encodedArray = abi.encodePacked(encodedArray, opDigests[i]);
+        }
+
+        return keccak256(abi.encode(QuarkWalletMetadata.MULTI_QUARK_OPERATION_TYPEHASH, keccak256(encodedArray)));
+    }
+
     function domainSeparator(address walletAddress) public view returns (bytes32) {
         return keccak256(
             abi.encode(
@@ -55,6 +80,16 @@ contract SignatureHelper is Test {
                 keccak256(bytes(QuarkWalletMetadata.VERSION)),
                 block.chainid,
                 walletAddress
+            )
+        );
+    }
+
+    function domainSeparatorForMultiQuarkOperation() public pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                QuarkWalletMetadata.MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH,
+                keccak256(bytes(QuarkWalletMetadata.NAME)),
+                keccak256(bytes(QuarkWalletMetadata.VERSION))
             )
         );
     }

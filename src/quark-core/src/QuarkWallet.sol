@@ -51,6 +51,7 @@ contract QuarkWallet is IERC1271 {
     error BadSignatory();
     error EmptyCode();
     error InvalidEIP1271Signature();
+    error InvalidInput();
     error InvalidMultiQuarkOperation();
     error InvalidSignature();
     error NoActiveCallback();
@@ -165,7 +166,9 @@ contract QuarkWallet is IERC1271 {
     ) public returns (bytes memory) {
         bytes32 opDigest = getDigestForQuarkOperation(op);
 
-        // TODO: Verify inputs and lengths?
+        if (opIndex >= opDigests.length) {
+            revert InvalidInput();
+        }
         if (opDigest != opDigests[opIndex]) {
             revert InvalidMultiQuarkOperation();
         }
@@ -248,7 +251,9 @@ contract QuarkWallet is IERC1271 {
      * @return Domain separator
      */
     function getDomainSeparatorForMultiQuarkOperation() internal pure returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME))));
+        return keccak256(
+            abi.encode(MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)))
+        );
     }
 
     /**

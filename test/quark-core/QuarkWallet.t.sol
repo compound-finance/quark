@@ -489,6 +489,144 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 0);
     }
 
+    /* ===== MultiQuarkOperation execution path tests ===== */
+
+    // TODO: test replayable txns
+
+    function testMultiQuarkOperationCanCallMultipleOperationsWithOneSignature() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+        assertEq(counter.number(), 0);
+
+        vm.startPrank(address(aliceAccount));
+
+        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptAddress
+        );
+        bytes32 op1Digest = new SignatureHelper().opDigest(address(aliceWallet), op1);
+
+        QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptAddress
+        );
+        op2.nonce = op1.nonce + 1;
+        bytes32 op2Digest = new SignatureHelper().opDigest(address(aliceWallet), op2);
+
+        bytes32[] memory opDigests = new bytes32[](2);
+        opDigests[0] = op1Digest;
+        opDigests[1] = op2Digest;
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+
+        // call once
+        vm.resumeGasMetering();
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, 0, v, r, s);
+
+        assertEq(counter.number(), 3);
+
+        // call a second time
+        aliceWallet.executeMultiQuarkOperation(op2, opDigests, 1, v, r, s);
+
+        assertEq(counter.number(), 6);
+    }
+
+    function testRevertsForBadInputsInMultiQuarkOperation() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+        assertEq(counter.number(), 0);
+
+        vm.startPrank(address(aliceAccount));
+
+        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptAddress
+        );
+        bytes32 op1Digest = new SignatureHelper().opDigest(address(aliceWallet), op1);
+
+        QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptAddress
+        );
+        op2.nonce = op1.nonce + 1;
+        bytes32 op2Digest = new SignatureHelper().opDigest(address(aliceWallet), op2);
+
+        bytes32[] memory opDigests = new bytes32[](2);
+        opDigests[0] = op1Digest;
+        opDigests[1] = op2Digest;
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+
+        // call with wrong index
+        vm.resumeGasMetering();
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidMultiQuarkOperation.selector));
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, 1, v, r, s);
+
+        // call again with a different wrong index
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidMultiQuarkOperation.selector));
+        aliceWallet.executeMultiQuarkOperation(op2, opDigests, 0, v, r, s);
+
+        // call with out-of-bounds index
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidInput.selector));
+        aliceWallet.executeMultiQuarkOperation(op2, opDigests, 2, v, r, s);
+
+        assertEq(counter.number(), 0);
+    }
+
+    function testRevertsForNonceReuse() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+        assertEq(counter.number(), 0);
+
+        vm.startPrank(address(aliceAccount));
+
+        QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptAddress
+        );
+        bytes32 op1Digest = new SignatureHelper().opDigest(address(aliceWallet), op1);
+
+        QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", counter),
+            ScriptType.ScriptAddress
+        );
+        op2.nonce = op1.nonce + 1;
+        bytes32 op2Digest = new SignatureHelper().opDigest(address(aliceWallet), op2);
+
+        bytes32[] memory opDigests = new bytes32[](2);
+        opDigests[0] = op1Digest;
+        opDigests[1] = op2Digest;
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+
+        // call once
+        vm.resumeGasMetering();
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, 0, v, r, s);
+
+        assertEq(counter.number(), 3);
+
+        // call again using the same operation
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, 0, v, r, s);
+
+        assertEq(counter.number(), 3);
+    }
+
     /* ===== basic operation tests ===== */
 
     function testAtomicMaxCounterScript() public {
