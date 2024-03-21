@@ -19,6 +19,15 @@ contract QuarkWalletProxyFactory {
     /// @notice Default initial salt value
     bytes32 public constant DEFAULT_SALT = bytes32(0);
 
+    /// @notice The EIP-712 domain separator for a MultiQuarkOperation
+    bytes32 public constant MULTI_QUARK_OPERATION_DOMAIN_SEPARATOR = keccak256(
+        abi.encode(
+            QuarkWalletMetadata.MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH,
+            keccak256(bytes(QuarkWalletMetadata.NAME)),
+            keccak256(bytes(QuarkWalletMetadata.VERSION))
+        )
+    );
+
     /// @notice Address of QuarkWallet implementation contract
     address public immutable walletImplementation;
 
@@ -120,6 +129,59 @@ contract QuarkWalletProxyFactory {
         }
 
         return QuarkWallet(walletAddress).executeQuarkOperation(op, v, r, s);
+    }
+
+    /**
+     * @notice Create a wallet for (signer, executor) pair (and default salt) if it does not exist, then execute operation that is part of a MultiQuarkOperation
+     * @param signer Address to set as the signer of the QuarkWallet
+     * @param executor Address to set as the executor of the QuarkWallet
+     * @param op The QuarkOperation to execute on the wallet
+     * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
+     * @param v EIP-712 Signature `v` value
+     * @param r EIP-712 Signature `r` value
+     * @param s EIP-712 Signature `s` value
+     * @return bytes Return value of executing the operation
+     */
+    function createAndExecuteMulti(
+        address signer,
+        address executor,
+        QuarkWallet.QuarkOperation calldata op,
+        bytes32[] calldata opDigests,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (bytes memory) {
+        return createAndExecuteMulti(signer, executor, DEFAULT_SALT, op, opDigests, v, r, s);
+    }
+
+    /**
+     * @notice Create a wallet for (signer, executor, salt) triple if it does not exist, then execute operation that is part of a MultiQuarkOperation
+     * @param signer Address to set as the signer of the QuarkWallet
+     * @param executor Address to set as the executor of the QuarkWallet
+     * @param salt Salt value of QuarkWallet to create and execute operation with
+     * @param op The QuarkOperation to execute on the wallet
+     * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
+     * @param v EIP-712 Signature `v` value
+     * @param r EIP-712 Signature `r` value
+     * @param s EIP-712 Signature `s` value
+     * @return bytes Return value of executing the operation
+     */
+    function createAndExecuteMulti(
+        address signer,
+        address executor,
+        bytes32 salt,
+        QuarkWallet.QuarkOperation calldata op,
+        bytes32[] calldata opDigests,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public returns (bytes memory) {
+        address payable walletAddress = walletAddressForSalt(signer, executor, salt);
+        if (walletAddress.code.length == 0) {
+            create(signer, executor, salt);
+        }
+
+        return QuarkWallet(walletAddress).executeMultiQuarkOperation(op, opDigests, v, r, s);
     }
 
     /**
