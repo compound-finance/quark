@@ -51,7 +51,6 @@ contract QuarkWallet is IERC1271 {
     error BadSignatory();
     error EmptyCode();
     error InvalidEIP1271Signature();
-    error InvalidInput();
     error InvalidMultiQuarkOperation();
     error InvalidSignature();
     error NoActiveCallback();
@@ -150,7 +149,6 @@ contract QuarkWallet is IERC1271 {
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
-     * @param opIndex The index of the QuarkOperation to execute
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value
      * @param s EIP-712 signature s value
@@ -159,17 +157,20 @@ contract QuarkWallet is IERC1271 {
     function executeMultiQuarkOperation(
         QuarkOperation calldata op,
         bytes32[] memory opDigests,
-        uint256 opIndex,
         uint8 v,
         bytes32 r,
         bytes32 s
     ) public returns (bytes memory) {
         bytes32 opDigest = getDigestForQuarkOperation(op);
 
-        if (opIndex >= opDigests.length) {
-            revert InvalidInput();
+        bool isValidOp = false;
+        for (uint256 i = 0; i < opDigests.length; ++i) {
+            if (opDigest == opDigests[i]) {
+                isValidOp = true;
+                break;
+            }
         }
-        if (opDigest != opDigests[opIndex]) {
+        if (!isValidOp) {
             revert InvalidMultiQuarkOperation();
         }
         bytes32 multiOpDigest = getDigestForMultiQuarkOperation(opDigests);
@@ -201,11 +202,8 @@ contract QuarkWallet is IERC1271 {
         checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
 
         // guarantee every script in scriptSources is deployed
-        for (uint256 i = 0; i < op.scriptSources.length;) {
+        for (uint256 i = 0; i < op.scriptSources.length; ++i) {
             codeJar.saveCode(op.scriptSources[i]);
-            unchecked {
-                ++i;
-            }
         }
 
         emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);

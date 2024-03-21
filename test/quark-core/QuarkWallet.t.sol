@@ -526,12 +526,12 @@ contract QuarkWalletTest is Test {
 
         // call once
         vm.resumeGasMetering();
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, 0, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
 
         assertEq(counter.number(), 3);
 
         // call a second time
-        aliceWallet.executeMultiQuarkOperation(op2, opDigests, 1, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op2, opDigests, v, r, s);
 
         assertEq(counter.number(), 6);
     }
@@ -560,25 +560,15 @@ contract QuarkWalletTest is Test {
             ScriptType.ScriptAddress
         );
         op2.nonce = op1.nonce + 1;
-        bytes32 op2Digest = new SignatureHelper().opDigest(address(aliceWallet), op2);
 
-        bytes32[] memory opDigests = new bytes32[](2);
+        bytes32[] memory opDigests = new bytes32[](1);
         opDigests[0] = op1Digest;
-        opDigests[1] = op2Digest;
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
-        // call with wrong index
+        // call with operation that is not part of opDigests
         vm.resumeGasMetering();
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidMultiQuarkOperation.selector));
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, 1, v, r, s);
-
-        // call again with a different wrong index
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidMultiQuarkOperation.selector));
-        aliceWallet.executeMultiQuarkOperation(op2, opDigests, 0, v, r, s);
-
-        // call with out-of-bounds index
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidInput.selector));
-        aliceWallet.executeMultiQuarkOperation(op2, opDigests, 2, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op2, opDigests, v, r, s);
 
         assertEq(counter.number(), 0);
     }
@@ -616,13 +606,13 @@ contract QuarkWalletTest is Test {
 
         // call once
         vm.resumeGasMetering();
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, 0, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
 
         assertEq(counter.number(), 3);
 
         // call again using the same operation
         vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, 0, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
 
         assertEq(counter.number(), 3);
     }

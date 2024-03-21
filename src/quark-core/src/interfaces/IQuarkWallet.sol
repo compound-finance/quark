@@ -24,6 +24,13 @@ interface IQuarkWallet {
     function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
         external
         returns (bytes memory);
+    function executeMultiQuarkOperation(
+        QuarkOperation calldata op,
+        bytes32[] memory opDigests,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (bytes memory);
     function executeScript(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
         external
         returns (bytes memory);
