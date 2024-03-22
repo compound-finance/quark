@@ -36,7 +36,8 @@ contract DeployQuarkWalletFactory is Script {
 
     function run() public {
         address deployer = vm.addr(vm.envUint("DEPLOYER_PK"));
-        codeJar = CodeJar(vm.addr(vm.envUint("CODE_JAR")));
+        codeJar = CodeJar(vm.envAddress("CODE_JAR"));
+        console.log("Code Jar Address: ", address(codeJar));
 
         vm.startBroadcast(deployer);
 
@@ -46,7 +47,8 @@ contract DeployQuarkWalletFactory is Script {
         quarkFactory = new QuarkFactory(codeJar);
         console.log("Quark Factory Deployed:", address(quarkFactory));
 
-        console.log("Code Jar Deployed:", address(quarkFactory.codeJar()));
+        quarkFactory.deployQuarkContracts();
+
         console.log("Quark State Manager Deployed:", address(quarkFactory.quarkStateManager()));
         console.log("Quark Wallet Implementation Deployed:", address(quarkFactory.quarkWalletImpl()));
         console.log("Quark Wallet Proxy Factory Deployed:", address(quarkFactory.quarkWalletProxyFactory()));

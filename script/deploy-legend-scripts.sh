@@ -25,7 +25,7 @@ forge script --via-ir \
     $wallet_args \
     $etherscan_args \
     $@ \
-    script/DeployTerminalScripts.s.sol:DeployTerminalScripts
+    script/DeployLegendScripts.s.sol:DeployLegendScripts
 
 repo_root=$(git rev-parse --show-toplevel)
 ${repo_root}/script/prepare-release.sh

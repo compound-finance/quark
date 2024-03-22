@@ -32,7 +32,8 @@ import {
 // Optional ENV vars:
 // ETHERSCAN_KEY
 
-contract DeployTerminalScripts is Script {
+contract DeployLegendScripts is Script {
+    CodeJar codeJar;
     CometSupplyActions cometSupplyActions;
     CometWithdrawActions cometWithdrawActions;
     UniswapSwapActions uniswapSwapActions;
@@ -43,50 +44,39 @@ contract DeployTerminalScripts is Script {
 
     function run() public {
         address deployer = vm.addr(vm.envUint("DEPLOYER_PK"));
-        QuarkWalletProxyFactory factory = QuarkWalletProxyFactory(vm.envAddress("QUARK_WALLET_FACTORY_ADDRESS"));
-        CodeJar codeJar = QuarkWallet(payable(factory.walletImplementation())).codeJar();
+        codeJar = CodeJar(vm.envAddress("CODE_JAR"));
+        console.log("Code Jar Address: ", address(codeJar));
 
         vm.startBroadcast(deployer);
 
         console.log("=============================================================");
         console.log("Deploying Terminal Scripts");
 
-        cometSupplyActions = CometSupplyActions(
-            codeJar.saveCode(vm.getCode(string.concat("out/", "LegendScript.sol/CometSupplyActions.json")))
-        );
+        cometSupplyActions =
+            CometSupplyActions(codeJar.saveCode(abi.encodePacked(type(CometSupplyActions).creationCode)));
         console.log("CometSupplyActions Deployed:", address(cometSupplyActions));
 
-        cometWithdrawActions = CometWithdrawActions(
-            codeJar.saveCode(vm.getCode(string.concat("out/", "LegendScript.sol/CometWithdrawActions.json")))
-        );
+        cometWithdrawActions =
+            CometWithdrawActions(codeJar.saveCode(abi.encodePacked(type(CometWithdrawActions).creationCode)));
         console.log("CometWithdrawActions Deployed:", address(cometWithdrawActions));
 
-        uniswapSwapActions = UniswapSwapActions(
-            codeJar.saveCode(vm.getCode(string.concat("out/", "LegendScript.sol/UniswapSwapActions.json")))
-        );
+        uniswapSwapActions =
+            UniswapSwapActions(codeJar.saveCode(abi.encodePacked(type(UniswapSwapActions).creationCode)));
         console.log("UniswapSwapActions Deployed:", address(uniswapSwapActions));
 
-        transferActions = TransferActions(
-            codeJar.saveCode(vm.getCode(string.concat("out/", "LegendScript.sol/TransferActions.json")))
-        );
+        transferActions = TransferActions(codeJar.saveCode(abi.encodePacked(type(TransferActions).creationCode)));
         console.log("TransferActions Deployed:", address(transferActions));
 
-        cometClaimRewards = CometClaimRewards(
-            codeJar.saveCode(vm.getCode(string.concat("out/", "LegendScript.sol/CometClaimRewards.json")))
-        );
+        cometClaimRewards = CometClaimRewards(codeJar.saveCode(abi.encodePacked(type(CometClaimRewards).creationCode)));
         console.log("CometClaimRewards Deployed:", address(cometClaimRewards));
 
         cometSupplyMultipleAssetsAndBorrow = CometSupplyMultipleAssetsAndBorrow(
-            codeJar.saveCode(
-                vm.getCode(string.concat("out/", "LegendScript.sol/CometSupplyMultipleAssetsAndBorrow.json"))
-            )
+            codeJar.saveCode(abi.encodePacked(type(CometSupplyMultipleAssetsAndBorrow).creationCode))
         );
         console.log("CometSupplyMultipleAssetsAndBorrow Deployed:", address(cometSupplyMultipleAssetsAndBorrow));
 
         cometRepayAndWithdrawMultipleAssets = CometRepayAndWithdrawMultipleAssets(
-            codeJar.saveCode(
-                vm.getCode(string.concat("out/", "LegendScript.sol/CometRepayAndWithdrawMultipleAssets.json"))
-            )
+            codeJar.saveCode(abi.encodePacked(type(CometRepayAndWithdrawMultipleAssets).creationCode))
         );
         console.log("CometRepayAndWithdrawMultipleAssets Deployed:", address(cometRepayAndWithdrawMultipleAssets));
 
