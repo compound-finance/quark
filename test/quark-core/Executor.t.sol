@@ -75,7 +75,8 @@ contract ExecutorTest is Test {
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 5), 0
                 )
-            )
+            ),
+            new bytes[](0)
         );
 
         assertEq(counter.number(), 5);

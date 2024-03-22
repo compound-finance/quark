@@ -124,7 +124,7 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWalletExecutable.executeScript(nonce, scriptAddress, call);
+        bytes memory result = aliceWalletExecutable.executeScript(nonce, scriptAddress, call, new bytes[](0));
 
         vm.stopPrank();
 
@@ -178,7 +178,7 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
         emit ExecuteQuarkScript(address(aliceAccount), scriptAddress, nonce, ExecutionType.Direct);
-        aliceWalletExecutable.executeScript(nonce, scriptAddress, call);
+        aliceWalletExecutable.executeScript(nonce, scriptAddress, call, new bytes[](0));
     }
 
     /* ===== general invariant tests ===== */
@@ -207,7 +207,7 @@ contract QuarkWalletTest is Test {
         uint96 nonce = stateManager.nextNonce(address(aliceWallet));
         vm.prank(IHasSignerExecutor(address(aliceWallet)).executor());
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
-        aliceWallet.executeScript(nonce, address(0), bytes(""));
+        aliceWallet.executeScript(nonce, address(0), bytes(""), new bytes[](0));
 
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -236,7 +236,7 @@ contract QuarkWalletTest is Test {
         uint96 nonce2 = stateManager.nextNonce(address(aliceWallet));
         vm.prank(IHasSignerExecutor(address(aliceWallet)).executor());
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
-        aliceWallet.executeScript(nonce2, emptyCodeAddress, bytes(""));
+        aliceWallet.executeScript(nonce2, emptyCodeAddress, bytes(""), new bytes[](0));
     }
 
     function testRevertsForRandomEmptyScriptAddress() public {
@@ -398,7 +398,7 @@ contract QuarkWalletTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWalletExecutable.executeScript(nonce, incrementerAddress, call);
+        aliceWalletExecutable.executeScript(nonce, incrementerAddress, call, new bytes[](0));
 
         assertEq(counter.number(), 3);
         assertEq(stateManager.nextNonce(address(aliceWalletExecutable)), 1);
@@ -415,10 +415,11 @@ contract QuarkWalletTest is Test {
             Ethcall.run.selector,
             address(aliceWalletExecutable),
             abi.encodeWithSignature(
-                "executeScript(uint96,address,bytes)",
+                "executeScript(uint96,address,bytes,bytes[])",
                 stateManager.nextNonce(address(aliceWalletExecutable)),
                 incrementerAddress,
-                abi.encodeWithSignature("incrementCounter(address)", counter)
+                abi.encodeWithSignature("incrementCounter(address)", counter),
+                new bytes[](0)
             ),
             0 // value
         );
@@ -457,7 +458,7 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
 
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.Unauthorized.selector));
-        aliceWallet.executeScript(nonce, target, call);
+        aliceWallet.executeScript(nonce, target, call, new bytes[](0));
 
         vm.stopPrank();
 
@@ -482,7 +483,7 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
 
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.Unauthorized.selector));
-        aliceWallet.executeScript(nonce, target, call);
+        aliceWallet.executeScript(nonce, target, call, new bytes[](0));
 
         vm.stopPrank();
 

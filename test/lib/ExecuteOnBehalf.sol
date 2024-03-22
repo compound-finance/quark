@@ -8,6 +8,6 @@ contract ExecuteOnBehalf {
         public
         returns (bytes memory)
     {
-        return targetWallet.executeScript(nonce, scriptAddress, scriptCalldata);
+        return targetWallet.executeScript(nonce, scriptAddress, scriptCalldata, new bytes[](0));
     }
 }
