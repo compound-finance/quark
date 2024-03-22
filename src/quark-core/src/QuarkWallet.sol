@@ -96,6 +96,15 @@ contract QuarkWallet is IERC1271 {
     /// @dev The EIP-712 typehash for authorizing an EIP-1271 signature for this wallet
     bytes32 internal constant QUARK_MSG_TYPEHASH = QuarkWalletMetadata.QUARK_MSG_TYPEHASH;
 
+    /// @dev The EIP-712 domain separator for a MultiQuarkOperation
+    bytes32 internal constant MULTI_QUARK_OPERATION_DOMAIN_SEPARATOR = keccak256(
+        abi.encode(
+            QuarkWalletMetadata.MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH,
+            keccak256(bytes(QuarkWalletMetadata.NAME)),
+            keccak256(bytes(QuarkWalletMetadata.VERSION))
+        )
+    );
+
     /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
     bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
 
@@ -181,7 +190,7 @@ contract QuarkWallet is IERC1271 {
     /**
      * @notice Verify a signature and execute a QuarkOperation
      * @param op A QuarkOperation struct
-     * @param digest A digest to verify the signature against
+     * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value
      * @param s EIP-712 signature s value
@@ -244,24 +253,14 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @dev Returns the domain separator used for MultiQuarkOperations for this Quark wallet
-     * @return Domain separator
-     */
-    function getDomainSeparatorForMultiQuarkOperation() internal pure returns (bytes32) {
-        return keccak256(
-            abi.encode(MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH, keccak256(bytes(NAME)), keccak256(bytes(VERSION)))
-        );
-    }
-
-    /**
      * @dev Returns the EIP-712 digest for a QuarkOperation
      * @param op A QuarkOperation struct
      * @return EIP-712 digest
      */
     function getDigestForQuarkOperation(QuarkOperation calldata op) public view returns (bytes32) {
-        bytes memory encodedArray;
+        bytes memory encodedScriptSources;
         for (uint256 i = 0; i < op.scriptSources.length; ++i) {
-            encodedArray = abi.encodePacked(encodedArray, keccak256(op.scriptSources[i]));
+            encodedScriptSources = abi.encodePacked(encodedScriptSources, keccak256(op.scriptSources[i]));
         }
 
         bytes32 structHash = keccak256(
@@ -269,7 +268,7 @@ contract QuarkWallet is IERC1271 {
                 QUARK_OPERATION_TYPEHASH,
                 op.nonce,
                 op.scriptAddress,
-                keccak256(encodedArray),
+                keccak256(encodedScriptSources),
                 keccak256(op.scriptCalldata),
                 op.expiry
             )
@@ -283,13 +282,13 @@ contract QuarkWallet is IERC1271 {
      * @return EIP-712 digest
      */
     function getDigestForMultiQuarkOperation(bytes32[] memory opDigests) public pure returns (bytes32) {
-        bytes memory encodedArray;
+        bytes memory encodedOpDigests;
         for (uint256 i = 0; i < opDigests.length; ++i) {
-            encodedArray = abi.encodePacked(encodedArray, opDigests[i]);
+            encodedOpDigests = abi.encodePacked(encodedOpDigests, opDigests[i]);
         }
 
-        bytes32 structHash = keccak256(abi.encode(MULTI_QUARK_OPERATION_TYPEHASH, keccak256(encodedArray)));
-        return keccak256(abi.encodePacked("\x19\x01", getDomainSeparatorForMultiQuarkOperation(), structHash));
+        bytes32 structHash = keccak256(abi.encode(MULTI_QUARK_OPERATION_TYPEHASH, keccak256(encodedOpDigests)));
+        return keccak256(abi.encodePacked("\x19\x01", MULTI_QUARK_OPERATION_DOMAIN_SEPARATOR, structHash));
     }
 
     /**
