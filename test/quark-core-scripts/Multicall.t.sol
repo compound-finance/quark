@@ -391,7 +391,7 @@ contract MulticallTest is Test {
         // 1. transfer 0.5 WETH from wallet A to wallet B
         wallets[0] = address(walletA);
         walletCalls[0] = abi.encodeWithSignature(
-            "executeScript(uint96,address,bytes)",
+            "executeScript(uint96,address,bytes,bytes[])",
             QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(address(walletA)),
             ethcallAddress,
             abi.encodeWithSelector(
@@ -399,7 +399,8 @@ contract MulticallTest is Test {
                 WETH,
                 abi.encodeCall(IERC20.transfer, (address(walletB), 0.5 ether)),
                 0 // value
-            )
+            ),
+            new bytes[](0)
         );
 
         // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
@@ -407,7 +408,7 @@ contract MulticallTest is Test {
             QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(address(walletB));
         wallets[1] = address(walletB);
         walletCalls[1] = abi.encodeWithSignature(
-            "executeScript(uint96,address,bytes)",
+            "executeScript(uint96,address,bytes,bytes[])",
             walletBNextNonce,
             ethcallAddress,
             abi.encodeWithSelector(
@@ -415,13 +416,14 @@ contract MulticallTest is Test {
                 WETH,
                 abi.encodeCall(IERC20.approve, (cUSDCv3, 0.5 ether)),
                 0 // value
-            )
+            ),
+            new bytes[](0)
         );
 
         // 3. supply 0.5 WETH from wallet B to Comet cUSDCv3
         wallets[2] = address(walletB);
         walletCalls[2] = abi.encodeWithSignature(
-            "executeScript(uint96,address,bytes)",
+            "executeScript(uint96,address,bytes,bytes[])",
             walletBNextNonce + 1,
             ethcallAddress,
             abi.encodeWithSelector(
@@ -429,7 +431,8 @@ contract MulticallTest is Test {
                 cUSDCv3,
                 abi.encodeCall(IComet.supply, (WETH, 0.5 ether)),
                 0 // value
-            )
+            ),
+            new bytes[](0)
         );
 
         // okay, woof, now wrap all that in ethcalls...
@@ -531,7 +534,8 @@ contract MulticallTest is Test {
                                 path: abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
                             })
                         )
-                        )
+                        ),
+                    new bytes[](0)
                 )
             ),
             0 // value
@@ -546,7 +550,8 @@ contract MulticallTest is Test {
                 (
                     nonce + 1,
                     legendCometSupplyScriptAddress,
-                    abi.encodeCall(CometSupplyActions.supply, (cWETHv3, WETH, 2 ether))
+                    abi.encodeCall(CometSupplyActions.supply, (cWETHv3, WETH, 2 ether)),
+                    new bytes[](0)
                 )
             ),
             0 // value

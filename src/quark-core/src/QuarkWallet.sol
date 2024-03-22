@@ -228,15 +228,23 @@ contract QuarkWallet is IERC1271 {
      * @param nonce Nonce for the operation; must be unused
      * @param scriptAddress Address for the script to execute
      * @param scriptCalldata Encoded call to invoke on the script
+     * @param scriptSources Creation codes Quark must ensure are deployed before executing the script
      * @return Return value from the executed operation
      */
-    function executeScript(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
-        external
-        returns (bytes memory)
-    {
+    function executeScript(
+        uint96 nonce,
+        address scriptAddress,
+        bytes calldata scriptCalldata,
+        bytes[] calldata scriptSources
+    ) external returns (bytes memory) {
         // only allow the executor for the wallet to use unsigned execution
         if (msg.sender != IHasSignerExecutor(address(this)).executor()) {
             revert Unauthorized();
+        }
+
+        // guarantee every script in scriptSources is deployed
+        for (uint256 i = 0; i < scriptSources.length; ++i) {
+            codeJar.saveCode(scriptSources[i]);
         }
 
         emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
