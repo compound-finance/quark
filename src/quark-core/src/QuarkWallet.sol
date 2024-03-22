@@ -97,6 +97,8 @@ contract QuarkWallet is IERC1271 {
     bytes32 internal constant QUARK_MSG_TYPEHASH = QuarkWalletMetadata.QUARK_MSG_TYPEHASH;
 
     /// @dev The EIP-712 domain separator for a MultiQuarkOperation
+    /// @dev Note: `chainId` and `verifyingContract` are left out so a single MultiQuarkOperation can be used to
+    ///            execute operations on different chains and wallets.
     bytes32 internal constant MULTI_QUARK_OPERATION_DOMAIN_SEPARATOR = keccak256(
         abi.encode(
             QuarkWalletMetadata.MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH,
