@@ -440,6 +440,31 @@ contract QuarkWalletTest is Test {
         assertEq(stateManager.nextNonce(address(aliceWalletExecutable)), 1);
     }
 
+    function testDirectExecuteWithScriptSources() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
+        QuarkWallet aliceWalletExecutable = newWallet(aliceAccount, aliceAccount);
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+        address incrementerAddress = codeJar.getCodeAddress(incrementer);
+        uint96 nonce = stateManager.nextNonce(address(aliceWalletExecutable));
+        bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = incrementer;
+
+        assertEq(counter.number(), 0);
+        assertEq(stateManager.nextNonce(address(aliceWalletExecutable)), 0);
+
+        // act as the executor for the wallet
+        vm.startPrank(aliceAccount);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWalletExecutable.executeScript(nonce, incrementerAddress, call, scriptSources);
+
+        assertEq(counter.number(), 3);
+        assertEq(stateManager.nextNonce(address(aliceWalletExecutable)), 1);
+    }
+
     function testRevertsForDirectExecuteByNonExecutorSigner() public {
         // gas: disable metering except while executing operations
         vm.pauseGasMetering();
