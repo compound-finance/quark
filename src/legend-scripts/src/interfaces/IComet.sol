@@ -2,6 +2,14 @@
 pragma solidity 0.8.23;
 
 interface IComet {
+    event AbsorbCollateral(
+        address indexed absorber,
+        address indexed borrower,
+        address indexed asset,
+        uint256 collateralAbsorbed,
+        uint256 usdValue
+    );
+
     function getAssetInfo(uint8 i) external view returns (AssetInfo memory);
 
     function baseToken() external view returns (address);
