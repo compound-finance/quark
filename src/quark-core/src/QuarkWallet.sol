@@ -26,12 +26,19 @@ library QuarkWalletMetadata {
         "QuarkOperation(uint96 nonce,address scriptAddress,bytes[] scriptSources,bytes scriptCalldata,uint256 expiry)"
     );
 
+    /// @notice The EIP-712 typehash for authorizing a MultiQuarkOperation for this version of QuarkWallet
+    bytes32 internal constant MULTI_QUARK_OPERATION_TYPEHASH = keccak256("MultiQuarkOperation(bytes32[] opDigests)");
+
     /// @notice The EIP-712 typehash for authorizing an EIP-1271 signature for this version of QuarkWallet
     bytes32 internal constant QUARK_MSG_TYPEHASH = keccak256("QuarkMessage(bytes message)");
 
     /// @notice The EIP-712 domain typehash for this version of QuarkWallet
     bytes32 internal constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+    /// @notice The EIP-712 domain typehash used for MultiQuarkOperations for this version of QuarkWallet
+    bytes32 internal constant MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,string version)");
 }
 
 /**
@@ -44,6 +51,7 @@ contract QuarkWallet is IERC1271 {
     error BadSignatory();
     error EmptyCode();
     error InvalidEIP1271Signature();
+    error InvalidMultiQuarkOperation();
     error InvalidSignature();
     error NoActiveCallback();
     error SignatureExpired();
@@ -75,11 +83,29 @@ contract QuarkWallet is IERC1271 {
     /// @dev The EIP-712 domain typehash for this wallet
     bytes32 internal constant DOMAIN_TYPEHASH = QuarkWalletMetadata.DOMAIN_TYPEHASH;
 
+    /// @dev The EIP-712 domain typehash used for MultiQuarkOperations for this wallet
+    bytes32 internal constant MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH =
+        QuarkWalletMetadata.MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH;
+
     /// @dev The EIP-712 typehash for authorizing an operation for this wallet
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH;
 
+    /// @dev The EIP-712 typehash for authorizing an operation that is part of a MultiQuarkOperation for this wallet
+    bytes32 internal constant MULTI_QUARK_OPERATION_TYPEHASH = QuarkWalletMetadata.MULTI_QUARK_OPERATION_TYPEHASH;
+
     /// @dev The EIP-712 typehash for authorizing an EIP-1271 signature for this wallet
     bytes32 internal constant QUARK_MSG_TYPEHASH = QuarkWalletMetadata.QUARK_MSG_TYPEHASH;
+
+    /// @dev The EIP-712 domain separator for a MultiQuarkOperation
+    /// @dev Note: `chainId` and `verifyingContract` are left out so a single MultiQuarkOperation can be used to
+    ///            execute operations on different chains and wallets.
+    bytes32 internal constant MULTI_QUARK_OPERATION_DOMAIN_SEPARATOR = keccak256(
+        abi.encode(
+            QuarkWalletMetadata.MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH,
+            keccak256(bytes(QuarkWalletMetadata.NAME)),
+            keccak256(bytes(QuarkWalletMetadata.VERSION))
+        )
+    );
 
     /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
     bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
@@ -124,39 +150,71 @@ contract QuarkWallet is IERC1271 {
         external
         returns (bytes memory)
     {
+        bytes32 opDigest = getDigestForQuarkOperation(op);
+
+        return verifySigAndExecuteQuarkOperation(op, opDigest, v, r, s);
+    }
+
+    /**
+     * @notice Execute a QuarkOperation that is part of a MultiQuarkOperation via signature
+     * @dev Can only be called with signatures from the wallet's signer
+     * @param op A QuarkOperation struct
+     * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
+     * @param v EIP-712 signature v value
+     * @param r EIP-712 signature r value
+     * @param s EIP-712 signature s value
+     * @return Return value from the executed operation
+     */
+    function executeMultiQuarkOperation(
+        QuarkOperation calldata op,
+        bytes32[] memory opDigests,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public returns (bytes memory) {
+        bytes32 opDigest = getDigestForQuarkOperation(op);
+
+        bool isValidOp = false;
+        for (uint256 i = 0; i < opDigests.length; ++i) {
+            if (opDigest == opDigests[i]) {
+                isValidOp = true;
+                break;
+            }
+        }
+        if (!isValidOp) {
+            revert InvalidMultiQuarkOperation();
+        }
+        bytes32 multiOpDigest = getDigestForMultiQuarkOperation(opDigests);
+
+        return verifySigAndExecuteQuarkOperation(op, multiOpDigest, v, r, s);
+    }
+
+    /**
+     * @notice Verify a signature and execute a QuarkOperation
+     * @param op A QuarkOperation struct
+     * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
+     * @param v EIP-712 signature v value
+     * @param r EIP-712 signature r value
+     * @param s EIP-712 signature s value
+     * @return Return value from the executed operation
+     */
+    function verifySigAndExecuteQuarkOperation(
+        QuarkOperation calldata op,
+        bytes32 digest,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal returns (bytes memory) {
         if (block.timestamp >= op.expiry) {
             revert SignatureExpired();
         }
-
-        bytes memory encodedArray;
-        for (uint256 i = 0; i < op.scriptSources.length;) {
-            encodedArray = abi.encodePacked(encodedArray, keccak256(op.scriptSources[i]));
-            unchecked {
-                ++i;
-            }
-        }
-
-        bytes32 structHash = keccak256(
-            abi.encode(
-                QUARK_OPERATION_TYPEHASH,
-                op.nonce,
-                op.scriptAddress,
-                keccak256(encodedArray),
-                keccak256(op.scriptCalldata),
-                op.expiry
-            )
-        );
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
 
         // if the signature check does not revert, the signature is valid
         checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
 
         // guarantee every script in scriptSources is deployed
-        for (uint256 i = 0; i < op.scriptSources.length;) {
+        for (uint256 i = 0; i < op.scriptSources.length; ++i) {
             codeJar.saveCode(op.scriptSources[i]);
-            unchecked {
-                ++i;
-            }
         }
 
         emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
@@ -197,11 +255,50 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @dev Returns the hash of a message that can be signed by `signer`
+     * @dev Returns the EIP-712 digest for a QuarkOperation
+     * @param op A QuarkOperation struct
+     * @return EIP-712 digest
+     */
+    function getDigestForQuarkOperation(QuarkOperation calldata op) public view returns (bytes32) {
+        bytes memory encodedScriptSources;
+        for (uint256 i = 0; i < op.scriptSources.length; ++i) {
+            encodedScriptSources = abi.encodePacked(encodedScriptSources, keccak256(op.scriptSources[i]));
+        }
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                QUARK_OPERATION_TYPEHASH,
+                op.nonce,
+                op.scriptAddress,
+                keccak256(encodedScriptSources),
+                keccak256(op.scriptCalldata),
+                op.expiry
+            )
+        );
+        return keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
+    }
+
+    /**
+     * @dev Returns the EIP-712 digest for a MultiQuarkOperation
+     * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
+     * @return EIP-712 digest
+     */
+    function getDigestForMultiQuarkOperation(bytes32[] memory opDigests) public pure returns (bytes32) {
+        bytes memory encodedOpDigests;
+        for (uint256 i = 0; i < opDigests.length; ++i) {
+            encodedOpDigests = abi.encodePacked(encodedOpDigests, opDigests[i]);
+        }
+
+        bytes32 structHash = keccak256(abi.encode(MULTI_QUARK_OPERATION_TYPEHASH, keccak256(encodedOpDigests)));
+        return keccak256(abi.encodePacked("\x19\x01", MULTI_QUARK_OPERATION_DOMAIN_SEPARATOR, structHash));
+    }
+
+    /**
+     * @dev Returns the EIP-712 digest of a QuarkMessage that can be signed by `signer`
      * @param message Message that should be hashed
      * @return Message hash
      */
-    function getMessageHashForQuark(bytes memory message) public view returns (bytes32) {
+    function getDigestForQuarkMessage(bytes memory message) public view returns (bytes32) {
         bytes32 quarkMessageHash = keccak256(abi.encode(QUARK_MSG_TYPEHASH, keccak256(message)));
         return keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), quarkMessageHash));
     }
@@ -237,9 +334,9 @@ contract QuarkWallet is IERC1271 {
         }
         // Note: The following logic further encodes the provided `hash` with the wallet's domain
         // to prevent signature replayability for Quark wallets owned by the same `signer`
-        bytes32 messageHash = getMessageHashForQuark(abi.encode(hash));
+        bytes32 digest = getDigestForQuarkMessage(abi.encode(hash));
         // If the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), messageHash, v, r, s);
+        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
         return EIP_1271_MAGIC_VALUE;
     }
 

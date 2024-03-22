@@ -158,7 +158,7 @@ contract EIP712Test is Test {
         bytes32 domainHash = new SignatureHelper().domainSeparator(wallet_);
         assertEq(domainHash, hex"ce5fced5138ae147492ff6ba56247e9d6f30bbbe45ae60eb0a0135d528a94be4");
 
-        bytes32 structHash = new SignatureHelper().structHash(op);
+        bytes32 structHash = new SignatureHelper().opStructHash(op);
         assertEq(structHash, hex"aa19c4de25dfba6a38836420cc4ecf14048cee3f258a3329bfeb40856daf159b");
     }
 
