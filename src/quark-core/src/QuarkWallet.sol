@@ -228,7 +228,7 @@ contract QuarkWallet is IERC1271 {
      * @param nonce Nonce for the operation; must be unused
      * @param scriptAddress Address for the script to execute
      * @param scriptCalldata Encoded call to invoke on the script
-     * @param scriptSources Creation codes Quark must ensure are deployed before executing this operation
+     * @param scriptSources Creation codes Quark must ensure are deployed before executing the script
      * @return Return value from the executed operation
      */
     function executeScript(
