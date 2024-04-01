@@ -39,11 +39,11 @@ contract MulticallTest is Test {
     bytes ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
     bytes multicall;
 
-    bytes legendCometSupplyScript = new YulHelper().getCode("DefiScript.sol/CometSupplyActions.json");
+    bytes legendCometSupplyScript = new YulHelper().getCode("DeFiScripts.sol/CometSupplyActions.json");
 
-    bytes legendCometWithdrawScript = new YulHelper().getCode("DefiScript.sol/CometWithdrawActions.json");
+    bytes legendCometWithdrawScript = new YulHelper().getCode("DeFiScripts.sol/CometWithdrawActions.json");
 
-    bytes legendUniswapSwapScript = new YulHelper().getCode("DefiScript.sol/UniswapSwapActions.json");
+    bytes legendUniswapSwapScript = new YulHelper().getCode("DeFiScripts.sol/UniswapSwapActions.json");
 
     address ethcallAddress;
     address multicallAddress;
