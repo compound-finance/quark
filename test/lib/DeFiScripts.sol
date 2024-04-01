@@ -5,15 +5,12 @@ import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {ISwapRouter} from "v3-periphery/interfaces/ISwapRouter.sol";
 
-import {QuarkScript} from "quark-core/src/QuarkScript.sol";
+import {IComet} from "test/quark-core-scripts/interfaces/IComet.sol";
 
-import {IComet} from "legend-scripts/src/interfaces/IComet.sol";
-import {ICometRewards} from "legend-scripts/src/interfaces/ICometRewards.sol";
-import {LegendErrors} from "legend-scripts/src/LegendErrors.sol";
-
-// TODO: Will need to add support for E-Comet once E-Comet has been deployed
 contract CometSupplyActions {
     using SafeERC20 for IERC20;
+
+    error InvalidInput();
 
     /**
      *   @notice Supply an asset to Comet
@@ -58,7 +55,7 @@ contract CometSupplyActions {
      */
     function supplyMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
         if (assets.length != amounts.length) {
-            revert LegendErrors.InvalidInput();
+            revert InvalidInput();
         }
 
         for (uint256 i = 0; i < assets.length;) {
@@ -73,6 +70,8 @@ contract CometSupplyActions {
 
 contract CometWithdrawActions {
     using SafeERC20 for IERC20;
+
+    error InvalidInput();
 
     /**
      *  @notice Withdraw an asset from Comet
@@ -115,7 +114,7 @@ contract CometWithdrawActions {
      */
     function withdrawMultipleAssets(address comet, address[] calldata assets, uint256[] calldata amounts) external {
         if (assets.length != amounts.length) {
-            revert LegendErrors.InvalidInput();
+            revert InvalidInput();
         }
 
         for (uint256 i = 0; i < assets.length;) {
@@ -191,139 +190,5 @@ contract UniswapSwapActions {
         if (amountIn < params.amountInMaximum) {
             IERC20(params.tokenFrom).forceApprove(params.uniswapRouter, 0);
         }
-    }
-}
-
-contract TransferActions is QuarkScript {
-    using SafeERC20 for IERC20;
-
-    /**
-     * @notice Transfer ERC20 token
-     * @param token The token address
-     * @param recipient The recipient address
-     * @param amount The amount to transfer
-     */
-    function transferERC20Token(address token, address recipient, uint256 amount) external onlyWallet {
-        IERC20(token).safeTransfer(recipient, amount);
-    }
-
-    /**
-     * @notice Transfer native token (i.e. ETH)
-     * @param recipient The recipient address
-     * @param amount The amount to transfer
-     */
-    function transferNativeToken(address recipient, uint256 amount) external onlyWallet {
-        (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
-        if (!success) {
-            revert LegendErrors.TransferFailed(data);
-        }
-    }
-}
-
-contract CometClaimRewards {
-    /**
-     * @notice Claim rewards
-     * @param cometRewards The CometRewards addresses
-     * @param comets The Comet addresses
-     * @param recipient The recipient address, that will receive the COMP rewards
-     */
-    function claim(address[] calldata cometRewards, address[] calldata comets, address recipient) external {
-        if (cometRewards.length != comets.length) {
-            revert LegendErrors.InvalidInput();
-        }
-
-        for (uint256 i = 0; i < cometRewards.length;) {
-            ICometRewards(cometRewards[i]).claim(comets[i], recipient, true);
-            unchecked {
-                ++i;
-            }
-        }
-    }
-}
-
-contract CometSupplyMultipleAssetsAndBorrow {
-    // To handle non-standard ERC20 tokens (i.e. USDT)
-    using SafeERC20 for IERC20;
-
-    function run(
-        address comet,
-        address[] calldata assets,
-        uint256[] calldata amounts,
-        address baseAsset,
-        uint256 borrow
-    ) external {
-        if (assets.length != amounts.length) {
-            revert LegendErrors.InvalidInput();
-        }
-
-        for (uint256 i = 0; i < assets.length;) {
-            IERC20(assets[i]).forceApprove(comet, amounts[i]);
-            IComet(comet).supply(assets[i], amounts[i]);
-            unchecked {
-                ++i;
-            }
-        }
-        IComet(comet).withdraw(baseAsset, borrow);
-    }
-}
-
-contract CometRepayAndWithdrawMultipleAssets {
-    // To handle non-standard ERC20 tokens (i.e. USDT)
-    using SafeERC20 for IERC20;
-
-    function run(address comet, address[] calldata assets, uint256[] calldata amounts, address baseAsset, uint256 repay)
-        external
-    {
-        if (assets.length != amounts.length) {
-            revert LegendErrors.InvalidInput();
-        }
-
-        IERC20(baseAsset).forceApprove(comet, repay);
-        IComet(comet).supply(baseAsset, repay);
-        for (uint256 i = 0; i < assets.length;) {
-            IComet(comet).withdraw(assets[i], amounts[i]);
-            unchecked {
-                ++i;
-            }
-        }
-    }
-}
-
-contract ApproveAndSwap {
-    // To handle non-standard ERC20 tokens (i.e. USDT)
-    using SafeERC20 for IERC20;
-
-    /**
-     * Approve a specified contract for an amount of token and execute the data against it
-     * @param to The contract address to approve execute on
-     * @param sellToken The token address to approve
-     * @param sellAmount The amount to approve
-     * @param buyToken The token that is being bought
-     * @param data The data to execute
-     */
-    function run(
-        address to,
-        address sellToken,
-        uint256 sellAmount,
-        address buyToken,
-        uint256 expectedBuyAmount,
-        bytes calldata data
-    ) external {
-        IERC20(sellToken).forceApprove(to, sellAmount);
-        uint256 buyTokenBalanceBefore = IERC20(buyToken).balanceOf(address(this));
-
-        (bool success, bytes memory returnData) = to.call(data);
-        if (!success) {
-            revert LegendErrors.ApproveAndSwapFailed(returnData);
-        }
-
-        uint256 buyTokenBalanceAfter = IERC20(buyToken).balanceOf(address(this));
-        uint256 buyAmount = buyTokenBalanceAfter - buyTokenBalanceBefore;
-        if (buyAmount < expectedBuyAmount) {
-            revert LegendErrors.TooMuchSlippage();
-        }
-
-        // Approvals to external contracts should always be reset to 0
-        IERC20(sellToken).forceApprove(to, 0);
     }
 }

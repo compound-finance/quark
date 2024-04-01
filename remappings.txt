@@ -1,6 +1,5 @@
 test=test/
 codejar=src/codejar/
-legend-scripts=src/legend-scripts/
 quark-core=src/quark-core/
 quark-core-scripts=src/quark-core-scripts/
 quark-factory=src/quark-factory/

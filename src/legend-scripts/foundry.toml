@@ -1,9 +1,0 @@
-[profile.default]
-solc = "0.8.23"
-evm_version = "paris"
-
-libs = [ "../../lib" ]
-
-src = "src"
-out = "out"
-test = "../../test/legend-scripts/"

@@ -23,7 +23,7 @@ import {SignatureHelper} from "test/lib/SignatureHelper.sol";
 import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.sol";
 import "quark-core-scripts/src/vendor/chainlink/AggregatorV3Interface.sol";
 
-import "legend-scripts/src/LegendScript.sol";
+import {IComet, IERC20} from "test/lib/DeFiScripts.sol";
 
 contract PaycallTest is Test {
     QuarkWalletProxyFactory public factory;
@@ -53,11 +53,11 @@ contract PaycallTest is Test {
     bytes paycallUSDT;
     bytes paycallWBTC;
 
-    bytes legendCometSupplyScript = new YulHelper().getCode("LegendScript.sol/CometSupplyActions.json");
+    bytes legendCometSupplyScript = new YulHelper().getCode("DefiScript.sol/CometSupplyActions.json");
 
-    bytes legendCometWithdrawScript = new YulHelper().getCode("LegendScript.sol/CometWithdrawActions.json");
+    bytes legendCometWithdrawScript = new YulHelper().getCode("DefiScript.sol/CometWithdrawActions.json");
 
-    bytes legendUniswapSwapScript = new YulHelper().getCode("LegendScript.sol/UniswapSwapActions.json");
+    bytes legendUniswapSwapScript = new YulHelper().getCode("DefiScript.sol/UniswapSwapActions.json");
 
     address ethcallAddress;
     address multicallAddress;
