@@ -212,3 +212,20 @@ Once the env variables are defined, run the following command:
 ```sh
 set -a && source .env && ./script/deploy-quark.sh --broadcast
 ```
+
+## CodeJar Deployments
+
+Using artifacts from [release-v2024-03-27+2249648](https://github.com/compound-finance/quark/releases/tag/release-v2024-03-27%2B2249648).
+
+| Network           | CodeJar Address                            |
+| ----------------- | ------------------------------------------ |
+| Mainnet           | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
+| Base              | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
+| Sepolia           | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
+| Arbitrum          | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
+| Optimism          | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
+| Polygon           | Pending |
+| Scroll            | Pending |
+| Base Sepolia      | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
+| Arbitrum Sepolia  | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
+| Optimism Sepolia  | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
