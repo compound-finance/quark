@@ -8,7 +8,7 @@ Quark is an Ethereum smart contract wallet system, designed to run custom code â
 
 ### Code Jar
 
-_Code Jar_ maps callable contract code to addresses which can then be delegate-called to. Specifically, _Code Jar_ uses `CREATE2` to find or create a contract address whose code matches some given input code (EVM opcodes encoded as data). The calling contract (e.g. a wallet) may call _Code Jar_'s `saveCode` function and then run `delegatecall` on the resulting address, which effectively executes arbitrary code.
+_Code Jar_ maps callable contract code to addresses which can then be delegate-called to. Specifically, _Code Jar_ uses `CREATE2` to find or create a contract address whose creation code matches some given input code (EVM opcodes encoded as data). The calling contract (e.g. a wallet) may call _Code Jar_'s `saveCode` function and then run `delegatecall` on the resulting address, which effectively executes arbitrary code.
 
 ### Quark Wallet
 
@@ -56,6 +56,12 @@ flowchart TB
 
 ## Quark Wallet Features
 
+### Multi Quark Operations
+
+_Multi Quark operations_ are a batch of _Quark operation_ digests signed via a single EIP-712 signature. The _Multi Quark operation_ EIP-712 signature is not scoped to a specific address and chain id, allowing a single signature to flexibly execute operations on multiple _Quark wallets_ owned by the signer on any number of chains. The _Quark operation_ EIP-712 digests in the _Multi Quark operation_ are still scoped to a specific address and chain id, so they are protected against replay attacks.
+
+One common use-case for this feature is cross-chain _Quark operations_. For example, a single signature can be used to 1\) Bridge USDC from mainnet to Base and 2\) Supply USDC to some protocol on Base.
+
 ### Separation of Signer and Executor
 
 The `signer` and `executor` roles are separate roles in the _Quark Wallet_. The `signer` is able to sign Quark operations that can be executed by the _Quark Wallet_. The `executor` is able to directly execute scripts on the _Quark Wallet_. Theoretically, the same address can be both the `signer` and `executor` of a _Quark Wallet_. Similarly, the `signer` and/or `executor` can be set to the null (zero) address to effectively remove that role from the wallet.
@@ -88,6 +94,10 @@ Callbacks are an opt-in feature of Quark scripts that allow for an external cont
 
 Callbacks need to be explicitly turned on by Quark scripts. Specifically, this is done by writing the callback target address to the callback storage slot in _Quark State Manager_ (can be done via the `allowCallback` helper function in [`QuarkScript.sol`](./quark-core/src/QuarkScript.sol)).
 
+### EIP-1271 Signatures
+
+_Quark wallets_ come with built-in support for EIP-1271 signatures. This means that _Quark wallets_ can be owned by smart contracts. The owner smart contract verifies any signatures signed for the _Quark wallet_, allowing for different types of signature verification schemes to be used (e.g. multisig, passkey).
+
 ## Adding Library Dependencies
 
 Dependencies should be added using `forge install` from the root directory. Whenever a new dependency is added, a remapping for it must be defined in both `remappings.txt` and `remappings-relative.txt`. Please see [Project Structure and Sub-projects](#project-structure-and-sub-projects) and [Dependencies](#dependencies).
@@ -101,7 +111,6 @@ Quark is not quite a typical foundry project. While there is a root `foundry.tom
 You can still `forge build` and `forge test` from the root directory and expect things to work normally. However, sub-projects can also be developed, built, and tested independently. These sub-projects are:
 
 - src/codejar
-- src/legend-scripts (NOTE that this project will likely be removed into a standalone repo at some point)
 - src/quark-core
 - src/quark-core-scripts
 - src/quark-factory
@@ -184,7 +193,7 @@ $ git add .gas-snapshot && git commit -m "commit new baseline gas snapshot"
 
 ## Deploy
 
-To run the deploy, first, find the Code Jar address, or deploy Code Jar via:
+To run the deploy, first, find the _Code Jar_ address, or deploy _Code Jar_ via:
 
 ```sh
 ./script/deploy-code-jar.sh
