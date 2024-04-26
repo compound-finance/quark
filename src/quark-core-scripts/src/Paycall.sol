@@ -31,7 +31,7 @@ contract Paycall {
     bool public immutable propogateReverts;
 
     /// @notice Constant buffer for gas overhead
-    /// This is a constant to accounted for the gas used by the Paycall contract itself that's not tracked by gasleft()
+    /// This is a constant to account for the gas used by the Paycall contract itself that's not tracked by gasleft()
     uint256 internal constant GAS_OVERHEAD = 75000;
 
     /// @notice Difference in scale between the payment token and ETH, used to scale the payment token.
