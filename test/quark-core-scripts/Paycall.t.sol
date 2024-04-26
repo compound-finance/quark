@@ -175,7 +175,7 @@ contract PaycallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
         emit PayForGas(address(wallet), tx.origin, USDC, 7_264_471);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -212,7 +212,7 @@ contract PaycallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
         emit PayForGas(address(wallet), tx.origin, USDC, 7_489_695);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -273,7 +273,7 @@ contract PaycallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
         emit PayForGas(address(wallet), tx.origin, USDC, 18_045_902);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -345,7 +345,7 @@ contract PaycallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.resumeGasMetering();
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
         emit PayForGas(address(wallet), tx.origin, USDT, 7_056_836);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -383,7 +383,7 @@ contract PaycallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.resumeGasMetering();
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
         emit PayForGas(address(wallet), tx.origin, WBTC, 20_332);
         wallet.executeQuarkOperation(op, v, r, s);
 
@@ -446,7 +446,7 @@ contract PaycallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
         emit PayForGas(address(wallet), tx.origin, USDC, 5_553_259);
         wallet.executeQuarkOperation(op, v, r, s);
 
