@@ -27,8 +27,8 @@ contract Paycall {
     /// @notice Payment token address
     address public immutable paymentTokenAddress;
 
-    /// @notice Flag for indicating if reverts from the call should be propogated or swallowed
-    bool public immutable propogateReverts;
+    /// @notice Flag for indicating if reverts from the call should be propagated or swallowed
+    bool public immutable propagateReverts;
 
     /// @notice Constant buffer for gas overhead
     /// This is a constant to account for the gas used by the Paycall contract itself that's not tracked by gasleft()
@@ -42,12 +42,12 @@ contract Paycall {
      * @notice Constructor
      * @param ethBasedPriceFeedAddress_ Eth based price feed address that follows Chainlink's AggregatorV3Interface correlated to the payment token
      * @param paymentTokenAddress_ Payment token address
-     * @param propogateReverts_ Flag for indicating if reverts from the call should be propogated or swallowed
+     * @param propagateReverts_ Flag for indicating if reverts from the call should be propagated or swallowed
      */
-    constructor(address ethBasedPriceFeedAddress_, address paymentTokenAddress_, bool propogateReverts_) {
+    constructor(address ethBasedPriceFeedAddress_, address paymentTokenAddress_, bool propagateReverts_) {
         ethBasedPriceFeedAddress = ethBasedPriceFeedAddress_;
         paymentTokenAddress = paymentTokenAddress_;
-        propogateReverts = propogateReverts_;
+        propagateReverts = propagateReverts_;
         scriptAddress = address(this);
 
         divisorScale = 10
@@ -75,7 +75,7 @@ contract Paycall {
         }
 
         (bool success, bytes memory returnData) = callContract.delegatecall(callData);
-        if (!success && propogateReverts) {
+        if (!success && propagateReverts) {
             assembly {
                 revert(add(returnData, 32), mload(returnData))
             }
