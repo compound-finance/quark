@@ -17,6 +17,7 @@ import {Multicall} from "quark-core-scripts/src/Multicall.sol";
 import {Paycall} from "quark-core-scripts/src/Paycall.sol";
 
 import {Counter} from "test/lib/Counter.sol";
+import {Reverts} from "test/lib/Reverts.sol";
 
 import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";
@@ -26,6 +27,8 @@ import "quark-core-scripts/src/vendor/chainlink/AggregatorV3Interface.sol";
 import {IComet, IERC20} from "test/lib/DeFiScripts.sol";
 
 contract PaycallTest is Test {
+    event PayForGas(address indexed payer, address indexed payee, address indexed paymentToken, uint256 amount);
+
     QuarkWalletProxyFactory public factory;
     Counter public counter;
     uint256 alicePrivateKey = 0xa11ce;
@@ -48,10 +51,12 @@ contract PaycallTest is Test {
     address constant uniswapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     bytes multicall = new YulHelper().getCode("Multicall.sol/Multicall.json");
     bytes ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
+    bytes reverts = new YulHelper().getCode("Reverts.sol/Reverts.json");
     // Paycall has its contructor with 2 parameters
     bytes paycall;
     bytes paycallUSDT;
     bytes paycallWBTC;
+    bytes paycallNonReverty;
 
     bytes legendCometSupplyScript = new YulHelper().getCode("DeFiScripts.sol/CometSupplyActions.json");
 
@@ -61,9 +66,11 @@ contract PaycallTest is Test {
 
     address ethcallAddress;
     address multicallAddress;
+    address revertsAddress;
     address paycallAddress;
     address paycallUSDTAddress;
     address paycallWBTCAddress;
+    address paycallNonRevertyAddress;
     address legendCometSupplyScriptAddress;
     address legendCometWithdrawScriptAddress;
     address legendUniswapSwapScriptAddress;
@@ -82,13 +89,16 @@ contract PaycallTest is Test {
         codeJar = QuarkWallet(payable(factory.walletImplementation())).codeJar();
         ethcallAddress = codeJar.saveCode(ethcall);
         multicallAddress = codeJar.saveCode(multicall);
-        paycall = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDC));
-        paycallUSDT = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDT));
-        paycallWBTC = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_BTC_PRICE_FEED, WBTC));
+        revertsAddress = codeJar.saveCode(reverts);
+        paycall = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDC, true));
+        paycallUSDT = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDT, true));
+        paycallWBTC = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_BTC_PRICE_FEED, WBTC, true));
+        paycallNonReverty = abi.encodePacked(type(Paycall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDC, false));
 
         paycallAddress = codeJar.saveCode(paycall);
         paycallUSDTAddress = codeJar.saveCode(paycallUSDT);
         paycallWBTCAddress = codeJar.saveCode(paycallWBTC);
+        paycallNonRevertyAddress = codeJar.saveCode(paycallNonReverty);
 
         legendCometSupplyScriptAddress = codeJar.saveCode(legendCometSupplyScript);
         legendCometWithdrawScriptAddress = codeJar.saveCode(legendCometWithdrawScript);
@@ -165,7 +175,10 @@ contract PaycallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
+        emit PayForGas(address(wallet), tx.origin, USDC, 7_264_471);
         wallet.executeQuarkOperation(op, v, r, s);
+
         assertEq(counter.number(), 15);
         assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 992e6, 1e6);
     }
@@ -199,7 +212,10 @@ contract PaycallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
+        emit PayForGas(address(wallet), tx.origin, USDC, 7_489_695);
         wallet.executeQuarkOperation(op, v, r, s);
+
         assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 982e6, 1e6);
         assertEq(IERC20(USDC).balanceOf(address(this)), 10e6);
     }
@@ -257,7 +273,10 @@ contract PaycallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
+        emit PayForGas(address(wallet), tx.origin, USDC, 18_045_902);
         wallet.executeQuarkOperation(op, v, r, s);
+
         assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 981e6, 1e6);
         assertEq(IComet(cUSDCv3).collateralBalanceOf(address(wallet), WETH), 100 ether);
         assertApproxEqAbs(IComet(cUSDCv3).borrowBalanceOf(address(wallet)), 1000e6, 2);
@@ -326,7 +345,10 @@ contract PaycallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
+        emit PayForGas(address(wallet), tx.origin, USDT, 7_056_836);
         wallet.executeQuarkOperation(op, v, r, s);
+
         assertEq(IERC20(WETH).balanceOf(address(this)), 1 ether);
         // About $8 in USD fees
         assertApproxEqAbs(IERC20(USDT).balanceOf(address(wallet)), 992e6, 1e6);
@@ -361,10 +383,13 @@ contract PaycallTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
+        emit PayForGas(address(wallet), tx.origin, WBTC, 20_332);
         wallet.executeQuarkOperation(op, v, r, s);
+
         assertEq(IERC20(WETH).balanceOf(address(this)), 1 ether);
         // Fees in WBTC will be around ~ 0.00021 WBTC
-        assertApproxEqAbs(IERC20(WBTC).balanceOf(address(wallet)), 99979e3, 1e3);
+        assertApproxEqAbs(IERC20(WBTC).balanceOf(address(wallet)), 99_979_000, 1e3);
     }
 
     function testRevertsWhenCostIsMoreThanMaxPaymentCost() public {
@@ -400,5 +425,31 @@ contract PaycallTest is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
+    }
+
+    function testPaycallNonRevertyDoesNotRevertWhenCallReverts() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        vm.txGasPrice(32 gwei);
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
+        // Give wallet some USDC for payment
+        deal(USDC, address(wallet), 1000e6);
+
+        // Execute through paycall
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            paycallNonReverty,
+            abi.encodeWithSelector(Paycall.run.selector, revertsAddress, "", 20e6),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
+        emit PayForGas(address(wallet), tx.origin, USDC, 5_553_259);
+        wallet.executeQuarkOperation(op, v, r, s);
+
+        assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 995e6, 1e6);
     }
 }

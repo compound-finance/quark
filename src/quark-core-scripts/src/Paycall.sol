@@ -13,6 +13,8 @@ import "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 contract Paycall {
     using SafeERC20 for IERC20;
 
+    event PayForGas(address indexed payer, address indexed payee, address indexed paymentToken, uint256 amount);
+
     error InvalidCallContext();
     error TransactionTooExpensive();
 
@@ -25,8 +27,11 @@ contract Paycall {
     /// @notice Payment token address
     address public immutable paymentTokenAddress;
 
+    /// @notice Flag for indicating if reverts from the call should be propagated or swallowed
+    bool public immutable propagateReverts;
+
     /// @notice Constant buffer for gas overhead
-    /// This is a constant to accounted for the gas used by the Paycall contract itself that's not tracked by gasleft()
+    /// This is a constant to account for the gas used by the Paycall contract itself that's not tracked by gasleft()
     uint256 internal constant GAS_OVERHEAD = 75000;
 
     /// @notice Difference in scale between the payment token and ETH, used to scale the payment token.
@@ -35,12 +40,14 @@ contract Paycall {
 
     /**
      * @notice Constructor
-     * @param ethPriceFeed Eth based price feed address that follows Chainlink's AggregatorV3Interface correlated to the payment token
-     * @param paymentToken Payment token address
+     * @param ethBasedPriceFeedAddress_ Eth based price feed address that follows Chainlink's AggregatorV3Interface correlated to the payment token
+     * @param paymentTokenAddress_ Payment token address
+     * @param propagateReverts_ Flag for indicating if reverts from the call should be propagated or swallowed
      */
-    constructor(address ethPriceFeed, address paymentToken) {
-        ethBasedPriceFeedAddress = ethPriceFeed;
-        paymentTokenAddress = paymentToken;
+    constructor(address ethBasedPriceFeedAddress_, address paymentTokenAddress_, bool propagateReverts_) {
+        ethBasedPriceFeedAddress = ethBasedPriceFeedAddress_;
+        paymentTokenAddress = paymentTokenAddress_;
+        propagateReverts = propagateReverts_;
         scriptAddress = address(this);
 
         divisorScale = 10
@@ -68,7 +75,7 @@ contract Paycall {
         }
 
         (bool success, bytes memory returnData) = callContract.delegatecall(callData);
-        if (!success) {
+        if (!success && propagateReverts) {
             assembly {
                 revert(add(returnData, 32), mload(returnData))
             }
@@ -81,6 +88,7 @@ contract Paycall {
             revert TransactionTooExpensive();
         }
         IERC20(paymentTokenAddress).safeTransfer(tx.origin, paymentAmount);
+        emit PayForGas(address(this), tx.origin, paymentTokenAddress, paymentAmount);
 
         return returnData;
     }
