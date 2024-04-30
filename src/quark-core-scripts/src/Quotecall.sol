@@ -19,35 +19,35 @@ contract Quotecall {
     /// @notice This contract's address
     address internal immutable scriptAddress;
 
-    /// @notice ETH based price feed address (i.e. ETH/USD, ETH/BTC)
-    address public immutable ethBasedPriceFeedAddress;
+    /// @notice Native token (e.g. ETH) based price feed address (e.g. ETH/USD, ETH/BTC)
+    address public immutable nativeTokenBasedPriceFeedAddress;
 
     /// @notice Payment token address
     address public immutable paymentTokenAddress;
 
     /// @notice The max delta in basis points
-    uint256 public immutable maxDelta;
+    uint256 public immutable maxDeltaBps;
 
     /// @notice Constant buffer for gas overhead
     /// This is a constant to accounted for the gas used by the Quotecall contract itself that's not tracked by gasleft()
     uint256 internal constant GAS_OVERHEAD = 75000;
 
-    /// @notice Difference in scale between the payment token and ETH, used to scale the payment token.
-    /// Will be used to scale decimals to the correct amount for payment token
+    /// @notice Difference in scale between the native token + price feed and the payment token, used to scale the payment token
     uint256 internal immutable divisorScale;
 
     /**
      * @notice Constructor
-     * @param ethPriceFeed Eth based price feed address that follows Chainlink's AggregatorV3Interface correlated to the payment token
-     * @param paymentToken Payment token address
-     * @param maxDeltaBps Maximal allowed delta in basis points (100 bps = 1%)
+     * @param nativeTokenBasedPriceFeedAddress_ Native token based price feed address that follows Chainlink's AggregatorV3Interface correlated to the payment token
+     * @param paymentTokenAddress_ Payment token address
+     * @param maxDeltaBps_ Maximal allowed delta in basis points (100 bps = 1%)
      */
-    constructor(address ethPriceFeed, address paymentToken, uint256 maxDeltaBps) {
-        ethBasedPriceFeedAddress = ethPriceFeed;
-        paymentTokenAddress = paymentToken;
+    constructor(address nativeTokenBasedPriceFeedAddress_, address paymentTokenAddress_, uint256 maxDeltaBps_) {
+        nativeTokenBasedPriceFeedAddress = nativeTokenBasedPriceFeedAddress_;
+        paymentTokenAddress = paymentTokenAddress_;
+        maxDeltaBps = maxDeltaBps_;
         scriptAddress = address(this);
-        maxDelta = maxDeltaBps;
 
+        // Note: Assumes the native token has 18 decimals
         divisorScale = 10
             ** uint256(
                 18 + AggregatorV3Interface(ethBasedPriceFeedAddress).decimals()

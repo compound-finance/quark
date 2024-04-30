@@ -21,8 +21,8 @@ contract Paycall {
     /// @notice This contract's address
     address internal immutable scriptAddress;
 
-    /// @notice ETH based price feed address (i.e. ETH/USD, ETH/BTC)
-    address public immutable ethBasedPriceFeedAddress;
+    /// @notice Native token (e.g. ETH) based price feed address (e.g. ETH/USD, ETH/BTC)
+    address public immutable nativeTokenBasedPriceFeedAddress;
 
     /// @notice Payment token address
     address public immutable paymentTokenAddress;
@@ -34,22 +34,22 @@ contract Paycall {
     /// This is a constant to account for the gas used by the Paycall contract itself that's not tracked by gasleft()
     uint256 internal constant GAS_OVERHEAD = 75000;
 
-    /// @notice Difference in scale between the payment token and ETH, used to scale the payment token.
-    /// Will be used to scale decimals to the correct amount for payment token
+    /// @notice Difference in scale between the native token + price feed and the payment token, used to scale the payment token
     uint256 internal immutable divisorScale;
 
     /**
      * @notice Constructor
-     * @param ethBasedPriceFeedAddress_ Eth based price feed address that follows Chainlink's AggregatorV3Interface correlated to the payment token
+     * @param nativeTokenBasedPriceFeedAddress_ Native token price feed address that follows Chainlink's AggregatorV3Interface correlated to the payment token
      * @param paymentTokenAddress_ Payment token address
      * @param propagateReverts_ Flag for indicating if reverts from the call should be propagated or swallowed
      */
-    constructor(address ethBasedPriceFeedAddress_, address paymentTokenAddress_, bool propagateReverts_) {
-        ethBasedPriceFeedAddress = ethBasedPriceFeedAddress_;
+    constructor(address nativeTokenBasedPriceFeedAddress_, address paymentTokenAddress_, bool propagateReverts_) {
+        nativeTokenBasedPriceFeedAddress = nativeTokenBasedPriceFeedAddress_;
         paymentTokenAddress = paymentTokenAddress_;
         propagateReverts = propagateReverts_;
         scriptAddress = address(this);
 
+        // Note: Assumes the native token has 18 decimals
         divisorScale = 10
             ** uint256(
                 18 + AggregatorV3Interface(ethBasedPriceFeedAddress).decimals()
@@ -81,7 +81,7 @@ contract Paycall {
             }
         }
 
-        (, int256 price,,,) = AggregatorV3Interface(ethBasedPriceFeedAddress).latestRoundData();
+        (, int256 price,,,) = AggregatorV3Interface(nativeTokenBasedPriceFeedAddress).latestRoundData();
         uint256 gasUsed = gasInitial - gasleft() + GAS_OVERHEAD;
         uint256 paymentAmount = gasUsed * tx.gasprice * uint256(price) / divisorScale;
         if (paymentAmount > maxPaymentCost) {
