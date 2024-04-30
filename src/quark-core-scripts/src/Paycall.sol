@@ -15,11 +15,9 @@ contract Paycall {
 
     event PayForGas(address indexed payer, address indexed payee, address indexed paymentToken, uint256 amount);
 
+    error BadPrice();
     error InvalidCallContext();
     error TransactionTooExpensive();
-
-    /// @notice This contract's address
-    address internal immutable scriptAddress;
 
     /// @notice Native token (e.g. ETH) based price feed address (e.g. ETH/USD, ETH/BTC)
     address public immutable nativeTokenBasedPriceFeedAddress;
@@ -29,6 +27,9 @@ contract Paycall {
 
     /// @notice Flag for indicating if reverts from the call should be propagated or swallowed
     bool public immutable propagateReverts;
+
+    /// @notice This contract's address
+    address internal immutable scriptAddress;
 
     /// @notice Constant buffer for gas overhead
     /// This is a constant to account for the gas used by the Paycall contract itself that's not tracked by gasleft()
@@ -52,7 +53,7 @@ contract Paycall {
         // Note: Assumes the native token has 18 decimals
         divisorScale = 10
             ** uint256(
-                18 + AggregatorV3Interface(ethBasedPriceFeedAddress).decimals()
+                18 + AggregatorV3Interface(nativeTokenBasedPriceFeedAddress).decimals()
                     - IERC20Metadata(paymentTokenAddress).decimals()
             );
     }
@@ -82,6 +83,10 @@ contract Paycall {
         }
 
         (, int256 price,,,) = AggregatorV3Interface(nativeTokenBasedPriceFeedAddress).latestRoundData();
+        if (price <= 0) {
+            revert BadPrice();
+        }
+
         uint256 gasUsed = gasInitial - gasleft() + GAS_OVERHEAD;
         uint256 paymentAmount = gasUsed * tx.gasprice * uint256(price) / divisorScale;
         if (paymentAmount > maxPaymentCost) {
