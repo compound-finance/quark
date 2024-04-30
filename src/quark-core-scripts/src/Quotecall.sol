@@ -104,7 +104,6 @@ contract Quotecall {
         uint256 actualAmount = gasUsed * tx.gasprice * uint256(price) / divisorScale;
         uint256 actualDelta = actualAmount > quotedAmount ? actualAmount - quotedAmount : quotedAmount - actualAmount;
         uint256 actualDeltaPercentage = actualDelta * PERCENTAGE_SCALE / quotedAmount;
-        emit PayForGas(address(this), tx.origin, paymentTokenAddress, actualAmount);
 
         if (actualDeltaPercentage > maxDeltaPercentage) {
             revert QuoteToleranceExceeded();
