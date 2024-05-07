@@ -31,12 +31,15 @@ contract Paycall {
     /// @notice This contract's address
     address internal immutable scriptAddress;
 
+    /// @notice Difference in scale between the native token + price feed and the payment token, used to scale the payment token
+    uint256 internal immutable divisorScale;
+
     /// @notice Constant buffer for gas overhead
     /// This is a constant to account for the gas used by the Paycall contract itself that's not tracked by gasleft()
     uint256 internal constant GAS_OVERHEAD = 75000;
 
-    /// @notice Difference in scale between the native token + price feed and the payment token, used to scale the payment token
-    uint256 internal immutable divisorScale;
+    /// @dev The number of decimals for the chain's native token
+    uint256 internal constant NATIVE_TOKEN_DECIMALS = 18;
 
     /**
      * @notice Constructor
@@ -50,10 +53,9 @@ contract Paycall {
         propagateReverts = propagateReverts_;
         scriptAddress = address(this);
 
-        // Note: Assumes the native token has 18 decimals
         divisorScale = 10
             ** uint256(
-                18 + AggregatorV3Interface(nativeTokenBasedPriceFeedAddress).decimals()
+                NATIVE_TOKEN_DECIMALS + AggregatorV3Interface(nativeTokenBasedPriceFeedAddress).decimals()
                     - IERC20Metadata(paymentTokenAddress).decimals()
             );
     }

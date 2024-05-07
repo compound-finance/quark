@@ -39,16 +39,12 @@ contract Multicall {
         }
 
         bytes[] memory returnDatas = new bytes[](callContracts.length);
-        for (uint256 i = 0; i < callContracts.length;) {
+        for (uint256 i = 0; i < callContracts.length; ++i) {
             (bool success, bytes memory returnData) = callContracts[i].delegatecall(callDatas[i]);
             if (!success) {
                 revert MulticallError(i, callContracts[i], returnData);
             }
             returnDatas[i] = returnData;
-
-            unchecked {
-                ++i;
-            }
         }
 
         return returnDatas;

@@ -292,11 +292,7 @@ contract QuarkWallet is IERC1271 {
      * @return EIP-712 digest
      */
     function getDigestForMultiQuarkOperation(bytes32[] memory opDigests) public pure returns (bytes32) {
-        bytes memory encodedOpDigests;
-        for (uint256 i = 0; i < opDigests.length; ++i) {
-            encodedOpDigests = abi.encodePacked(encodedOpDigests, opDigests[i]);
-        }
-
+        bytes memory encodedOpDigests = abi.encodePacked(opDigests);
         bytes32 structHash = keccak256(abi.encode(MULTI_QUARK_OPERATION_TYPEHASH, keccak256(encodedOpDigests)));
         return keccak256(abi.encodePacked("\x19\x01", MULTI_QUARK_OPERATION_DOMAIN_SEPARATOR, structHash));
     }

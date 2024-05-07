@@ -34,15 +34,18 @@ contract Quotecall {
     /// @notice This contract's address
     address internal immutable scriptAddress;
 
+    /// @notice Difference in scale between the native token + price feed and the payment token, used to scale the payment token
+    uint256 internal immutable divisorScale;
+
     /// @notice Constant buffer for gas overhead
     /// This is a constant to accounted for the gas used by the Quotecall contract itself that's not tracked by gasleft()
     uint256 internal constant GAS_OVERHEAD = 75000;
 
-    /// @notice Difference in scale between the native token + price feed and the payment token, used to scale the payment token
-    uint256 internal immutable divisorScale;
-
     /// @dev The scale for percentages, used for `maxDeltaPercentage` (e.g. 1e18 = 100%)
     uint256 internal constant PERCENTAGE_SCALE = 1e18;
+
+    /// @dev The number of decimals for the chain's native token
+    uint256 internal constant NATIVE_TOKEN_DECIMALS = 18;
 
     /**
      * @notice Constructor
@@ -66,7 +69,7 @@ contract Quotecall {
         // Note: Assumes the native token has 18 decimals
         divisorScale = 10
             ** uint256(
-                18 + AggregatorV3Interface(nativeTokenBasedPriceFeedAddress).decimals()
+                NATIVE_TOKEN_DECIMALS + AggregatorV3Interface(nativeTokenBasedPriceFeedAddress).decimals()
                     - IERC20Metadata(paymentTokenAddress).decimals()
             );
     }
