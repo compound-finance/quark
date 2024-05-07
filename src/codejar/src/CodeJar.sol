@@ -44,7 +44,7 @@ contract CodeJar {
 
     /**
      * @notice Checks if code was already deployed by CodeJar
-     * @param code The runtime bytecode of the code to check
+     * @param code The creation bytecode of the code to check
      * @return True if code already exists in Code Jar
      */
     function codeExists(bytes calldata code) external view returns (bool) {
