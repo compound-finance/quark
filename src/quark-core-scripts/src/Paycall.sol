@@ -35,8 +35,8 @@ contract Paycall {
     uint256 internal immutable divisorScale;
 
     /// @notice Constant buffer for gas overhead
-    /// This is a constant to account for the gas used by the Paycall contract itself that's not tracked by gasleft()
-    uint256 internal constant GAS_OVERHEAD = 75000;
+    /// This is a constant to account for the gas used by a Quark operation that is not tracked by the Paycall contract itself
+    uint256 internal constant GAS_OVERHEAD = 67_500;
 
     /// @dev The number of decimals for the chain's native token
     uint256 internal constant NATIVE_TOKEN_DECIMALS = 18;
