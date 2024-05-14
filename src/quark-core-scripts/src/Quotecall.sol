@@ -38,8 +38,8 @@ contract Quotecall {
     uint256 internal immutable divisorScale;
 
     /// @notice Constant buffer for gas overhead
-    /// This is a constant to accounted for the gas used by the Quotecall contract itself that's not tracked by gasleft()
-    uint256 internal constant GAS_OVERHEAD = 75000;
+    /// This is a constant to account for the gas used by a Quark operation that is not tracked by the Quotecall contract itself
+    uint256 internal constant GAS_OVERHEAD = 67_500;
 
     /// @dev The scale for percentages, used for `maxDeltaPercentage` (e.g. 1e18 = 100%)
     uint256 internal constant PERCENTAGE_SCALE = 1e18;
