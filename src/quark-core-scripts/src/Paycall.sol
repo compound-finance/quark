@@ -25,9 +25,6 @@ contract Paycall {
     /// @notice Payment token address
     address public immutable paymentTokenAddress;
 
-    /// @notice Flag for indicating if reverts from the call should be propagated or swallowed
-    bool public immutable propagateReverts;
-
     /// @notice This contract's address
     address internal immutable scriptAddress;
 
@@ -45,12 +42,10 @@ contract Paycall {
      * @notice Constructor
      * @param nativeTokenBasedPriceFeedAddress_ Native token price feed address that follows Chainlink's AggregatorV3Interface correlated to the payment token
      * @param paymentTokenAddress_ Payment token address
-     * @param propagateReverts_ Flag for indicating if reverts from the call should be propagated or swallowed
      */
-    constructor(address nativeTokenBasedPriceFeedAddress_, address paymentTokenAddress_, bool propagateReverts_) {
+    constructor(address nativeTokenBasedPriceFeedAddress_, address paymentTokenAddress_) {
         nativeTokenBasedPriceFeedAddress = nativeTokenBasedPriceFeedAddress_;
         paymentTokenAddress = paymentTokenAddress_;
-        propagateReverts = propagateReverts_;
         scriptAddress = address(this);
 
         divisorScale = 10
@@ -78,7 +73,7 @@ contract Paycall {
         }
 
         (bool success, bytes memory returnData) = callContract.delegatecall(callData);
-        if (!success && propagateReverts) {
+        if (!success) {
             assembly {
                 revert(add(returnData, 32), mload(returnData))
             }

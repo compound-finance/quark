@@ -28,9 +28,6 @@ contract Quotecall {
     /// @notice The max delta precentage allowed between the quoted cost and actual cost of the call
     uint256 public immutable maxDeltaPercentage;
 
-    /// @notice Flag for indicating if reverts from the call should be propagated or swallowed
-    bool public immutable propagateReverts;
-
     /// @notice This contract's address
     address internal immutable scriptAddress;
 
@@ -52,18 +49,11 @@ contract Quotecall {
      * @param nativeTokenBasedPriceFeedAddress_ Native token based price feed address that follows Chainlink's AggregatorV3Interface correlated to the payment token
      * @param paymentTokenAddress_ Payment token address
      * @param maxDeltaPercentage_ Maximum allowed delta percentage between the quoted cost and actual cost of the call (1e18 = 100%)
-     * @param propagateReverts_ Flag for indicating if reverts from the call should be propagated or swallowed
      */
-    constructor(
-        address nativeTokenBasedPriceFeedAddress_,
-        address paymentTokenAddress_,
-        uint256 maxDeltaPercentage_,
-        bool propagateReverts_
-    ) {
+    constructor(address nativeTokenBasedPriceFeedAddress_, address paymentTokenAddress_, uint256 maxDeltaPercentage_) {
         nativeTokenBasedPriceFeedAddress = nativeTokenBasedPriceFeedAddress_;
         paymentTokenAddress = paymentTokenAddress_;
         maxDeltaPercentage = maxDeltaPercentage_;
-        propagateReverts = propagateReverts_;
         scriptAddress = address(this);
 
         // Note: Assumes the native token has 18 decimals
@@ -92,7 +82,7 @@ contract Quotecall {
         emit PayForGas(address(this), tx.origin, paymentTokenAddress, quotedAmount);
 
         (bool success, bytes memory returnData) = callContract.delegatecall(callData);
-        if (!success && propagateReverts) {
+        if (!success) {
             assembly {
                 revert(add(returnData, 32), mload(returnData))
             }
