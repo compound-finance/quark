@@ -165,7 +165,7 @@ contract PaycallTest is Test {
                 Paycall.run.selector,
                 multicallAddress,
                 abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-                10e6
+                20e6
             ),
             ScriptType.ScriptSource
         );
@@ -174,11 +174,11 @@ contract PaycallTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
-        emit PayForGas(address(wallet), tx.origin, USDC, 6_792_365);
+        emit PayForGas(address(wallet), tx.origin, USDC, 10_658_763);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 15);
-        assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 993e6, 1e6);
+        assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 989e6, 1e6);
     }
 
     function testSimpleTransferTokenAndPayWithUSDC() public {
@@ -211,10 +211,10 @@ contract PaycallTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
-        emit PayForGas(address(wallet), tx.origin, USDC, 7_489_695);
+        emit PayForGas(address(wallet), tx.origin, USDC, 10_921_630);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 982e6, 1e6);
+        assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 979e6, 1e6);
         assertEq(IERC20(USDC).balanceOf(address(this)), 10e6);
     }
 
@@ -263,7 +263,7 @@ contract PaycallTest is Test {
                 Paycall.run.selector,
                 multicallAddress,
                 abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
-                20e6
+                40e6
             ),
             ScriptType.ScriptSource
         );
@@ -272,10 +272,10 @@ contract PaycallTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
-        emit PayForGas(address(wallet), tx.origin, USDC, 17_584_109);
+        emit PayForGas(address(wallet), tx.origin, USDC, 21_450_507);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 982e6, 1e6);
+        assertApproxEqAbs(IERC20(USDC).balanceOf(address(wallet)), 978e6, 1e6);
         assertEq(IComet(cUSDCv3).collateralBalanceOf(address(wallet), WETH), 100 ether);
         assertApproxEqAbs(IComet(cUSDCv3).borrowBalanceOf(address(wallet)), 1000e6, 2);
     }
@@ -336,7 +336,7 @@ contract PaycallTest is Test {
                     abi.encodeWithSignature("transfer(address,uint256)", address(this), 1 ether),
                     0
                 ),
-                10e6
+                20e6
             ),
             ScriptType.ScriptSource
         );
@@ -344,12 +344,12 @@ contract PaycallTest is Test {
 
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
-        emit PayForGas(address(wallet), tx.origin, USDT, 6_622_373);
+        emit PayForGas(address(wallet), tx.origin, USDT, 10_488_771);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(WETH).balanceOf(address(this)), 1 ether);
         // About $8 in USD fees
-        assertApproxEqAbs(IERC20(USDT).balanceOf(address(wallet)), 993e6, 1e6);
+        assertApproxEqAbs(IERC20(USDT).balanceOf(address(wallet)), 989e6, 1e6);
     }
 
     function testPaycallForPayWithWBTC() public {
@@ -374,7 +374,7 @@ contract PaycallTest is Test {
                     abi.encodeWithSignature("transfer(address,uint256)", address(this), 1 ether),
                     0
                 ),
-                30e3
+                60e3
             ),
             ScriptType.ScriptSource
         );
@@ -382,12 +382,12 @@ contract PaycallTest is Test {
 
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, false); // We ignore the amount because it will differ based on via-IR
-        emit PayForGas(address(wallet), tx.origin, WBTC, 19_079);
+        emit PayForGas(address(wallet), tx.origin, WBTC, 30_228);
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(IERC20(WETH).balanceOf(address(this)), 1 ether);
         // Fees in WBTC will be around ~ 0.00021 WBTC
-        assertApproxEqAbs(IERC20(WBTC).balanceOf(address(wallet)), 99_981_000, 1e3);
+        assertApproxEqAbs(IERC20(WBTC).balanceOf(address(wallet)), 99_970_000, 1e3);
     }
 
     function testRevertsWhenCostIsMoreThanMaxPaymentCost() public {
@@ -442,6 +442,7 @@ contract PaycallTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
+        // gas: meter execute
         vm.resumeGasMetering();
         vm.expectRevert(abi.encodeWithSelector(Reverts.Whoops.selector));
         wallet.executeQuarkOperation(op, v, r, s);

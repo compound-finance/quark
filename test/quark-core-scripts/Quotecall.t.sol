@@ -209,7 +209,7 @@ contract QuotecallTest is Test {
                     abi.encodeWithSignature("transfer(address,uint256)", address(this), 10e6),
                     0
                 ),
-                8e6
+                10e6
             ),
             ScriptType.ScriptSource
         );
@@ -218,10 +218,10 @@ contract QuotecallTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
-        emit PayForGas(address(wallet), tx.origin, USDC, 8e6);
+        emit PayForGas(address(wallet), tx.origin, USDC, 10e6);
         wallet.executeQuarkOperation(op, v, r, s);
 
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 982e6);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 980e6);
         assertEq(IERC20(USDC).balanceOf(address(this)), 10e6);
     }
 

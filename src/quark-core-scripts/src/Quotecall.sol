@@ -36,7 +36,8 @@ contract Quotecall {
 
     /// @notice Constant buffer for gas overhead
     /// This is a constant to account for the gas used by a Quark operation that is not tracked by the Quotecall contract itself
-    uint256 internal constant GAS_OVERHEAD = 67_500;
+    /// Rough estimation: 30k for initial gas (21k + calldata gas) + 70k for Quark overhead
+    uint256 internal constant GAS_OVERHEAD = 100_000;
 
     /// @dev The scale for percentages, used for `maxDeltaPercentage` (e.g. 1e18 = 100%)
     uint256 internal constant PERCENTAGE_SCALE = 1e18;
