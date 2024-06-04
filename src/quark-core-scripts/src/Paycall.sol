@@ -33,7 +33,8 @@ contract Paycall {
 
     /// @notice Constant buffer for gas overhead
     /// This is a constant to account for the gas used by a Quark operation that is not tracked by the Paycall contract itself
-    uint256 internal constant GAS_OVERHEAD = 67_500;
+    /// Rough estimation: 30k for initial gas (21k + calldata gas) + 70k for Quark overhead + 35k for ERC20 transfer
+    uint256 internal constant GAS_OVERHEAD = 135_000;
 
     /// @dev The number of decimals for the chain's native token
     uint256 internal constant NATIVE_TOKEN_DECIMALS = 18;
