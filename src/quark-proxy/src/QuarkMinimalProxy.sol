@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.23;
 
-contract QuarkMinimalProxy {
+import {IHasSignerExecutor} from "quark-core/src/interfaces/IHasSignerExecutor.sol";
+
+contract QuarkMinimalProxy is IHasSignerExecutor {
     /// @notice Address of the EOA signer or the EIP-1271 contract that verifies signed operations for this wallet
     address public immutable signer;
 
