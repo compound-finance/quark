@@ -58,7 +58,6 @@ contract QuotecallTest is Test {
     bytes quotecall;
     bytes quotecallUSDT;
     bytes quotecallWBTC;
-    bytes quotecallNonReverty;
 
     bytes legendCometSupplyScript = new YulHelper().getCode("DeFiScripts.sol/CometSupplyActions.json");
 
@@ -72,7 +71,6 @@ contract QuotecallTest is Test {
     address quotecallAddress;
     address quotecallUSDTAddress;
     address quotecallWBTCAddress;
-    address quotecallNonRevertyAddress;
     address legendCometSupplyScriptAddress;
     address legendCometWithdrawScriptAddress;
     address legendUniswapSwapScriptAddress;
@@ -93,23 +91,16 @@ contract QuotecallTest is Test {
         multicallAddress = codeJar.saveCode(multicall);
         revertsAddress = codeJar.saveCode(reverts);
 
-        quotecall = abi.encodePacked(
-            type(Quotecall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDC, MAX_DELTA_PERCENTAGE, true)
-        );
-        quotecallUSDT = abi.encodePacked(
-            type(Quotecall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDT, MAX_DELTA_PERCENTAGE, true)
-        );
-        quotecallWBTC = abi.encodePacked(
-            type(Quotecall).creationCode, abi.encode(ETH_BTC_PRICE_FEED, WBTC, MAX_DELTA_PERCENTAGE, true)
-        );
-        quotecallNonReverty = abi.encodePacked(
-            type(Quotecall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDC, MAX_DELTA_PERCENTAGE, false)
-        );
+        quotecall =
+            abi.encodePacked(type(Quotecall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDC, MAX_DELTA_PERCENTAGE));
+        quotecallUSDT =
+            abi.encodePacked(type(Quotecall).creationCode, abi.encode(ETH_USD_PRICE_FEED, USDT, MAX_DELTA_PERCENTAGE));
+        quotecallWBTC =
+            abi.encodePacked(type(Quotecall).creationCode, abi.encode(ETH_BTC_PRICE_FEED, WBTC, MAX_DELTA_PERCENTAGE));
 
         quotecallAddress = codeJar.saveCode(quotecall);
         quotecallUSDTAddress = codeJar.saveCode(quotecallUSDT);
         quotecallWBTCAddress = codeJar.saveCode(quotecallWBTC);
-        quotecallNonRevertyAddress = codeJar.saveCode(quotecallNonReverty);
 
         legendCometSupplyScriptAddress = codeJar.saveCode(legendCometSupplyScript);
         legendCometWithdrawScriptAddress = codeJar.saveCode(legendCometWithdrawScript);
@@ -122,12 +113,10 @@ contract QuotecallTest is Test {
         address storedPriceFeedAddress = Quotecall(quotecallAddress).nativeTokenBasedPriceFeedAddress();
         address storedPaymentTokenAddress = Quotecall(quotecallAddress).paymentTokenAddress();
         uint256 storedMaxDeltaPercentage = Quotecall(quotecallAddress).maxDeltaPercentage();
-        bool storedPropagateReverts = Quotecall(quotecallAddress).propagateReverts();
 
         assertEq(storedPriceFeedAddress, ETH_USD_PRICE_FEED);
         assertEq(storedPaymentTokenAddress, USDC);
         assertEq(storedMaxDeltaPercentage, MAX_DELTA_PERCENTAGE);
-        assertEq(storedPropagateReverts, true);
     }
 
     function testRevertsForInvalidCallContext() public {
@@ -416,7 +405,7 @@ contract QuotecallTest is Test {
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
 
-    function testQuotecallNonRevertyDoesNotRevertWhenCallReverts() public {
+    function testQuotecallRevertsWhenCallReverts() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         vm.txGasPrice(32 gwei);
@@ -427,7 +416,7 @@ contract QuotecallTest is Test {
         // Execute through quotecall
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
-            quotecallNonReverty,
+            quotecall,
             abi.encodeWithSelector(Quotecall.run.selector, revertsAddress, "", 8e6),
             ScriptType.ScriptSource
         );
@@ -435,10 +424,9 @@ contract QuotecallTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectEmit(true, true, true, true);
-        emit PayForGas(address(wallet), tx.origin, USDC, 8e6);
+        vm.expectRevert(abi.encodeWithSelector(Reverts.Whoops.selector));
         wallet.executeQuarkOperation(op, v, r, s);
 
-        assertEq(IERC20(USDC).balanceOf(address(wallet)), 992e6);
+        assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
 }
