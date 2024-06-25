@@ -1,4 +1,4 @@
-test=../../test
+test/=../../test
 codejar=../codejar/
 quark-core=../quark-core/
 quark-factory=../quark-factory/

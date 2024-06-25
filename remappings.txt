@@ -1,4 +1,4 @@
-test=test/
+test/=test/
 codejar=src/codejar/
 quark-core=src/quark-core/
 quark-core-scripts=src/quark-core-scripts/
