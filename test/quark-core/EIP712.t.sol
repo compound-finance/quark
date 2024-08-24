@@ -273,42 +273,43 @@ contract EIP712Test is Test {
         assertEq(stateManager.nextNonce(address(wallet)), op.nonce);
     }
 
-    function testNonceIsNotSetForReplayableOperation() public {
-        // gas: do not meter set-up
-        vm.pauseGasMetering();
-        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+    // TODO: Uncomment when replay tokens are supported
+    // function testNonceIsNotSetForReplayableOperation() public {
+    //     // gas: do not meter set-up
+    //     vm.pauseGasMetering();
+    //     bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
 
-        assertEq(counter.number(), 0);
+    //     assertEq(counter.number(), 0);
 
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            wallet,
-            incrementer,
-            abi.encodeWithSignature("incrementCounterReplayable(address)", counter),
-            ScriptType.ScriptSource
-        );
+    //     QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+    //         wallet,
+    //         incrementer,
+    //         abi.encodeWithSignature("incrementCounterReplayable(address)", counter),
+    //         ScriptType.ScriptSource
+    //     );
 
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
-        // submitter calls executeQuarkOperation with the signed operation
-        // gas: meter execute
-        vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+    //     // submitter calls executeQuarkOperation with the signed operation
+    //     // gas: meter execute
+    //     vm.resumeGasMetering();
+    //     wallet.executeQuarkOperation(op, v, r, s);
 
-        // counter is incremented
-        assertEq(counter.number(), 3);
+    //     // counter is incremented
+    //     assertEq(counter.number(), 3);
 
-        // nonce is NOT spent; the operation is replayable
-        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
+    //     // nonce is NOT spent; the operation is replayable
+    //     assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
 
-        // submitter executes the operation a second time
-        wallet.executeQuarkOperation(op, v, r, s);
+    //     // submitter executes the operation a second time
+    //     wallet.executeQuarkOperation(op, v, r, s);
 
-        // counter is incremented
-        assertEq(counter.number(), 6);
+    //     // counter is incremented
+    //     assertEq(counter.number(), 6);
 
-        // nonce is still not spent
-        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
-    }
+    //     // nonce is still not spent
+    //     assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
+    // }
 
     function testRevertBadRequirements() public {
         // gas: do not meter set-up

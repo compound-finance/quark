@@ -107,8 +107,11 @@ contract QuarkWallet is IERC1271 {
         )
     );
 
-    /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
-    bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
+    /// @notice Well-known storage slot for the currently executing script's callback address (if any)
+    bytes32 public constant CALLBACK_SLOT = bytes32(uint256(keccak256("quark.v1.callback")) - 1);
+
+    /// @notice Well-known storage slot for the currently executing script's address (if any)
+    bytes32 public constant ACTIVE_SCRIPT_SLOT = bytes32(uint256(keccak256("quark.v1.active.script")) - 1);
 
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
@@ -219,7 +222,9 @@ contract QuarkWallet is IERC1271 {
 
         emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
 
-        return stateManager.setActiveNonceAndCallback(op.nonce, op.scriptAddress, op.scriptCalldata);
+        stateManager.setNonce(op.nonce);
+
+        return executeScriptInternal(op.scriptAddress, op.scriptCalldata);
     }
 
     /**
@@ -249,7 +254,9 @@ contract QuarkWallet is IERC1271 {
 
         emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
 
-        return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
+        stateManager.setNonce(nonce);
+
+        return executeScriptInternal(scriptAddress, scriptCalldata);
     }
 
     /**
@@ -378,17 +385,15 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @notice Execute a QuarkOperation with a lock acquired on nonce-namespaced storage
-     * @dev Can only be called by stateManager during setActiveNonceAndCallback()
+     * @notice Execute a script using the given calldata
      * @param scriptAddress Address of script to execute
      * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
      * @return Result of executing the script, encoded as bytes
      */
-    function executeScriptWithNonceLock(address scriptAddress, bytes memory scriptCalldata)
-        external
+    function executeScriptInternal(address scriptAddress, bytes memory scriptCalldata)
+        internal
         returns (bytes memory)
     {
-        require(msg.sender == address(stateManager));
         if (scriptAddress.code.length == 0) {
             revert EmptyCode();
         }
@@ -396,11 +401,19 @@ contract QuarkWallet is IERC1271 {
         bool success;
         uint256 returnSize;
         uint256 scriptCalldataLen = scriptCalldata.length;
+        bytes32 activeScriptSlot = ACTIVE_SCRIPT_SLOT;
         assembly {
+            // Store the active script
+            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
+            sstore(activeScriptSlot, scriptAddress)
+
             // Note: CALLCODE is used to set the QuarkWallet as the `msg.sender`
             success :=
                 callcode(gas(), scriptAddress, /* value */ 0, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
+
+            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
+            sstore(activeScriptSlot, 0)
         }
 
         bytes memory returnData = new bytes(returnSize);
@@ -422,7 +435,12 @@ contract QuarkWallet is IERC1271 {
      * @dev Reverts if callback is not enabled by the script
      */
     fallback(bytes calldata data) external payable returns (bytes memory) {
-        address callback = address(uint160(uint256(stateManager.read(CALLBACK_KEY))));
+        bytes32 callbackSlot = CALLBACK_SLOT;
+        address callback;
+        assembly {
+            // TODO: Move to TLOAD after updating Solidity version to >=0.8.24
+            callback := sload(callbackSlot)
+        }
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);
             if (!success) {

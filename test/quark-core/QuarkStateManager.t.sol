@@ -16,7 +16,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 
 import {Logger} from "test/lib/Logger.sol";
 import {Counter} from "test/lib/Counter.sol";
-import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
+// import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
 
 contract QuarkStateManagerTest is Test {
     CodeJar public codeJar;
@@ -30,21 +30,6 @@ contract QuarkStateManagerTest is Test {
         console.log("QuarkStateManager deployed to: %s", address(stateManager));
     }
 
-    function testRevertsForNoActiveNonce() public {
-        // this contract does not have an active nonce
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NoActiveNonce.selector));
-        stateManager.clearNonce();
-
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NoActiveNonce.selector));
-        stateManager.read(bytes32("hello"));
-
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NoActiveNonce.selector));
-        stateManager.write(bytes32("hello"), bytes32("goodbye"));
-
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NoActiveNonce.selector));
-        stateManager.getActiveScript();
-    }
-
     function testNonceZeroIsValid() public {
         // by default, nonce 0 is not set
         assertEq(stateManager.isNonceSet(address(0x123), 0), false);
@@ -53,81 +38,6 @@ contract QuarkStateManagerTest is Test {
         vm.prank(address(0x123));
         stateManager.setNonce(0);
         assertEq(stateManager.isNonceSet(address(0x123), 0), true);
-
-        // a QuarkWallet can use nonce 0 as the active nonce
-        vm.pauseGasMetering(); // do not meter deployment gas
-        QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, stateManager);
-        bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
-        address scriptAddress = codeJar.saveCode(getMessageDetails);
-        bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
-        vm.resumeGasMetering();
-
-        vm.prank(address(wallet));
-        bytes memory result = stateManager.setActiveNonceAndCallback(0, scriptAddress, call);
-        assertEq(result, abi.encode(address(wallet), 0));
-        assertEq(stateManager.isNonceSet(address(wallet), 0), true);
-        // TODO: enable this test-case once nonceScriptAddress is public
-        // assertEq(stateManager.nonceScriptAddress(address(wallet), 0), scriptAddress);
-    }
-
-    function testSetActiveNonceAndCallbackNotImplemented() public {
-        // address(this) is a contract that does not implement a fallback; should revert
-        vm.expectRevert();
-        stateManager.setActiveNonceAndCallback(0, address(0), bytes(""));
-
-        // for an EOA, setActiveNonceAndCallback will also revert...
-        vm.expectRevert();
-        vm.prank(address(0x123));
-        stateManager.setActiveNonceAndCallback(0, address(0x123), bytes(""));
-    }
-
-    function testRevertsIfScriptAddressIsNull() public {
-        // the null script is not allowed, it will revert with EmptyCode
-        vm.pauseGasMetering();
-        QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, stateManager);
-        vm.resumeGasMetering();
-        vm.prank(address(wallet));
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
-        bytes memory result = stateManager.setActiveNonceAndCallback(0, address(0), bytes(""));
-        assertEq(result, bytes(""));
-    }
-
-    function testRevertsIfScriptAddressIsEOA() public {
-        // an EOA can be passed as scriptAddress and it will just return empty bytes
-        vm.pauseGasMetering();
-        QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, stateManager);
-        vm.resumeGasMetering();
-        vm.prank(address(wallet));
-        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
-        stateManager.setActiveNonceAndCallback(0, address(0x123), bytes(""));
-    }
-
-    function testReadStorageForWallet() public {
-        // gas: disable metering except while executing operations
-        vm.pauseGasMetering();
-
-        Counter counter = new Counter();
-        assertEq(counter.number(), 0);
-
-        bytes memory maxCounterScript = new YulHelper().getCode("MaxCounterScript.sol/MaxCounterScript.json");
-        address maxCounterScriptAddress = codeJar.saveCode(maxCounterScript);
-        bytes memory call = abi.encodeWithSignature("run(address)", address(counter));
-
-        QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, stateManager);
-
-        vm.resumeGasMetering();
-
-        assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(0)));
-
-        vm.prank(address(wallet));
-        stateManager.setActiveNonceAndCallback(0, maxCounterScriptAddress, call);
-
-        assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(1)));
-
-        vm.prank(address(wallet));
-        stateManager.setActiveNonceAndCallback(0, maxCounterScriptAddress, call);
-
-        assertEq(stateManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(2)));
     }
 
     function testSetsAndGetsNextNonces() public {
@@ -148,5 +58,12 @@ contract QuarkStateManagerTest is Test {
         stateManager.setNonce(551);
 
         assertEq(stateManager.nextNonce(address(this)), 571);
+    }
+
+    function testRevertsIfNonceIsAlreadySet() public {
+        stateManager.setNonce(0);
+
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
+        stateManager.setNonce(0);
     }
 }
