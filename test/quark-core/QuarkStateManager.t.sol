@@ -36,7 +36,7 @@ contract QuarkStateManagerTest is Test {
 
         // nonce 0 can be set manually
         vm.prank(address(0x123));
-        stateManager.setNonce(0);
+        stateManager.claimNonce(0);
         assertEq(stateManager.isNonceSet(address(0x123), 0), true);
     }
 
@@ -44,26 +44,26 @@ contract QuarkStateManagerTest is Test {
         assertEq(stateManager.nextNonce(address(this)), 0);
 
         for (uint96 i = 0; i <= 550; i++) {
-            stateManager.setNonce(i);
+            stateManager.claimNonce(i);
         }
 
         assertEq(stateManager.nextNonce(address(this)), 551);
 
         for (uint96 i = 552; i <= 570; i++) {
-            stateManager.setNonce(i);
+            stateManager.claimNonce(i);
         }
 
         assertEq(stateManager.nextNonce(address(this)), 551);
 
-        stateManager.setNonce(551);
+        stateManager.claimNonce(551);
 
         assertEq(stateManager.nextNonce(address(this)), 571);
     }
 
     function testRevertsIfNonceIsAlreadySet() public {
-        stateManager.setNonce(0);
+        stateManager.claimNonce(0);
 
         vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
-        stateManager.setNonce(0);
+        stateManager.claimNonce(0);
     }
 }

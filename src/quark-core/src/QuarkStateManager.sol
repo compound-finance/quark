@@ -66,10 +66,10 @@ contract QuarkStateManager {
     }
 
     /**
-     * @notice Set a given nonce for the calling wallet, reverting if the nonce is already set
-     * @param nonce Nonce to set for the calling wallet
+     * @notice Claim a given nonce for the calling wallet, reverting if the nonce is already set
+     * @param nonce Nonce to claim for the calling wallet
      */
-    function setNonce(uint96 nonce) external {
+    function claimNonce(uint96 nonce) external {
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
         if (isNonceSetInternal(msg.sender, bucket, setMask)) {
             revert NonceAlreadySet();

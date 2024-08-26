@@ -111,6 +111,8 @@ abstract contract QuarkScript {
         return write(keccak256(bytes(key)), value);
     }
 
+    // TODO: Consider adding nonce-based scoping by TLOAD'ing the nonce and using
+    // that to hash the key.
     function write(bytes32 key, bytes32 value) internal {
         assembly {
             sstore(key, value)

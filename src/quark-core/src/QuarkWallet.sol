@@ -220,9 +220,9 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(op.scriptSources[i]);
         }
 
-        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
+        stateManager.claimNonce(op.nonce);
 
-        stateManager.setNonce(op.nonce);
+        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
 
         return executeScriptInternal(op.scriptAddress, op.scriptCalldata);
     }
@@ -252,9 +252,9 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(scriptSources[i]);
         }
 
-        emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
+        stateManager.claimNonce(nonce);
 
-        stateManager.setNonce(nonce);
+        emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
 
         return executeScriptInternal(scriptAddress, scriptCalldata);
     }
@@ -403,6 +403,8 @@ contract QuarkWallet is IERC1271 {
         uint256 scriptCalldataLen = scriptCalldata.length;
         bytes32 activeScriptSlot = ACTIVE_SCRIPT_SLOT;
         assembly {
+            // TODO: TSTORE the callback slot to 0
+
             // Store the active script
             // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
             sstore(activeScriptSlot, scriptAddress)
