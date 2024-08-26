@@ -131,7 +131,7 @@ contract CallbacksTest is Test {
             ScriptType.ScriptAddress
         );
 
-        parentOp.nonce = nestedOp.nonce + 1;
+        parentOp.nonce = new QuarkOperationHelper().incrementNonce(nestedOp.nonce);
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
@@ -163,7 +163,7 @@ contract CallbacksTest is Test {
             ScriptType.ScriptAddress
         );
 
-        parentOp.nonce = nestedOp.nonce + 1;
+        parentOp.nonce = new QuarkOperationHelper().incrementNonce(nestedOp.nonce);
 
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 

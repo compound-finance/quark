@@ -31,39 +31,47 @@ contract QuarkStateManagerTest is Test {
     }
 
     function testNonceZeroIsValid() public {
+        bytes32 nonce = bytes32(uint256(0));
+        bytes32 NO_REPLAY_TOKEN = stateManager.NO_REPLAY_TOKEN();
+
         // by default, nonce 0 is not set
-        assertEq(stateManager.isNonceSet(address(0x123), 0), false);
+        assertEq(stateManager.getNonceToken(address(0x123), nonce), stateManager.CLAIMABLE_TOKEN());
 
         // nonce 0 can be set manually
         vm.prank(address(0x123));
-        stateManager.claimNonce(0);
-        assertEq(stateManager.isNonceSet(address(0x123), 0), true);
+        stateManager.submitNonceToken(nonce, NO_REPLAY_TOKEN);
+        assertEq(stateManager.getNonceToken(address(0x123), nonce), stateManager.NO_REPLAY_TOKEN());
     }
 
-    function testSetsAndGetsNextNonces() public {
-        assertEq(stateManager.nextNonce(address(this)), 0);
+    // TODO: We should really replace this test with one that
+    //       checks for a replay chain. We can check multiple nonces, but
+    //       it's not strictly as interesting now.
+    // function testSetsAndGetsNextNonces() public {
+    //     assertEq(stateManager.nextNonce(address(this)), 0);
 
-        for (uint96 i = 0; i <= 550; i++) {
-            stateManager.claimNonce(i);
-        }
+    //     for (uint96 i = 0; i <= 550; i++) {
+    //         stateManager.claimNonce(i);
+    //     }
 
-        assertEq(stateManager.nextNonce(address(this)), 551);
+    //     assertEq(stateManager.nextNonce(address(this)), 551);
 
-        for (uint96 i = 552; i <= 570; i++) {
-            stateManager.claimNonce(i);
-        }
+    //     for (uint96 i = 552; i <= 570; i++) {
+    //         stateManager.claimNonce(i);
+    //     }
 
-        assertEq(stateManager.nextNonce(address(this)), 551);
+    //     assertEq(stateManager.nextNonce(address(this)), 551);
 
-        stateManager.claimNonce(551);
+    //     stateManager.claimNonce(551);
 
-        assertEq(stateManager.nextNonce(address(this)), 571);
-    }
+    //     assertEq(stateManager.nextNonce(address(this)), 571);
+    // }
 
     function testRevertsIfNonceIsAlreadySet() public {
-        stateManager.claimNonce(0);
+        bytes32 NO_REPLAY_TOKEN = stateManager.NO_REPLAY_TOKEN();
+        bytes32 nonce = bytes32(uint256(0));
+        stateManager.submitNonceToken(nonce, NO_REPLAY_TOKEN);
 
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonceAlreadySet.selector));
-        stateManager.claimNonce(0);
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonReplayableNonce.selector, address(this), nonce, bytes32(type(uint256).max)));
+        stateManager.submitNonceToken(nonce, NO_REPLAY_TOKEN);
     }
 }
