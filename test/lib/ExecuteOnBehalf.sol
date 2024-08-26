@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import "quark-core/src/QuarkWallet.sol";
 
 contract ExecuteOnBehalf {
-    function run(QuarkWallet targetWallet, uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
+    function run(QuarkWallet targetWallet, bytes32 nonce, address scriptAddress, bytes calldata scriptCalldata)
         public
         returns (bytes memory)
     {

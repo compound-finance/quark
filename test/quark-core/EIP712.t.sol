@@ -73,7 +73,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 3);
 
         // nonce is spent
-        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), true);
+        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(type(uint256).max));
     }
 
     function testRevertsForBadCode() public {
@@ -99,7 +99,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
+        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testStructHash() public {
@@ -114,7 +114,7 @@ contract EIP712Test is Test {
 
         bytes[] memory scriptSources = new bytes[](1);
         scriptSources[0] = incrementer;
-        uint96 nextNonce = 0;
+        bytes32 nextNonce = bytes32(uint256(0));
         bytes memory scriptCalldata = abi.encodeWithSignature("incrementCounter(address)", counter);
 
         assertEq(scriptCalldata, hex"e5910ae7000000000000000000000000f62849f9a0b5bf2913b396098f7c7019b51a820a");
@@ -137,14 +137,14 @@ contract EIP712Test is Test {
                verifyingContract: '0x5991A2dF15A8F6A256D3Ec51E99254Cd3fb576A9'
            },
            { QuarkOperation: [
-               { name: 'nonce', type: 'uint96' },
+               { name: 'nonce', type: 'bytes32' },
                { name: 'scriptAddress', type: 'address' },
                { name: 'scriptSources', type: 'bytes[]' },
                { name: 'scriptCalldata', type: 'bytes' },
                { name: 'expiry', type: 'uint256' }
            ]},
            {
-                nonce: 0,
+                nonce: '0x0000000000000000000000000000000000000000000000000000000000000000',
                 scriptAddress: '0x5cB7957c702bB6BB8F22aCcf66657F0defd4550b',
                 scriptSources: ['0x608060405234801561001057600080fd5b506102a7806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80636b582b7614610056578063e5910ae714610069575b73f62849f9a0b5bf2913b396098f7c7019b51a820a61005481610077565b005b610054610064366004610230565b610173565b610054610077366004610230565b806001600160a01b031663d09de08a6040518163ffffffff1660e01b8152600401600060405180830381600087803b1580156100b257600080fd5b505af11580156100c6573d6000803e3d6000fd5b50505050806001600160a01b031663d09de08a6040518163ffffffff1660e01b8152600401600060405180830381600087803b15801561010557600080fd5b505af1158015610119573d6000803e3d6000fd5b50505050806001600160a01b031663d09de08a6040518163ffffffff1660e01b8152600401600060405180830381600087803b15801561015857600080fd5b505af115801561016c573d6000803e3d6000fd5b5050505050565b61017c81610077565b306001600160a01b0316632e716fb16040518163ffffffff1660e01b8152600401602060405180830381865afa1580156101ba573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101de9190610254565b6001600160a01b0316631913592a6040518163ffffffff1660e01b8152600401600060405180830381600087803b15801561015857600080fd5b6001600160a01b038116811461022d57600080fd5b50565b60006020828403121561024257600080fd5b813561024d81610218565b9392505050565b60006020828403121561026657600080fd5b815161024d8161021856fea26469706673582212200d71f9cd831b3c67d6f6131f807ee7fc47d21f07fe8f7b90a01dab56abb8403464736f6c63430008170033'],
                 scriptCalldata: '0xe5910ae7000000000000000000000000f62849f9a0b5bf2913b396098f7c7019b51a820a',
@@ -152,14 +152,14 @@ contract EIP712Test is Test {
            }
         )
 
-        0x1901ce5fced5138ae147492ff6ba56247e9d6f30bbbe45ae60eb0a0135d528a94be4aa19c4de25dfba6a38836420cc4ecf14048cee3f258a3329bfeb40856daf159b
+        0x1901ce5fced5138ae147492ff6ba56247e9d6f30bbbe45ae60eb0a0135d528a94be437302412583af420731c67963b8628682b151f38070c3c9142fc40054158666e
         */
 
         bytes32 domainHash = new SignatureHelper().domainSeparator(wallet_);
         assertEq(domainHash, hex"ce5fced5138ae147492ff6ba56247e9d6f30bbbe45ae60eb0a0135d528a94be4");
 
         bytes32 structHash = new SignatureHelper().opStructHash(op);
-        assertEq(structHash, hex"aa19c4de25dfba6a38836420cc4ecf14048cee3f258a3329bfeb40856daf159b");
+        assertEq(structHash, hex"37302412583af420731c67963b8628682b151f38070c3c9142fc40054158666e");
     }
 
     function testRevertsForBadCalldata() public {
@@ -182,7 +182,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
+        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRevertsForBadExpiry() public {
@@ -204,8 +204,8 @@ contract EIP712Test is Test {
         // counter is unchanged
         assertEq(counter.number(), 0);
 
-        // alice's nonce is not incremented
-        assertEq(stateManager.nextNonce(address(wallet)), op.nonce);
+        // alice's nonce is not set
+        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRevertsOnReusedNonce() public {
@@ -222,10 +222,10 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(stateManager.nextNonce(address(wallet)), op.nonce + 1);
+        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(type(uint256).max));
 
         // submitter tries to reuse the same signature twice, for a non-replayable operation
-        vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
+        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonReplayableNonce.selector, address(wallet), op.nonce, bytes32(type(uint256).max)));
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
@@ -248,7 +248,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(stateManager.nextNonce(address(wallet)), op.nonce);
+        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRevertsInvalidS() public {
@@ -270,7 +270,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, invalidS);
 
         assertEq(counter.number(), 0);
-        assertEq(stateManager.nextNonce(address(wallet)), op.nonce);
+        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     // TODO: Uncomment when replay tokens are supported
@@ -325,15 +325,15 @@ contract EIP712Test is Test {
             executeWithRequirements,
             abi.encodeCall(
                 ExecuteWithRequirements.runWithRequirements,
-                (new uint96[](0), incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
+                (new bytes32[](0), incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
             ),
             ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // submitter alters the requirements
-        uint96[] memory badRequirements = new uint96[](1);
-        badRequirements[0] = 123;
+        bytes32[] memory badRequirements = new bytes32[](1);
+        badRequirements[0] = bytes32(uint256(123));
         op.scriptCalldata = abi.encodeCall(
             ExecuteWithRequirements.runWithRequirements,
             (badRequirements, incrementerAddress, abi.encodeWithSignature("incrementCounter(address)", counter))
@@ -347,7 +347,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(stateManager.nextNonce(address(wallet)), op.nonce);
+        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRequirements() public {
@@ -362,7 +362,7 @@ contract EIP712Test is Test {
         QuarkWallet.QuarkOperation memory firstOp = incrementCounterOperation(wallet);
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, wallet, firstOp);
 
-        uint96[] memory requirements = new uint96[](1);
+        bytes32[] memory requirements = new bytes32[](1);
         requirements[0] = firstOp.nonce;
         QuarkWallet.QuarkOperation memory dependentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             wallet,
@@ -374,7 +374,7 @@ contract EIP712Test is Test {
             ScriptType.ScriptSource
         );
 
-        dependentOp.nonce = firstOp.nonce + 1;
+        dependentOp.nonce = new QuarkOperationHelper().incrementNonce(firstOp.nonce);
 
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, dependentOp);
 

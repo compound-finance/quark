@@ -12,6 +12,9 @@ enum ScriptType {
 // TODO: QuarkOperationHelper ScriptType doesn't really make sense anymore, since scriptSource
 // has been replaced with scriptSources and scriptAddress is now always required.
 contract QuarkOperationHelper is Test {
+    error SemiRandomNonceRequiresQuarkStateManagerOrInitializedQuarkWallet(address quarkWallet);
+    error Impossible();
+
     function newBasicOp(QuarkWallet wallet, bytes memory scriptSource, ScriptType scriptType)
         external
         returns (QuarkWallet.QuarkOperation memory)
@@ -41,7 +44,7 @@ contract QuarkOperationHelper is Test {
                 scriptAddress: scriptAddress,
                 scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
-                nonce: wallet.stateManager().nextNonce(address(wallet)),
+                nonce: semiRandomNonce(wallet),
                 expiry: block.timestamp + 1000
             });
         } else {
@@ -49,9 +52,35 @@ contract QuarkOperationHelper is Test {
                 scriptAddress: scriptAddress,
                 scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
-                nonce: wallet.stateManager().nextNonce(address(wallet)),
+                nonce: semiRandomNonce(wallet),
                 expiry: block.timestamp + 1000
             });
         }
+    }
+
+    /// @dev Note: not sufficiently random for non-test case usage.
+    function semiRandomNonce(QuarkWallet wallet) public view returns (bytes32) {
+        if (address(wallet).code.length == 0) {
+            revert SemiRandomNonceRequiresQuarkStateManagerOrInitializedQuarkWallet(address(wallet));
+        }
+
+        return semiRandomNonce(wallet.stateManager(), wallet);
+    }
+
+    /// @dev Note: not sufficiently random for non-test case usage.
+    function semiRandomNonce(QuarkStateManager quarkStateManager, QuarkWallet wallet) public view returns (bytes32) {
+        bytes32 nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 1);
+        while (true) {
+            if (quarkStateManager.getNonceToken(address(wallet), nonce) == bytes32(uint256(0))) {
+                return nonce;
+            }
+
+            nonce = bytes32(uint256(keccak256(abi.encodePacked(nonce))) - 1);
+        }
+        revert Impossible();
+    }
+
+    function incrementNonce(bytes32 nonce) public pure returns (bytes32) {
+        return bytes32(uint256(nonce) + 1);
     }
 }

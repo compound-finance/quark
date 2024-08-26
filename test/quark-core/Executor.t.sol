@@ -65,12 +65,12 @@ contract ExecutorTest is Test {
 
         // execute counter.increment(5) as bob from alice's wallet (that is, from bob's wallet's executor)
         aliceWallet.executeScript(
-            stateManager.nextNonce(address(aliceWallet)),
+            new QuarkOperationHelper().semiRandomNonce(stateManager, aliceWallet),
             executeOnBehalfAddress,
             abi.encodeWithSignature(
-                "run(address,uint96,address,bytes)",
+                "run(address,bytes32,address,bytes)",
                 address(bobWallet),
-                stateManager.nextNonce(address(bobWallet)),
+                new QuarkOperationHelper().semiRandomNonce(stateManager, bobWallet),
                 address(ethcallAddress),
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 5), 0
@@ -95,9 +95,9 @@ contract ExecutorTest is Test {
             aliceWallet,
             executeOnBehalf,
             abi.encodeWithSignature(
-                "run(address,uint96,address,bytes)",
+                "run(address,bytes32,address,bytes)",
                 address(bobWallet),
-                stateManager.nextNonce(address(bobWallet)),
+                new QuarkOperationHelper().semiRandomNonce(stateManager, bobWallet),
                 address(ethcallAddress),
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 3), 0

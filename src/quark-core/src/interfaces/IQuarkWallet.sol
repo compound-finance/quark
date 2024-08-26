@@ -10,7 +10,7 @@ interface IQuarkWallet {
     /// @notice The structure of a signed operation to execute in the context of this wallet
     struct QuarkOperation {
         /// @notice Nonce identifier for the operation
-        uint96 nonce;
+        bytes32 nonce;
         /// @notice The address of the transaction script to run
         address scriptAddress;
         /// @notice Creation codes Quark must ensure are deployed before executing this operation
@@ -32,7 +32,7 @@ interface IQuarkWallet {
         bytes32 s
     ) external returns (bytes memory);
     function executeScript(
-        uint96 nonce,
+        bytes32 nonce,
         address scriptAddress,
         bytes calldata scriptCalldata,
         bytes[] calldata scriptSources

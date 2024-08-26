@@ -23,7 +23,7 @@ library QuarkWalletMetadata {
 
     /// @notice The EIP-712 typehash for authorizing an operation for this version of QuarkWallet
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(uint96 nonce,address scriptAddress,bytes[] scriptSources,bytes scriptCalldata,uint256 expiry)"
+        "QuarkOperation(bytes32 nonce,address scriptAddress,bytes[] scriptSources,bytes scriptCalldata,uint256 expiry)"
     );
 
     /// @notice The EIP-712 typehash for authorizing a MultiQuarkOperation for this version of QuarkWallet
@@ -65,7 +65,7 @@ contract QuarkWallet is IERC1271 {
 
     /// @notice Event emitted when a Quark script is executed by this Quark wallet
     event ExecuteQuarkScript(
-        address indexed executor, address indexed scriptAddress, uint96 indexed nonce, ExecutionType executionType
+        address indexed executor, address indexed scriptAddress, bytes32 indexed nonce, ExecutionType executionType
     );
 
     /// @notice Address of CodeJar contract used to deploy transaction script source code
@@ -113,13 +113,16 @@ contract QuarkWallet is IERC1271 {
     /// @notice Well-known storage slot for the currently executing script's address (if any)
     bytes32 public constant ACTIVE_SCRIPT_SLOT = bytes32(uint256(keccak256("quark.v1.active.script")) - 1);
 
+    /// @notice A token that implies a Quark Operation is no longer replayable.
+    bytes32 public constant NO_REPLAY_TOKEN = bytes32(type(uint).max);
+
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
 
     /// @notice The structure of a signed operation to execute in the context of this wallet
     struct QuarkOperation {
         /// @notice Nonce identifier for the operation
-        uint96 nonce;
+        bytes32 nonce;
         /// @notice The address of the transaction script to run
         address scriptAddress;
         /// @notice Creation codes Quark must ensure are deployed before executing this operation
@@ -193,7 +196,7 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @notice Verify a signature and execute a QuarkOperation
+     * @notice Verify a signature and execute a single-use QuarkOperation
      * @param op A QuarkOperation struct
      * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
      * @param v EIP-712 signature v value
@@ -220,7 +223,44 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(op.scriptSources[i]);
         }
 
-        stateManager.claimNonce(op.nonce);
+        stateManager.submitNonceToken(op.nonce, NO_REPLAY_TOKEN);
+
+        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
+
+        return executeScriptInternal(op.scriptAddress, op.scriptCalldata);
+    }
+
+    /**
+     * @notice Verify a signature and execute a replayable QuarkOperation
+     * @param op A QuarkOperation struct
+     * @param replayToken The replay token for the replayable quark operation. For the first submission, this is generally the `rootHash`.
+     * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
+     * @param v EIP-712 signature v value
+     * @param r EIP-712 signature r value
+     * @param s EIP-712 signature s value
+     * @return Return value from the executed operation
+     */
+    function verifySigAndExecuteReplayableQuarkOperation(
+        QuarkOperation calldata op,
+        bytes32 replayToken,
+        bytes32 digest,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal returns (bytes memory) {
+        if (block.timestamp >= op.expiry) {
+            revert SignatureExpired();
+        }
+
+        // if the signature check does not revert, the signature is valid
+        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
+
+        // guarantee every script in scriptSources is deployed
+        for (uint256 i = 0; i < op.scriptSources.length; ++i) {
+            codeJar.saveCode(op.scriptSources[i]);
+        }
+
+        stateManager.submitNonceToken(op.nonce, replayToken);
 
         emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
 
@@ -237,7 +277,7 @@ contract QuarkWallet is IERC1271 {
      * @return Return value from the executed operation
      */
     function executeScript(
-        uint96 nonce,
+        bytes32 nonce,
         address scriptAddress,
         bytes calldata scriptCalldata,
         bytes[] calldata scriptSources
@@ -252,7 +292,7 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(scriptSources[i]);
         }
 
-        stateManager.claimNonce(nonce);
+        stateManager.submitNonceToken(nonce, NO_REPLAY_TOKEN);
 
         emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
 
