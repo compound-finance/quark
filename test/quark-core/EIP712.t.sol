@@ -122,6 +122,7 @@ contract EIP712Test is Test {
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             nonce: nextNonce,
+            isReplayable: true,
             scriptAddress: incrementerAddress,
             scriptSources: scriptSources,
             scriptCalldata: scriptCalldata,
@@ -138,6 +139,7 @@ contract EIP712Test is Test {
            },
            { QuarkOperation: [
                { name: 'nonce', type: 'bytes32' },
+               { name: 'isReplayable', type: 'bool' },
                { name: 'scriptAddress', type: 'address' },
                { name: 'scriptSources', type: 'bytes[]' },
                { name: 'scriptCalldata', type: 'bytes' },
@@ -145,6 +147,7 @@ contract EIP712Test is Test {
            ]},
            {
                 nonce: '0x0000000000000000000000000000000000000000000000000000000000000000',
+                isReplayable: true,
                 scriptAddress: '0x5cB7957c702bB6BB8F22aCcf66657F0defd4550b',
                 scriptSources: ['0x608060405234801561001057600080fd5b506102a7806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80636b582b7614610056578063e5910ae714610069575b73f62849f9a0b5bf2913b396098f7c7019b51a820a61005481610077565b005b610054610064366004610230565b610173565b610054610077366004610230565b806001600160a01b031663d09de08a6040518163ffffffff1660e01b8152600401600060405180830381600087803b1580156100b257600080fd5b505af11580156100c6573d6000803e3d6000fd5b50505050806001600160a01b031663d09de08a6040518163ffffffff1660e01b8152600401600060405180830381600087803b15801561010557600080fd5b505af1158015610119573d6000803e3d6000fd5b50505050806001600160a01b031663d09de08a6040518163ffffffff1660e01b8152600401600060405180830381600087803b15801561015857600080fd5b505af115801561016c573d6000803e3d6000fd5b5050505050565b61017c81610077565b306001600160a01b0316632e716fb16040518163ffffffff1660e01b8152600401602060405180830381865afa1580156101ba573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906101de9190610254565b6001600160a01b0316631913592a6040518163ffffffff1660e01b8152600401600060405180830381600087803b15801561015857600080fd5b6001600160a01b038116811461022d57600080fd5b50565b60006020828403121561024257600080fd5b813561024d81610218565b9392505050565b60006020828403121561026657600080fd5b815161024d8161021856fea26469706673582212200d71f9cd831b3c67d6f6131f807ee7fc47d21f07fe8f7b90a01dab56abb8403464736f6c63430008170033'],
                 scriptCalldata: '0xe5910ae7000000000000000000000000f62849f9a0b5bf2913b396098f7c7019b51a820a',
@@ -152,14 +155,16 @@ contract EIP712Test is Test {
            }
         )
 
-        0x1901ce5fced5138ae147492ff6ba56247e9d6f30bbbe45ae60eb0a0135d528a94be437302412583af420731c67963b8628682b151f38070c3c9142fc40054158666e
+        0x1901
+        ce5fced5138ae147492ff6ba56247e9d6f30bbbe45ae60eb0a0135d528a94be4
+        115a39f16a8c9e3e390e94dc858a17eba53b5358382af38b02f1ac31c2b5f9b0
         */
 
         bytes32 domainHash = new SignatureHelper().domainSeparator(wallet_);
         assertEq(domainHash, hex"ce5fced5138ae147492ff6ba56247e9d6f30bbbe45ae60eb0a0135d528a94be4");
 
         bytes32 structHash = new SignatureHelper().opStructHash(op);
-        assertEq(structHash, hex"37302412583af420731c67963b8628682b151f38070c3c9142fc40054158666e");
+        assertEq(structHash, hex"115a39f16a8c9e3e390e94dc858a17eba53b5358382af38b02f1ac31c2b5f9b0");
     }
 
     function testRevertsForBadCalldata() public {
@@ -227,7 +232,11 @@ contract EIP712Test is Test {
         // submitter tries to reuse the same signature twice, for a non-replayable operation
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(wallet), op.nonce, bytes32(type(uint256).max)
+                QuarkNonceManager.NonReplayableNonce.selector,
+                address(wallet),
+                op.nonce,
+                bytes32(type(uint256).max),
+                true
             )
         );
         wallet.executeQuarkOperation(op, v, r, s);

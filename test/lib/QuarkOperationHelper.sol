@@ -45,6 +45,7 @@ contract QuarkOperationHelper is Test {
                 scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
                 nonce: semiRandomNonce(wallet),
+                isReplayable: false,
                 expiry: block.timestamp + 1000
             });
         } else {
@@ -53,6 +54,7 @@ contract QuarkOperationHelper is Test {
                 scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
                 nonce: semiRandomNonce(wallet),
+                isReplayable: false,
                 expiry: block.timestamp + 1000
             });
         }

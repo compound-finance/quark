@@ -122,6 +122,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
 
@@ -168,6 +169,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
 
@@ -216,6 +218,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
 
@@ -270,6 +273,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
         bytes32 op1Digest = new SignatureHelper().opDigest(aliceWalletAddress, op1);
@@ -279,6 +283,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: new QuarkOperationHelper().incrementNonce(nonce),
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
         op2.nonce = new QuarkOperationHelper().incrementNonce(op1.nonce);
@@ -325,6 +330,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
         bytes32 op1Digest = new SignatureHelper().opDigest(aliceWalletAddress, op1);
@@ -334,6 +340,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: new QuarkOperationHelper().incrementNonce(nonce),
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
         op2.nonce = new QuarkOperationHelper().incrementNonce(op1.nonce);
@@ -383,6 +390,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: nonce,
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
         bytes32 op1Digest = new SignatureHelper().opDigest(aliceWalletAddress, op1);
@@ -392,6 +400,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("incrementCounter(address)", counter),
             nonce: new QuarkOperationHelper().incrementNonce(nonce),
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
         op2.nonce = new QuarkOperationHelper().incrementNonce(op1.nonce);
@@ -442,6 +451,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
             nonce: nonce,
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
@@ -477,6 +487,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             scriptSources: new bytes[](0),
             scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
             nonce: nonce,
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
@@ -554,6 +565,7 @@ contract QuarkWalletProxyFactoryTest is Test {
                 )
             ),
             nonce: new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWalletPrimary),
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWalletPrimary, op);

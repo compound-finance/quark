@@ -23,7 +23,7 @@ library QuarkWalletMetadata {
 
     /// @notice The EIP-712 typehash for authorizing an operation for this version of QuarkWallet
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(bytes32 nonce,address scriptAddress,bytes[] scriptSources,bytes scriptCalldata,uint256 expiry)"
+        "QuarkOperation(bytes32 nonce,bool isReplayable,address scriptAddress,bytes[] scriptSources,bytes scriptCalldata,uint256 expiry)"
     );
 
     /// @notice The EIP-712 typehash for authorizing a MultiQuarkOperation for this version of QuarkWallet
@@ -71,7 +71,7 @@ contract QuarkWallet is IERC1271 {
     /// @notice Address of CodeJar contract used to deploy transaction script source code
     CodeJar public immutable codeJar;
 
-    /// @notice Address of QuarkNonceManager contract that manages nonces and nonce-namespaced transaction script storage
+    /// @notice Address of QuarkNonceManager contract that manages nonces for this quark wallet
     QuarkNonceManager public immutable nonceManager;
 
     /// @notice Name of contract
@@ -123,6 +123,8 @@ contract QuarkWallet is IERC1271 {
     struct QuarkOperation {
         /// @notice Nonce identifier for the operation
         bytes32 nonce;
+        /// @notice Whether this script is replayable or not.
+        bool isReplayable;
         /// @notice The address of the transaction script to run
         address scriptAddress;
         /// @notice Creation codes Quark must ensure are deployed before executing this operation
@@ -136,7 +138,7 @@ contract QuarkWallet is IERC1271 {
     /**
      * @notice Construct a new QuarkWalletImplementation
      * @param codeJar_ The CodeJar contract used to deploy scripts
-     * @param nonceManager_ The QuarkNonceManager contract used to write/read nonces and storage for this wallet
+     * @param nonceManager_ The QuarkNonceManager contract used to write/read nonces for this wallet
      */
     constructor(CodeJar codeJar_, QuarkNonceManager nonceManager_) {
         codeJar = codeJar_;
@@ -156,9 +158,29 @@ contract QuarkWallet is IERC1271 {
         external
         returns (bytes memory)
     {
+        return executeQuarkOperationWithSubmissionToken(op, getInitialSubmissionToken(op), v, r, s);
+    }
+
+    /**
+     * @notice Executes a first play or a replay of a QuarkOperation via signature
+     * @dev Can only be called with signatures from the wallet's signer
+     * @param op A QuarkOperation struct
+     * @param submissionToken A submission token. For replayable operations, initial value should be `submissionToken = op.nonce`, for non-replayable operations, `submissionToken = bytes32(type(uint256).max)`.
+     * @param v EIP-712 signature v value
+     * @param r EIP-712 signature r value
+     * @param s EIP-712 signature s value
+     * @return Return value from the executed operation
+     */
+    function executeQuarkOperationWithSubmissionToken(
+        QuarkOperation calldata op,
+        bytes32 submissionToken,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public returns (bytes memory) {
         bytes32 opDigest = getDigestForQuarkOperation(op);
 
-        return verifySigAndExecuteQuarkOperation(op, opDigest, v, r, s);
+        return verifySigAndExecuteQuarkOperation(op, submissionToken, opDigest, v, r, s);
     }
 
     /**
@@ -178,6 +200,28 @@ contract QuarkWallet is IERC1271 {
         bytes32 r,
         bytes32 s
     ) public returns (bytes memory) {
+        return executeMultiQuarkOperationWithReplayToken(op, getInitialSubmissionToken(op), opDigests, v, r, s);
+    }
+
+    /**
+     * @notice Executes a first play or a replay of a QuarkOperation that is part of a MultiQuarkOperation via signature
+     * @dev Can only be called with signatures from the wallet's signer
+     * @param op A QuarkOperation struct
+     * @param replayToken A replay token. For replayables, initial value should be `replayToken = op.nonce`, for non-replayables, `replayToken = bytes32(type(uint256).max)`
+     * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
+     * @param v EIP-712 signature v value
+     * @param r EIP-712 signature r value
+     * @param s EIP-712 signature s value
+     * @return Return value from the executed operation
+     */
+    function executeMultiQuarkOperationWithReplayToken(
+        QuarkOperation calldata op,
+        bytes32 replayToken,
+        bytes32[] memory opDigests,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public returns (bytes memory) {
         bytes32 opDigest = getDigestForQuarkOperation(op);
 
         bool isValidOp = false;
@@ -192,42 +236,7 @@ contract QuarkWallet is IERC1271 {
         }
         bytes32 multiOpDigest = getDigestForMultiQuarkOperation(opDigests);
 
-        return verifySigAndExecuteQuarkOperation(op, multiOpDigest, v, r, s);
-    }
-
-    /**
-     * @notice Verify a signature and execute a single-use QuarkOperation
-     * @param op A QuarkOperation struct
-     * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
-     * @param v EIP-712 signature v value
-     * @param r EIP-712 signature r value
-     * @param s EIP-712 signature s value
-     * @return Return value from the executed operation
-     */
-    function verifySigAndExecuteQuarkOperation(
-        QuarkOperation calldata op,
-        bytes32 digest,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal returns (bytes memory) {
-        if (block.timestamp >= op.expiry) {
-            revert SignatureExpired();
-        }
-
-        // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
-
-        // guarantee every script in scriptSources is deployed
-        for (uint256 i = 0; i < op.scriptSources.length; ++i) {
-            codeJar.saveCode(op.scriptSources[i]);
-        }
-
-        nonceManager.submitNonceToken(op.nonce, EXHAUSTED_TOKEN);
-
-        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
-
-        return executeScriptInternal(op.scriptAddress, op.scriptCalldata);
+        return verifySigAndExecuteQuarkOperation(op, replayToken, multiOpDigest, v, r, s);
     }
 
     /**
@@ -240,7 +249,7 @@ contract QuarkWallet is IERC1271 {
      * @param s EIP-712 signature s value
      * @return Return value from the executed operation
      */
-    function verifySigAndExecuteReplayableQuarkOperation(
+    function verifySigAndExecuteQuarkOperation(
         QuarkOperation calldata op,
         bytes32 submissionToken,
         bytes32 digest,
@@ -260,7 +269,7 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(op.scriptSources[i]);
         }
 
-        nonceManager.submitNonceToken(op.nonce, submissionToken);
+        nonceManager.submitNonceToken(op.nonce, op.isReplayable, submissionToken);
 
         emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
 
@@ -292,7 +301,7 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(scriptSources[i]);
         }
 
-        nonceManager.submitNonceToken(nonce, EXHAUSTED_TOKEN);
+        nonceManager.submitNonceToken(nonce, false, EXHAUSTED_TOKEN);
 
         emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
 
@@ -324,6 +333,7 @@ contract QuarkWallet is IERC1271 {
             abi.encode(
                 QUARK_OPERATION_TYPEHASH,
                 op.nonce,
+                op.isReplayable,
                 op.scriptAddress,
                 keccak256(encodedScriptSources),
                 keccak256(op.scriptCalldata),
@@ -499,4 +509,9 @@ contract QuarkWallet is IERC1271 {
 
     /// @notice Fallback for receiving native token
     receive() external payable {}
+
+    /// @dev Returns the expected initial submission token for an operation, which is either `op.nonce` for a replayable operation, or `bytes32(type(uint256).max)` (the "exhausted" token) for a non-replayable operation.
+    function getInitialSubmissionToken(QuarkOperation memory op) internal pure returns (bytes32) {
+        return op.isReplayable ? op.nonce : EXHAUSTED_TOKEN;
+    }
 }

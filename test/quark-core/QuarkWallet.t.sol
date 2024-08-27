@@ -188,6 +188,7 @@ contract QuarkWalletTest is Test {
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             nonce: new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWallet),
+            isReplayable: false,
             scriptAddress: address(0),
             scriptSources: new bytes[](0),
             scriptCalldata: bytes(""),
@@ -217,6 +218,7 @@ contract QuarkWalletTest is Test {
         // operation containing a valid empty script will revert
         QuarkWallet.QuarkOperation memory op2 = QuarkWallet.QuarkOperation({
             nonce: new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWallet),
+            isReplayable: false,
             scriptAddress: emptyCodeAddress,
             scriptSources: new bytes[](0),
             scriptCalldata: bytes(""),
@@ -247,6 +249,7 @@ contract QuarkWalletTest is Test {
 
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             nonce: new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWallet),
+            isReplayable: false,
             scriptAddress: address(0xc0c0),
             scriptSources: scriptSources,
             scriptCalldata: bytes("feefee"),
@@ -674,7 +677,8 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.NonReplayableNonce.selector,
                 address(aliceWallet),
                 op1.nonce,
-                bytes32(type(uint256).max)
+                bytes32(type(uint256).max),
+                true
             )
         );
         aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
@@ -823,6 +827,7 @@ contract QuarkWalletTest is Test {
             scriptSources: scriptSources,
             scriptCalldata: scriptCalldata,
             nonce: nonce,
+            isReplayable: false,
             expiry: expiry
         });
 
@@ -836,6 +841,7 @@ contract QuarkWalletTest is Test {
            },
            { QuarkOperation: [
                { name: 'nonce', type: 'bytes32' },
+               { name: 'isReplayable', type: 'bool' },
                { name: 'scriptAddress', type: 'address' },
                { name: 'scriptSources', type: 'bytes[]' },
                { name: 'scriptCalldata', type: 'bytes' },
@@ -843,6 +849,7 @@ contract QuarkWalletTest is Test {
            ]},
            {
                 nonce: '0x0000000000000000000000000000000000000000000000000000000000000001',
+                isReplayable: false,
                 scriptAddress: '0x4a925cF75dcc5708671004d9bbFAf4DCF2C762B0',
                 scriptSources: ['0x630000003080600e6000396000f36000356000527f48257dc961b6f792c2b78a080dacfed693b660960a702de21cee364e20270e2f60206000a1600080f3'],
                 scriptCalldata: '0x00000000000000000000000000000000000000000000000000000000000000dd',
@@ -852,7 +859,7 @@ contract QuarkWalletTest is Test {
         */
 
         bytes memory sigHash =
-            hex"1901420cb4769bd47ac11897b8b69b8d80a84b9ec8b69437cd42529681d583a6b5211a9548fcdcb39c227cdd2ff9e13fbefc3db707f8e2216139758d6fc20328fcfd";
+            hex"1901420cb4769bd47ac11897b8b69b8d80a84b9ec8b69437cd42529681d583a6b5218c7d870a6510d1840f2ec48a08d65eb874fa8af841e45e3c9b8e5c244bdc015f";
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, keccak256(sigHash));
 
         // gas: meter execute
@@ -1238,6 +1245,7 @@ contract QuarkWalletTest is Test {
             scriptSources: new bytes[](0),
             scriptCalldata: hex"",
             nonce: nonce,
+            isReplayable: false,
             expiry: block.timestamp + 1000
         });
     }

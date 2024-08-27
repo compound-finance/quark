@@ -9,7 +9,7 @@ import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
  * @author Compound Labs, Inc.
  */
 contract QuarkNonceManager {
-    error NonReplayableNonce(address wallet, bytes32 nonce, bytes32 submissionToken);
+    error NonReplayableNonce(address wallet, bytes32 nonce, bytes32 submissionToken, bool exhausted);
     error InvalidSubmissionToken(address wallet, bytes32 nonce, bytes32 submissionToken);
 
     event NonceSubmitted(address wallet, bytes32 nonce, bytes32 submissionToken);
@@ -36,17 +36,25 @@ contract QuarkNonceManager {
     /**
      * @notice Attempts a first or subsequent submission of a given nonce from a wallet.
      * @param nonce The nonce of the chain to submit.
-     * @param submissionToken The submission token of the submission. For single-use operations, set `submissionToken` to `uint256(-1)`. For first-use replayable operations, set `submissionToken` = `nonce`.
+     * @param isReplayable True only if the operation has been marked as replayable. Otherwise, submission token must be the EXHAUSTED value.
+     * @param submissionToken The token for this submission. For single-use operations, set `submissionToken` to `uint256(-1)`. For first-use replayable operations, set `submissionToken` = `nonce`. Otherwise, the next submission token from the nonce-chain.
      */
-    function submitNonceToken(bytes32 nonce, bytes32 submissionToken) external {
+    function submitNonceToken(bytes32 nonce, bool isReplayable, bytes32 submissionToken) external {
         bytes32 lastTokenSubmission = nonceSubmissions[msg.sender][nonce];
         if (lastTokenSubmission == EXHAUSTED) {
-            revert NonReplayableNonce(msg.sender, nonce, submissionToken);
+            revert NonReplayableNonce(msg.sender, nonce, submissionToken, true);
+        }
+        // Defense-in-depth check for non-replayable operations
+        if (!isReplayable && lastTokenSubmission != FREE) {
+            revert NonReplayableNonce(msg.sender, nonce, submissionToken, false);
         }
 
-        bool validFirstPlayOrReplay =
-            lastTokenSubmission == FREE || keccak256(abi.encodePacked(submissionToken)) == lastTokenSubmission;
-        if (!validFirstPlayOrReplay) {
+        bool validFirstPlay =
+            lastTokenSubmission == FREE && (isReplayable ? submissionToken == nonce : submissionToken == EXHAUSTED);
+
+        /*   validToken = validFirstPlay or (                  validReplay                                    ); */
+        bool validToken = validFirstPlay || keccak256(abi.encodePacked(submissionToken)) == lastTokenSubmission;
+        if (!validToken) {
             revert InvalidSubmissionToken(msg.sender, nonce, submissionToken);
         }
 

@@ -55,6 +55,7 @@ contract SignatureHelper is Test {
             abi.encode(
                 QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH,
                 op.nonce,
+                op.isReplayable,
                 op.scriptAddress,
                 keccak256(encodedArray),
                 keccak256(op.scriptCalldata),

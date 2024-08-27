@@ -5,6 +5,7 @@ import "quark-core/src/QuarkWallet.sol";
 
 contract CancelOtherScript {
     function run(bytes32 nonce) public {
-        return QuarkWallet(payable(address(this))).nonceManager().submitNonceToken(nonce, bytes32(type(uint256).max));
+        return
+            QuarkWallet(payable(address(this))).nonceManager().submitNonceToken(nonce, true, bytes32(type(uint256).max));
     }
 }

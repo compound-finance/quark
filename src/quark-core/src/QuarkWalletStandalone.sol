@@ -23,7 +23,7 @@ contract QuarkWalletStandalone is QuarkWallet, IHasSignerExecutor {
      * @param signer_ The address that is allowed to sign QuarkOperations for this wallet
      * @param executor_ The address that is allowed to directly execute Quark scripts for this wallet
      * @param codeJar_ The CodeJar contract used to deploy scripts
-     * @param nonceManager_ The QuarkNonceManager contract used to write/read nonces and storage for this wallet
+     * @param nonceManager_ The QuarkNonceManager contract used to write/read nonces for this wallet
      */
     constructor(address signer_, address executor_, CodeJar codeJar_, QuarkNonceManager nonceManager_)
         QuarkWallet(codeJar_, nonceManager_)
