@@ -38,4 +38,4 @@ jobs:
           forge test --via-ir
         id: test
         env:
-          NODE_PROVIDER_BYPASS_KEY: ${{ secrets.NODE_PROVIDER_BYPASS_KEY }}
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
