@@ -15,7 +15,7 @@ contract Incrementer {
     // TODO: Uncomment when replay tokens are supported
     // function incrementCounterReplayable(Counter counter) public {
     //     incrementCounter(counter);
-    //     QuarkWallet(payable(address(this))).stateManager().clearNonce();
+    //     QuarkWallet(payable(address(this))).nonceManager().clearNonce();
     // }
 
     fallback() external {

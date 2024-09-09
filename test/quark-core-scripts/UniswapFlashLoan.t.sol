@@ -10,7 +10,7 @@ import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 
@@ -56,7 +56,7 @@ contract UniswapFlashLoanTest is Test {
             ),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkNonceManager())));
         CodeJar codeJar = QuarkWallet(payable(factory.walletImplementation())).codeJar();
         ethcallAddress = codeJar.saveCode(ethcall);
         multicallAddress = codeJar.saveCode(multicall);
@@ -236,7 +236,7 @@ contract UniswapFlashLoanTest is Test {
             callContract: ethcallAddress,
             callData: abi.encodeWithSelector(
                 Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(1), 1000e6)), 0
-                )
+            )
         });
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -271,7 +271,7 @@ contract UniswapFlashLoanTest is Test {
                     callContract: ethcallAddress,
                     callData: abi.encodeWithSelector(
                         Ethcall.run.selector, USDC, abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
-                        )
+                    )
                 })
             ),
             ScriptType.ScriptAddress
@@ -327,7 +327,7 @@ contract UniswapFlashLoanTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        // Reverts when calling `allowCallback()`, which tries to get the `stateManager` from self
+        // Reverts when calling `allowCallback()`, which tries to get the `nonceManager` from self
         vm.expectRevert();
         UniswapFlashLoan(uniswapFlashLoanAddress).run(payload);
     }
