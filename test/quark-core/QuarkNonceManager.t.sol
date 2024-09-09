@@ -44,17 +44,17 @@ contract QuarkNonceManagerTest is Test {
         bytes32 EXHAUSTED = nonceManager.EXHAUSTED();
 
         // by default, nonce 0 is not set
-        assertEq(nonceManager.getNonceSubmission(address(0x123), nonce), nonceManager.FREE());
+        assertEq(nonceManager.submissions(address(0x123), nonce), nonceManager.FREE());
 
         // nonce 0 can be set manually
         vm.prank(address(0x123));
-        nonceManager.submitNonceToken(nonce, false, EXHAUSTED);
-        assertEq(nonceManager.getNonceSubmission(address(0x123), nonce), nonceManager.EXHAUSTED());
+        nonceManager.submit(nonce, false, EXHAUSTED);
+        assertEq(nonceManager.submissions(address(0x123), nonce), nonceManager.EXHAUSTED());
     }
 
     function testClaimsSequentialNonces() public {
         for (uint256 i = 0; i <= 550; i++) {
-            nonceManager.submitNonceToken(bytes32(i), false, EXHAUSTED_TOKEN);
+            nonceManager.submit(bytes32(i), false, EXHAUSTED_TOKEN);
         }
 
         for (uint256 i = 0; i <= 20; i++) {
@@ -67,21 +67,21 @@ contract QuarkNonceManagerTest is Test {
                     true
                 )
             );
-            nonceManager.submitNonceToken(bytes32(i), false, EXHAUSTED_TOKEN);
+            nonceManager.submit(bytes32(i), false, EXHAUSTED_TOKEN);
         }
     }
 
     function testRevertsIfNonceIsAlreadySet() public {
         bytes32 EXHAUSTED = nonceManager.EXHAUSTED();
         bytes32 nonce = bytes32(uint256(0));
-        nonceManager.submitNonceToken(nonce, false, EXHAUSTED);
+        nonceManager.submit(nonce, false, EXHAUSTED);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.NonReplayableNonce.selector, address(this), nonce, bytes32(type(uint256).max), true
             )
         );
-        nonceManager.submitNonceToken(nonce, false, EXHAUSTED);
+        nonceManager.submit(nonce, false, EXHAUSTED);
     }
 
     function testRevertsIfSubmittingNonExhaustedTokenForNonReplayable() public {
@@ -91,19 +91,19 @@ contract QuarkNonceManagerTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, bytes32(0))
         );
-        nonceManager.submitNonceToken(nonce, false, bytes32(0));
+        nonceManager.submit(nonce, false, bytes32(0));
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, bytes32(uint256(1))
             )
         );
-        nonceManager.submitNonceToken(nonce, false, bytes32(uint256(1)));
+        nonceManager.submit(nonce, false, bytes32(uint256(1)));
 
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, nonce)
         );
-        nonceManager.submitNonceToken(nonce, false, nonce);
+        nonceManager.submit(nonce, false, nonce);
     }
 
     function testDefenseInDepthChangingReplayableness() public {
@@ -111,19 +111,19 @@ contract QuarkNonceManagerTest is Test {
         bytes32 nonceSecret = bytes32(uint256(99));
         bytes32 nonce = keccak256(abi.encodePacked(nonceSecret));
 
-        nonceManager.submitNonceToken(nonce, true, nonce);
+        nonceManager.submit(nonce, true, nonce);
 
         // Accepts as a cancel
-        nonceManager.submitNonceToken(nonce, false, nonceSecret);
+        nonceManager.submit(nonce, false, nonceSecret);
 
-        assertEq(nonceManager.getNonceSubmission(address(this), nonce), EXHAUSTED_TOKEN);
+        assertEq(nonceManager.submissions(address(this), nonce), EXHAUSTED_TOKEN);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.NonReplayableNonce.selector, address(this), nonce, nonceSecret, true
             )
         );
-        nonceManager.submitNonceToken(nonce, true, nonceSecret);
+        nonceManager.submit(nonce, true, nonceSecret);
     }
 
     function testRevertsDefenseInDepthReplayableSubmissionTokenZero() public {
@@ -133,7 +133,7 @@ contract QuarkNonceManagerTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, nonce)
         );
-        nonceManager.submitNonceToken(nonce, true, nonce);
+        nonceManager.submit(nonce, true, nonce);
 
         // Invalid as replayable with EXHAUSTED_TOKEN since submission token doesn't match
         vm.expectRevert(
@@ -141,19 +141,19 @@ contract QuarkNonceManagerTest is Test {
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, EXHAUSTED_TOKEN
             )
         );
-        nonceManager.submitNonceToken(nonce, true, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, true, EXHAUSTED_TOKEN);
 
         // Still valid as non-replayable nonce
-        nonceManager.submitNonceToken(nonce, false, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, false, EXHAUSTED_TOKEN);
     }
 
     function testIsSet() public {
         // nonce is unset by default
-        assertEq(nonceManager.getNonceSubmission(address(this), NONCE_ZERO), FREE_TOKEN);
+        assertEq(nonceManager.submissions(address(this), NONCE_ZERO), FREE_TOKEN);
 
         // it can be set
-        nonceManager.submitNonceToken(NONCE_ZERO, false, EXHAUSTED_TOKEN);
-        assertEq(nonceManager.getNonceSubmission(address(this), NONCE_ZERO), EXHAUSTED_TOKEN);
+        nonceManager.submit(NONCE_ZERO, false, EXHAUSTED_TOKEN);
+        assertEq(nonceManager.submissions(address(this), NONCE_ZERO), EXHAUSTED_TOKEN);
     }
 
     function testNonLinearNonce() public {
@@ -161,23 +161,23 @@ contract QuarkNonceManagerTest is Test {
         // long as it has not been set
         bytes32 nonce = bytes32(uint256(1234567890));
 
-        assertEq(nonceManager.getNonceSubmission(address(this), NONCE_ZERO), FREE_TOKEN);
+        assertEq(nonceManager.submissions(address(this), NONCE_ZERO), FREE_TOKEN);
 
-        nonceManager.submitNonceToken(nonce, false, EXHAUSTED_TOKEN);
-        assertEq(nonceManager.getNonceSubmission(address(this), nonce), EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, false, EXHAUSTED_TOKEN);
+        assertEq(nonceManager.submissions(address(this), nonce), EXHAUSTED_TOKEN);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.NonReplayableNonce.selector, address(this), nonce, FREE_TOKEN, true
             )
         );
-        nonceManager.submitNonceToken(nonce, false, FREE_TOKEN);
+        nonceManager.submit(nonce, false, FREE_TOKEN);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.NonReplayableNonce.selector, address(this), nonce, EXHAUSTED_TOKEN, true
             )
         );
-        nonceManager.submitNonceToken(nonce, false, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, false, EXHAUSTED_TOKEN);
     }
 
     function testSingleUseRandomValidNonce() public {
@@ -186,29 +186,29 @@ contract QuarkNonceManagerTest is Test {
         bytes32 nonce = bytes32(uint256(1234567890));
         bytes32 nonceHash = keccak256(abi.encodePacked(nonce));
 
-        assertEq(nonceManager.getNonceSubmission(address(this), NONCE_ZERO), FREE_TOKEN);
+        assertEq(nonceManager.submissions(address(this), NONCE_ZERO), FREE_TOKEN);
 
-        nonceManager.submitNonceToken(nonce, true, nonce);
-        assertEq(nonceManager.getNonceSubmission(address(this), nonce), nonce);
+        nonceManager.submit(nonce, true, nonce);
+        assertEq(nonceManager.submissions(address(this), nonce), nonce);
 
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, nonce)
         );
-        nonceManager.submitNonceToken(nonce, true, nonce);
+        nonceManager.submit(nonce, true, nonce);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, nonceHash)
         );
-        nonceManager.submitNonceToken(nonce, true, nonceHash);
+        nonceManager.submit(nonce, true, nonceHash);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, FREE_TOKEN)
         );
-        nonceManager.submitNonceToken(nonce, true, FREE_TOKEN);
+        nonceManager.submit(nonce, true, FREE_TOKEN);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, EXHAUSTED_TOKEN
             )
         );
-        nonceManager.submitNonceToken(nonce, true, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, true, EXHAUSTED_TOKEN);
     }
 
     function testNextNonceChain() public {
@@ -220,126 +220,126 @@ contract QuarkNonceManagerTest is Test {
         bytes32 rootHash = keccak256(abi.encodePacked(replayToken1));
         bytes32 nonce = rootHash;
 
-        assertEq(nonceManager.getNonceSubmission(address(this), nonce), FREE_TOKEN);
+        assertEq(nonceManager.submissions(address(this), nonce), FREE_TOKEN);
 
-        nonceManager.submitNonceToken(nonce, true, rootHash);
-        assertEq(nonceManager.getNonceSubmission(address(this), nonce), rootHash);
+        nonceManager.submit(nonce, true, rootHash);
+        assertEq(nonceManager.submissions(address(this), nonce), rootHash);
 
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, rootHash)
         );
-        nonceManager.submitNonceToken(nonce, true, rootHash);
+        nonceManager.submit(nonce, true, rootHash);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, replayToken2
             )
         );
-        nonceManager.submitNonceToken(nonce, true, replayToken2);
+        nonceManager.submit(nonce, true, replayToken2);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, nonceSecret)
         );
-        nonceManager.submitNonceToken(nonce, true, nonceSecret);
+        nonceManager.submit(nonce, true, nonceSecret);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, FREE_TOKEN)
         );
-        nonceManager.submitNonceToken(nonce, true, FREE_TOKEN);
+        nonceManager.submit(nonce, true, FREE_TOKEN);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, EXHAUSTED_TOKEN
             )
         );
-        nonceManager.submitNonceToken(nonce, true, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, true, EXHAUSTED_TOKEN);
 
-        nonceManager.submitNonceToken(nonce, true, replayToken1);
-        assertEq(nonceManager.getNonceSubmission(address(this), nonce), replayToken1);
+        nonceManager.submit(nonce, true, replayToken1);
+        assertEq(nonceManager.submissions(address(this), nonce), replayToken1);
 
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, rootHash)
         );
-        nonceManager.submitNonceToken(nonce, true, rootHash);
+        nonceManager.submit(nonce, true, rootHash);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, replayToken1
             )
         );
-        nonceManager.submitNonceToken(nonce, true, replayToken1);
+        nonceManager.submit(nonce, true, replayToken1);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, nonceSecret)
         );
-        nonceManager.submitNonceToken(nonce, true, nonceSecret);
+        nonceManager.submit(nonce, true, nonceSecret);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, FREE_TOKEN)
         );
-        nonceManager.submitNonceToken(nonce, true, FREE_TOKEN);
+        nonceManager.submit(nonce, true, FREE_TOKEN);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, EXHAUSTED_TOKEN
             )
         );
-        nonceManager.submitNonceToken(nonce, true, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, true, EXHAUSTED_TOKEN);
 
-        nonceManager.submitNonceToken(nonce, true, replayToken2);
-        assertEq(nonceManager.getNonceSubmission(address(this), nonce), replayToken2);
+        nonceManager.submit(nonce, true, replayToken2);
+        assertEq(nonceManager.submissions(address(this), nonce), replayToken2);
 
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, rootHash)
         );
-        nonceManager.submitNonceToken(nonce, true, rootHash);
+        nonceManager.submit(nonce, true, rootHash);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, replayToken1
             )
         );
-        nonceManager.submitNonceToken(nonce, true, replayToken1);
+        nonceManager.submit(nonce, true, replayToken1);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, replayToken2
             )
         );
-        nonceManager.submitNonceToken(nonce, true, replayToken2);
+        nonceManager.submit(nonce, true, replayToken2);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, FREE_TOKEN)
         );
-        nonceManager.submitNonceToken(nonce, true, FREE_TOKEN);
+        nonceManager.submit(nonce, true, FREE_TOKEN);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, EXHAUSTED_TOKEN
             )
         );
-        nonceManager.submitNonceToken(nonce, true, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, true, EXHAUSTED_TOKEN);
 
-        nonceManager.submitNonceToken(nonce, true, nonceSecret);
-        assertEq(nonceManager.getNonceSubmission(address(this), nonce), nonceSecret);
+        nonceManager.submit(nonce, true, nonceSecret);
+        assertEq(nonceManager.submissions(address(this), nonce), nonceSecret);
 
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, rootHash)
         );
-        nonceManager.submitNonceToken(nonce, true, rootHash);
+        nonceManager.submit(nonce, true, rootHash);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, replayToken1
             )
         );
-        nonceManager.submitNonceToken(nonce, true, replayToken1);
+        nonceManager.submit(nonce, true, replayToken1);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, replayToken2
             )
         );
-        nonceManager.submitNonceToken(nonce, true, replayToken2);
+        nonceManager.submit(nonce, true, replayToken2);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, nonceSecret)
         );
-        nonceManager.submitNonceToken(nonce, true, nonceSecret);
+        nonceManager.submit(nonce, true, nonceSecret);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, FREE_TOKEN)
         );
-        nonceManager.submitNonceToken(nonce, true, FREE_TOKEN);
+        nonceManager.submit(nonce, true, FREE_TOKEN);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, EXHAUSTED_TOKEN
             )
         );
-        nonceManager.submitNonceToken(nonce, true, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, true, EXHAUSTED_TOKEN);
     }
 }

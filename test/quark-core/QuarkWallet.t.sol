@@ -439,7 +439,7 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperationWithSubmissionToken(op, nonceSecret, v, r, s);
 
         // Ensure exhausted
-        assertEq(nonceManager.getNonceSubmission(address(aliceWallet), op.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(address(aliceWallet), op.nonce), bytes32(type(uint256).max));
     }
 
     /* ===== direct execution path tests ===== */
@@ -454,7 +454,7 @@ contract QuarkWalletTest is Test {
         bytes memory call = abi.encodeWithSignature("incrementCounter(address)", counter);
 
         assertEq(counter.number(), 0);
-        assertEq(nonceManager.getNonceSubmission(address(aliceWalletExecutable), nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.submissions(address(aliceWalletExecutable), nonce), bytes32(uint256(0)));
 
         // act as the executor for the wallet
         vm.startPrank(aliceAccount);
@@ -464,7 +464,7 @@ contract QuarkWalletTest is Test {
         aliceWalletExecutable.executeScript(nonce, incrementerAddress, call, new bytes[](0));
 
         assertEq(counter.number(), 3);
-        assertEq(nonceManager.getNonceSubmission(address(aliceWalletExecutable), nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(address(aliceWalletExecutable), nonce), bytes32(type(uint256).max));
     }
 
     function testDirectExecuteFromOtherQuarkWallet() public {
@@ -494,14 +494,14 @@ contract QuarkWalletTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         assertEq(counter.number(), 0);
-        assertEq(nonceManager.getNonceSubmission(address(aliceWalletExecutable), nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.submissions(address(aliceWalletExecutable), nonce), bytes32(uint256(0)));
 
         // gas: meter execute
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(nonceManager.getNonceSubmission(address(aliceWalletExecutable), nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(address(aliceWalletExecutable), nonce), bytes32(type(uint256).max));
     }
 
     function testDirectExecuteWithScriptSources() public {
@@ -516,7 +516,7 @@ contract QuarkWalletTest is Test {
         scriptSources[0] = incrementer;
 
         assertEq(counter.number(), 0);
-        assertEq(nonceManager.getNonceSubmission(address(aliceWalletExecutable), nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.submissions(address(aliceWalletExecutable), nonce), bytes32(uint256(0)));
 
         // act as the executor for the wallet
         vm.startPrank(aliceAccount);
@@ -526,7 +526,7 @@ contract QuarkWalletTest is Test {
         aliceWalletExecutable.executeScript(nonce, incrementerAddress, call, scriptSources);
 
         assertEq(counter.number(), 3);
-        assertEq(nonceManager.getNonceSubmission(address(aliceWalletExecutable), nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(address(aliceWalletExecutable), nonce), bytes32(type(uint256).max));
     }
 
     function testRevertsForDirectExecuteByNonExecutorSigner() public {

@@ -73,7 +73,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 3);
 
         // nonce is spent
-        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(address(wallet), op.nonce), bytes32(type(uint256).max));
     }
 
     function testRevertsForBadCode() public {
@@ -99,7 +99,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.submissions(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testStructHash() public {
@@ -187,7 +187,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.submissions(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRevertsForBadExpiry() public {
@@ -210,7 +210,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // alice's nonce is not set
-        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.submissions(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRevertsOnReusedNonce() public {
@@ -227,7 +227,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(address(wallet), op.nonce), bytes32(type(uint256).max));
 
         // submitter tries to reuse the same signature twice, for a non-replayable operation
         vm.expectRevert(
@@ -261,7 +261,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.submissions(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRevertsInvalidS() public {
@@ -283,7 +283,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, invalidS);
 
         assertEq(counter.number(), 0);
-        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.submissions(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     // TODO: Uncomment when replay tokens are supported
@@ -360,7 +360,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.submissions(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRequirements() public {

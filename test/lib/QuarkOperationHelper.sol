@@ -122,7 +122,7 @@ contract QuarkOperationHelper is Test {
     function semiRandomNonce(QuarkNonceManager quarkNonceManager, QuarkWallet wallet) public view returns (bytes32) {
         bytes32 nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 1);
         while (true) {
-            if (quarkNonceManager.getNonceSubmission(address(wallet), nonce) == bytes32(uint256(0))) {
+            if (quarkNonceManager.submissions(address(wallet), nonce) == bytes32(uint256(0))) {
                 return nonce;
             }
 

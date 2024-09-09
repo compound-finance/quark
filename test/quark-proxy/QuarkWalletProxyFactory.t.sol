@@ -146,8 +146,7 @@ contract QuarkWalletProxyFactoryTest is Test {
 
         // uses up the operation's nonce
         assertEq(
-            nonceManager.getNonceSubmission(factory.walletAddressFor(alice, address(0)), nonce),
-            bytes32(type(uint256).max)
+            nonceManager.submissions(factory.walletAddressFor(alice, address(0)), nonce), bytes32(type(uint256).max)
         );
     }
 
@@ -195,7 +194,7 @@ contract QuarkWalletProxyFactoryTest is Test {
 
         // uses up the operation's nonce
         assertEq(
-            nonceManager.getNonceSubmission(factory.walletAddressForSalt(alice, address(0), salt), nonce),
+            nonceManager.submissions(factory.walletAddressForSalt(alice, address(0), salt), nonce),
             bytes32(type(uint256).max)
         );
     }
@@ -244,8 +243,7 @@ contract QuarkWalletProxyFactoryTest is Test {
 
         // uses up the operation's nonce
         assertEq(
-            nonceManager.getNonceSubmission(factory.walletAddressFor(alice, address(0)), nonce),
-            bytes32(type(uint256).max)
+            nonceManager.submissions(factory.walletAddressFor(alice, address(0)), nonce), bytes32(type(uint256).max)
         );
     }
 
@@ -302,13 +300,13 @@ contract QuarkWalletProxyFactoryTest is Test {
         factory.createAndExecuteMulti(alice, address(0), op1, opDigests, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(nonceManager.getNonceSubmission(aliceWalletAddress, op1.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(aliceWalletAddress, op1.nonce), bytes32(type(uint256).max));
 
         // call a second time
         factory.createAndExecuteMulti(alice, address(0), op2, opDigests, v, r, s);
 
         assertEq(counter.number(), 6);
-        assertEq(nonceManager.getNonceSubmission(aliceWalletAddress, op2.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(aliceWalletAddress, op2.nonce), bytes32(type(uint256).max));
     }
 
     function testCreateAndExecuteMultiWithSalt() public {
@@ -359,13 +357,13 @@ contract QuarkWalletProxyFactoryTest is Test {
         factory.createAndExecuteMulti(alice, address(0), salt, op1, opDigests, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(nonceManager.getNonceSubmission(aliceWalletAddress, op1.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(aliceWalletAddress, op1.nonce), bytes32(type(uint256).max));
 
         // call a second time
         factory.createAndExecuteMulti(alice, address(0), salt, op2, opDigests, v, r, s);
 
         assertEq(counter.number(), 6);
-        assertEq(nonceManager.getNonceSubmission(aliceWalletAddress, op2.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(aliceWalletAddress, op2.nonce), bytes32(type(uint256).max));
     }
 
     function testExecuteMultiOnExistingWallet() public {
@@ -423,13 +421,13 @@ contract QuarkWalletProxyFactoryTest is Test {
         factory.createAndExecuteMulti(alice, address(0), op1, opDigests, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(nonceManager.getNonceSubmission(aliceWalletAddress, op1.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(aliceWalletAddress, op1.nonce), bytes32(type(uint256).max));
 
         // call a second time
         factory.createAndExecuteMulti(alice, address(0), op2, opDigests, v, r, s);
 
         assertEq(counter.number(), 6);
-        assertEq(nonceManager.getNonceSubmission(aliceWalletAddress, op2.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(aliceWalletAddress, op2.nonce), bytes32(type(uint256).max));
     }
 
     /* ===== msg.value and msg.sender tests ===== */
@@ -470,7 +468,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         assertEq(msgValue, 0);
 
         // uses up the operation's nonce
-        assertEq(nonceManager.getNonceSubmission(aliceWallet, nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(aliceWallet, nonce), bytes32(type(uint256).max));
     }
 
     function testCreateAndExecuteWithSaltSetsMsgSender() public {
@@ -521,7 +519,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         assertEq(msgValue, 0);
 
         // uses up the operation's nonce
-        assertEq(nonceManager.getNonceSubmission(aliceWallet, nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.submissions(aliceWallet, nonce), bytes32(type(uint256).max));
     }
 
     /* ===== default wallet executor role tests ===== */

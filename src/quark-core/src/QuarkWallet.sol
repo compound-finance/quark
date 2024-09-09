@@ -269,7 +269,7 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(op.scriptSources[i]);
         }
 
-        nonceManager.submitNonceToken(op.nonce, op.isReplayable, submissionToken);
+        nonceManager.submit(op.nonce, op.isReplayable, submissionToken);
 
         emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
 
@@ -301,7 +301,7 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(scriptSources[i]);
         }
 
-        nonceManager.submitNonceToken(nonce, false, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, false, EXHAUSTED_TOKEN);
 
         emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
 
