@@ -18,7 +18,7 @@ contract QuarkNonceManager {
     bytes32 public constant FREE = bytes32(uint256(0));
 
     /// @notice A token that implies a Quark Operation is no longer replayable.
-    bytes32 public constant EXHAUSTED = bytes32(type(uint).max);
+    bytes32 public constant EXHAUSTED = bytes32(type(uint256).max);
 
     /// @notice Mapping from nonces to last used submission token.
     mapping(address wallet => mapping(bytes32 nonce => bytes32 lastToken)) public nonceSubmissions;
@@ -44,7 +44,8 @@ contract QuarkNonceManager {
             revert NonReplayableNonce(msg.sender, nonce, submissionToken);
         }
 
-        bool validFirstPlayOrReplay = lastTokenSubmission == FREE || keccak256(abi.encodePacked(submissionToken)) == lastTokenSubmission;
+        bool validFirstPlayOrReplay =
+            lastTokenSubmission == FREE || keccak256(abi.encodePacked(submissionToken)) == lastTokenSubmission;
         if (!validFirstPlayOrReplay) {
             revert InvalidSubmissionToken(msg.sender, nonce, submissionToken);
         }

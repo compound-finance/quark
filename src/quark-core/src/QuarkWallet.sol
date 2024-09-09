@@ -114,7 +114,7 @@ contract QuarkWallet is IERC1271 {
     bytes32 public constant ACTIVE_SCRIPT_SLOT = bytes32(uint256(keccak256("quark.v1.active.script")) - 1);
 
     /// @notice A nonce submission token that implies a Quark Operation is no longer replayable.
-    bytes32 public constant EXHAUSTED_TOKEN = bytes32(type(uint).max);
+    bytes32 public constant EXHAUSTED_TOKEN = bytes32(type(uint256).max);
 
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;

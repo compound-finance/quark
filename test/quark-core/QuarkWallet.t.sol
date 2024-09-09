@@ -669,7 +669,14 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 3);
 
         // call again using the same operation
-        vm.expectRevert(abi.encodeWithSelector(QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op1.nonce, bytes32(type(uint256).max)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkNonceManager.NonReplayableNonce.selector,
+                address(aliceWallet),
+                op1.nonce,
+                bytes32(type(uint256).max)
+            )
+        );
         aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
 
         assertEq(counter.number(), 3);

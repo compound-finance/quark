@@ -114,7 +114,9 @@ contract QuarkWalletProxyFactoryTest is Test {
         scriptSources[0] = incrementer;
 
         address incrementerAddress = codeJar.getCodeAddress(incrementer);
-        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(nonceManager, QuarkWallet(payable(factory.walletAddressFor(alice, address(0)))));
+        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(
+            nonceManager, QuarkWallet(payable(factory.walletAddressFor(alice, address(0))))
+        );
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: incrementerAddress,
             scriptSources: scriptSources,
@@ -142,7 +144,10 @@ contract QuarkWalletProxyFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        assertEq(nonceManager.getNonceSubmission(factory.walletAddressFor(alice, address(0)), nonce), bytes32(type(uint256).max));
+        assertEq(
+            nonceManager.getNonceSubmission(factory.walletAddressFor(alice, address(0)), nonce),
+            bytes32(type(uint256).max)
+        );
     }
 
     function testCreateAndExecuteWithSalt() public {
@@ -155,7 +160,9 @@ contract QuarkWalletProxyFactoryTest is Test {
         scriptSources[0] = incrementer;
 
         address incrementerAddress = codeJar.getCodeAddress(incrementer);
-        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(nonceManager, QuarkWallet(payable(factory.walletAddressFor(alice, address(0)))));
+        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(
+            nonceManager, QuarkWallet(payable(factory.walletAddressFor(alice, address(0))))
+        );
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: incrementerAddress,
             scriptSources: scriptSources,
@@ -185,7 +192,10 @@ contract QuarkWalletProxyFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        assertEq(nonceManager.getNonceSubmission(factory.walletAddressForSalt(alice, address(0), salt), nonce), bytes32(type(uint256).max));
+        assertEq(
+            nonceManager.getNonceSubmission(factory.walletAddressForSalt(alice, address(0), salt), nonce),
+            bytes32(type(uint256).max)
+        );
     }
 
     function testExecuteOnExistingWallet() public {
@@ -197,7 +207,9 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes[] memory scriptSources = new bytes[](1);
         scriptSources[0] = incrementer;
 
-        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(nonceManager, QuarkWallet(payable(factory.walletAddressFor(alice, address(0)))));
+        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(
+            nonceManager, QuarkWallet(payable(factory.walletAddressFor(alice, address(0))))
+        );
         address incrementerAddress = codeJar.getCodeAddress(incrementer);
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: incrementerAddress,
@@ -228,7 +240,10 @@ contract QuarkWalletProxyFactoryTest is Test {
         assertEq(counter.number(), 3);
 
         // uses up the operation's nonce
-        assertEq(nonceManager.getNonceSubmission(factory.walletAddressFor(alice, address(0)), nonce), bytes32(type(uint256).max));
+        assertEq(
+            nonceManager.getNonceSubmission(factory.walletAddressFor(alice, address(0)), nonce),
+            bytes32(type(uint256).max)
+        );
     }
 
     /* ===== create and execute MultiQuarkOperation tests ===== */
@@ -248,7 +263,8 @@ contract QuarkWalletProxyFactoryTest is Test {
 
         address incrementerAddress = codeJar.getCodeAddress(incrementer);
         address aliceWalletAddress = factory.walletAddressFor(alice, address(0));
-        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(nonceManager, QuarkWallet(payable(aliceWalletAddress)));
+        bytes32 nonce =
+            new QuarkOperationHelper().semiRandomNonce(nonceManager, QuarkWallet(payable(aliceWalletAddress)));
         QuarkWallet.QuarkOperation memory op1 = QuarkWallet.QuarkOperation({
             scriptAddress: incrementerAddress,
             scriptSources: scriptSources,
@@ -302,7 +318,8 @@ contract QuarkWalletProxyFactoryTest is Test {
         address incrementerAddress = codeJar.getCodeAddress(incrementer);
         bytes32 salt = bytes32("salty salt salt");
         address aliceWalletAddress = factory.walletAddressForSalt(alice, address(0), salt);
-        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(nonceManager, QuarkWallet(payable(aliceWalletAddress)));
+        bytes32 nonce =
+            new QuarkOperationHelper().semiRandomNonce(nonceManager, QuarkWallet(payable(aliceWalletAddress)));
         QuarkWallet.QuarkOperation memory op1 = QuarkWallet.QuarkOperation({
             scriptAddress: incrementerAddress,
             scriptSources: scriptSources,
@@ -359,7 +376,8 @@ contract QuarkWalletProxyFactoryTest is Test {
 
         address incrementerAddress = codeJar.getCodeAddress(incrementer);
         address aliceWalletAddress = factory.walletAddressFor(alice, address(0));
-        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(nonceManager, QuarkWallet(payable(aliceWalletAddress)));
+        bytes32 nonce =
+            new QuarkOperationHelper().semiRandomNonce(nonceManager, QuarkWallet(payable(aliceWalletAddress)));
         QuarkWallet.QuarkOperation memory op1 = QuarkWallet.QuarkOperation({
             scriptAddress: incrementerAddress,
             scriptSources: scriptSources,
@@ -534,7 +552,7 @@ contract QuarkWalletProxyFactoryTest is Test {
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 7), 0
                 )
-                ),
+            ),
             nonce: new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWalletPrimary),
             expiry: block.timestamp + 1000
         });
