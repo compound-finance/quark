@@ -7,7 +7,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
@@ -31,7 +31,7 @@ import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 contract CallbacksTest is Test {
     CodeJar public codeJar;
     Counter public counter;
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
     QuarkWallet public walletImplementation;
 
     uint256 alicePrivateKey = 0x9810473;
@@ -42,14 +42,14 @@ contract CallbacksTest is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
 
         counter = new Counter();
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
-        walletImplementation = new QuarkWallet(codeJar, stateManager);
+        walletImplementation = new QuarkWallet(codeJar, nonceManager);
         console.log("QuarkWallet implementation: %s", address(walletImplementation));
 
         aliceAccount = vm.addr(alicePrivateKey);
@@ -190,16 +190,16 @@ contract CallbacksTest is Test {
     //     op2.nonce = op1.nonce;
     //     (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
 
-    //     assertEq(stateManager.walletStorage(address(aliceWallet), op1.nonce, callbackKey), bytes32(0));
+    //     assertEq(nonceManager.walletStorage(address(aliceWallet), op1.nonce, callbackKey), bytes32(0));
 
     //     // gas: meter execute
     //     vm.resumeGasMetering();
     //     aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
 
-    //     assertNotEq(stateManager.walletStorage(address(aliceWallet), op1.nonce, callbackKey), bytes32(0));
+    //     assertNotEq(nonceManager.walletStorage(address(aliceWallet), op1.nonce, callbackKey), bytes32(0));
 
     //     aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
-    //     assertEq(stateManager.walletStorage(address(aliceWallet), op1.nonce, callbackKey), bytes32(0));
+    //     assertEq(nonceManager.walletStorage(address(aliceWallet), op1.nonce, callbackKey), bytes32(0));
     // }
 
     function testRevertsOnCallbackWhenNoActiveCallback() public {

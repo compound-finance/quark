@@ -8,7 +8,7 @@ contract AllowCallbacks is QuarkScript {
     // TODO: Uncomment when replay tokens are supported
     // function run(address callbackAddress) public {
     //     QuarkWallet self = QuarkWallet(payable(address(this)));
-    //     self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(callbackAddress))));
+    //     self.nonceManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(callbackAddress))));
     // }
 
     function allowCallbackAndReplay() public {

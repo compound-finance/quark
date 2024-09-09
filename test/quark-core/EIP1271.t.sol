@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkWalletStandalone} from "quark-core/src/QuarkWalletStandalone.sol";
 
@@ -21,7 +21,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 contract EIP1271Test is Test {
     CodeJar public codeJar;
     Counter public counter;
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
     QuarkWallet public aliceWallet;
 
     uint256 alicePrivateKey = 0xa11ce;
@@ -35,11 +35,11 @@ contract EIP1271Test is Test {
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
 
         alice = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWalletStandalone(alice, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(alice, address(0), codeJar, nonceManager);
     }
 
     function incrementCounterOperation(QuarkWallet targetWallet) public returns (QuarkWallet.QuarkOperation memory) {
@@ -59,7 +59,7 @@ contract EIP1271Test is Test {
         // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
         QuarkWallet contractWallet =
-            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
+            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, nonceManager);
 
         // signature from alice; doesn't matter because the EIP1271Signer will approve anything
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(aliceWallet);
@@ -79,7 +79,7 @@ contract EIP1271Test is Test {
         // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
         QuarkWallet contractWallet =
-            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
+            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, nonceManager);
 
         // signature from alice; doesn't matter because the EIP1271Signer will reject anything
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(aliceWallet);

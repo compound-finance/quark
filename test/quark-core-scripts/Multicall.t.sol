@@ -8,7 +8,7 @@ import "forge-std/StdUtils.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 
@@ -58,7 +58,7 @@ contract MulticallTest is Test {
             ),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkNonceManager())));
         counter = new Counter();
         counter.setNumber(0);
 
@@ -393,7 +393,7 @@ contract MulticallTest is Test {
         walletCalls[0] = abi.encodeWithSignature(
             "executeScript(bytes32,address,bytes,bytes[])",
             new QuarkOperationHelper().semiRandomNonce(
-                QuarkWallet(payable(factory.walletImplementation())).stateManager(), walletA
+                QuarkWallet(payable(factory.walletImplementation())).nonceManager(), walletA
             ),
             ethcallAddress,
             abi.encodeWithSelector(
@@ -407,7 +407,7 @@ contract MulticallTest is Test {
 
         // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
         bytes32 walletBNextNonce = new QuarkOperationHelper().semiRandomNonce(
-            QuarkWallet(payable(factory.walletImplementation())).stateManager(), walletB
+            QuarkWallet(payable(factory.walletImplementation())).nonceManager(), walletB
         );
         wallets[1] = address(walletB);
         walletCalls[1] = abi.encodeWithSignature(
@@ -497,7 +497,7 @@ contract MulticallTest is Test {
 
         address subWallet1 = factory.walletAddressForSalt(alice, address(wallet), bytes32("1"));
         bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(
-            QuarkWallet(payable(factory.walletImplementation())).stateManager(), QuarkWallet(payable(subWallet1))
+            QuarkWallet(payable(factory.walletImplementation())).nonceManager(), QuarkWallet(payable(subWallet1))
         );
 
         // Steps: Wallet#1: Supply WETH to Comet -> Borrow USDC from Comet(USDC) to subwallet -> Create subwallet

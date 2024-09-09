@@ -9,7 +9,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkWalletStandalone} from "quark-core/src/QuarkWalletStandalone.sol";
 
@@ -25,7 +25,7 @@ contract EIP712Test is Test {
     CodeJar public codeJar;
     Counter public counter;
     QuarkWallet public wallet;
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
 
     uint256 alicePrivateKey = 0xa11ce;
     address alice; // see setup()
@@ -35,15 +35,15 @@ contract EIP712Test is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
 
         counter = new Counter();
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
         alice = vm.addr(alicePrivateKey);
-        wallet = new QuarkWalletStandalone(alice, address(0), codeJar, stateManager);
+        wallet = new QuarkWalletStandalone(alice, address(0), codeJar, nonceManager);
     }
 
     function incrementCounterOperation(QuarkWallet targetWallet) public returns (QuarkWallet.QuarkOperation memory) {
@@ -73,7 +73,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 3);
 
         // nonce is spent
-        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(type(uint256).max));
     }
 
     function testRevertsForBadCode() public {
@@ -99,7 +99,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testStructHash() public {
@@ -182,7 +182,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // nonce is not spent
-        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRevertsForBadExpiry() public {
@@ -205,7 +205,7 @@ contract EIP712Test is Test {
         assertEq(counter.number(), 0);
 
         // alice's nonce is not set
-        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRevertsOnReusedNonce() public {
@@ -222,10 +222,14 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 3);
-        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(type(uint256).max));
+        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(type(uint256).max));
 
         // submitter tries to reuse the same signature twice, for a non-replayable operation
-        vm.expectRevert(abi.encodeWithSelector(QuarkStateManager.NonReplayableNonce.selector, address(wallet), op.nonce, bytes32(type(uint256).max)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkNonceManager.NonReplayableNonce.selector, address(wallet), op.nonce, bytes32(type(uint256).max)
+            )
+        );
         wallet.executeQuarkOperation(op, v, r, s);
     }
 
@@ -248,7 +252,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRevertsInvalidS() public {
@@ -270,7 +274,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, invalidS);
 
         assertEq(counter.number(), 0);
-        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     // TODO: Uncomment when replay tokens are supported
@@ -299,7 +303,7 @@ contract EIP712Test is Test {
     //     assertEq(counter.number(), 3);
 
     //     // nonce is NOT spent; the operation is replayable
-    //     assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
+    //     assertEq(nonceManager.isNonceSet(address(wallet), op.nonce), false);
 
     //     // submitter executes the operation a second time
     //     wallet.executeQuarkOperation(op, v, r, s);
@@ -308,7 +312,7 @@ contract EIP712Test is Test {
     //     assertEq(counter.number(), 6);
 
     //     // nonce is still not spent
-    //     assertEq(stateManager.isNonceSet(address(wallet), op.nonce), false);
+    //     assertEq(nonceManager.isNonceSet(address(wallet), op.nonce), false);
     // }
 
     function testRevertBadRequirements() public {
@@ -347,7 +351,7 @@ contract EIP712Test is Test {
         wallet.executeQuarkOperation(op, v, r, s);
 
         assertEq(counter.number(), 0);
-        assertEq(stateManager.getNonceToken(address(wallet), op.nonce), bytes32(uint256(0)));
+        assertEq(nonceManager.getNonceSubmission(address(wallet), op.nonce), bytes32(uint256(0)));
     }
 
     function testRequirements() public {
