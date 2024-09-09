@@ -4,8 +4,9 @@ pragma solidity 0.8.23;
 import "quark-core/src/QuarkWallet.sol";
 
 contract CancelOtherScript {
-    function run(bytes32 nonce) public {
-        return
-            QuarkWallet(payable(address(this))).nonceManager().submitNonceToken(nonce, true, bytes32(type(uint256).max));
+    event CancelNonce();
+
+    function run() public {
+        emit CancelNonce();
     }
 }

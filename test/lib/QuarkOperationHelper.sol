@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import "forge-std/Test.sol";
 import "quark-core/src/QuarkWallet.sol";
+import {YulHelper} from "test/lib/YulHelper.sol";
 
 enum ScriptType {
     ScriptAddress,
@@ -58,6 +59,54 @@ contract QuarkOperationHelper is Test {
                 expiry: block.timestamp + 1000
             });
         }
+    }
+
+    function newReplayableOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        ScriptType scriptType,
+        uint256 replays
+    ) public returns (QuarkWallet.QuarkOperation memory, bytes32 nonceSecret) {
+        return newReplayableOpWithCalldata(wallet, scriptSource, scriptCalldata, new bytes[](0), scriptType, replays);
+    }
+
+    function newReplayableOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        bytes[] memory ensureScripts,
+        ScriptType scriptType,
+        uint256 replays
+    ) public returns (QuarkWallet.QuarkOperation memory, bytes32 nonceSecret) {
+        QuarkWallet.QuarkOperation memory operation =
+            newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, ensureScripts, scriptType);
+        nonceSecret = operation.nonce;
+        bytes32 nonce = operation.nonce;
+        for (uint256 i = 0; i < replays; i++) {
+            nonce = keccak256(abi.encodePacked(nonce));
+        }
+        operation.nonce = nonce;
+        operation.isReplayable = true;
+        return (operation, nonceSecret);
+    }
+
+    function cancelReplayable(QuarkWallet wallet, QuarkWallet.QuarkOperation memory quarkOperation)
+        public
+        returns (QuarkWallet.QuarkOperation memory)
+    {
+        bytes memory cancelOtherScript = new YulHelper().getCode("CancelOtherScript.sol/CancelOtherScript.json");
+        address scriptAddress = wallet.codeJar().saveCode(cancelOtherScript);
+        bytes[] memory scriptSources = new bytes[](1);
+        scriptSources[0] = cancelOtherScript;
+        return QuarkWallet.QuarkOperation({
+            scriptAddress: scriptAddress,
+            scriptSources: scriptSources,
+            scriptCalldata: abi.encodeWithSignature("run()"),
+            nonce: quarkOperation.nonce,
+            isReplayable: false,
+            expiry: block.timestamp + 1000
+        });
     }
 
     /// @dev Note: not sufficiently random for non-test case usage.

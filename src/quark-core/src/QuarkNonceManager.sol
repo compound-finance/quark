@@ -44,10 +44,6 @@ contract QuarkNonceManager {
         if (lastTokenSubmission == EXHAUSTED) {
             revert NonReplayableNonce(msg.sender, nonce, submissionToken, true);
         }
-        // Defense-in-depth check for non-replayable operations
-        if (!isReplayable && lastTokenSubmission != FREE) {
-            revert NonReplayableNonce(msg.sender, nonce, submissionToken, false);
-        }
         // Defense-in-deptch check for `submissionToken != FREE`
         if (submissionToken == FREE) {
             revert InvalidSubmissionToken(msg.sender, nonce, submissionToken);
@@ -62,7 +58,8 @@ contract QuarkNonceManager {
             revert InvalidSubmissionToken(msg.sender, nonce, submissionToken);
         }
 
-        nonceSubmissions[msg.sender][nonce] = submissionToken;
+        // Note: even with a valid submission token, we always set non-replayables to exhausted (e.g. for cancelations)
+        nonceSubmissions[msg.sender][nonce] = isReplayable ? submissionToken : EXHAUSTED;
         emit NonceSubmitted(msg.sender, nonce, submissionToken);
     }
 }

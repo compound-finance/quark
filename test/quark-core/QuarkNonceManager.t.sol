@@ -106,22 +106,23 @@ contract QuarkNonceManagerTest is Test {
         nonceManager.submitNonceToken(nonce, false, nonce);
     }
 
-    function testRevertsDefenseInDepthChangingReplayableness() public {
+    function testDefenseInDepthChangingReplayableness() public {
         bytes32 EXHAUSTED = nonceManager.EXHAUSTED();
         bytes32 nonceSecret = bytes32(uint256(99));
         bytes32 nonce = keccak256(abi.encodePacked(nonceSecret));
 
         nonceManager.submitNonceToken(nonce, true, nonce);
 
-        // Reverts when isReplayable set to false
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(this), nonce, nonceSecret, false
-            )
-        );
+        // Accepts as a cancel
         nonceManager.submitNonceToken(nonce, false, nonceSecret);
 
-        // Accepts when isReplayable set back to true
+        assertEq(nonceManager.getNonceSubmission(address(this), nonce), EXHAUSTED_TOKEN);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkNonceManager.NonReplayableNonce.selector, address(this), nonce, nonceSecret, true
+            )
+        );
         nonceManager.submitNonceToken(nonce, true, nonceSecret);
     }
 
