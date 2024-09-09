@@ -7,7 +7,7 @@
 
 // import {CodeJar} from "codejar/src/CodeJar.sol";
 
-// import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+// import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 // import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 
 // import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
@@ -27,7 +27,7 @@
 //     event ClearNonce(address indexed wallet, uint96 nonce);
 
 //     CodeJar public codeJar;
-//     QuarkStateManager public stateManager;
+//     QuarkNonceManager public nonceManager;
 //     QuarkWallet public walletImplementation;
 
 //     uint256 alicePrivateKey = 0x8675309;
@@ -55,10 +55,10 @@
 //         codeJar = new CodeJar();
 //         console.log("CodeJar deployed to: %s", address(codeJar));
 
-//         stateManager = new QuarkStateManager();
-//         console.log("QuarkStateManager deployed to: %s", address(stateManager));
+//         nonceManager = new QuarkNonceManager();
+//         console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
 
-//         walletImplementation = new QuarkWallet(codeJar, stateManager);
+//         walletImplementation = new QuarkWallet(codeJar, nonceManager);
 //         console.log("QuarkWallet implementation: %s", address(walletImplementation));
 
 //         aliceWallet =
@@ -201,7 +201,7 @@
 
 //         // 3. Replayable transaction can no longer be executed
 //         vm.warp(block.timestamp + purchaseInterval);
-//         vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
+//         vm.expectRevert(QuarkNonceManager.NonceAlreadySet.selector);
 //         aliceWallet.executeQuarkOperation(op, v1, r1, s1);
 
 //         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 10 ether);
@@ -286,9 +286,9 @@
 //         vm.warp(block.timestamp + purchaseInterval);
 
 //         // 6. Both recurring purchase orders can no longer be executed
-//         vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
+//         vm.expectRevert(QuarkNonceManager.NonceAlreadySet.selector);
 //         aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
-//         vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
+//         vm.expectRevert(QuarkNonceManager.NonceAlreadySet.selector);
 //         aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
 
 //         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 30 ether);

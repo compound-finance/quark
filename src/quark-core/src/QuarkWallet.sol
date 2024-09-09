@@ -6,7 +6,7 @@ import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {IHasSignerExecutor} from "quark-core/src/interfaces/IHasSignerExecutor.sol";
 
 /**
@@ -71,8 +71,8 @@ contract QuarkWallet is IERC1271 {
     /// @notice Address of CodeJar contract used to deploy transaction script source code
     CodeJar public immutable codeJar;
 
-    /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
-    QuarkStateManager public immutable stateManager;
+    /// @notice Address of QuarkNonceManager contract that manages nonces and nonce-namespaced transaction script storage
+    QuarkNonceManager public immutable nonceManager;
 
     /// @notice Name of contract
     string public constant NAME = QuarkWalletMetadata.NAME;
@@ -113,8 +113,8 @@ contract QuarkWallet is IERC1271 {
     /// @notice Well-known storage slot for the currently executing script's address (if any)
     bytes32 public constant ACTIVE_SCRIPT_SLOT = bytes32(uint256(keccak256("quark.v1.active.script")) - 1);
 
-    /// @notice A token that implies a Quark Operation is no longer replayable.
-    bytes32 public constant NO_REPLAY_TOKEN = bytes32(type(uint).max);
+    /// @notice A nonce submission token that implies a Quark Operation is no longer replayable.
+    bytes32 public constant EXHAUSTED_TOKEN = bytes32(type(uint).max);
 
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
@@ -136,11 +136,11 @@ contract QuarkWallet is IERC1271 {
     /**
      * @notice Construct a new QuarkWalletImplementation
      * @param codeJar_ The CodeJar contract used to deploy scripts
-     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
+     * @param nonceManager_ The QuarkNonceManager contract used to write/read nonces and storage for this wallet
      */
-    constructor(CodeJar codeJar_, QuarkStateManager stateManager_) {
+    constructor(CodeJar codeJar_, QuarkNonceManager nonceManager_) {
         codeJar = codeJar_;
-        stateManager = stateManager_;
+        nonceManager = nonceManager_;
     }
 
     /**
@@ -223,7 +223,7 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(op.scriptSources[i]);
         }
 
-        stateManager.submitNonceToken(op.nonce, NO_REPLAY_TOKEN);
+        nonceManager.submitNonceToken(op.nonce, EXHAUSTED_TOKEN);
 
         emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
 
@@ -233,7 +233,7 @@ contract QuarkWallet is IERC1271 {
     /**
      * @notice Verify a signature and execute a replayable QuarkOperation
      * @param op A QuarkOperation struct
-     * @param replayToken The replay token for the replayable quark operation. For the first submission, this is generally the `rootHash`.
+     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. For the first submission, this is generally the `rootHash` of a chain.
      * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value
@@ -242,7 +242,7 @@ contract QuarkWallet is IERC1271 {
      */
     function verifySigAndExecuteReplayableQuarkOperation(
         QuarkOperation calldata op,
-        bytes32 replayToken,
+        bytes32 submissionToken,
         bytes32 digest,
         uint8 v,
         bytes32 r,
@@ -260,7 +260,7 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(op.scriptSources[i]);
         }
 
-        stateManager.submitNonceToken(op.nonce, replayToken);
+        nonceManager.submitNonceToken(op.nonce, submissionToken);
 
         emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
 
@@ -292,7 +292,7 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(scriptSources[i]);
         }
 
-        stateManager.submitNonceToken(nonce, NO_REPLAY_TOKEN);
+        nonceManager.submitNonceToken(nonce, EXHAUSTED_TOKEN);
 
         emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
 

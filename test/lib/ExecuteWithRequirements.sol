@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkStateManager.sol";
+import "quark-core/src/QuarkNonceManager.sol";
 
 contract ExecuteWithRequirements {
     error RequirementNotMet(bytes32 nonce);
@@ -12,9 +12,9 @@ contract ExecuteWithRequirements {
         returns (bytes memory)
     {
         QuarkWallet wallet = QuarkWallet(payable(address(this)));
-        QuarkStateManager stateManager = wallet.stateManager();
+        QuarkNonceManager nonceManager = wallet.nonceManager();
         for (uint256 i = 0; i < requirements.length; i++) {
-            if (stateManager.getNonceToken(address(wallet), requirements[i]) == bytes32(uint256(0))) {
+            if (nonceManager.getNonceSubmission(address(wallet), requirements[i]) == bytes32(uint256(0))) {
                 revert RequirementNotMet(requirements[i]);
             }
         }

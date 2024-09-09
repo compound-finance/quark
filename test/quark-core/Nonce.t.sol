@@ -7,32 +7,32 @@ import "forge-std/console.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 
 contract NonceTest is Test {
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
 
     /// @notice Represents the unclaimed bytes32 value.
-    bytes32 public constant CLAIMABLE_TOKEN = bytes32(uint256(0));
+    bytes32 public constant FREE_TOKEN = bytes32(uint256(0));
 
     /// @notice A token that implies a Quark Operation is no longer replayable.
-    bytes32 public constant NO_REPLAY_TOKEN = bytes32(type(uint256).max);
+    bytes32 public constant EXHAUSTED_TOKEN = bytes32(type(uint256).max);
 
     bytes32 public constant NONCE_ZERO = bytes32(uint256(0));
     bytes32 public constant NONCE_ONE = bytes32(uint256(1));
 
     function setUp() public {
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
     }
 
     function testIsSet() public {
         // nonce is unset by default
-        assertEq(stateManager.getNonceToken(address(this), NONCE_ZERO), CLAIMABLE_TOKEN);
+        assertEq(nonceManager.getNonceSubmission(address(this), NONCE_ZERO), FREE_TOKEN);
 
         // it can be set
-        stateManager.submitNonceToken(NONCE_ZERO, NO_REPLAY_TOKEN);
-        assertEq(stateManager.getNonceToken(address(this), NONCE_ZERO), NO_REPLAY_TOKEN);
+        nonceManager.submitNonceToken(NONCE_ZERO, EXHAUSTED_TOKEN);
+        assertEq(nonceManager.getNonceSubmission(address(this), NONCE_ZERO), EXHAUSTED_TOKEN);
     }
 
     function testNonLinearNonce() public {
@@ -40,10 +40,10 @@ contract NonceTest is Test {
         // long as it has not been set
         bytes32 nonce = bytes32(uint256(1234567890));
 
-        assertEq(stateManager.getNonceToken(address(this), NONCE_ZERO), CLAIMABLE_TOKEN);
+        assertEq(nonceManager.getNonceSubmission(address(this), NONCE_ZERO), FREE_TOKEN);
 
-        stateManager.submitNonceToken(nonce, NO_REPLAY_TOKEN);
-        assertEq(stateManager.getNonceToken(address(this), nonce), NO_REPLAY_TOKEN);
+        nonceManager.submitNonceToken(nonce, EXHAUSTED_TOKEN);
+        assertEq(nonceManager.getNonceSubmission(address(this), nonce), EXHAUSTED_TOKEN);
     }
 
     // TODO: ADD TESTS FOR NONCE CHAIN

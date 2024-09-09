@@ -8,7 +8,7 @@ import "forge-std/StdUtils.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 
@@ -82,7 +82,7 @@ contract QuotecallTest is Test {
             ),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkNonceManager())));
         counter = new Counter();
         counter.setNumber(0);
 
