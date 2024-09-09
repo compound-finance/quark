@@ -16,7 +16,6 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 
 import {Logger} from "test/lib/Logger.sol";
 import {Counter} from "test/lib/Counter.sol";
-// import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
 
 contract QuarkNonceManagerTest is Test {
     CodeJar public codeJar;

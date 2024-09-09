@@ -1,24 +1,25 @@
-// TODO: Uncomment when replay tokens are supported
-// // SPDX-License-Identifier: BSD-3-Clause
-// pragma solidity 0.8.23;
+// SPDX-License-Identifier: BSD-3-Clause
+pragma solidity 0.8.23;
 
-// import "quark-core/src/QuarkScript.sol";
-// import "test/lib/Counter.sol";
+import "quark-core/src/QuarkScript.sol";
+import "test/lib/Counter.sol";
 
-// contract MaxCounterScript is QuarkScript {
-//     error EnoughAlready();
+contract MaxCounterScript is QuarkScript {
+    error EnoughAlready();
 
-//     function run(Counter c) external returns (bytes memory) {
-//         c.increment();
-//         uint256 count = readU256("count");
+    event Count(uint256 c);
 
-//         if (count >= 3) {
-//             revert EnoughAlready();
-//         }
+    function run(Counter c) external returns (bytes memory) {
+        c.increment();
+        uint256 count = readU256("count");
 
-//         writeU256("count", count + 1);
-//         allowReplay();
+        if (count >= 3) {
+            revert EnoughAlready();
+        }
 
-//         return hex"";
-//     }
-// }
+        writeU256("count", count + 1);
+        emit Count(count + 1);
+
+        return hex"";
+    }
+}

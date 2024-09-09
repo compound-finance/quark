@@ -67,7 +67,7 @@ contract QuarkOperationHelper is Test {
         bytes memory scriptCalldata,
         ScriptType scriptType,
         uint256 replays
-    ) public returns (QuarkWallet.QuarkOperation memory, bytes32 nonceSecret) {
+    ) public returns (QuarkWallet.QuarkOperation memory, bytes32[] memory submissionTokens, bytes32 nonceSecret) {
         return newReplayableOpWithCalldata(wallet, scriptSource, scriptCalldata, new bytes[](0), scriptType, replays);
     }
 
@@ -78,17 +78,19 @@ contract QuarkOperationHelper is Test {
         bytes[] memory ensureScripts,
         ScriptType scriptType,
         uint256 replays
-    ) public returns (QuarkWallet.QuarkOperation memory, bytes32 nonceSecret) {
+    ) public returns (QuarkWallet.QuarkOperation memory, bytes32[] memory submissionTokens, bytes32 nonceSecret) {
         QuarkWallet.QuarkOperation memory operation =
             newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, ensureScripts, scriptType);
         nonceSecret = operation.nonce;
         bytes32 nonce = operation.nonce;
+        submissionTokens = new bytes32[](replays);
         for (uint256 i = 0; i < replays; i++) {
             nonce = keccak256(abi.encodePacked(nonce));
+            submissionTokens[replays - i - 1] = nonce;
         }
         operation.nonce = nonce;
         operation.isReplayable = true;
-        return (operation, nonceSecret);
+        return (operation, submissionTokens, nonceSecret);
     }
 
     function cancelReplayable(QuarkWallet wallet, QuarkWallet.QuarkOperation memory quarkOperation)
