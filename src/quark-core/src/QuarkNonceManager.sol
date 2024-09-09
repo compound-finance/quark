@@ -48,6 +48,10 @@ contract QuarkNonceManager {
         if (!isReplayable && lastTokenSubmission != FREE) {
             revert NonReplayableNonce(msg.sender, nonce, submissionToken, false);
         }
+        // Defense-in-deptch check for `submissionToken != FREE`
+        if (submissionToken == FREE) {
+            revert InvalidSubmissionToken(msg.sender, nonce, submissionToken);
+        }
 
         bool validFirstPlay =
             lastTokenSubmission == FREE && (isReplayable ? submissionToken == nonce : submissionToken == EXHAUSTED);

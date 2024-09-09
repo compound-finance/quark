@@ -84,6 +84,68 @@ contract QuarkNonceManagerTest is Test {
         nonceManager.submitNonceToken(nonce, false, EXHAUSTED);
     }
 
+    function testRevertsIfSubmittingNonExhaustedTokenForNonReplayable() public {
+        bytes32 EXHAUSTED = nonceManager.EXHAUSTED();
+        bytes32 nonce = bytes32(uint256(99));
+
+        vm.expectRevert(
+            abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, bytes32(0))
+        );
+        nonceManager.submitNonceToken(nonce, false, bytes32(0));
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, bytes32(uint256(1))
+            )
+        );
+        nonceManager.submitNonceToken(nonce, false, bytes32(uint256(1)));
+
+        vm.expectRevert(
+            abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, nonce)
+        );
+        nonceManager.submitNonceToken(nonce, false, nonce);
+    }
+
+    function testRevertsDefenseInDepthChangingReplayableness() public {
+        bytes32 EXHAUSTED = nonceManager.EXHAUSTED();
+        bytes32 nonceSecret = bytes32(uint256(99));
+        bytes32 nonce = keccak256(abi.encodePacked(nonceSecret));
+
+        nonceManager.submitNonceToken(nonce, true, nonce);
+
+        // Reverts when isReplayable set to false
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkNonceManager.NonReplayableNonce.selector, address(this), nonce, nonceSecret, false
+            )
+        );
+        nonceManager.submitNonceToken(nonce, false, nonceSecret);
+
+        // Accepts when isReplayable set back to true
+        nonceManager.submitNonceToken(nonce, true, nonceSecret);
+    }
+
+    function testRevertsDefenseInDepthReplayableSubmissionTokenZero() public {
+        bytes32 nonce = bytes32(uint256(0));
+
+        // Cannot set a submission token zero
+        vm.expectRevert(
+            abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, nonce)
+        );
+        nonceManager.submitNonceToken(nonce, true, nonce);
+
+        // Invalid as replayable with EXHAUSTED_TOKEN since submission token doesn't match
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkNonceManager.InvalidSubmissionToken.selector, address(this), nonce, EXHAUSTED_TOKEN
+            )
+        );
+        nonceManager.submitNonceToken(nonce, true, EXHAUSTED_TOKEN);
+
+        // Still valid as non-replayable nonce
+        nonceManager.submitNonceToken(nonce, false, EXHAUSTED_TOKEN);
+    }
+
     function testIsSet() public {
         // nonce is unset by default
         assertEq(nonceManager.getNonceSubmission(address(this), NONCE_ZERO), FREE_TOKEN);
@@ -279,8 +341,4 @@ contract QuarkNonceManagerTest is Test {
         );
         nonceManager.submitNonceToken(nonce, true, EXHAUSTED_TOKEN);
     }
-
-    // TODO: ADD TESTS FOR NONCE CHAIN
-    // TODO: Really, more tests
-    // TODO: No cap.
 }
