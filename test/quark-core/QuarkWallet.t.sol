@@ -304,7 +304,7 @@ contract QuarkWalletTest is Test {
         bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
 
         // 1. use nonce to increment a counter
-        (QuarkWallet.QuarkOperation memory op1,, bytes32 nonceSecret) = new QuarkOperationHelper()
+        (QuarkWallet.QuarkOperation memory op1, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
             .newReplayableOpWithCalldata(
             aliceWallet,
             incrementer,
@@ -332,7 +332,7 @@ contract QuarkWalletTest is Test {
         // incrementer increments the counter thrice
         assertEq(counter.number(), 3);
         // when executing a replayable operation, you can change the call
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, nonceSecret, v2, r2, s2);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], v2, r2, s2);
         // incrementer increments the counter frice
         assertEq(counter.number(), 7);
         // but now both operations are exhausted
@@ -342,20 +342,20 @@ contract QuarkWalletTest is Test {
         aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, nonceSecret
+                QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, submissionTokens[1]
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op1, nonceSecret, v1, r1, s1);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op1, submissionTokens[1], v1, r1, s1);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, op2.nonce)
         );
         aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, nonceSecret
+                QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, submissionTokens[1]
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, nonceSecret, v2, r2, s2);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], v2, r2, s2);
     }
 
     function testAllowsForReusedNonceWithChangedScript() public {
@@ -364,7 +364,7 @@ contract QuarkWalletTest is Test {
         bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
 
         // 1. use nonce to increment a counter
-        (QuarkWallet.QuarkOperation memory op1,, bytes32 nonceSecret) = new QuarkOperationHelper()
+        (QuarkWallet.QuarkOperation memory op1, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
             .newReplayableOpWithCalldata(
             aliceWallet,
             incrementer,
@@ -390,7 +390,7 @@ contract QuarkWalletTest is Test {
         // incrementer increments the counter thrice
         assertEq(counter.number(), 3);
         // when reusing the nonce but changing the script, allow
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, nonceSecret, v2, r2, s2);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], v2, r2, s2);
         // code didn't change counter since it was callcode
         assertEq(counter.number(), 3);
     }
@@ -400,7 +400,7 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
 
-        (QuarkWallet.QuarkOperation memory op,, bytes32 nonceSecret) = new QuarkOperationHelper()
+        (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
             .newReplayableOpWithCalldata(
             aliceWallet,
             incrementer,
@@ -429,15 +429,17 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
         emit CancelOtherScript.CancelNonce();
-        aliceWallet.executeQuarkOperationWithSubmissionToken(cancelOtherOp, nonceSecret, cancel_v, cancel_r, cancel_s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(
+            cancelOtherOp, submissionTokens[1], cancel_v, cancel_r, cancel_s
+        );
 
         // and now you can no longer replay
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, nonceSecret, true
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1], true
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, nonceSecret, v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
 
         // Ensure exhausted
         assertEq(nonceManager.submissions(address(aliceWallet), op.nonce), bytes32(type(uint256).max));
@@ -728,7 +730,7 @@ contract QuarkWalletTest is Test {
 
         vm.startPrank(address(aliceAccount));
 
-        (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens,) = new QuarkOperationHelper()
+        (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
             .newReplayableOpWithCalldata(
             aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptAddress, 4
         );

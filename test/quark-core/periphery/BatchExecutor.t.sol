@@ -266,4 +266,6 @@ contract BatchExecutorTest is Test {
         // // Should fail with OOG
         // assertEq(successes[2], false);
     }
+
+    // TODO: Batch execution with submission tokens?
 }
