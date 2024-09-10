@@ -65,7 +65,11 @@ contract QuarkWallet is IERC1271 {
 
     /// @notice Event emitted when a Quark script is executed by this Quark wallet
     event ExecuteQuarkScript(
-        address indexed executor, address indexed scriptAddress, bytes32 indexed nonce, ExecutionType executionType
+        address indexed executor,
+        address indexed scriptAddress,
+        bytes32 indexed nonce,
+        bytes32 submissionToken,
+        ExecutionType executionType
     );
 
     /// @notice Address of CodeJar contract used to deploy transaction script source code
@@ -112,6 +116,13 @@ contract QuarkWallet is IERC1271 {
 
     /// @notice Well-known storage slot for the currently executing script's address (if any)
     bytes32 public constant ACTIVE_SCRIPT_SLOT = bytes32(uint256(keccak256("quark.v1.active.script")) - 1);
+
+    /// @notice Well-known --
+    bytes32 public constant ACTIVE_NONCE_SLOT = bytes32(uint256(keccak256("quark.v1.active.nonce")) - 1);
+
+    /// @notice Well-known --
+    bytes32 public constant ACTIVE_SUBMISSION_TOKEN_SLOT =
+        bytes32(uint256(keccak256("quark.v1.active.submissionToken")) - 1);
 
     /// @notice A nonce submission token that implies a Quark Operation is no longer replayable.
     bytes32 public constant EXHAUSTED_TOKEN = bytes32(type(uint256).max);
@@ -271,9 +282,9 @@ contract QuarkWallet is IERC1271 {
 
         nonceManager.submit(op.nonce, op.isReplayable, submissionToken);
 
-        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
+        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, submissionToken, ExecutionType.Signature);
 
-        return executeScriptInternal(op.scriptAddress, op.scriptCalldata);
+        return executeScriptInternal(op.scriptAddress, op.scriptCalldata, op.nonce, submissionToken);
     }
 
     /**
@@ -303,9 +314,9 @@ contract QuarkWallet is IERC1271 {
 
         nonceManager.submit(nonce, false, EXHAUSTED_TOKEN);
 
-        emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
+        emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, EXHAUSTED_TOKEN, ExecutionType.Direct);
 
-        return executeScriptInternal(scriptAddress, scriptCalldata);
+        return executeScriptInternal(scriptAddress, scriptCalldata, nonce, EXHAUSTED_TOKEN);
     }
 
     /**
@@ -438,12 +449,16 @@ contract QuarkWallet is IERC1271 {
      * @notice Execute a script using the given calldata
      * @param scriptAddress Address of script to execute
      * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
+     * @param nonce The nonce of the quark operation for this execution
+     * @param submissionToken The submission token for this quark execution
      * @return Result of executing the script, encoded as bytes
      */
-    function executeScriptInternal(address scriptAddress, bytes memory scriptCalldata)
-        internal
-        returns (bytes memory)
-    {
+    function executeScriptInternal(
+        address scriptAddress,
+        bytes memory scriptCalldata,
+        bytes32 nonce,
+        bytes32 submissionToken
+    ) internal returns (bytes memory) {
         if (scriptAddress.code.length == 0) {
             revert EmptyCode();
         }
@@ -452,12 +467,22 @@ contract QuarkWallet is IERC1271 {
         uint256 returnSize;
         uint256 scriptCalldataLen = scriptCalldata.length;
         bytes32 activeScriptSlot = ACTIVE_SCRIPT_SLOT;
+        bytes32 activeNonceSlot = ACTIVE_NONCE_SLOT;
+        bytes32 activeSubmissionTokenSlot = ACTIVE_SUBMISSION_TOKEN_SLOT;
         assembly {
             // TODO: TSTORE the callback slot to 0
 
             // Store the active script
             // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
             sstore(activeScriptSlot, scriptAddress)
+
+            // Store the active nonce
+            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
+            sstore(activeNonceSlot, nonce)
+
+            // Store the active submission token
+            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
+            sstore(activeSubmissionTokenSlot, submissionToken)
 
             // Note: CALLCODE is used to set the QuarkWallet as the `msg.sender`
             success :=
@@ -466,6 +491,12 @@ contract QuarkWallet is IERC1271 {
 
             // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
             sstore(activeScriptSlot, 0)
+
+            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
+            sstore(activeNonceSlot, 0)
+
+            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
+            sstore(activeSubmissionTokenSlot, 0)
         }
 
         bytes memory returnData = new bytes(returnSize);

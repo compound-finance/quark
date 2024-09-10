@@ -10,6 +10,8 @@ import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
  */
 abstract contract QuarkScript {
     error ReentrantCall();
+    error InvalidActiveNonce();
+    error InvalidActiveSubmissionToken();
 
     /// @notice Storage location for the re-entrancy guard
     bytes32 internal constant REENTRANCY_FLAG_SLOT =
@@ -117,5 +119,55 @@ abstract contract QuarkScript {
         assembly {
             sstore(key, value)
         }
+    }
+
+    // Note: this may not be accurate after any nested calls from a script
+    function getActiveNonce() internal returns (bytes32) {
+        QuarkWallet self = QuarkWallet(payable(address(this)));
+
+        bytes32 activeNonceSlot = self.ACTIVE_NONCE_SLOT();
+        bytes32 value;
+        assembly {
+            value := sload(activeNonceSlot)
+        }
+        if (value == bytes32(0)) {
+            revert InvalidActiveNonce();
+        }
+
+        return value;
+    }
+
+    // Note: this may not be accurate after any nested calls from a script
+    function getActiveSubmissionToken() internal returns (bytes32) {
+        QuarkWallet self = QuarkWallet(payable(address(this)));
+
+        bytes32 activeSubmissionTokenSlot = self.ACTIVE_SUBMISSION_TOKEN_SLOT();
+        bytes32 value;
+        assembly {
+            value := sload(activeSubmissionTokenSlot)
+        }
+        if (value == bytes32(0)) {
+            revert InvalidActiveSubmissionToken();
+        }
+        return value;
+    }
+
+    // Note: this may not be accurate after any nested calls from a script
+    // Returns the active replay count of this script. Thus, the first submission should return 0,
+    // the second submission 1, and so on. This must be called before the script makes any external calls.
+    function getActiveReplayCount() internal returns (uint256) {
+        bytes32 nonce = getActiveNonce();
+        bytes32 submissionToken = getActiveSubmissionToken();
+        uint256 n;
+
+        if (submissionToken == bytes32(type(uint256).max)) {
+            return 0;
+        }
+
+        for (n = 0; submissionToken != nonce; n++) {
+            submissionToken = keccak256(abi.encodePacked(submissionToken));
+        }
+
+        return n;
     }
 }

@@ -97,6 +97,14 @@ contract QuarkOperationHelper is Test {
         public
         returns (QuarkWallet.QuarkOperation memory)
     {
+        return cancelReplayable(wallet, quarkOperation, abi.encodeWithSignature("run()"));
+    }
+
+    function cancelReplayable(
+        QuarkWallet wallet,
+        QuarkWallet.QuarkOperation memory quarkOperation,
+        bytes memory callData
+    ) public returns (QuarkWallet.QuarkOperation memory) {
         bytes memory cancelOtherScript = new YulHelper().getCode("CancelOtherScript.sol/CancelOtherScript.json");
         address scriptAddress = wallet.codeJar().saveCode(cancelOtherScript);
         bytes[] memory scriptSources = new bytes[](1);
@@ -104,7 +112,7 @@ contract QuarkOperationHelper is Test {
         return QuarkWallet.QuarkOperation({
             scriptAddress: scriptAddress,
             scriptSources: scriptSources,
-            scriptCalldata: abi.encodeWithSignature("run()"),
+            scriptCalldata: callData,
             nonce: quarkOperation.nonce,
             isReplayable: false,
             expiry: block.timestamp + 1000
