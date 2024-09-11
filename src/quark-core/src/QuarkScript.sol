@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.23;
 
-import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet, QuarkWalletMetadata, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
+import {QuarkNonceManagerMetadata} from "quark-core/src/QuarkNonceManager.sol";
 
 /**
  * @title Quark Script
@@ -12,19 +13,6 @@ abstract contract QuarkScript {
     error ReentrantCall();
     error InvalidActiveNonce();
     error InvalidActiveSubmissionToken();
-
-    /// @notice Well-known storage slot for the currently executing script's callback address (if any)
-    bytes32 public constant CALLBACK_SLOT = bytes32(uint256(keccak256("quark.v1.callback")) - 1);
-
-    /// @notice Well-known storage slot for the currently executing script's address (if any)
-    bytes32 public constant ACTIVE_SCRIPT_SLOT = bytes32(uint256(keccak256("quark.v1.active.script")) - 1);
-
-    /// @notice Well-known --
-    bytes32 public constant ACTIVE_NONCE_SLOT = bytes32(uint256(keccak256("quark.v1.active.nonce")) - 1);
-
-    /// @notice Well-known --
-    bytes32 public constant ACTIVE_SUBMISSION_TOKEN_SLOT =
-        bytes32(uint256(keccak256("quark.v1.active.submissionToken")) - 1);
 
     /// @notice Storage location for the re-entrancy guard
     bytes32 internal constant REENTRANCY_FLAG_SLOT =
@@ -82,8 +70,8 @@ abstract contract QuarkScript {
     }
 
     function allowCallback() internal {
-        bytes32 callbackSlot = CALLBACK_SLOT;
-        bytes32 activeScriptSlot = ACTIVE_SCRIPT_SLOT;
+        bytes32 callbackSlot = QuarkWalletMetadata.CALLBACK_SLOT;
+        bytes32 activeScriptSlot = QuarkWalletMetadata.ACTIVE_SCRIPT_SLOT;
         assembly {
             // TODO: Move to TLOAD/TSTORE after updating Solidity version to >=0.8.24
             let activeScript := sload(activeScriptSlot)
@@ -92,7 +80,7 @@ abstract contract QuarkScript {
     }
 
     function clearCallback() internal {
-        bytes32 callbackSlot = CALLBACK_SLOT;
+        bytes32 callbackSlot = QuarkWalletMetadata.CALLBACK_SLOT;
         assembly {
             // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
             sstore(callbackSlot, 0)
@@ -133,7 +121,7 @@ abstract contract QuarkScript {
 
     // Note: this may not be accurate after any nested calls from a script
     function getActiveNonce() internal view returns (bytes32) {
-        bytes32 activeNonceSlot = ACTIVE_NONCE_SLOT;
+        bytes32 activeNonceSlot = QuarkWalletMetadata.ACTIVE_NONCE_SLOT;
         bytes32 value;
         assembly {
             value := sload(activeNonceSlot)
@@ -144,7 +132,7 @@ abstract contract QuarkScript {
 
     // Note: this may not be accurate after any nested calls from a script
     function getActiveSubmissionToken() internal view returns (bytes32) {
-        bytes32 activeSubmissionTokenSlot = ACTIVE_SUBMISSION_TOKEN_SLOT;
+        bytes32 activeSubmissionTokenSlot = QuarkWalletMetadata.ACTIVE_SUBMISSION_TOKEN_SLOT;
         bytes32 value;
         assembly {
             value := sload(activeSubmissionTokenSlot)
@@ -160,7 +148,7 @@ abstract contract QuarkScript {
         bytes32 submissionToken = getActiveSubmissionToken();
         uint256 n;
 
-        if (submissionToken == bytes32(type(uint256).max)) {
+        if (submissionToken == QuarkNonceManagerMetadata.EXHAUSTED) {
             return 0;
         }
 

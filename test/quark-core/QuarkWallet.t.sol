@@ -235,7 +235,6 @@ contract QuarkWalletTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
 
-        Counter counter = new Counter();
         assertEq(counter.number(), 0);
 
         bytes memory maxCounterScript = new YulHelper().getCode("MaxCounterScript.sol/MaxCounterScript.json");

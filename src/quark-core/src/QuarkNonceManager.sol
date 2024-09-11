@@ -3,6 +3,14 @@ pragma solidity 0.8.23;
 
 import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
 
+library QuarkNonceManagerMetadata {
+    /// @notice Represents the unclaimed bytes32 value.
+    bytes32 internal constant FREE = bytes32(uint256(0));
+
+    /// @notice A token that implies a Quark Operation is no longer replayable.
+    bytes32 internal constant EXHAUSTED = bytes32(type(uint256).max);
+}
+
 /**
  * @title Quark Nonce Manager
  * @notice Contract for managing nonces for Quark wallets
@@ -16,10 +24,10 @@ contract QuarkNonceManager {
     event NonceSubmitted(address wallet, bytes32 nonce, bytes32 submissionToken);
 
     /// @notice Represents the unclaimed bytes32 value.
-    bytes32 public constant FREE = bytes32(uint256(0));
+    bytes32 public constant FREE = QuarkNonceManagerMetadata.FREE;
 
     /// @notice A token that implies a Quark Operation is no longer replayable.
-    bytes32 public constant EXHAUSTED = bytes32(type(uint256).max);
+    bytes32 public constant EXHAUSTED = QuarkNonceManagerMetadata.EXHAUSTED;
 
     /// @notice Mapping from nonces to last used submission token.
     mapping(address wallet => mapping(bytes32 nonce => bytes32 lastToken)) public submissions;

@@ -11,15 +11,15 @@ contract CancelOtherScript is QuarkScript {
         emit CancelNonce();
     }
 
-    function checkNonce() public returns (bytes32) {
+    function checkNonce() public view returns (bytes32) {
         return getActiveNonce();
     }
 
-    function checkSubmissionToken() public returns (bytes32) {
+    function checkSubmissionToken() public view returns (bytes32) {
         return getActiveSubmissionToken();
     }
 
-    function checkReplayCount() public returns (uint256) {
+    function checkReplayCount() public view returns (uint256) {
         return getActiveReplayCount();
     }
 }
