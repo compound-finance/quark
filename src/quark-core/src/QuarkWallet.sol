@@ -220,23 +220,23 @@ contract QuarkWallet is IERC1271 {
         bytes32 r,
         bytes32 s
     ) public returns (bytes memory) {
-        return executeMultiQuarkOperationWithReplayToken(op, op.nonce, opDigests, v, r, s);
+        return executeMultiQuarkOperationWithSubmissionToken(op, op.nonce, opDigests, v, r, s);
     }
 
     /**
      * @notice Executes a first play or a replay of a QuarkOperation that is part of a MultiQuarkOperation via signature
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
-     * @param replayToken A replay token. For replayables, initial value should be `replayToken = op.nonce`, for non-replayables, `replayToken = bytes32(type(uint256).max)`
+     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value
      * @param s EIP-712 signature s value
      * @return Return value from the executed operation
      */
-    function executeMultiQuarkOperationWithReplayToken(
+    function executeMultiQuarkOperationWithSubmissionToken(
         QuarkOperation calldata op,
-        bytes32 replayToken,
+        bytes32 submissionToken,
         bytes32[] memory opDigests,
         uint8 v,
         bytes32 r,
@@ -256,13 +256,13 @@ contract QuarkWallet is IERC1271 {
         }
         bytes32 multiOpDigest = getDigestForMultiQuarkOperation(opDigests);
 
-        return verifySigAndExecuteQuarkOperation(op, replayToken, multiOpDigest, v, r, s);
+        return verifySigAndExecuteQuarkOperation(op, submissionToken, multiOpDigest, v, r, s);
     }
 
     /**
      * @notice Verify a signature and execute a replayable QuarkOperation
      * @param op A QuarkOperation struct
-     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. For the first submission, this is generally the `rootHash` of a chain.
+     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
      * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value

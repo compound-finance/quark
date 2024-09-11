@@ -39,13 +39,26 @@ contract QuarkOperationHelper is Test {
         bytes[] memory ensureScripts,
         ScriptType scriptType
     ) public returns (QuarkWallet.QuarkOperation memory) {
+        return newBasicOpWithCalldata(
+            wallet, scriptSource, scriptCalldata, ensureScripts, scriptType, semiRandomNonce(wallet)
+        );
+    }
+
+    function newBasicOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        bytes[] memory ensureScripts,
+        ScriptType scriptType,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory) {
         address scriptAddress = wallet.codeJar().saveCode(scriptSource);
         if (scriptType == ScriptType.ScriptAddress) {
             return QuarkWallet.QuarkOperation({
                 scriptAddress: scriptAddress,
                 scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
-                nonce: semiRandomNonce(wallet),
+                nonce: nonce,
                 isReplayable: false,
                 expiry: block.timestamp + 1000
             });
@@ -54,7 +67,7 @@ contract QuarkOperationHelper is Test {
                 scriptAddress: scriptAddress,
                 scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
-                nonce: semiRandomNonce(wallet),
+                nonce: nonce,
                 isReplayable: false,
                 expiry: block.timestamp + 1000
             });
@@ -75,13 +88,39 @@ contract QuarkOperationHelper is Test {
         QuarkWallet wallet,
         bytes memory scriptSource,
         bytes memory scriptCalldata,
+        ScriptType scriptType,
+        uint256 replays,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory, bytes32[] memory submissionTokens) {
+        return newReplayableOpWithCalldata(
+            wallet, scriptSource, scriptCalldata, new bytes[](0), scriptType, replays, nonce
+        );
+    }
+
+    function newReplayableOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
         bytes[] memory ensureScripts,
         ScriptType scriptType,
         uint256 replays
     ) public returns (QuarkWallet.QuarkOperation memory, bytes32[] memory submissionTokens) {
+        return newReplayableOpWithCalldata(
+            wallet, scriptSource, scriptCalldata, ensureScripts, scriptType, replays, semiRandomNonce(wallet)
+        );
+    }
+
+    function newReplayableOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        bytes[] memory ensureScripts,
+        ScriptType scriptType,
+        uint256 replays,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory, bytes32[] memory submissionTokens) {
         QuarkWallet.QuarkOperation memory operation =
-            newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, ensureScripts, scriptType);
-        bytes32 nonce = operation.nonce;
+            newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, ensureScripts, scriptType, nonce);
         submissionTokens = new bytes32[](replays + 1);
         submissionTokens[replays] = nonce;
         for (uint256 i = 0; i < replays; i++) {
