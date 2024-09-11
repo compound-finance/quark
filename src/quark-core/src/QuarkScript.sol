@@ -13,6 +13,7 @@ abstract contract QuarkScript {
     error ReentrantCall();
     error InvalidActiveNonce();
     error InvalidActiveSubmissionToken();
+    error NoActiveNonce();
 
     /// @notice Storage location for the re-entrancy guard
     bytes32 internal constant REENTRANCY_FLAG_SLOT =
@@ -97,8 +98,9 @@ abstract contract QuarkScript {
 
     function read(bytes32 key) internal view returns (bytes32) {
         bytes32 value;
+        bytes32 isolatedKey = getNonceIsolatedKey(key);
         assembly {
-            value := sload(key)
+            value := sload(isolatedKey)
         }
         return value;
     }
@@ -114,9 +116,20 @@ abstract contract QuarkScript {
     // TODO: Consider adding nonce-based scoping by TLOAD'ing the nonce and using
     // that to hash the key.
     function write(bytes32 key, bytes32 value) internal {
+        bytes32 isolatedKey = getNonceIsolatedKey(key);
         assembly {
-            sstore(key, value)
+            sstore(isolatedKey, value)
         }
+    }
+
+    // Returns a key isolated to the active nonce of a script
+    // This provide cooperative isolation of storage between scripts.
+    function getNonceIsolatedKey(bytes32 key) internal view returns (bytes32) {
+        bytes32 nonce = getActiveNonce();
+        if (nonce == bytes32(0)) {
+            revert NoActiveNonce();
+        }
+        return keccak256(abi.encodePacked(nonce, key));
     }
 
     // Note: this may not be accurate after any nested calls from a script

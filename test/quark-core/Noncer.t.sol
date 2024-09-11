@@ -248,6 +248,37 @@ contract NoncerTest is Test {
         assertEq(innerNonce, 0);
     }
 
+    function testPostNestReadFailure() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory noncerScript = new YulHelper().getCode("Noncer.sol/Noncer.json");
+        QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, noncerScript, abi.encodeWithSignature("checkNonce()"), ScriptType.ScriptSource
+        );
+        nestedOp.nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 2); // Don't overlap on nonces
+        (uint8 nestedV, bytes32 nestedR, bytes32 nestedS) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            noncerScript,
+            abi.encodeWithSignature(
+                "postNestRead((bytes32,bool,address,bytes[],bytes,uint256),uint8,bytes32,bytes32)",
+                nestedOp,
+                nestedV,
+                nestedR,
+                nestedS
+            ),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectRevert(abi.encodeWithSelector(QuarkScript.NoActiveNonce.selector));
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
+
     /* 
      * replayable
      */

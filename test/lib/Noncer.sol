@@ -74,6 +74,14 @@ contract Noncer is QuarkScript {
         return (pre, post, result);
     }
 
+    function postNestRead(QuarkWallet.QuarkOperation memory op, uint8 v, bytes32 r, bytes32 s)
+        public
+        returns (uint256)
+    {
+        QuarkWallet(payable(address(this))).executeQuarkOperation(op, v, r, s);
+        return readU256("count");
+    }
+
     function nestedPlay(Stow stow) public returns (uint256) {
         uint256 n = getActiveReplayCount();
         if (n == 0) {

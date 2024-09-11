@@ -405,34 +405,60 @@ contract QuarkWalletTest is Test {
 
     /* ===== storage tests ===== */
 
-    // TODO: IMPLEMENT THIS NEW TEST (MOVED FROM STATEMANAGER)
-    // function testReadStorageForWallet() public {
-    //     // gas: disable metering except while executing operations
-    //     vm.pauseGasMetering();
+    function testReadStorageForWallet() public {
+        // gas: disable metering except while executing operations
+        vm.pauseGasMetering();
 
-    //     Counter counter = new Counter();
-    //     assertEq(counter.number(), 0);
+        assertEq(counter.number(), 0);
 
-    //     bytes memory maxCounterScript = new YulHelper().getCode("MaxCounterScript.sol/MaxCounterScript.json");
-    //     address maxCounterScriptAddress = codeJar.saveCode(maxCounterScript);
-    //     bytes memory call = abi.encodeWithSignature("run(address)", address(counter));
+        bytes memory maxCounter = new YulHelper().getCode("MaxCounterScript.sol/MaxCounterScript.json");
 
-    //     QuarkWallet wallet = new QuarkWalletStandalone(address(0), address(0), codeJar, nonceManager);
+        (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
+            .newReplayableOpWithCalldata(
+            aliceWallet,
+            maxCounter,
+            abi.encodeWithSignature("run(address)", address(counter)),
+            ScriptType.ScriptAddress,
+            4
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
-    //     vm.resumeGasMetering();
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(0))
+        );
 
-    //     assertEq(nonceManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(0)));
+        vm.resumeGasMetering();
 
-    //     vm.prank(address(wallet));
-    //     nonceManager.setActiveNonceAndCallback(0, maxCounterScriptAddress, call);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[0], v, r, s);
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(1))
+        );
+        assertEq(counter.number(), 1);
 
-    //     assertEq(nonceManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(1)));
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(2))
+        );
+        assertEq(counter.number(), 2);
 
-    //     vm.prank(address(wallet));
-    //     nonceManager.setActiveNonceAndCallback(0, maxCounterScriptAddress, call);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[2], v, r, s);
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(3))
+        );
+        assertEq(counter.number(), 3);
 
-    //     assertEq(nonceManager.walletStorage(address(wallet), 0, keccak256("count")), bytes32(uint256(2)));
-    // }
+        vm.expectRevert(abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector));
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[3], v, r, s);
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(3))
+        );
+        assertEq(counter.number(), 3);
+    }
 
     /* ===== replayability tests ===== */
 
@@ -881,7 +907,10 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 1);
-        assertEq(vm.load(address(aliceWallet), keccak256("count")), bytes32(uint256(1)));
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(1))
+        );
 
         // call twice
         vm.resumeGasMetering();
@@ -893,7 +922,10 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 2);
-        assertEq(vm.load(address(aliceWallet), keccak256("count")), bytes32(uint256(2)));
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(2))
+        );
 
         // call thrice
         vm.resumeGasMetering();
@@ -905,7 +937,10 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 3);
-        assertEq(vm.load(address(aliceWallet), keccak256("count")), bytes32(uint256(3)));
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(3))
+        );
 
         // revert because max has been hit
         vm.expectRevert(abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector));
@@ -916,11 +951,17 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
 
         assertEq(counter.number(), 3);
-        assertEq(vm.load(address(aliceWallet), keccak256("count")), bytes32(uint256(3)));
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(3))
+        );
 
         counter.increment();
         assertEq(counter.number(), 4);
-        assertEq(vm.load(address(aliceWallet), keccak256("count")), bytes32(uint256(3)));
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(3))
+        );
 
         vm.resumeGasMetering();
         vm.stopPrank();
