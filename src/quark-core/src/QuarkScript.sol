@@ -13,6 +13,19 @@ abstract contract QuarkScript {
     error InvalidActiveNonce();
     error InvalidActiveSubmissionToken();
 
+    /// @notice Well-known storage slot for the currently executing script's callback address (if any)
+    bytes32 public constant CALLBACK_SLOT = bytes32(uint256(keccak256("quark.v1.callback")) - 1);
+
+    /// @notice Well-known storage slot for the currently executing script's address (if any)
+    bytes32 public constant ACTIVE_SCRIPT_SLOT = bytes32(uint256(keccak256("quark.v1.active.script")) - 1);
+
+    /// @notice Well-known --
+    bytes32 public constant ACTIVE_NONCE_SLOT = bytes32(uint256(keccak256("quark.v1.active.nonce")) - 1);
+
+    /// @notice Well-known --
+    bytes32 public constant ACTIVE_SUBMISSION_TOKEN_SLOT =
+        bytes32(uint256(keccak256("quark.v1.active.submissionToken")) - 1);
+
     /// @notice Storage location for the re-entrancy guard
     bytes32 internal constant REENTRANCY_FLAG_SLOT =
         bytes32(uint256(keccak256("quark.scripts.reentrancy.guard.v1")) - 1);
@@ -69,10 +82,8 @@ abstract contract QuarkScript {
     }
 
     function allowCallback() internal {
-        QuarkWallet self = QuarkWallet(payable(address(this)));
-        // TODO: Can save gas by just having the constant in QuarkScript
-        bytes32 callbackSlot = self.CALLBACK_SLOT();
-        bytes32 activeScriptSlot = self.ACTIVE_SCRIPT_SLOT();
+        bytes32 callbackSlot = CALLBACK_SLOT;
+        bytes32 activeScriptSlot = ACTIVE_SCRIPT_SLOT;
         assembly {
             // TODO: Move to TLOAD/TSTORE after updating Solidity version to >=0.8.24
             let activeScript := sload(activeScriptSlot)
@@ -81,8 +92,7 @@ abstract contract QuarkScript {
     }
 
     function clearCallback() internal {
-        QuarkWallet self = QuarkWallet(payable(address(this)));
-        bytes32 callbackSlot = self.CALLBACK_SLOT();
+        bytes32 callbackSlot = CALLBACK_SLOT;
         assembly {
             // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
             sstore(callbackSlot, 0)
@@ -123,15 +133,10 @@ abstract contract QuarkScript {
 
     // Note: this may not be accurate after any nested calls from a script
     function getActiveNonce() internal returns (bytes32) {
-        QuarkWallet self = QuarkWallet(payable(address(this)));
-
-        bytes32 activeNonceSlot = self.ACTIVE_NONCE_SLOT();
+        bytes32 activeNonceSlot = ACTIVE_NONCE_SLOT;
         bytes32 value;
         assembly {
             value := sload(activeNonceSlot)
-        }
-        if (value == bytes32(0)) {
-            revert InvalidActiveNonce();
         }
 
         return value;
@@ -139,15 +144,10 @@ abstract contract QuarkScript {
 
     // Note: this may not be accurate after any nested calls from a script
     function getActiveSubmissionToken() internal returns (bytes32) {
-        QuarkWallet self = QuarkWallet(payable(address(this)));
-
-        bytes32 activeSubmissionTokenSlot = self.ACTIVE_SUBMISSION_TOKEN_SLOT();
+        bytes32 activeSubmissionTokenSlot = ACTIVE_SUBMISSION_TOKEN_SLOT;
         bytes32 value;
         assembly {
             value := sload(activeSubmissionTokenSlot)
-        }
-        if (value == bytes32(0)) {
-            revert InvalidActiveSubmissionToken();
         }
         return value;
     }

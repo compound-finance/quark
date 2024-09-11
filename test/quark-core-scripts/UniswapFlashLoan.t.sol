@@ -311,24 +311,4 @@ contract UniswapFlashLoanTest is Test {
         // Lose 1 USDC to flash loan fee
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 9998e6);
     }
-
-    function testRevertsIfCalledDirectly() public {
-        // gas: do not meter set-up
-        vm.pauseGasMetering();
-        UniswapFlashLoan.UniswapFlashLoanPayload memory payload = UniswapFlashLoan.UniswapFlashLoanPayload({
-            token0: USDC,
-            token1: DAI,
-            fee: 100,
-            amount0: 0,
-            amount1: 0,
-            callContract: address(0),
-            callData: bytes("")
-        });
-
-        // gas: meter execute
-        vm.resumeGasMetering();
-        // Reverts when calling `allowCallback()`, which tries to get the `nonceManager` from self
-        vm.expectRevert();
-        UniswapFlashLoan(uniswapFlashLoanAddress).run(payload);
-    }
 }
