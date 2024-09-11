@@ -92,7 +92,8 @@ contract NoncerTest is Test {
         bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
 
         (bytes32 submissionTokenResult) = abi.decode(result, (bytes32));
-        assertEq(submissionTokenResult, EXHAUSTED_TOKEN);
+        assertEq(submissionTokenResult, op.nonce);
+        assertEq(nonceManager.submissions(address(aliceWallet), op.nonce), bytes32(type(uint256).max));
     }
 
     function testGetActiveReplayCountSingle() public {
@@ -182,14 +183,14 @@ contract NoncerTest is Test {
         bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
 
         (bytes32 pre, bytes32 post, bytes memory innerResult) = abi.decode(result, (bytes32, bytes32, bytes));
-        assertEq(pre, EXHAUSTED_TOKEN);
+        assertEq(pre, op.nonce);
         assertEq(post, bytes32(0));
         bytes32 innerNonce = abi.decode(innerResult, (bytes32));
-        assertEq(innerNonce, EXHAUSTED_TOKEN);
+        assertEq(innerNonce, nestedOp.nonce);
     }
 
     // Complicated test for a nested script to call itself recursive, since it's fun to test wonky cases.
-    function testGetActiveSubmissionTokenSharedReplayNested() public {
+    function testNestedPlayPullingActiveReplayCount() public {
         Stow stow = new Stow();
 
         // gas: do not meter set-up

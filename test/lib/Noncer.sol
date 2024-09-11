@@ -9,6 +9,7 @@ contract Stow {
 
     function getNestedOperation()
         public
+        view
         returns (QuarkWallet.QuarkOperation memory op, bytes32 submissionToken, uint8 v, bytes32 r, bytes32 s)
     {
         (op, submissionToken, v, r, s) =
@@ -27,15 +28,15 @@ contract Stow {
 }
 
 contract Noncer is QuarkScript {
-    function checkNonce() public returns (bytes32) {
+    function checkNonce() public view returns (bytes32) {
         return getActiveNonce();
     }
 
-    function checkSubmissionToken() public returns (bytes32) {
+    function checkSubmissionToken() public view returns (bytes32) {
         return getActiveSubmissionToken();
     }
 
-    function checkReplayCount() public returns (uint256) {
+    function checkReplayCount() public view returns (uint256) {
         return getActiveReplayCount();
     }
 

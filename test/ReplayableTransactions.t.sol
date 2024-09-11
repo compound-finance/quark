@@ -185,7 +185,7 @@ contract ReplayableTransactionsTest is Test {
         QuarkWallet.QuarkOperation memory cancelOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             recurringPurchase,
-            abi.encodeWithSelector(RecurringPurchase.cancel.selector),
+            abi.encodeWithSelector(RecurringPurchase.nop.selector),
             ScriptType.ScriptAddress
         );
         cancelOp.nonce = op.nonce;
@@ -262,7 +262,7 @@ contract ReplayableTransactionsTest is Test {
             cancelOp = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet,
                 recurringPurchase,
-                abi.encodeWithSelector(RecurringPurchase.cancel.selector),
+                abi.encodeWithSelector(RecurringPurchase.nop.selector),
                 ScriptType.ScriptAddress
             );
             cancelOp.expiry = op2.expiry;
