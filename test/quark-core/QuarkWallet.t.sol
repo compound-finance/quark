@@ -559,7 +559,7 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 9);
     }
 
-    function testScriptCanBeCanceled() public {
+    function testScriptCanBeCanceledByNoOp() public {
         // gas: disable gas metering except while executing operations
         vm.pauseGasMetering();
         bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
@@ -587,14 +587,66 @@ contract QuarkWalletTest is Test {
 
         // can cancel the replayable nonce...
         vm.pauseGasMetering();
-        QuarkWallet.QuarkOperation memory cancelOtherOp = new QuarkOperationHelper().cancelReplayable(aliceWallet, op);
-        (uint8 cancel_v, bytes32 cancel_r, bytes32 cancel_s) =
+        QuarkWallet.QuarkOperation memory cancelOtherOp =
+            new QuarkOperationHelper().cancelReplayableByNop(aliceWallet, op);
+        (uint8 cancelV, bytes32 cancelR, bytes32 cancelS) =
             new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
-        emit CancelOtherScript.CancelNonce();
+        emit CancelOtherScript.Nop();
         aliceWallet.executeQuarkOperationWithSubmissionToken(
-            cancelOtherOp, submissionTokens[1], cancel_v, cancel_r, cancel_s
+            cancelOtherOp, submissionTokens[1], cancelV, cancelR, cancelS
+        );
+
+        // and now you can no longer replay
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1], true
+            )
+        );
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
+
+        // Ensure exhausted
+        assertEq(nonceManager.submissions(address(aliceWallet), op.nonce), bytes32(type(uint256).max));
+    }
+
+    function testScriptCanBeCanceledByNewOp() public {
+        // gas: disable gas metering except while executing operations
+        vm.pauseGasMetering();
+        bytes memory incrementer = new YulHelper().getCode("Incrementer.sol/Incrementer.json");
+
+        (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
+            .newReplayableOpWithCalldata(
+            aliceWallet,
+            incrementer,
+            abi.encodeWithSignature("incrementCounter(address)", address(counter)),
+            ScriptType.ScriptAddress,
+            1
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 3);
+        // cannot replay the same operation directly...
+        vm.expectRevert(
+            abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op.nonce, op.nonce)
+        );
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+        assertEq(counter.number(), 3);
+
+        // can cancel the replayable nonce...
+        vm.pauseGasMetering();
+        QuarkWallet.QuarkOperation memory cancelOtherOp =
+            new QuarkOperationHelper().cancelReplayableByNewOp(aliceWallet, op);
+        (uint8 cancelV, bytes32 cancelR, bytes32 cancelS) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
+        vm.resumeGasMetering();
+        vm.expectEmit(true, true, true, true);
+        emit CancelOtherScript.CancelNonce(op.nonce);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(
+            cancelOtherOp, submissionTokens[1], cancelV, cancelR, cancelS
         );
 
         // and now you can no longer replay

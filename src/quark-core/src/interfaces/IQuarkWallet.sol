@@ -21,6 +21,7 @@ interface IQuarkWallet {
         uint256 expiry;
     }
 
+    function nonceManager() external view returns (address);
     function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
         external
         returns (bytes memory);

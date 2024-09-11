@@ -22,6 +22,7 @@ contract QuarkNonceManager {
     error InvalidSubmissionToken(address wallet, bytes32 nonce, bytes32 submissionToken);
 
     event NonceSubmitted(address wallet, bytes32 nonce, bytes32 submissionToken);
+    event NonceCanceled(address wallet, bytes32 nonce);
 
     /// @notice Represents the unclaimed bytes32 value.
     bytes32 public constant FREE = QuarkNonceManagerMetadata.FREE;
@@ -31,6 +32,15 @@ contract QuarkNonceManager {
 
     /// @notice Mapping from nonces to last used submission token.
     mapping(address wallet => mapping(bytes32 nonce => bytes32 lastToken)) public submissions;
+
+    /**
+     * @notice Ensures a given nonce is canceled for sender. An un-used nonce will not be usable in the future, and a replayable nonce will no longer be replayable. This is a no-op for already canceled operations.
+     * @param nonce The nonce of the chain to cancel.
+     */
+    function cancel(bytes32 nonce) external {
+        submissions[msg.sender][nonce] = EXHAUSTED;
+        emit NonceCanceled(msg.sender, nonce);
+    }
 
     /**
      * @notice Attempts a first or subsequent submission of a given nonce from a wallet.

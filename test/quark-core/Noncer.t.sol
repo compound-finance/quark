@@ -367,8 +367,9 @@ contract NoncerTest is Test {
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
-        QuarkWallet.QuarkOperation memory cancelOp =
-            new QuarkOperationHelper().cancelReplayable(aliceWallet, op, abi.encodeWithSignature("checkReplayCount()"));
+        QuarkWallet.QuarkOperation memory cancelOp = new QuarkOperationHelper().getCancelOperation(
+            aliceWallet, op.nonce, abi.encodeWithSignature("checkReplayCount()")
+        );
         (uint8 cancelV, bytes32 cancelR, bytes32 cancelS) =
             new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
 

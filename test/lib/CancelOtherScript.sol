@@ -5,10 +5,16 @@ import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkScript.sol";
 
 contract CancelOtherScript is QuarkScript {
-    event CancelNonce();
+    event Nop();
+    event CancelNonce(bytes32 nonce);
 
-    function run() public {
-        emit CancelNonce();
+    function nop() public {
+        emit Nop();
+    }
+
+    function run(bytes32 nonce) public {
+        nonceManager().cancel(nonce);
+        emit CancelNonce(nonce);
     }
 
     function checkNonce() public view returns (bytes32) {
