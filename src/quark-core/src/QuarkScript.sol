@@ -132,7 +132,7 @@ abstract contract QuarkScript {
     }
 
     // Note: this may not be accurate after any nested calls from a script
-    function getActiveNonce() internal returns (bytes32) {
+    function getActiveNonce() internal view returns (bytes32) {
         bytes32 activeNonceSlot = ACTIVE_NONCE_SLOT;
         bytes32 value;
         assembly {
@@ -143,7 +143,7 @@ abstract contract QuarkScript {
     }
 
     // Note: this may not be accurate after any nested calls from a script
-    function getActiveSubmissionToken() internal returns (bytes32) {
+    function getActiveSubmissionToken() internal view returns (bytes32) {
         bytes32 activeSubmissionTokenSlot = ACTIVE_SUBMISSION_TOKEN_SLOT;
         bytes32 value;
         assembly {
@@ -155,7 +155,7 @@ abstract contract QuarkScript {
     // Note: this may not be accurate after any nested calls from a script
     // Returns the active replay count of this script. Thus, the first submission should return 0,
     // the second submission 1, and so on. This must be called before the script makes any external calls.
-    function getActiveReplayCount() internal returns (uint256) {
+    function getActiveReplayCount() internal view returns (uint256) {
         bytes32 nonce = getActiveNonce();
         bytes32 submissionToken = getActiveSubmissionToken();
         uint256 n;

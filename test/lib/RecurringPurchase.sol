@@ -94,8 +94,8 @@ contract RecurringPurchase is QuarkScript {
         );
     }
 
-    function cancel() external {
-        // Not explicitly clearing the nonce just cancels the replayable txn
+    function nop() external {
+        // used to no-op and cancel script
     }
 
     function hashConfig(PurchaseConfig calldata config) internal pure returns (bytes32) {

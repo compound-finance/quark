@@ -10,6 +10,7 @@ import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
  */
 contract QuarkNonceManager {
     error NonReplayableNonce(address wallet, bytes32 nonce, bytes32 submissionToken, bool exhausted);
+    error InvalidNonce(address wallet, bytes32 nonce);
     error InvalidSubmissionToken(address wallet, bytes32 nonce, bytes32 submissionToken);
 
     event NonceSubmitted(address wallet, bytes32 nonce, bytes32 submissionToken);
@@ -34,21 +35,26 @@ contract QuarkNonceManager {
         if (lastTokenSubmission == EXHAUSTED) {
             revert NonReplayableNonce(msg.sender, nonce, submissionToken, true);
         }
-        // Defense-in-deptch check for `submissionToken != FREE`
-        if (submissionToken == FREE) {
+        // Defense-in-depth check for `nonce != FREE` and `nonce != EXHAUSTED`
+        if (nonce == FREE || nonce == EXHAUSTED) {
+            revert InvalidNonce(msg.sender, nonce);
+        }
+        // Defense-in-depth check for `submissionToken != FREE` and `submissionToken != EXHAUSTED`
+        if (submissionToken == FREE || submissionToken == EXHAUSTED) {
             revert InvalidSubmissionToken(msg.sender, nonce, submissionToken);
         }
 
-        bool validFirstPlay =
-            lastTokenSubmission == FREE && (isReplayable ? submissionToken == nonce : submissionToken == EXHAUSTED);
+        bool validFirstPlay = lastTokenSubmission == FREE && submissionToken == nonce;
 
-        /*   validToken = validFirstPlay or (                  validReplay                                    ); */
-        bool validToken = validFirstPlay || keccak256(abi.encodePacked(submissionToken)) == lastTokenSubmission;
-        if (!validToken) {
+        /* let validFirstPlayOrReplay = validFirstPlay or validReplay [with short-circuiting] */
+        bool validFirstPlayOrReplay =
+            validFirstPlay || keccak256(abi.encodePacked(submissionToken)) == lastTokenSubmission;
+
+        if (!validFirstPlayOrReplay) {
             revert InvalidSubmissionToken(msg.sender, nonce, submissionToken);
         }
 
-        // Note: even with a valid submission token, we always set non-replayables to exhausted (e.g. for cancelations)
+        // Note: even with a valid submission token, we always set non-replayables to exhausted (e.g. for cancellations)
         submissions[msg.sender][nonce] = isReplayable ? submissionToken : EXHAUSTED;
         emit NonceSubmitted(msg.sender, nonce, submissionToken);
     }

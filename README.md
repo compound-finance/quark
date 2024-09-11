@@ -74,7 +74,7 @@ For example, let _Wallet A_ be the `executor` of _Wallet B_. Alice is the `signe
 
 ### Replayable Scripts
 
-Replayable scripts are Quark scripts that can re-executed N times using the same signature of a _Quark operation_. More specifically, replayable scripts generate a nonce chain where the original signer knows a secret and hashes that secret N times. The signer can reveal a single "submission token" to replay the script which is easily verified on-chain. When the signer reveals the last submission token (the original secret) and submits it on-chain, no more replays are allowed (assuming the secret was chosen as a strong random). The signer can always cancel replays by submitting a nop non-replayable script on-chain or simply forgetting the secret. Note: the chain can be arbitrarily long and does not expend any additional gas on-chain for being longer (except if a script wants to know its position in the chain).
+Replayable scripts are Quark scripts that can be re-executed N times using the same signature of a _Quark operation_. More specifically, replayable scripts generate a nonce chain where the original signer knows a secret and hashes that secret N times. The signer can reveal a single "submission token" to replay the script which is easily verified on-chain. When the signer reveals the last submission token (the original secret) and submits it on-chain, no more replays are allowed (assuming the secret was chosen as a strong random). The signer can always cancel replays by submitting a nop non-replayable script on-chain or simply forgetting the secret. Note: the chain can be arbitrarily long and does not expend any additional gas on-chain for being longer (except if a script wants to know its position in the chain).
 
 ```
 Nonce hash chain:

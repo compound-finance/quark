@@ -124,9 +124,6 @@ contract QuarkWallet is IERC1271 {
     bytes32 public constant ACTIVE_SUBMISSION_TOKEN_SLOT =
         bytes32(uint256(keccak256("quark.v1.active.submissionToken")) - 1);
 
-    /// @notice A nonce submission token that implies a Quark Operation is no longer replayable.
-    bytes32 public constant EXHAUSTED_TOKEN = bytes32(type(uint256).max);
-
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
 
@@ -169,7 +166,7 @@ contract QuarkWallet is IERC1271 {
         external
         returns (bytes memory)
     {
-        return executeQuarkOperationWithSubmissionToken(op, getInitialSubmissionToken(op), v, r, s);
+        return executeQuarkOperationWithSubmissionToken(op, op.nonce, v, r, s);
     }
 
     /**
@@ -211,7 +208,7 @@ contract QuarkWallet is IERC1271 {
         bytes32 r,
         bytes32 s
     ) public returns (bytes memory) {
-        return executeMultiQuarkOperationWithReplayToken(op, getInitialSubmissionToken(op), opDigests, v, r, s);
+        return executeMultiQuarkOperationWithReplayToken(op, op.nonce, opDigests, v, r, s);
     }
 
     /**
@@ -312,11 +309,11 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(scriptSources[i]);
         }
 
-        nonceManager.submit(nonce, false, EXHAUSTED_TOKEN);
+        nonceManager.submit(nonce, false, nonce);
 
-        emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, EXHAUSTED_TOKEN, ExecutionType.Direct);
+        emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, nonce, ExecutionType.Direct);
 
-        return executeScriptInternal(scriptAddress, scriptCalldata, nonce, EXHAUSTED_TOKEN);
+        return executeScriptInternal(scriptAddress, scriptCalldata, nonce, nonce);
     }
 
     /**
@@ -540,9 +537,4 @@ contract QuarkWallet is IERC1271 {
 
     /// @notice Fallback for receiving native token
     receive() external payable {}
-
-    /// @dev Returns the expected initial submission token for an operation, which is either `op.nonce` for a replayable operation, or `bytes32(type(uint256).max)` (the "exhausted" token) for a non-replayable operation.
-    function getInitialSubmissionToken(QuarkOperation memory op) internal pure returns (bytes32) {
-        return op.isReplayable ? op.nonce : EXHAUSTED_TOKEN;
-    }
 }

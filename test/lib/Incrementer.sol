@@ -25,3 +25,14 @@ contract Incrementer {
         incrementCounter(Counter(counter));
     }
 }
+
+contract IncrementerBySix {
+    function incrementCounter(Counter counter) public {
+        Counter(counter).increment();
+        Counter(counter).increment();
+        Counter(counter).increment();
+        Counter(counter).increment();
+        Counter(counter).increment();
+        Counter(counter).increment();
+    }
+}
