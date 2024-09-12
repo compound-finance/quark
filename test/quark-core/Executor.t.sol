@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/console.sol";
 
@@ -60,17 +60,20 @@ contract ExecutorTest is Test {
 
         vm.startPrank(aliceAccount);
 
+        bytes32 nonce0 = new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWallet);
+        bytes32 nonce1 = new QuarkOperationHelper().semiRandomNonce(nonceManager, bobWallet);
+
         // gas: meter execute
         vm.resumeGasMetering();
 
         // execute counter.increment(5) as bob from alice's wallet (that is, from bob's wallet's executor)
         aliceWallet.executeScript(
-            new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWallet),
+            nonce0,
             executeOnBehalfAddress,
             abi.encodeWithSignature(
                 "run(address,bytes32,address,bytes)",
                 address(bobWallet),
-                new QuarkOperationHelper().semiRandomNonce(nonceManager, bobWallet),
+                nonce1,
                 address(ethcallAddress),
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 5), 0

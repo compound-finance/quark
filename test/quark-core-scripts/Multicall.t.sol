@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -540,7 +540,7 @@ contract MulticallTest is Test {
                                 path: abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
                             })
                         )
-                    ),
+                        ),
                     new bytes[](0)
                 )
             ),

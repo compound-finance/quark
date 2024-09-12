@@ -1,23 +1,36 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "quark-core/src/QuarkScript.sol";
 import "quark-core/src/QuarkWallet.sol";
 
-contract AllowCallbacks is QuarkScript {
-    // TODO: Uncomment when replay tokens are supported
-    // function run(address callbackAddress) public {
-    //     QuarkWallet self = QuarkWallet(payable(address(this)));
-    //     self.nonceManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(callbackAddress))));
-    // }
+interface IComeback {
+    function request() external returns (uint256);
+}
 
-    function allowCallbackAndReplay() public {
+contract Comebacker {
+    function comeback() public returns (uint256) {
+        return IComeback(msg.sender).request() + 1;
+    }
+}
+
+contract AllowCallbacks is QuarkScript {
+    function run() public returns (uint256) {
         allowCallback();
-        // TODO: Uncomment when replay tokens are supported
-        // allowReplay();
+        return new Comebacker().comeback() * 2;
     }
 
-    function clear() public {
+    function runAllowThenClear() public returns (uint256) {
+        allowCallback();
         clearCallback();
+        return new Comebacker().comeback() * 2;
+    }
+
+    function runWithoutAllow() public returns (uint256) {
+        return new Comebacker().comeback() * 2;
+    }
+
+    function request() external view returns (uint256) {
+        return 100 + getActiveReplayCount();
     }
 }

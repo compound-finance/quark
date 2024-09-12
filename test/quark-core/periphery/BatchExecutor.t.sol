@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -266,4 +266,6 @@ contract BatchExecutorTest is Test {
         // // Should fail with OOG
         // assertEq(successes[2], false);
     }
+
+    // TODO: Batch execution with submission tokens?
 }
