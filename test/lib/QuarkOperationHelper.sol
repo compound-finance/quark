@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "quark-core/src/QuarkWallet.sol";
@@ -42,6 +42,16 @@ contract QuarkOperationHelper is Test {
         return newBasicOpWithCalldata(
             wallet, scriptSource, scriptCalldata, ensureScripts, scriptType, semiRandomNonce(wallet)
         );
+    }
+
+    function newBasicOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        ScriptType scriptType,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory) {
+        return newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, new bytes[](0), scriptType, nonce);
     }
 
     function newBasicOpWithCalldata(
@@ -132,27 +142,35 @@ contract QuarkOperationHelper is Test {
         return (operation, submissionTokens);
     }
 
-    function cancelReplayable(QuarkWallet wallet, QuarkWallet.QuarkOperation memory quarkOperation)
+    function cancelReplayableByNop(QuarkWallet wallet, QuarkWallet.QuarkOperation memory quarkOperation)
         public
         returns (QuarkWallet.QuarkOperation memory)
     {
-        return cancelReplayable(wallet, quarkOperation, abi.encodeWithSignature("run()"));
+        return getCancelOperation(wallet, quarkOperation.nonce, abi.encodeWithSignature("nop()"));
     }
 
-    function cancelReplayable(
-        QuarkWallet wallet,
-        QuarkWallet.QuarkOperation memory quarkOperation,
-        bytes memory callData
-    ) public returns (QuarkWallet.QuarkOperation memory) {
-        bytes memory cancelOtherScript = new YulHelper().getCode("CancelOtherScript.sol/CancelOtherScript.json");
-        address scriptAddress = wallet.codeJar().saveCode(cancelOtherScript);
+    function cancelReplayableByNewOp(QuarkWallet wallet, QuarkWallet.QuarkOperation memory quarkOperation)
+        public
+        returns (QuarkWallet.QuarkOperation memory)
+    {
+        return getCancelOperation(
+            wallet, semiRandomNonce(wallet), abi.encodeWithSignature("cancel(bytes32)", quarkOperation.nonce)
+        );
+    }
+
+    function getCancelOperation(QuarkWallet wallet, bytes32 selfNonce, bytes memory callData)
+        public
+        returns (QuarkWallet.QuarkOperation memory)
+    {
+        bytes memory cancelScript = new YulHelper().getCode("Cancel.sol/Cancel.json");
+        address scriptAddress = wallet.codeJar().saveCode(cancelScript);
         bytes[] memory scriptSources = new bytes[](1);
-        scriptSources[0] = cancelOtherScript;
+        scriptSources[0] = cancelScript;
         return QuarkWallet.QuarkOperation({
             scriptAddress: scriptAddress,
             scriptSources: scriptSources,
             scriptCalldata: callData,
-            nonce: quarkOperation.nonce,
+            nonce: selfNonce,
             isReplayable: false,
             expiry: block.timestamp + 1000
         });
