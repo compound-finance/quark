@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 /**
  * @title Quark Wallet interface
@@ -21,6 +21,7 @@ interface IQuarkWallet {
         uint256 expiry;
     }
 
+    function nonceManager() external view returns (address);
     function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
         external
         returns (bytes memory);

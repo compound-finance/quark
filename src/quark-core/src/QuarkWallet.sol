@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
@@ -77,11 +77,12 @@ contract QuarkWallet is IERC1271 {
     }
 
     /// @notice Event emitted when a Quark script is executed by this Quark wallet
-    event ExecuteQuarkScript(
+    event QuarkExecution(
         address indexed executor,
         address indexed scriptAddress,
         bytes32 indexed nonce,
         bytes32 submissionToken,
+        bool isReplayable,
         ExecutionType executionType
     );
 
@@ -220,23 +221,23 @@ contract QuarkWallet is IERC1271 {
         bytes32 r,
         bytes32 s
     ) public returns (bytes memory) {
-        return executeMultiQuarkOperationWithReplayToken(op, op.nonce, opDigests, v, r, s);
+        return executeMultiQuarkOperationWithSubmissionToken(op, op.nonce, opDigests, v, r, s);
     }
 
     /**
      * @notice Executes a first play or a replay of a QuarkOperation that is part of a MultiQuarkOperation via signature
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
-     * @param replayToken A replay token. For replayables, initial value should be `replayToken = op.nonce`, for non-replayables, `replayToken = bytes32(type(uint256).max)`
+     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value
      * @param s EIP-712 signature s value
      * @return Return value from the executed operation
      */
-    function executeMultiQuarkOperationWithReplayToken(
+    function executeMultiQuarkOperationWithSubmissionToken(
         QuarkOperation calldata op,
-        bytes32 replayToken,
+        bytes32 submissionToken,
         bytes32[] memory opDigests,
         uint8 v,
         bytes32 r,
@@ -256,13 +257,13 @@ contract QuarkWallet is IERC1271 {
         }
         bytes32 multiOpDigest = getDigestForMultiQuarkOperation(opDigests);
 
-        return verifySigAndExecuteQuarkOperation(op, replayToken, multiOpDigest, v, r, s);
+        return verifySigAndExecuteQuarkOperation(op, submissionToken, multiOpDigest, v, r, s);
     }
 
     /**
      * @notice Verify a signature and execute a replayable QuarkOperation
      * @param op A QuarkOperation struct
-     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. For the first submission, this is generally the `rootHash` of a chain.
+     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
      * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value
@@ -291,7 +292,9 @@ contract QuarkWallet is IERC1271 {
 
         nonceManager.submit(op.nonce, op.isReplayable, submissionToken);
 
-        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, submissionToken, ExecutionType.Signature);
+        emit QuarkExecution(
+            msg.sender, op.scriptAddress, op.nonce, submissionToken, op.isReplayable, ExecutionType.Signature
+        );
 
         return executeScriptInternal(op.scriptAddress, op.scriptCalldata, op.nonce, submissionToken);
     }
@@ -323,7 +326,7 @@ contract QuarkWallet is IERC1271 {
 
         nonceManager.submit(nonce, false, nonce);
 
-        emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, nonce, ExecutionType.Direct);
+        emit QuarkExecution(msg.sender, scriptAddress, nonce, nonce, false, ExecutionType.Direct);
 
         return executeScriptInternal(scriptAddress, scriptCalldata, nonce, nonce);
     }
@@ -481,31 +484,28 @@ contract QuarkWallet is IERC1271 {
         assembly {
             // TODO: TSTORE the callback slot to 0
 
-            // Store the active script
-            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
-            sstore(activeScriptSlot, scriptAddress)
+            // Transiently store the active script
+            tstore(activeScriptSlot, scriptAddress)
 
-            // Store the active nonce
-            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
-            sstore(activeNonceSlot, nonce)
+            // Transiently store the active nonce
+            tstore(activeNonceSlot, nonce)
 
-            // Store the active submission token
-            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
-            sstore(activeSubmissionTokenSlot, submissionToken)
+            // Transiently store the active submission token
+            tstore(activeSubmissionTokenSlot, submissionToken)
 
             // Note: CALLCODE is used to set the QuarkWallet as the `msg.sender`
             success :=
                 callcode(gas(), scriptAddress, /* value */ 0, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
 
-            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
-            sstore(activeScriptSlot, 0)
+            // Transiently clear the active script
+            tstore(activeScriptSlot, 0)
 
-            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
-            sstore(activeNonceSlot, 0)
+            // Transiently clear the active nonce
+            tstore(activeNonceSlot, 0)
 
-            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
-            sstore(activeSubmissionTokenSlot, 0)
+            // Transiently clear the active submission token
+            tstore(activeSubmissionTokenSlot, 0)
         }
 
         bytes memory returnData = new bytes(returnSize);
@@ -530,8 +530,7 @@ contract QuarkWallet is IERC1271 {
         bytes32 callbackSlot = CALLBACK_SLOT;
         address callback;
         assembly {
-            // TODO: Move to TLOAD after updating Solidity version to >=0.8.24
-            callback := sload(callbackSlot)
+            callback := tload(callbackSlot)
         }
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);

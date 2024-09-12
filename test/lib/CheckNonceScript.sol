@@ -1,16 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "quark-core/src/QuarkWallet.sol";
 import "quark-core/src/QuarkScript.sol";
 
-contract CancelOtherScript is QuarkScript {
-    event CancelNonce();
-
-    function run() public {
-        emit CancelNonce();
-    }
-
+contract CheckNonceScript is QuarkScript {
     function checkNonce() public view returns (bytes32) {
         return getActiveNonce();
     }
