@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import {QuarkScript} from "quark-core/src/QuarkScript.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
@@ -72,6 +72,14 @@ contract Noncer is QuarkScript {
         post = getActiveReplayCount();
 
         return (pre, post, result);
+    }
+
+    function postNestRead(QuarkWallet.QuarkOperation memory op, uint8 v, bytes32 r, bytes32 s)
+        public
+        returns (uint256)
+    {
+        QuarkWallet(payable(address(this))).executeQuarkOperation(op, v, r, s);
+        return readU256("count");
     }
 
     function nestedPlay(Stow stow) public returns (uint256) {

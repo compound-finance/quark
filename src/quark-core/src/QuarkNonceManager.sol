@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
+
+library QuarkNonceManagerMetadata {
+    /// @notice Represents the unclaimed bytes32 value.
+    bytes32 internal constant FREE = bytes32(uint256(0));
+
+    /// @notice A token that implies a Quark Operation is no longer replayable.
+    bytes32 internal constant EXHAUSTED = bytes32(type(uint256).max);
+}
 
 /**
  * @title Quark Nonce Manager
@@ -14,15 +22,25 @@ contract QuarkNonceManager {
     error InvalidSubmissionToken(address wallet, bytes32 nonce, bytes32 submissionToken);
 
     event NonceSubmitted(address wallet, bytes32 nonce, bytes32 submissionToken);
+    event NonceCanceled(address wallet, bytes32 nonce);
 
     /// @notice Represents the unclaimed bytes32 value.
-    bytes32 public constant FREE = bytes32(uint256(0));
+    bytes32 public constant FREE = QuarkNonceManagerMetadata.FREE;
 
     /// @notice A token that implies a Quark Operation is no longer replayable.
-    bytes32 public constant EXHAUSTED = bytes32(type(uint256).max);
+    bytes32 public constant EXHAUSTED = QuarkNonceManagerMetadata.EXHAUSTED;
 
     /// @notice Mapping from nonces to last used submission token.
     mapping(address wallet => mapping(bytes32 nonce => bytes32 lastToken)) public submissions;
+
+    /**
+     * @notice Ensures a given nonce is canceled for sender. An un-used nonce will not be usable in the future, and a replayable nonce will no longer be replayable. This is a no-op for already canceled operations.
+     * @param nonce The nonce of the chain to cancel.
+     */
+    function cancel(bytes32 nonce) external {
+        submissions[msg.sender][nonce] = EXHAUSTED;
+        emit NonceCanceled(msg.sender, nonce);
+    }
 
     /**
      * @notice Attempts a first or subsequent submission of a given nonce from a wallet.
