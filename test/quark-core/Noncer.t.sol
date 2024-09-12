@@ -357,21 +357,26 @@ contract NoncerTest is Test {
         assertEq(replayCount, 2);
     }
 
-    function testGetActiveReplayCountWithCancel() public {
+    function testGetActiveReplayCountWithNonReplaySoftCancel() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory noncerScript = new YulHelper().getCode("Noncer.sol/Noncer.json");
+        bytes memory checkNonceScript = new YulHelper().getCode("CheckNonceScript.sol/CheckNonceScript.json");
         (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
             .newReplayableOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("checkReplayCount()"), ScriptType.ScriptSource, 2
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
-        QuarkWallet.QuarkOperation memory cancelOp = new QuarkOperationHelper().getCancelOperation(
-            aliceWallet, op.nonce, abi.encodeWithSignature("checkReplayCount()")
+        QuarkWallet.QuarkOperation memory checkReplayCountOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            checkNonceScript,
+            abi.encodeWithSignature("checkReplayCount()"),
+            ScriptType.ScriptSource,
+            op.nonce
         );
-        (uint8 cancelV, bytes32 cancelR, bytes32 cancelS) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
+        (uint8 checkReplayCountOpV, bytes32 checkReplayCountOpR, bytes32 checkReplayCountOpS) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, checkReplayCountOp);
 
         // gas: meter execute
         vm.resumeGasMetering();
@@ -381,7 +386,7 @@ contract NoncerTest is Test {
         assertEq(replayCount, 0);
 
         result = aliceWallet.executeQuarkOperationWithSubmissionToken(
-            cancelOp, submissionTokens[1], cancelV, cancelR, cancelS
+            checkReplayCountOp, submissionTokens[1], checkReplayCountOpV, checkReplayCountOpR, checkReplayCountOpS
         );
 
         (replayCount) = abi.decode(result, (uint256));

@@ -48,6 +48,16 @@ contract QuarkOperationHelper is Test {
         QuarkWallet wallet,
         bytes memory scriptSource,
         bytes memory scriptCalldata,
+        ScriptType scriptType,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory) {
+        return newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, new bytes[](0), scriptType, nonce);
+    }
+
+    function newBasicOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
         bytes[] memory ensureScripts,
         ScriptType scriptType,
         bytes32 nonce
@@ -144,7 +154,7 @@ contract QuarkOperationHelper is Test {
         returns (QuarkWallet.QuarkOperation memory)
     {
         return getCancelOperation(
-            wallet, semiRandomNonce(wallet), abi.encodeWithSignature("run(bytes32)", quarkOperation.nonce)
+            wallet, semiRandomNonce(wallet), abi.encodeWithSignature("cancel(bytes32)", quarkOperation.nonce)
         );
     }
 
@@ -152,10 +162,10 @@ contract QuarkOperationHelper is Test {
         public
         returns (QuarkWallet.QuarkOperation memory)
     {
-        bytes memory cancelOtherScript = new YulHelper().getCode("CancelOtherScript.sol/CancelOtherScript.json");
-        address scriptAddress = wallet.codeJar().saveCode(cancelOtherScript);
+        bytes memory cancelScript = new YulHelper().getCode("Cancel.sol/Cancel.json");
+        address scriptAddress = wallet.codeJar().saveCode(cancelScript);
         bytes[] memory scriptSources = new bytes[](1);
-        scriptSources[0] = cancelOtherScript;
+        scriptSources[0] = cancelScript;
         return QuarkWallet.QuarkOperation({
             scriptAddress: scriptAddress,
             scriptSources: scriptSources,

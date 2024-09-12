@@ -201,8 +201,7 @@ contract CallbacksTest is Test {
         vm.pauseGasMetering();
         bytes memory allowCallbacks = new YulHelper().getCode("AllowCallbacks.sol/AllowCallbacks.json");
 
-        (QuarkWallet.QuarkOperation memory op1, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
-            .newReplayableOpWithCalldata(
+        (QuarkWallet.QuarkOperation memory op1,) = new QuarkOperationHelper().newReplayableOpWithCalldata(
             aliceWallet, allowCallbacks, abi.encodeWithSignature("runWithoutAllow()"), ScriptType.ScriptSource, 1
         );
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
@@ -218,8 +217,7 @@ contract CallbacksTest is Test {
         vm.pauseGasMetering();
         bytes memory allowCallbacks = new YulHelper().getCode("AllowCallbacks.sol/AllowCallbacks.json");
 
-        (QuarkWallet.QuarkOperation memory op1, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
-            .newReplayableOpWithCalldata(
+        (QuarkWallet.QuarkOperation memory op1,) = new QuarkOperationHelper().newReplayableOpWithCalldata(
             aliceWallet, allowCallbacks, abi.encodeWithSignature("runAllowThenClear()"), ScriptType.ScriptSource, 1
         );
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
