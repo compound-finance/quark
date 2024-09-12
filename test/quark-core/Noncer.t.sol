@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -248,6 +248,37 @@ contract NoncerTest is Test {
         assertEq(innerNonce, 0);
     }
 
+    function testPostNestReadFailure() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory noncerScript = new YulHelper().getCode("Noncer.sol/Noncer.json");
+        QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, noncerScript, abi.encodeWithSignature("checkNonce()"), ScriptType.ScriptSource
+        );
+        nestedOp.nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 2); // Don't overlap on nonces
+        (uint8 nestedV, bytes32 nestedR, bytes32 nestedS) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            noncerScript,
+            abi.encodeWithSignature(
+                "postNestRead((bytes32,bool,address,bytes[],bytes,uint256),uint8,bytes32,bytes32)",
+                nestedOp,
+                nestedV,
+                nestedR,
+                nestedS
+            ),
+            ScriptType.ScriptSource
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectRevert(abi.encodeWithSelector(QuarkScript.NoActiveNonce.selector));
+        aliceWallet.executeQuarkOperation(op, v, r, s);
+    }
+
     /* 
      * replayable
      */
@@ -326,20 +357,26 @@ contract NoncerTest is Test {
         assertEq(replayCount, 2);
     }
 
-    function testGetActiveReplayCountWithCancel() public {
+    function testGetActiveReplayCountWithNonReplaySoftCancel() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory noncerScript = new YulHelper().getCode("Noncer.sol/Noncer.json");
+        bytes memory checkNonceScript = new YulHelper().getCode("CheckNonceScript.sol/CheckNonceScript.json");
         (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
             .newReplayableOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("checkReplayCount()"), ScriptType.ScriptSource, 2
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
-        QuarkWallet.QuarkOperation memory cancelOp =
-            new QuarkOperationHelper().cancelReplayable(aliceWallet, op, abi.encodeWithSignature("checkReplayCount()"));
-        (uint8 cancelV, bytes32 cancelR, bytes32 cancelS) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
+        QuarkWallet.QuarkOperation memory checkReplayCountOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            checkNonceScript,
+            abi.encodeWithSignature("checkReplayCount()"),
+            ScriptType.ScriptSource,
+            op.nonce
+        );
+        (uint8 checkReplayCountOpV, bytes32 checkReplayCountOpR, bytes32 checkReplayCountOpS) =
+            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, checkReplayCountOp);
 
         // gas: meter execute
         vm.resumeGasMetering();
@@ -349,7 +386,7 @@ contract NoncerTest is Test {
         assertEq(replayCount, 0);
 
         result = aliceWallet.executeQuarkOperationWithSubmissionToken(
-            cancelOp, submissionTokens[1], cancelV, cancelR, cancelS
+            checkReplayCountOp, submissionTokens[1], checkReplayCountOpV, checkReplayCountOpR, checkReplayCountOpS
         );
 
         (replayCount) = abi.decode(result, (uint256));
