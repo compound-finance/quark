@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "quark-core/src/QuarkWallet.sol";
@@ -42,6 +42,16 @@ contract QuarkOperationHelper is Test {
         return newBasicOpWithCalldata(
             wallet, scriptSource, scriptCalldata, ensureScripts, scriptType, semiRandomNonce(wallet)
         );
+    }
+
+    function newBasicOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        ScriptType scriptType,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory) {
+        return newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, new bytes[](0), scriptType, nonce);
     }
 
     function newBasicOpWithCalldata(
@@ -144,7 +154,7 @@ contract QuarkOperationHelper is Test {
         returns (QuarkWallet.QuarkOperation memory)
     {
         return getCancelOperation(
-            wallet, semiRandomNonce(wallet), abi.encodeWithSignature("run(bytes32)", quarkOperation.nonce)
+            wallet, semiRandomNonce(wallet), abi.encodeWithSignature("cancel(bytes32)", quarkOperation.nonce)
         );
     }
 
@@ -152,10 +162,10 @@ contract QuarkOperationHelper is Test {
         public
         returns (QuarkWallet.QuarkOperation memory)
     {
-        bytes memory cancelOtherScript = new YulHelper().getCode("CancelOtherScript.sol/CancelOtherScript.json");
-        address scriptAddress = wallet.codeJar().saveCode(cancelOtherScript);
+        bytes memory cancelScript = new YulHelper().getCode("Cancel.sol/Cancel.json");
+        address scriptAddress = wallet.codeJar().saveCode(cancelScript);
         bytes[] memory scriptSources = new bytes[](1);
-        scriptSources[0] = cancelOtherScript;
+        scriptSources[0] = cancelScript;
         return QuarkWallet.QuarkOperation({
             scriptAddress: scriptAddress,
             scriptSources: scriptSources,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "openzeppelin/token/ERC777/ERC777.sol";
 import "openzeppelin/token/ERC20/ERC20.sol";
