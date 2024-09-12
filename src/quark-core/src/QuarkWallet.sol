@@ -49,7 +49,7 @@ library QuarkWalletMetadata {
     /// @notice Well-known storage slot for the nonce of the script that's currently executing.
     bytes32 internal constant ACTIVE_NONCE_SLOT = bytes32(uint256(keccak256("quark.v1.active.nonce")) - 1);
 
-    /// @notice Well-known storage slot for the submission token of the script thatg's currently executing.
+    /// @notice Well-known storage slot for the submission token of the script that's currently executing.
     bytes32 internal constant ACTIVE_SUBMISSION_TOKEN_SLOT =
         bytes32(uint256(keccak256("quark.v1.active.submissionToken")) - 1);
 }
@@ -134,7 +134,7 @@ contract QuarkWallet is IERC1271 {
     /// @notice Well-known storage slot for the nonce of the script that's currently executing.
     bytes32 public constant ACTIVE_NONCE_SLOT = QuarkWalletMetadata.ACTIVE_NONCE_SLOT;
 
-    /// @notice Well-known storage slot for the submission token of the script thatg's currently executing.
+    /// @notice Well-known storage slot for the submission token of the script that's currently executing.
     bytes32 public constant ACTIVE_SUBMISSION_TOKEN_SLOT = QuarkWalletMetadata.ACTIVE_SUBMISSION_TOKEN_SLOT;
 
     /// @notice The magic value to return for valid ERC1271 signature
