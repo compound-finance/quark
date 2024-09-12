@@ -78,11 +78,12 @@ contract QuarkWallet is IERC1271 {
     }
 
     /// @notice Event emitted when a Quark script is executed by this Quark wallet
-    event ExecuteQuarkScript(
+    event QuarkExecution(
         address indexed executor,
         address indexed scriptAddress,
         bytes32 indexed nonce,
         bytes32 submissionToken,
+        bool isReplayable,
         ExecutionType executionType
     );
 
@@ -292,7 +293,9 @@ contract QuarkWallet is IERC1271 {
 
         nonceManager.submit(op.nonce, op.isReplayable, submissionToken);
 
-        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, submissionToken, ExecutionType.Signature);
+        emit QuarkExecution(
+            msg.sender, op.scriptAddress, op.nonce, submissionToken, op.isReplayable, ExecutionType.Signature
+        );
 
         return executeScriptInternal(op.scriptAddress, op.scriptCalldata, op.nonce, submissionToken);
     }
@@ -324,7 +327,7 @@ contract QuarkWallet is IERC1271 {
 
         nonceManager.submit(nonce, false, nonce);
 
-        emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, nonce, ExecutionType.Direct);
+        emit QuarkExecution(msg.sender, scriptAddress, nonce, nonce, false, ExecutionType.Direct);
 
         return executeScriptInternal(scriptAddress, scriptCalldata, nonce, nonce);
     }
