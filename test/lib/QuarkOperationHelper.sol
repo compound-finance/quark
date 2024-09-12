@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "quark-core/src/QuarkWallet.sol";
@@ -39,13 +39,36 @@ contract QuarkOperationHelper is Test {
         bytes[] memory ensureScripts,
         ScriptType scriptType
     ) public returns (QuarkWallet.QuarkOperation memory) {
+        return newBasicOpWithCalldata(
+            wallet, scriptSource, scriptCalldata, ensureScripts, scriptType, semiRandomNonce(wallet)
+        );
+    }
+
+    function newBasicOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        ScriptType scriptType,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory) {
+        return newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, new bytes[](0), scriptType, nonce);
+    }
+
+    function newBasicOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        bytes[] memory ensureScripts,
+        ScriptType scriptType,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory) {
         address scriptAddress = wallet.codeJar().saveCode(scriptSource);
         if (scriptType == ScriptType.ScriptAddress) {
             return QuarkWallet.QuarkOperation({
                 scriptAddress: scriptAddress,
                 scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
-                nonce: semiRandomNonce(wallet),
+                nonce: nonce,
                 isReplayable: false,
                 expiry: block.timestamp + 1000
             });
@@ -54,7 +77,7 @@ contract QuarkOperationHelper is Test {
                 scriptAddress: scriptAddress,
                 scriptSources: ensureScripts,
                 scriptCalldata: scriptCalldata,
-                nonce: semiRandomNonce(wallet),
+                nonce: nonce,
                 isReplayable: false,
                 expiry: block.timestamp + 1000
             });
@@ -75,13 +98,39 @@ contract QuarkOperationHelper is Test {
         QuarkWallet wallet,
         bytes memory scriptSource,
         bytes memory scriptCalldata,
+        ScriptType scriptType,
+        uint256 replays,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory, bytes32[] memory submissionTokens) {
+        return newReplayableOpWithCalldata(
+            wallet, scriptSource, scriptCalldata, new bytes[](0), scriptType, replays, nonce
+        );
+    }
+
+    function newReplayableOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
         bytes[] memory ensureScripts,
         ScriptType scriptType,
         uint256 replays
     ) public returns (QuarkWallet.QuarkOperation memory, bytes32[] memory submissionTokens) {
+        return newReplayableOpWithCalldata(
+            wallet, scriptSource, scriptCalldata, ensureScripts, scriptType, replays, semiRandomNonce(wallet)
+        );
+    }
+
+    function newReplayableOpWithCalldata(
+        QuarkWallet wallet,
+        bytes memory scriptSource,
+        bytes memory scriptCalldata,
+        bytes[] memory ensureScripts,
+        ScriptType scriptType,
+        uint256 replays,
+        bytes32 nonce
+    ) public returns (QuarkWallet.QuarkOperation memory, bytes32[] memory submissionTokens) {
         QuarkWallet.QuarkOperation memory operation =
-            newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, ensureScripts, scriptType);
-        bytes32 nonce = operation.nonce;
+            newBasicOpWithCalldata(wallet, scriptSource, scriptCalldata, ensureScripts, scriptType, nonce);
         submissionTokens = new bytes32[](replays + 1);
         submissionTokens[replays] = nonce;
         for (uint256 i = 0; i < replays; i++) {
@@ -93,19 +142,35 @@ contract QuarkOperationHelper is Test {
         return (operation, submissionTokens);
     }
 
-    function cancelReplayable(QuarkWallet wallet, QuarkWallet.QuarkOperation memory quarkOperation)
+    function cancelReplayableByNop(QuarkWallet wallet, QuarkWallet.QuarkOperation memory quarkOperation)
         public
         returns (QuarkWallet.QuarkOperation memory)
     {
-        bytes memory cancelOtherScript = new YulHelper().getCode("CancelOtherScript.sol/CancelOtherScript.json");
-        address scriptAddress = wallet.codeJar().saveCode(cancelOtherScript);
+        return getCancelOperation(wallet, quarkOperation.nonce, abi.encodeWithSignature("nop()"));
+    }
+
+    function cancelReplayableByNewOp(QuarkWallet wallet, QuarkWallet.QuarkOperation memory quarkOperation)
+        public
+        returns (QuarkWallet.QuarkOperation memory)
+    {
+        return getCancelOperation(
+            wallet, semiRandomNonce(wallet), abi.encodeWithSignature("cancel(bytes32)", quarkOperation.nonce)
+        );
+    }
+
+    function getCancelOperation(QuarkWallet wallet, bytes32 selfNonce, bytes memory callData)
+        public
+        returns (QuarkWallet.QuarkOperation memory)
+    {
+        bytes memory cancelScript = new YulHelper().getCode("Cancel.sol/Cancel.json");
+        address scriptAddress = wallet.codeJar().saveCode(cancelScript);
         bytes[] memory scriptSources = new bytes[](1);
-        scriptSources[0] = cancelOtherScript;
+        scriptSources[0] = cancelScript;
         return QuarkWallet.QuarkOperation({
             scriptAddress: scriptAddress,
             scriptSources: scriptSources,
-            scriptCalldata: abi.encodeWithSignature("run()"),
-            nonce: quarkOperation.nonce,
+            scriptCalldata: callData,
+            nonce: selfNonce,
             isReplayable: false,
             expiry: block.timestamp + 1000
         });

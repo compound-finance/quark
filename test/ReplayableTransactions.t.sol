@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -185,7 +185,7 @@ contract ReplayableTransactionsTest is Test {
         QuarkWallet.QuarkOperation memory cancelOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             recurringPurchase,
-            abi.encodeWithSelector(RecurringPurchase.cancel.selector),
+            abi.encodeWithSelector(RecurringPurchase.nop.selector),
             ScriptType.ScriptAddress
         );
         cancelOp.nonce = op.nonce;
@@ -262,7 +262,7 @@ contract ReplayableTransactionsTest is Test {
             cancelOp = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet,
                 recurringPurchase,
-                abi.encodeWithSelector(RecurringPurchase.cancel.selector),
+                abi.encodeWithSelector(RecurringPurchase.nop.selector),
                 ScriptType.ScriptAddress
             );
             cancelOp.expiry = op2.expiry;
