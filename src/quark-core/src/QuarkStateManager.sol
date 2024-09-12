@@ -5,38 +5,18 @@ import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
 
 /**
  * @title Quark State Manager
- * @notice Contract for managing nonces and storage for Quark wallets, guaranteeing storage isolation across wallets
- *         and Quark operations
+ * @notice Contract for managing nonces for Quark wallets
  * @author Compound Labs, Inc.
  */
 contract QuarkStateManager {
-    event ClearNonce(address indexed wallet, uint96 nonce);
-
-    error NoActiveNonce();
-    error NoUnusedNonces();
     error NonceAlreadySet();
-    error NonceScriptMismatch();
-
-    /// @notice Bit-packed structure of a nonce-script pair
-    struct NonceScript {
-        uint96 nonce;
-        address scriptAddress;
-    }
+    error NoUnusedNonces();
 
     /// @notice Bit-packed nonce values
     mapping(address wallet => mapping(uint256 bucket => uint256 bitset)) public nonces;
 
-    /// @notice Per-wallet-nonce address for preventing replays with changed script address
-    mapping(address wallet => mapping(uint96 nonce => address scriptAddress)) public nonceScriptAddress;
-
-    /// @notice Per-wallet-nonce storage space that can be utilized while a nonce is active
-    mapping(address wallet => mapping(uint96 nonce => mapping(bytes32 key => bytes32 value))) public walletStorage;
-
-    /// @notice Currently active nonce-script pair for a wallet, if any, for which storage is accessible
-    mapping(address wallet => NonceScript) internal activeNonceScript;
-
     /**
-     * @notice Return whether a nonce has been exhausted; note that if a nonce is not set, that does not mean it has not been used before
+     * @notice Return whether a nonce has been exhausted
      * @param wallet Address of the wallet owning the nonce
      * @param nonce Nonce to check
      * @return Whether the nonce has been exhausted
@@ -70,27 +50,12 @@ contract QuarkStateManager {
                 uint256 mask = 1 << maskOffset;
                 if ((bucketNonces & mask) == 0) {
                     uint96 nonce = uint96(bucketValue + maskOffset);
-                    // The next available nonce should not be reserved for a replayable transaction
-                    if (nonceScriptAddress[wallet][nonce] == address(0)) {
-                        return nonce;
-                    }
+                    return nonce;
                 }
             }
         }
 
         revert NoUnusedNonces();
-    }
-
-    /**
-     * @notice Return the script address associated with the currently active nonce; revert if none
-     * @return Currently active script address
-     */
-    function getActiveScript() external view returns (address) {
-        address scriptAddress = activeNonceScript[msg.sender].scriptAddress;
-        if (scriptAddress == address(0)) {
-            revert NoActiveNonce();
-        }
-        return scriptAddress;
     }
 
     /// @dev Locate a nonce at a (bucket, mask) bitset position in the nonces mapping
@@ -100,95 +65,20 @@ contract QuarkStateManager {
         return (bucket, setMask);
     }
 
-    /// @notice Clears (un-sets) the active nonce to allow its reuse; allows a script to be replayed
-    function clearNonce() external {
-        if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
-            revert NoActiveNonce();
-        }
-
-        uint96 nonce = activeNonceScript[msg.sender].nonce;
-        (uint256 bucket, uint256 setMask) = getBucket(nonce);
-        nonces[msg.sender][bucket] &= ~setMask;
-        emit ClearNonce(msg.sender, nonce);
-    }
-
     /**
-     * @notice Set a given nonce for the calling wallet; effectively cancels any replayable script using that nonce
-     * @param nonce Nonce to set for the calling wallet
+     * @notice Claim a given nonce for the calling wallet, reverting if the nonce is already set
+     * @param nonce Nonce to claim for the calling wallet
      */
-    function setNonce(uint96 nonce) external {
-        // TODO: should we check whether there exists a nonceScriptAddress?
+    function claimNonce(uint96 nonce) external {
         (uint256 bucket, uint256 setMask) = getBucket(nonce);
+        if (isNonceSetInternal(msg.sender, bucket, setMask)) {
+            revert NonceAlreadySet();
+        }
         setNonceInternal(bucket, setMask);
     }
 
     /// @dev Set a nonce for the msg.sender, using the nonce's bucket and mask
     function setNonceInternal(uint256 bucket, uint256 setMask) internal {
         nonces[msg.sender][bucket] |= setMask;
-    }
-
-    /**
-     * @notice Set a wallet nonce as the active nonce and yield control back to the wallet by calling into callback
-     * @param nonce Nonce to activate for the transaction
-     * @param scriptAddress Address of script to invoke with nonce lock
-     * @param scriptCalldata Calldata for script call to invoke with nonce lock
-     * @return Return value from the executed operation
-     * @dev The script is expected to clearNonce() if it wishes to be replayable
-     */
-    function setActiveNonceAndCallback(uint96 nonce, address scriptAddress, bytes calldata scriptCalldata)
-        external
-        returns (bytes memory)
-    {
-        // retrieve the (bucket, mask) pair that addresses the nonce in memory
-        (uint256 bucket, uint256 setMask) = getBucket(nonce);
-
-        // ensure nonce is not already set
-        if (isNonceSetInternal(msg.sender, bucket, setMask)) {
-            revert NonceAlreadySet();
-        }
-
-        address cachedScriptAddress = nonceScriptAddress[msg.sender][nonce];
-        // if the nonce has been used before, check if the script address matches, and revert if not
-        if ((cachedScriptAddress != address(0)) && (cachedScriptAddress != scriptAddress)) {
-            revert NonceScriptMismatch();
-        }
-
-        // spend the nonce; only if the callee chooses to clear it will it get un-set and become replayable
-        setNonceInternal(bucket, setMask);
-
-        // set the nonce-script pair active and yield to the wallet callback
-        NonceScript memory previousNonceScript = activeNonceScript[msg.sender];
-        activeNonceScript[msg.sender] = NonceScript({nonce: nonce, scriptAddress: scriptAddress});
-
-        bytes memory result = IQuarkWallet(msg.sender).executeScriptWithNonceLock(scriptAddress, scriptCalldata);
-
-        // if a nonce was cleared, set the nonceScriptAddress to lock nonce re-use to the same script address
-        if (cachedScriptAddress == address(0) && !isNonceSetInternal(msg.sender, bucket, setMask)) {
-            nonceScriptAddress[msg.sender][nonce] = scriptAddress;
-        }
-
-        // release the nonce when the wallet finishes executing callback
-        activeNonceScript[msg.sender] = previousNonceScript;
-
-        return result;
-    }
-
-    /// @notice Write arbitrary bytes to storage namespaced by the currently active nonce; reverts if no nonce is currently active
-    function write(bytes32 key, bytes32 value) external {
-        if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
-            revert NoActiveNonce();
-        }
-        walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key] = value;
-    }
-
-    /**
-     * @notice Read from storage namespaced by the currently active nonce; reverts if no nonce is currently active
-     * @return Value at the nonce storage location, as bytes
-     */
-    function read(bytes32 key) external view returns (bytes32) {
-        if (activeNonceScript[msg.sender].scriptAddress == address(0)) {
-            revert NoActiveNonce();
-        }
-        return walletStorage[msg.sender][activeNonceScript[msg.sender].nonce][key];
     }
 }

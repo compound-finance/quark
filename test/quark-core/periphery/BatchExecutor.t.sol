@@ -13,7 +13,6 @@ import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 
 import {Counter} from "test/lib/Counter.sol";
-import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
 import {Reverts} from "test/lib/Reverts.sol";
 
 import {YulHelper} from "test/lib/YulHelper.sol";

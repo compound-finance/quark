@@ -17,14 +17,24 @@ abstract contract QuarkScript {
 
     /// @notice A safer, but gassier reentrancy guard that writes the flag to the QuarkStateManager
     modifier nonReentrant() {
-        if (read(REENTRANCY_FLAG_SLOT) == bytes32(uint256(1))) {
+        bytes32 slot = REENTRANCY_FLAG_SLOT;
+        bytes32 flag;
+        // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
+        assembly {
+            flag := sload(slot)
+        }
+        if (flag == bytes32(uint256(1))) {
             revert ReentrantCall();
         }
-        write(REENTRANCY_FLAG_SLOT, bytes32(uint256(1)));
+        assembly {
+            sstore(slot, 1)
+        }
 
         _;
 
-        write(REENTRANCY_FLAG_SLOT, bytes32(uint256(0)));
+        assembly {
+            sstore(slot, 0)
+        }
     }
 
     /**
@@ -58,16 +68,23 @@ abstract contract QuarkScript {
 
     function allowCallback() internal {
         QuarkWallet self = QuarkWallet(payable(address(this)));
-        self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(self.stateManager().getActiveScript()))));
+        // TODO: Can save gas by just having the constant in QuarkScript
+        bytes32 callbackSlot = self.CALLBACK_SLOT();
+        bytes32 activeScriptSlot = self.ACTIVE_SCRIPT_SLOT();
+        assembly {
+            // TODO: Move to TLOAD/TSTORE after updating Solidity version to >=0.8.24
+            let activeScript := sload(activeScriptSlot)
+            sstore(callbackSlot, activeScript)
+        }
     }
 
     function clearCallback() internal {
         QuarkWallet self = QuarkWallet(payable(address(this)));
-        self.stateManager().write(self.CALLBACK_KEY(), bytes32(0));
-    }
-
-    function allowReplay() internal {
-        return QuarkWallet(payable(address(this))).stateManager().clearNonce();
+        bytes32 callbackSlot = self.CALLBACK_SLOT();
+        assembly {
+            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
+            sstore(callbackSlot, 0)
+        }
     }
 
     function readU256(string memory key) internal view returns (uint256) {
@@ -79,7 +96,11 @@ abstract contract QuarkScript {
     }
 
     function read(bytes32 key) internal view returns (bytes32) {
-        return QuarkWallet(payable(address(this))).stateManager().read(key);
+        bytes32 value;
+        assembly {
+            value := sload(key)
+        }
+        return value;
     }
 
     function writeU256(string memory key, uint256 value) internal {
@@ -90,7 +111,11 @@ abstract contract QuarkScript {
         return write(keccak256(bytes(key)), value);
     }
 
+    // TODO: Consider adding nonce-based scoping by TLOAD'ing the nonce and using
+    // that to hash the key.
     function write(bytes32 key, bytes32 value) internal {
-        return QuarkWallet(payable(address(this))).stateManager().write(key, value);
+        assembly {
+            sstore(key, value)
+        }
     }
 }

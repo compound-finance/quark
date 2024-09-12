@@ -21,7 +21,7 @@ contract NonceTest is Test {
         // nonce is unset by default
         assertEq(stateManager.isNonceSet(address(this), 0), false);
         // it can be set
-        stateManager.setNonce(0);
+        stateManager.claimNonce(0);
         assertEq(stateManager.isNonceSet(address(this), 0), true);
     }
 
@@ -32,17 +32,17 @@ contract NonceTest is Test {
 
         assertEq(stateManager.isNonceSet(address(this), nonce), false);
 
-        stateManager.setNonce(nonce);
+        stateManager.claimNonce(nonce);
         assertEq(stateManager.isNonceSet(address(this), nonce), true);
     }
 
     function testNextUnusedNonce() public {
         uint96 nonce1 = stateManager.nextNonce(address(this));
 
-        stateManager.setNonce(nonce1);
+        stateManager.claimNonce(nonce1);
         assertEq(stateManager.nextNonce(address(this)), nonce1 + 1);
 
-        stateManager.setNonce(nonce1 + 1);
+        stateManager.claimNonce(nonce1 + 1);
         assertEq(stateManager.nextNonce(address(this)), nonce1 + 2);
     }
 }

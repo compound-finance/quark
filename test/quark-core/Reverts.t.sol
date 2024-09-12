@@ -12,7 +12,6 @@ import {QuarkWalletStandalone} from "quark-core/src/QuarkWalletStandalone.sol";
 
 import {Counter} from "test/lib/Counter.sol";
 import {Reverts} from "test/lib/Reverts.sol";
-import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
 
 import {YulHelper} from "test/lib/YulHelper.sol";
 import {SignatureHelper} from "test/lib/SignatureHelper.sol";

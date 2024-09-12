@@ -5,14 +5,16 @@ import "quark-core/src/QuarkScript.sol";
 import "quark-core/src/QuarkWallet.sol";
 
 contract AllowCallbacks is QuarkScript {
-    function run(address callbackAddress) public {
-        QuarkWallet self = QuarkWallet(payable(address(this)));
-        self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(callbackAddress))));
-    }
+    // TODO: Uncomment when replay tokens are supported
+    // function run(address callbackAddress) public {
+    //     QuarkWallet self = QuarkWallet(payable(address(this)));
+    //     self.stateManager().write(self.CALLBACK_KEY(), bytes32(uint256(uint160(callbackAddress))));
+    // }
 
     function allowCallbackAndReplay() public {
         allowCallback();
-        allowReplay();
+        // TODO: Uncomment when replay tokens are supported
+        // allowReplay();
     }
 
     function clear() public {
