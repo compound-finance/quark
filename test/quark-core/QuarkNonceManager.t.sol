@@ -410,10 +410,10 @@ contract QuarkNonceManagerTest is Test {
         vm.prank(address(0x123));
         nonceManager.cancel(nonce);
 
-        // by default, nonce 0 is not set
+        // by default, nonce 1 is not set
         assertEq(nonceManager.submissions(address(0x123), nonce), nonceManager.EXHAUSTED());
 
-        // nonce 0 can be set manually
+        // nonce 1 can be set manually
         vm.prank(address(0x123));
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.NonReplayableNonce.selector, address(0x123), nonce, nonce, true)
