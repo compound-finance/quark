@@ -80,7 +80,7 @@ contract BatchCallbackTest is Test {
 
         bytes memory callIncrementScript = new YulHelper().getCode("BatchCallback.sol/CallIncrement.json");
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
-            bobWallet, callIncrementScript, abi.encodeWithSignature("run(address)", address(bobWallet)), ScriptType.ScriptSource
+            bobWallet, callIncrementScript, abi.encodeWithSignature("run(address)", address(aliceWallet)), ScriptType.ScriptSource
         );
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, op2);
 

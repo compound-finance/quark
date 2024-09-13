@@ -29,6 +29,7 @@ contract IncrementByCallback is QuarkScript {
     function run() public {
         allowCallback();
         IncrementByCallback(address(this)).increment();
+        IncrementByCallback(address(this)).increment();
     }
 
     function increment() external {
@@ -37,9 +38,7 @@ contract IncrementByCallback is QuarkScript {
 }
 
 contract CallIncrement is QuarkScript {
-    uint256 public number;
-
-    function run(address counter) public {
-        IncrementByCallback(counter).increment();
+    function run(address wallet) public {
+        IncrementByCallback(wallet).increment();
     }
 }
