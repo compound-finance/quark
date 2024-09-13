@@ -13,7 +13,6 @@ abstract contract QuarkScript {
     error ReentrantCall();
     error InvalidActiveNonce();
     error InvalidActiveSubmissionToken();
-    error NoActiveNonce();
 
     /// @notice Storage location for the re-entrancy guard
     bytes32 internal constant REENTRANCY_FLAG_SLOT =
@@ -125,9 +124,6 @@ abstract contract QuarkScript {
     // This provide cooperative isolation of storage between scripts.
     function getNonceIsolatedKey(bytes32 key) internal view returns (bytes32) {
         bytes32 nonce = getActiveNonce();
-        if (nonce == bytes32(0)) {
-            revert NoActiveNonce();
-        }
         return keccak256(abi.encodePacked(nonce, key));
     }
 

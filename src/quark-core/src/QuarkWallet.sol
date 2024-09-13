@@ -482,8 +482,17 @@ contract QuarkWallet is IERC1271 {
         bytes32 activeScriptSlot = ACTIVE_SCRIPT_SLOT;
         bytes32 activeNonceSlot = ACTIVE_NONCE_SLOT;
         bytes32 activeSubmissionTokenSlot = ACTIVE_SUBMISSION_TOKEN_SLOT;
+        bytes32 callbackSlot = CALLBACK_SLOT;
+        address oldActiveScript;
+        bytes32 oldActiveNonce;
+        bytes32 oldActiveSubmissionToken;
+        address oldCallback;
         assembly {
-            // TODO: TSTORE the callback slot to 0
+            // Cache the previous values in each of the transient slots so they can be restored after the callcode
+            oldActiveScript := tload(activeScriptSlot)
+            oldActiveNonce := tload(activeNonceSlot)
+            oldActiveSubmissionToken := tload(activeSubmissionTokenSlot)
+            oldCallback := tload(callbackSlot)
 
             // Transiently store the active script
             tstore(activeScriptSlot, scriptAddress)
@@ -499,14 +508,17 @@ contract QuarkWallet is IERC1271 {
                 callcode(gas(), scriptAddress, /* value */ 0, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
 
-            // Transiently clear the active script
-            tstore(activeScriptSlot, 0)
+            // Transiently restore the active script
+            tstore(activeScriptSlot, oldActiveScript)
 
-            // Transiently clear the active nonce
-            tstore(activeNonceSlot, 0)
+            // Transiently restore the active nonce
+            tstore(activeNonceSlot, oldActiveNonce)
 
-            // Transiently clear the active submission token
-            tstore(activeSubmissionTokenSlot, 0)
+            // Transiently restore the active submission token
+            tstore(activeSubmissionTokenSlot, oldActiveSubmissionToken)
+
+            // Transiently restore the callback slot
+            tstore(callbackSlot, oldCallback)
         }
 
         bytes memory returnData = new bytes(returnSize);
