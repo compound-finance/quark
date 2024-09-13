@@ -540,7 +540,7 @@ contract MulticallTest is Test {
                                 path: abi.encodePacked(USDC, uint24(500), WETH) // Path: USDC - 0.05% -> WETH
                             })
                         )
-                    ),
+                        ),
                     new bytes[](0)
                 )
             ),

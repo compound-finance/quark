@@ -236,7 +236,7 @@ contract UniswapFlashLoanTest is Test {
             callContract: ethcallAddress,
             callData: abi.encodeWithSelector(
                 Ethcall.run.selector, USDC, abi.encodeCall(IERC20.transfer, (address(1), 1000e6)), 0
-            )
+                )
         });
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
@@ -271,7 +271,7 @@ contract UniswapFlashLoanTest is Test {
                     callContract: ethcallAddress,
                     callData: abi.encodeWithSelector(
                         Ethcall.run.selector, USDC, abi.encodeCall(IERC20.approve, (comet, 1000e6)), 0
-                    )
+                        )
                 })
             ),
             ScriptType.ScriptAddress
