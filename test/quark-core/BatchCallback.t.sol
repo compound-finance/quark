@@ -72,6 +72,7 @@ contract BatchCallbackTest is Test {
     function testBatchCallWithCallback() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
+        BatchSend batchSend = new BatchSend();
         bytes memory incrementByCallbackScript = new YulHelper().getCode("BatchCallback.sol/IncrementByCallback.json");
         QuarkWallet.QuarkOperation memory op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, incrementByCallbackScript, abi.encodeWithSignature("run()"), ScriptType.ScriptSource
@@ -80,24 +81,16 @@ contract BatchCallbackTest is Test {
 
         bytes memory callIncrementScript = new YulHelper().getCode("BatchCallback.sol/CallIncrement.json");
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
-            bobWallet, callIncrementScript, abi.encodeWithSignature("run(address)", address(aliceWallet)), ScriptType.ScriptSource
+            bobWallet,
+            callIncrementScript,
+            abi.encodeWithSignature("run(address)", address(aliceWallet)),
+            ScriptType.ScriptSource
         );
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, op2);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        uint256 res = new BatchSend().submitTwo(
-            aliceWallet,
-            op1,
-            v1,
-            r1,
-            s1,
-            bobWallet,
-            op2,
-            v2,
-            r2,
-            s2
-            );
-        assertEq(res, 55);
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector));
+        batchSend.submitTwo(aliceWallet, op1, v1, r1, s1, bobWallet, op2, v2, r2, s2);
     }
 }

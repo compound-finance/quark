@@ -113,7 +113,7 @@ contract NoncerTest is Test {
         assertEq(replayCount, 0);
     }
 
-    /* 
+    /*
      * nested
      */
 
@@ -148,7 +148,7 @@ contract NoncerTest is Test {
 
         (bytes32 pre, bytes32 post, bytes memory innerResult) = abi.decode(result, (bytes32, bytes32, bytes));
         assertEq(pre, op.nonce);
-        assertEq(post, bytes32(0));
+        assertEq(post, op.nonce);
         bytes32 innerNonce = abi.decode(innerResult, (bytes32));
         assertEq(innerNonce, nestedOp.nonce);
     }
@@ -184,7 +184,7 @@ contract NoncerTest is Test {
 
         (bytes32 pre, bytes32 post, bytes memory innerResult) = abi.decode(result, (bytes32, bytes32, bytes));
         assertEq(pre, op.nonce);
-        assertEq(post, bytes32(0));
+        assertEq(post, op.nonce);
         bytes32 innerNonce = abi.decode(innerResult, (bytes32));
         assertEq(innerNonce, nestedOp.nonce);
     }
@@ -248,7 +248,7 @@ contract NoncerTest is Test {
         assertEq(innerNonce, 0);
     }
 
-    function testPostNestReadFailure() public {
+    function testPostNestReadsCorrectValue() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory noncerScript = new YulHelper().getCode("Noncer.sol/Noncer.json");
@@ -275,11 +275,13 @@ contract NoncerTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        vm.expectRevert(abi.encodeWithSelector(QuarkScript.NoActiveNonce.selector));
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+
+        uint256 value = abi.decode(result, (uint256));
+        assertEq(value, 0);
     }
 
-    /* 
+    /*
      * replayable
      */
 

@@ -561,7 +561,7 @@ contract QuarkWalletProxyFactoryTest is Test {
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 7), 0
                 )
-                ),
+            ),
             nonce: new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWalletPrimary),
             isReplayable: false,
             expiry: block.timestamp + 1000
