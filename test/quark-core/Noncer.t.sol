@@ -18,6 +18,8 @@ import {IHasSignerExecutor} from "quark-core/src/interfaces/IHasSignerExecutor.s
 
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
 
+import {Counter} from "test/lib/Counter.sol";
+import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
 import {Stow} from "test/lib/Noncer.sol";
 
 contract NoncerTest is Test {
@@ -27,6 +29,7 @@ contract NoncerTest is Test {
     }
 
     CodeJar public codeJar;
+    Counter public counter;
     QuarkNonceManager public nonceManager;
     QuarkWallet public walletImplementation;
 
@@ -44,6 +47,10 @@ contract NoncerTest is Test {
     constructor() {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
+
+        counter = new Counter();
+        counter.setNumber(0);
+        console.log("Counter deployed to: %s", address(counter));
 
         nonceManager = new QuarkNonceManager();
         console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
@@ -252,8 +259,9 @@ contract NoncerTest is Test {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         bytes memory noncerScript = new YulHelper().getCode("Noncer.sol/Noncer.json");
+        bytes memory maxCounter = new YulHelper().getCode("MaxCounterScript.sol/MaxCounterScript.json");
         QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, noncerScript, abi.encodeWithSignature("checkNonce()"), ScriptType.ScriptSource
+            aliceWallet, maxCounter, abi.encodeWithSignature("run(address)", address(counter)), ScriptType.ScriptSource
         );
         nestedOp.nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 2); // Don't overlap on nonces
         (uint8 nestedV, bytes32 nestedR, bytes32 nestedS) =
@@ -279,6 +287,15 @@ contract NoncerTest is Test {
 
         uint256 value = abi.decode(result, (uint256));
         assertEq(value, 0);
+        // Counter should be incremented in storage for the inner op, not the outer op
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
+            bytes32(uint256(0))
+        );
+        assertEq(
+            vm.load(address(aliceWallet), keccak256(abi.encodePacked(nestedOp.nonce, keccak256("count")))),
+            bytes32(uint256(1))
+        );
     }
 
     /*
