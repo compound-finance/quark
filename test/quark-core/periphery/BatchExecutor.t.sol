@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
@@ -25,7 +25,7 @@ contract BatchExecutorTest is Test {
     BatchExecutor public batchExecutor;
     CodeJar public codeJar;
     Counter public counter;
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
     QuarkWallet public walletImplementation;
 
     uint256 alicePrivateKey = 0x8675309;
@@ -46,10 +46,10 @@ contract BatchExecutorTest is Test {
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
 
-        walletImplementation = new QuarkWallet(codeJar, stateManager);
+        walletImplementation = new QuarkWallet(codeJar, nonceManager);
         console.log("QuarkWallet implementation: %s", address(walletImplementation));
 
         aliceWallet =
@@ -266,4 +266,6 @@ contract BatchExecutorTest is Test {
         // // Should fail with OOG
         // assertEq(successes[2], false);
     }
+
+    // TODO: Batch execution with submission tokens?
 }

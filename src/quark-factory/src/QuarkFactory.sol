@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
 
@@ -16,7 +16,7 @@ contract QuarkFactory {
     CodeJar public immutable codeJar;
     QuarkWallet public quarkWalletImpl;
     QuarkWalletProxyFactory public quarkWalletProxyFactory;
-    QuarkStateManager public quarkStateManager;
+    QuarkNonceManager public quarkNonceManager;
     BatchExecutor public batchExecutor;
 
     constructor(CodeJar codeJar_) {
@@ -24,12 +24,12 @@ contract QuarkFactory {
     }
 
     function deployQuarkContracts() external {
-        quarkStateManager =
-            QuarkStateManager(payable(codeJar.saveCode(abi.encodePacked(type(QuarkStateManager).creationCode))));
+        quarkNonceManager =
+            QuarkNonceManager(payable(codeJar.saveCode(abi.encodePacked(type(QuarkNonceManager).creationCode))));
         quarkWalletImpl = QuarkWallet(
             payable(
                 codeJar.saveCode(
-                    abi.encodePacked(type(QuarkWallet).creationCode, abi.encode(codeJar, quarkStateManager))
+                    abi.encodePacked(type(QuarkWallet).creationCode, abi.encode(codeJar, quarkNonceManager))
                 )
             )
         );

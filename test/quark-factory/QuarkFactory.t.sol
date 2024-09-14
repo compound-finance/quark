@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -11,7 +11,7 @@ import {CodeJar} from "codejar/src/CodeJar.sol";
 import {CodeJarFactory} from "codejar/src/CodeJarFactory.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
 
 contract QuarkFactoryTest is Test {
@@ -29,15 +29,15 @@ contract QuarkFactoryTest is Test {
         vm.pauseGasMetering();
         address expectedCodeJarAddress =
             getCreate2AddressHelper(address(codeJarFactory), bytes32(0), type(CodeJar).creationCode);
-        address expectedQuarkStateManagerAddress =
-            getCreate2AddressHelper(address(codeJar), bytes32(0), type(QuarkStateManager).creationCode);
+        address expectedQuarkNonceManagerAddress =
+            getCreate2AddressHelper(address(codeJar), bytes32(0), type(QuarkNonceManager).creationCode);
         address expectedQuarkWalletImplAddress = getCreate2AddressHelper(
             address(codeJar),
             bytes32(0),
             abi.encodePacked(
                 type(QuarkWallet).creationCode,
                 abi.encode(expectedCodeJarAddress),
-                abi.encode(expectedQuarkStateManagerAddress)
+                abi.encode(expectedQuarkNonceManagerAddress)
             )
         );
         address expectedQuarkWalletProxyFactoryAddress = getCreate2AddressHelper(
@@ -53,7 +53,7 @@ contract QuarkFactoryTest is Test {
         assertEq(address(factory.codeJar()), expectedCodeJarAddress);
         assertEq(address(factory.quarkWalletImpl()), expectedQuarkWalletImplAddress);
         assertEq(address(factory.quarkWalletProxyFactory()), expectedQuarkWalletProxyFactoryAddress);
-        assertEq(address(factory.quarkStateManager()), expectedQuarkStateManagerAddress);
+        assertEq(address(factory.quarkNonceManager()), expectedQuarkNonceManagerAddress);
         assertEq(address(factory.batchExecutor()), expectedBatchExecutorAddress);
     }
 
@@ -61,8 +61,8 @@ contract QuarkFactoryTest is Test {
         vm.pauseGasMetering();
         address expectedCodeJarAddress =
             getCreate2AddressHelper(address(codeJarFactory), bytes32(0), abi.encodePacked(type(CodeJar).creationCode));
-        address expectedQuarkStateManagerAddress = getCreate2AddressHelper(
-            address(codeJar), bytes32(0), abi.encodePacked(type(QuarkStateManager).creationCode)
+        address expectedQuarkNonceManagerAddress = getCreate2AddressHelper(
+            address(codeJar), bytes32(0), abi.encodePacked(type(QuarkNonceManager).creationCode)
         );
         address expectedQuarkWalletImplAddress = getCreate2AddressHelper(
             address(codeJar),
@@ -70,7 +70,7 @@ contract QuarkFactoryTest is Test {
             abi.encodePacked(
                 type(QuarkWallet).creationCode,
                 abi.encode(expectedCodeJarAddress),
-                abi.encode(expectedQuarkStateManagerAddress)
+                abi.encode(expectedQuarkNonceManagerAddress)
             )
         );
         address expectedQuarkWalletProxyFactoryAddress = getCreate2AddressHelper(
@@ -87,7 +87,7 @@ contract QuarkFactoryTest is Test {
         assertEq(address(factory.codeJar()), expectedCodeJarAddress);
         assertEq(address(factory.quarkWalletImpl()), expectedQuarkWalletImplAddress);
         assertEq(address(factory.quarkWalletProxyFactory()), expectedQuarkWalletProxyFactoryAddress);
-        assertEq(address(factory.quarkStateManager()), expectedQuarkStateManagerAddress);
+        assertEq(address(factory.quarkNonceManager()), expectedQuarkNonceManagerAddress);
         assertEq(address(factory.batchExecutor()), expectedBatchExecutorAddress);
 
         // This doesn't need to revert. It's mostly a no-op
@@ -95,7 +95,7 @@ contract QuarkFactoryTest is Test {
         assertEq(address(factory.codeJar()), expectedCodeJarAddress);
         assertEq(address(factory.quarkWalletImpl()), expectedQuarkWalletImplAddress);
         assertEq(address(factory.quarkWalletProxyFactory()), expectedQuarkWalletProxyFactoryAddress);
-        assertEq(address(factory.quarkStateManager()), expectedQuarkStateManagerAddress);
+        assertEq(address(factory.quarkNonceManager()), expectedQuarkNonceManagerAddress);
         assertEq(address(factory.batchExecutor()), expectedBatchExecutorAddress);
     }
 
@@ -103,15 +103,15 @@ contract QuarkFactoryTest is Test {
         vm.pauseGasMetering();
         address expectedCodeJarAddress =
             getCreate2AddressHelper(address(codeJarFactory), bytes32(0), type(CodeJar).creationCode);
-        address expectedQuarkStateManagerAddress =
-            getCreate2AddressHelper(address(codeJar), bytes32(0), type(QuarkStateManager).creationCode);
+        address expectedQuarkNonceManagerAddress =
+            getCreate2AddressHelper(address(codeJar), bytes32(0), type(QuarkNonceManager).creationCode);
         address expectedQuarkWalletImplAddress = getCreate2AddressHelper(
             address(codeJar),
             bytes32(0),
             abi.encodePacked(
                 type(QuarkWallet).creationCode,
                 abi.encode(expectedCodeJarAddress),
-                abi.encode(expectedQuarkStateManagerAddress)
+                abi.encode(expectedQuarkNonceManagerAddress)
             )
         );
         address expectedQuarkWalletProxyFactoryAddress = getCreate2AddressHelper(
@@ -131,7 +131,7 @@ contract QuarkFactoryTest is Test {
         assertEq(address(factory.codeJar()), expectedCodeJarAddress);
         assertEq(address(factory.quarkWalletImpl()), expectedQuarkWalletImplAddress);
         assertEq(address(factory.quarkWalletProxyFactory()), expectedQuarkWalletProxyFactoryAddress);
-        assertEq(address(factory.quarkStateManager()), expectedQuarkStateManagerAddress);
+        assertEq(address(factory.quarkNonceManager()), expectedQuarkNonceManagerAddress);
         assertEq(address(factory.batchExecutor()), expectedBatchExecutorAddress);
     }
 

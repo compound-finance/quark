@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/StdUtils.sol";
@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet, QuarkWalletMetadata} from "quark-core/src/QuarkWallet.sol";
 import {QuarkWalletStandalone} from "quark-core/src/QuarkWalletStandalone.sol";
 
@@ -23,7 +23,7 @@ contract isValidSignatureTest is Test {
     CodeJar public codeJar;
     QuarkWallet aliceWallet;
     QuarkWallet bobWallet;
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
     Permit2 permit2;
 
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
@@ -51,14 +51,14 @@ contract isValidSignatureTest is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
 
         alice = vm.addr(alicePrivateKey);
-        aliceWallet = new QuarkWalletStandalone(alice, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(alice, address(0), codeJar, nonceManager);
 
         bob = vm.addr(bobPrivateKey);
-        bobWallet = new QuarkWalletStandalone(bob, address(0), codeJar, stateManager);
+        bobWallet = new QuarkWalletStandalone(bob, address(0), codeJar, nonceManager);
 
         permit2 = Permit2(PERMIT2_ADDRESS);
     }
@@ -189,7 +189,7 @@ contract isValidSignatureTest is Test {
         // QuarkWallet is owned by a smart contract that always approves signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(true);
         QuarkWallet contractWallet =
-            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
+            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, nonceManager);
         // signature from bob; doesn't matter because the EIP1271Signer will approve anything
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
@@ -205,7 +205,7 @@ contract isValidSignatureTest is Test {
         // QuarkWallet is owned by a smart contract that always rejects signatures
         EIP1271Signer signatureApprover = new EIP1271Signer(false);
         QuarkWallet contractWallet =
-            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
+            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, nonceManager);
         // signature from bob; doesn't matter because the EIP1271Signer will reject everything
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
@@ -222,7 +222,7 @@ contract isValidSignatureTest is Test {
         // QuarkWallet is owned by a smart contract that always reverts
         EIP1271Reverter signatureApprover = new EIP1271Reverter();
         QuarkWallet contractWallet =
-            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, stateManager);
+            new QuarkWalletStandalone(address(signatureApprover), address(0), codeJar, nonceManager);
         // signature from bob; doesn't matter because the EIP1271Signer will revert
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
@@ -237,7 +237,7 @@ contract isValidSignatureTest is Test {
         vm.pauseGasMetering();
 
         address emptyCodeContract = address(new EmptyCode());
-        QuarkWallet contractWallet = new QuarkWalletStandalone(emptyCodeContract, address(0), codeJar, stateManager);
+        QuarkWallet contractWallet = new QuarkWalletStandalone(emptyCodeContract, address(0), codeJar, nonceManager);
         // signature from bob; doesn't matter because the empty contract will be treated as an EOA and revert
         ( /* bytes32 digest */ , bytes memory signature) = createTestSignature(bobPrivateKey, bobWallet);
         // gas: meter execute
@@ -255,7 +255,7 @@ contract isValidSignatureTest is Test {
     function testRevertsForPermit2SignatureReuse() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        QuarkWallet aliceWallet2 = new QuarkWalletStandalone(alice, address(0), codeJar, stateManager);
+        QuarkWallet aliceWallet2 = new QuarkWalletStandalone(alice, address(0), codeJar, nonceManager);
 
         Permit2Helper.PermitDetails memory permitDetails = Permit2Helper.PermitDetails({
             token: USDC,

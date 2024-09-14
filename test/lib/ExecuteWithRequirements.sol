@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "quark-core/src/QuarkWallet.sol";
-import "quark-core/src/QuarkStateManager.sol";
+import "quark-core/src/QuarkNonceManager.sol";
 
 contract ExecuteWithRequirements {
-    error RequirementNotMet(uint96 nonce);
+    error RequirementNotMet(bytes32 nonce);
 
-    function runWithRequirements(uint96[] memory requirements, address scriptAddress, bytes calldata scriptCalldata)
+    function runWithRequirements(bytes32[] memory requirements, address scriptAddress, bytes calldata scriptCalldata)
         public
         returns (bytes memory)
     {
         QuarkWallet wallet = QuarkWallet(payable(address(this)));
-        QuarkStateManager stateManager = wallet.stateManager();
-        for (uint96 i = 0; i < requirements.length; i++) {
-            if (!stateManager.isNonceSet(address(wallet), requirements[i])) {
+        QuarkNonceManager nonceManager = wallet.nonceManager();
+        for (uint256 i = 0; i < requirements.length; i++) {
+            if (nonceManager.submissions(address(wallet), requirements[i]) == bytes32(uint256(0))) {
                 revert RequirementNotMet(requirements[i]);
             }
         }

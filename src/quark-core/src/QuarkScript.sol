@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
-import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWallet, QuarkWalletMetadata, IHasSignerExecutor, IQuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkNonceManager, QuarkNonceManagerMetadata} from "quark-core/src/QuarkNonceManager.sol";
 
 /**
  * @title Quark Script
@@ -10,30 +11,31 @@ import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
  */
 abstract contract QuarkScript {
     error ReentrantCall();
+    error InvalidActiveNonce();
+    error InvalidActiveSubmissionToken();
 
     /// @notice Storage location for the re-entrancy guard
     bytes32 internal constant REENTRANCY_FLAG_SLOT =
         bytes32(uint256(keccak256("quark.scripts.reentrancy.guard.v1")) - 1);
 
-    /// @notice A safer, but gassier reentrancy guard that writes the flag to the QuarkStateManager
+    /// @notice A safer, but gassier reentrancy guard that writes the flag to the QuarkNonceManager
     modifier nonReentrant() {
         bytes32 slot = REENTRANCY_FLAG_SLOT;
         bytes32 flag;
-        // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
         assembly {
-            flag := sload(slot)
+            flag := tload(slot)
         }
         if (flag == bytes32(uint256(1))) {
             revert ReentrantCall();
         }
         assembly {
-            sstore(slot, 1)
+            tstore(slot, 1)
         }
 
         _;
 
         assembly {
-            sstore(slot, 0)
+            tstore(slot, 0)
         }
     }
 
@@ -66,24 +68,23 @@ abstract contract QuarkScript {
         return IHasSignerExecutor(address(this)).executor();
     }
 
+    function nonceManager() internal view returns (QuarkNonceManager) {
+        return QuarkNonceManager(IQuarkWallet(address(this)).nonceManager());
+    }
+
     function allowCallback() internal {
-        QuarkWallet self = QuarkWallet(payable(address(this)));
-        // TODO: Can save gas by just having the constant in QuarkScript
-        bytes32 callbackSlot = self.CALLBACK_SLOT();
-        bytes32 activeScriptSlot = self.ACTIVE_SCRIPT_SLOT();
+        bytes32 callbackSlot = QuarkWalletMetadata.CALLBACK_SLOT;
+        bytes32 activeScriptSlot = QuarkWalletMetadata.ACTIVE_SCRIPT_SLOT;
         assembly {
-            // TODO: Move to TLOAD/TSTORE after updating Solidity version to >=0.8.24
-            let activeScript := sload(activeScriptSlot)
-            sstore(callbackSlot, activeScript)
+            let activeScript := tload(activeScriptSlot)
+            tstore(callbackSlot, activeScript)
         }
     }
 
     function clearCallback() internal {
-        QuarkWallet self = QuarkWallet(payable(address(this)));
-        bytes32 callbackSlot = self.CALLBACK_SLOT();
+        bytes32 callbackSlot = QuarkWalletMetadata.CALLBACK_SLOT;
         assembly {
-            // TODO: Move to TSTORE after updating Solidity version to >=0.8.24
-            sstore(callbackSlot, 0)
+            tstore(callbackSlot, 0)
         }
     }
 
@@ -97,8 +98,9 @@ abstract contract QuarkScript {
 
     function read(bytes32 key) internal view returns (bytes32) {
         bytes32 value;
+        bytes32 isolatedKey = getNonceIsolatedKey(key);
         assembly {
-            value := sload(key)
+            value := sload(isolatedKey)
         }
         return value;
     }
@@ -111,11 +113,57 @@ abstract contract QuarkScript {
         return write(keccak256(bytes(key)), value);
     }
 
-    // TODO: Consider adding nonce-based scoping by TLOAD'ing the nonce and using
-    // that to hash the key.
     function write(bytes32 key, bytes32 value) internal {
+        bytes32 isolatedKey = getNonceIsolatedKey(key);
         assembly {
-            sstore(key, value)
+            sstore(isolatedKey, value)
         }
+    }
+
+    // Returns a key isolated to the active nonce of a script
+    // This provide cooperative isolation of storage between scripts.
+    function getNonceIsolatedKey(bytes32 key) internal view returns (bytes32) {
+        bytes32 nonce = getActiveNonce();
+        return keccak256(abi.encodePacked(nonce, key));
+    }
+
+    // Note: this may not be accurate after any nested calls from a script
+    function getActiveNonce() internal view returns (bytes32) {
+        bytes32 activeNonceSlot = QuarkWalletMetadata.ACTIVE_NONCE_SLOT;
+        bytes32 value;
+        assembly {
+            value := tload(activeNonceSlot)
+        }
+
+        return value;
+    }
+
+    // Note: this may not be accurate after any nested calls from a script
+    function getActiveSubmissionToken() internal view returns (bytes32) {
+        bytes32 activeSubmissionTokenSlot = QuarkWalletMetadata.ACTIVE_SUBMISSION_TOKEN_SLOT;
+        bytes32 value;
+        assembly {
+            value := tload(activeSubmissionTokenSlot)
+        }
+        return value;
+    }
+
+    // Note: this may not be accurate after any nested calls from a script
+    // Returns the active replay count of this script. Thus, the first submission should return 0,
+    // the second submission 1, and so on. This must be called before the script makes any external calls.
+    function getActiveReplayCount() internal view returns (uint256) {
+        bytes32 nonce = getActiveNonce();
+        bytes32 submissionToken = getActiveSubmissionToken();
+        uint256 n;
+
+        if (submissionToken == QuarkNonceManagerMetadata.EXHAUSTED) {
+            return 0;
+        }
+
+        for (n = 0; submissionToken != nonce; n++) {
+            submissionToken = keccak256(abi.encodePacked(submissionToken));
+        }
+
+        return n;
     }
 }

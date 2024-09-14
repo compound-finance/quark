@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkWalletStandalone} from "quark-core/src/QuarkWalletStandalone.sol";
 
@@ -20,7 +20,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 contract RevertsTest is Test {
     CodeJar public codeJar;
     Counter public counter;
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
 
     uint256 alicePrivateKey = 0x8675309;
     address aliceAccount = vm.addr(alicePrivateKey);
@@ -34,10 +34,10 @@ contract RevertsTest is Test {
         counter.setNumber(0);
         console.log("Counter deployed to: %s", address(counter));
 
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
 
-        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(aliceAccount, address(0), codeJar, nonceManager);
         console.log("Alice signer: %s", aliceAccount);
         console.log("Alice wallet at: %s", address(aliceWallet));
     }
