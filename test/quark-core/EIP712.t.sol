@@ -231,9 +231,7 @@ contract EIP712Test is Test {
 
         // submitter tries to reuse the same signature twice, for a non-replayable operation
         vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(wallet), op.nonce, op.nonce, true
-            )
+            abi.encodeWithSelector(QuarkNonceManager.NonReplayableNonce.selector, address(wallet), op.nonce, op.nonce)
         );
         wallet.executeQuarkOperation(op, v, r, s);
     }

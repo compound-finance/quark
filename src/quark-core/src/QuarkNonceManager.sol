@@ -17,7 +17,7 @@ library QuarkNonceManagerMetadata {
  * @author Compound Labs, Inc.
  */
 contract QuarkNonceManager {
-    error NonReplayableNonce(address wallet, bytes32 nonce, bytes32 submissionToken, bool exhausted);
+    error NonReplayableNonce(address wallet, bytes32 nonce, bytes32 submissionToken);
     error InvalidNonce(address wallet, bytes32 nonce);
     error InvalidSubmissionToken(address wallet, bytes32 nonce, bytes32 submissionToken);
 
@@ -51,7 +51,7 @@ contract QuarkNonceManager {
     function submit(bytes32 nonce, bool isReplayable, bytes32 submissionToken) external {
         bytes32 lastTokenSubmission = submissions[msg.sender][nonce];
         if (lastTokenSubmission == EXHAUSTED) {
-            revert NonReplayableNonce(msg.sender, nonce, submissionToken, true);
+            revert NonReplayableNonce(msg.sender, nonce, submissionToken);
         }
         // Defense-in-depth check for `nonce != FREE` and `nonce != EXHAUSTED`
         if (nonce == FREE || nonce == EXHAUSTED) {
