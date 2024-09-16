@@ -22,7 +22,6 @@ contract QuarkNonceManager {
     error InvalidSubmissionToken(address wallet, bytes32 nonce, bytes32 submissionToken);
 
     event NonceSubmitted(address wallet, bytes32 nonce, bytes32 submissionToken);
-    event NonceCanceled(address wallet, bytes32 nonce);
 
     /// @notice Represents the unclaimed bytes32 value.
     bytes32 public constant FREE = QuarkNonceManagerMetadata.FREE;
@@ -39,7 +38,7 @@ contract QuarkNonceManager {
      */
     function cancel(bytes32 nonce) external {
         submissions[msg.sender][nonce] = EXHAUSTED;
-        emit NonceCanceled(msg.sender, nonce);
+        emit NonceSubmitted(msg.sender, nonce, EXHAUSTED);
     }
 
     /**

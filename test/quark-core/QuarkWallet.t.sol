@@ -661,7 +661,7 @@ contract QuarkWalletTest is Test {
             new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
-        emit QuarkNonceManager.NonceCanceled(address(aliceWallet), op.nonce);
+        emit QuarkNonceManager.NonceSubmitted(address(aliceWallet), op.nonce, bytes32(type(uint256).max));
         aliceWallet.executeQuarkOperationWithSubmissionToken(cancelOp, submissionTokens[1], cancelV, cancelR, cancelS);
 
         // and now you can no longer replay
