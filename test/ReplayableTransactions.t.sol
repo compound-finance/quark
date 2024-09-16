@@ -207,14 +207,14 @@ contract ReplayableTransactionsTest is Test {
         vm.warp(block.timestamp + purchaseInterval);
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1], true
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1]
             )
         );
         aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v1, r1, s1);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[2], true
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[2]
             )
         );
         aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[2], v1, r1, s1);

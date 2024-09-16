@@ -276,7 +276,7 @@ contract QuarkWalletTest is Test {
         // Not sure why this revert isn't showing up-- it's reverting, nonetheless.
         // vm.expectRevert(
         //     abi.encodeWithSelector(
-        //         QuarkNonceManager.NonReplayableNonce.selector, address(aliceWalletExecutable), nonce, nonce, true
+        //         QuarkNonceManager.NonReplayableNonce.selector, address(aliceWalletExecutable), nonce, nonce
         //     )
         // );
         aliceWalletExecutable.executeScript(nonce, scriptAddress, call, scriptSources);
@@ -331,7 +331,7 @@ contract QuarkWalletTest is Test {
         // Check it is no longer runnable
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, op.nonce, true
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, op.nonce
             )
         );
         aliceWallet.executeQuarkOperationWithSubmissionToken(op, op.nonce, v, r, s);
@@ -619,7 +619,7 @@ contract QuarkWalletTest is Test {
         // and now you can no longer replay
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1], true
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1]
             )
         );
         aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
@@ -667,7 +667,7 @@ contract QuarkWalletTest is Test {
         // and now you can no longer replay
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1], true
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1]
             )
         );
         aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
@@ -937,7 +937,7 @@ contract QuarkWalletTest is Test {
         // call again using the same operation
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op1.nonce, op1.nonce, true
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op1.nonce, op1.nonce
             )
         );
         aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
@@ -1110,14 +1110,12 @@ contract QuarkWalletTest is Test {
         // test all tokens do not replay now for op1, which is non-replayable
         vm.expectRevert(
             abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, aliceWallet, op1.nonce, EXHAUSTED_TOKEN, true
+                QuarkNonceManager.NonReplayableNonce.selector, aliceWallet, op1.nonce, EXHAUSTED_TOKEN
             )
         );
         aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, EXHAUSTED_TOKEN, opDigests, v, r, s);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                QuarkNonceManager.NonReplayableNonce.selector, aliceWallet, op1.nonce, op1.nonce, true
-            )
+            abi.encodeWithSelector(QuarkNonceManager.NonReplayableNonce.selector, aliceWallet, op1.nonce, op1.nonce)
         );
         aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, op1.nonce, opDigests, v, r, s);
 
