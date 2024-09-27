@@ -447,7 +447,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: getMessageDetailsAddress,
             scriptSources: scriptSources,
-            scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
+            scriptCalldata: abi.encodeWithSignature("getMsgDetails()"),
             nonce: nonce,
             isReplayable: false,
             expiry: block.timestamp + 1000
@@ -463,8 +463,9 @@ contract QuarkWalletProxyFactoryTest is Test {
         emit WalletDeploy(alice, address(0), aliceWallet, bytes32(0));
         bytes memory result = factory.createAndExecute(alice, address(0), op, v, r, s);
 
-        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
-        assertEq(msgSender, address(aliceWallet));
+        (address msgSender, address addressThis, uint256 msgValue) = abi.decode(result, (address, address, uint256));
+        assertEq(msgSender, address(factory));
+        assertEq(addressThis, address(aliceWallet));
         assertEq(msgValue, 0);
 
         // uses up the operation's nonce
@@ -483,7 +484,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         QuarkWallet.QuarkOperation memory op = QuarkWallet.QuarkOperation({
             scriptAddress: getMessageDetailsAddress,
             scriptSources: new bytes[](0),
-            scriptCalldata: abi.encodeWithSignature("getMsgSenderAndValue()"),
+            scriptCalldata: abi.encodeWithSignature("getMsgDetails()"),
             nonce: nonce,
             isReplayable: false,
             expiry: block.timestamp + 1000
@@ -514,8 +515,9 @@ contract QuarkWalletProxyFactoryTest is Test {
         emit WalletDeploy(alice, address(0), aliceWallet, salt);
         bytes memory result = factory.createAndExecute(alice, address(0), salt, op, v, r, s);
 
-        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
-        assertEq(msgSender, address(aliceWallet));
+        (address msgSender, address addressThis, uint256 msgValue) = abi.decode(result, (address, address, uint256));
+        assertEq(msgSender, address(factory));
+        assertEq(addressThis, address(aliceWallet));
         assertEq(msgValue, 0);
 
         // uses up the operation's nonce

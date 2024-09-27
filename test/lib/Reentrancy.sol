@@ -10,8 +10,10 @@ interface CallbackReceiver {
     function receiveCallback() external;
 }
 
+// Note: This used to be exploitable when the script was protected using the `onlyWallet` modifier. Now that we
+// switched over to a standard reentrancy guard (`nonReentrant`), this script is no longer exploitable.
 contract ExploitableScript is QuarkScript, CallbackReceiver {
-    // we expect a callback, but we do not guard gainst re-entrancy, allowing the caller to steal funds
+    // We expect a callback, but we do not guard gainst re-entrancy, allowing the caller to steal funds
     function callMeBack(address target, bytes calldata call, uint256 fee) external payable returns (bytes memory) {
         allowCallback();
         (bool success, bytes memory result) = target.call{value: fee}(call);
@@ -23,11 +25,12 @@ contract ExploitableScript is QuarkScript, CallbackReceiver {
         return result;
     }
 
-    // protected by `onlyWallet`, but still susceptible to recursive re-entrancy due to using `delegatecall`
+    // Would be susceptible to recursive reentrancy if protected by `onlyWallet` instead of `nonReentrant`due to
+    // using delegatecall
     function callMeBackDelegateCall(address target, bytes calldata call, uint256 fee)
         external
         payable
-        onlyWallet
+        nonReentrant
         returns (bytes memory)
     {
         allowCallback();
@@ -56,7 +59,7 @@ contract ProtectedScript is QuarkScript, CallbackReceiver {
     function callMeBack(address target, bytes calldata call, uint256 fee)
         external
         payable
-        onlyWallet
+        nonReentrant
         returns (bytes memory)
     {
         allowCallback();
