@@ -24,16 +24,12 @@ interface IQuarkWallet {
     }
 
     function nonceManager() external view returns (address);
-    function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
+    function executeQuarkOperation(QuarkOperation calldata op, bytes memory signature)
         external
         returns (bytes memory);
-    function executeMultiQuarkOperation(
-        QuarkOperation calldata op,
-        bytes32[] memory opDigests,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (bytes memory);
+    function executeMultiQuarkOperation(QuarkOperation calldata op, bytes32[] memory opDigests, bytes memory signature)
+        external
+        returns (bytes memory);
     function executeScript(
         bytes32 nonce,
         address scriptAddress,
