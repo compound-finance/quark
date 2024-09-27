@@ -5,13 +5,16 @@ import "forge-std/Test.sol";
 import "quark-core/src/QuarkWallet.sol";
 
 contract SignatureHelper is Test {
+    error InvalidSignatureLength();
+
     function signOp(uint256 privateKey, QuarkWallet wallet, QuarkWallet.QuarkOperation memory op)
         external
         view
-        returns (uint8, bytes32, bytes32)
+        returns (bytes memory)
     {
         bytes32 digest = opDigest(address(wallet), op);
-        return vm.sign(privateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        return abi.encodePacked(r, s, v);
     }
 
     /*
@@ -20,19 +23,31 @@ contract SignatureHelper is Test {
     function signOpForAddress(uint256 privateKey, address walletAddress, QuarkWallet.QuarkOperation memory op)
         external
         view
-        returns (uint8, bytes32, bytes32)
+        returns (bytes memory)
     {
         bytes32 digest = opDigest(walletAddress, op);
-        return vm.sign(privateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        return abi.encodePacked(r, s, v);
     }
 
-    function signMultiOp(uint256 privateKey, bytes32[] memory opDigests)
-        external
-        pure
-        returns (uint8, bytes32, bytes32)
-    {
+    function signMultiOp(uint256 privateKey, bytes32[] memory opDigests) external pure returns (bytes memory) {
         bytes32 digest = multiOpDigest(opDigests);
-        return vm.sign(privateKey, digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        return abi.encodePacked(r, s, v);
+    }
+
+    function decodeSignature(bytes memory signature) external pure returns (uint8 v, bytes32 r, bytes32 s) {
+        if (signature.length != 65) {
+            revert InvalidSignatureLength();
+        }
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := byte(0, mload(add(signature, 0x60)))
+        }
     }
 
     function opDigest(address walletAddress, QuarkWallet.QuarkOperation memory op) public view returns (bytes32) {

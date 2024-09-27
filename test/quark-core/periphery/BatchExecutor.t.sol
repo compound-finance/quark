@@ -69,31 +69,27 @@ contract BatchExecutorTest is Test {
 
         QuarkWallet.QuarkOperation memory aliceOp =
             new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
-        (uint8 v0, bytes32 r0, bytes32 s0) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
+        bytes memory aliceSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
         QuarkWallet.QuarkOperation memory bobOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             bobWallet,
             incrementer,
             abi.encodeWithSignature("incrementCounter(address)", counter),
             ScriptType.ScriptSource
         );
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
+        bytes memory bobSignature = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
 
         // Construct list of operations and signatures
         BatchExecutor.OperationParams[] memory ops = new BatchExecutor.OperationParams[](2);
         ops[0] = BatchExecutor.OperationParams({
             account: address(aliceWallet),
             op: aliceOp,
-            v: v0,
-            r: r0,
-            s: s0,
+            signature: aliceSignature,
             gasLimit: 0.1 ether
         });
         ops[1] = BatchExecutor.OperationParams({
             account: address(bobWallet),
             op: bobOp,
-            v: v1,
-            r: r1,
-            s: s1,
+            signature: bobSignature,
             gasLimit: 0.1 ether
         });
 
@@ -116,38 +112,32 @@ contract BatchExecutorTest is Test {
 
         QuarkWallet.QuarkOperation memory aliceOp =
             new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
-        (uint8 v0, bytes32 r0, bytes32 s0) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
+        bytes memory aliceSignature1 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
         QuarkWallet.QuarkOperation memory bobOp =
             new QuarkOperationHelper().newBasicOp(bobWallet, reverts, ScriptType.ScriptSource);
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
+        bytes memory bobSignature = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
         QuarkWallet.QuarkOperation memory aliceOp2 =
             new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp2);
+        bytes memory aliceSignature2 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp2);
 
         // Construct list of operations and signatures
         BatchExecutor.OperationParams[] memory ops = new BatchExecutor.OperationParams[](3);
         ops[0] = BatchExecutor.OperationParams({
             account: address(aliceWallet),
             op: aliceOp,
-            v: v0,
-            r: r0,
-            s: s0,
+            signature: aliceSignature1,
             gasLimit: 0.1 ether
         });
         ops[1] = BatchExecutor.OperationParams({
             account: address(bobWallet),
             op: bobOp,
-            v: v1,
-            r: r1,
-            s: s1,
+            signature: bobSignature,
             gasLimit: 0.1 ether
         });
         ops[2] = BatchExecutor.OperationParams({
             account: address(aliceWallet),
             op: aliceOp2,
-            v: v2,
-            r: r2,
-            s: s2,
+            signature: aliceSignature2,
             gasLimit: 1 wei // To trigger OOG
         });
 
@@ -171,31 +161,27 @@ contract BatchExecutorTest is Test {
 
         QuarkWallet.QuarkOperation memory aliceOp =
             new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
-        (uint8 v0, bytes32 r0, bytes32 s0) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
+        bytes memory aliceSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
         QuarkWallet.QuarkOperation memory bobOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             bobWallet,
             incrementer,
             abi.encodeWithSignature("incrementCounter(address)", counter),
             ScriptType.ScriptSource
         );
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
+        bytes memory bobSignature = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
 
         // Construct list of operations and signatures
         BatchExecutor.OperationParams[] memory ops = new BatchExecutor.OperationParams[](2);
         ops[0] = BatchExecutor.OperationParams({
             account: address(aliceWallet),
             op: aliceOp,
-            v: v0,
-            r: r0,
-            s: s0,
+            signature: aliceSignature,
             gasLimit: 0.1 ether
         });
         ops[1] = BatchExecutor.OperationParams({
             account: address(bobWallet),
             op: bobOp,
-            v: v1,
-            r: r1,
-            s: s1,
+            signature: bobSignature,
             gasLimit: 0.1 ether
         });
 
@@ -218,38 +204,32 @@ contract BatchExecutorTest is Test {
 
         QuarkWallet.QuarkOperation memory aliceOp =
             new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
-        (uint8 v0, bytes32 r0, bytes32 s0) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
+        bytes memory aliceSignature1 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp);
         QuarkWallet.QuarkOperation memory bobOp =
             new QuarkOperationHelper().newBasicOp(bobWallet, reverts, ScriptType.ScriptSource);
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
+        bytes memory bobSignature = new SignatureHelper().signOp(bobPrivateKey, bobWallet, bobOp);
         QuarkWallet.QuarkOperation memory aliceOp2 =
             new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp2);
+        bytes memory aliceSignature2 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, aliceOp2);
 
         // Construct list of operations and signatures
         BatchExecutor.OperationParams[] memory ops = new BatchExecutor.OperationParams[](3);
         ops[0] = BatchExecutor.OperationParams({
             account: address(aliceWallet),
             op: aliceOp,
-            v: v0,
-            r: r0,
-            s: s0,
+            signature: aliceSignature1,
             gasLimit: 0.1 ether
         });
         ops[1] = BatchExecutor.OperationParams({
             account: address(bobWallet),
             op: bobOp,
-            v: v1,
-            r: r1,
-            s: s1,
+            signature: bobSignature,
             gasLimit: 0.1 ether
         });
         ops[2] = BatchExecutor.OperationParams({
             account: address(aliceWallet),
             op: aliceOp2,
-            v: v2,
-            r: r2,
-            s: s2,
+            signature: aliceSignature2,
             gasLimit: 1 wei // To trigger OOG
         });
 

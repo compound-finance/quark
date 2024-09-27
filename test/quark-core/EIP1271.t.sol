@@ -63,12 +63,12 @@ contract EIP1271Test is Test {
 
         // signature from alice; doesn't matter because the EIP1271Signer will approve anything
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(aliceWallet);
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
 
-        contractWallet.executeQuarkOperation(op, v, r, s);
+        contractWallet.executeQuarkOperation(op, signature);
         // counter has incremented
         assertEq(counter.number(), 3);
     }
@@ -83,13 +83,13 @@ contract EIP1271Test is Test {
 
         // signature from alice; doesn't matter because the EIP1271Signer will reject anything
         QuarkWallet.QuarkOperation memory op = incrementCounterOperation(aliceWallet);
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
 
         vm.expectRevert(QuarkWallet.InvalidEIP1271Signature.selector);
-        contractWallet.executeQuarkOperation(op, v, r, s);
+        contractWallet.executeQuarkOperation(op, signature);
 
         // counter has not incremented
         assertEq(counter.number(), 0);

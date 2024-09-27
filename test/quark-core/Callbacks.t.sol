@@ -72,11 +72,11 @@ contract CallbacksTest is Test {
             ScriptType.ScriptSource
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 11);
     }
 
@@ -97,11 +97,11 @@ contract CallbacksTest is Test {
             ScriptType.ScriptSource
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
 
         assertEq(counter.number(), 11);
         assertEq(address(counter).balance, 500 wei);
@@ -122,22 +122,22 @@ contract CallbacksTest is Test {
             ScriptType.ScriptAddress
         );
 
-        (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+        bytes memory nestedOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
         QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             executeOtherScript,
-            abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
+            abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, nestedOpSignature),
             ScriptType.ScriptAddress
         );
 
         parentOp.nonce = new QuarkOperationHelper().incrementNonce(nestedOp.nonce);
 
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
+        bytes memory parentOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(parentOp, v, r, s);
+        aliceWallet.executeQuarkOperation(parentOp, parentOpSignature);
 
         assertEq(counter.number(), 11);
     }
@@ -153,22 +153,22 @@ contract CallbacksTest is Test {
             aliceWallet, getCallbackDetails, abi.encodeWithSignature("getCallbackAddress()"), ScriptType.ScriptAddress
         );
 
-        (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+        bytes memory nestedOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
         QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             executeOtherScript,
-            abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
+            abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, nestedOpSignature),
             ScriptType.ScriptAddress
         );
 
         parentOp.nonce = new QuarkOperationHelper().incrementNonce(nestedOp.nonce);
 
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(parentOp, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(parentOp, signature);
         // We decode twice because the result is encoded twice due to the nested operation
         address innerCallbackAddress = abi.decode(abi.decode(result, (bytes)), (address));
 
@@ -189,22 +189,22 @@ contract CallbacksTest is Test {
             aliceWallet, counterScript, abi.encodeWithSignature("run(address)", counter), ScriptType.ScriptAddress
         );
 
-        (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+        bytes memory nestedOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
         QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             executeOtherScript,
-            abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
+            abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, nestedOpSignature),
             ScriptType.ScriptAddress
         );
 
         parentOp.nonce = new QuarkOperationHelper().incrementNonce(nestedOp.nonce);
 
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(parentOp, v, r, s);
+        aliceWallet.executeQuarkOperation(parentOp, signature);
         assertEq(counter.number(), 2);
     }
 
@@ -217,16 +217,16 @@ contract CallbacksTest is Test {
             .newReplayableOpWithCalldata(
             aliceWallet, allowCallbacks, abi.encodeWithSignature("run()"), ScriptType.ScriptSource, 1
         );
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
+        bytes memory signature1 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        bytes memory result = aliceWallet.executeQuarkOperation(op1, signature1);
         uint256 res = abi.decode(result, (uint256));
         assertEq(res, 202);
 
         // Can run again
-        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op1, submissionTokens[1], v1, r1, s1);
+        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op1, submissionTokens[1], signature1);
         res = abi.decode(result, (uint256));
         assertEq(res, 204);
     }
@@ -239,12 +239,12 @@ contract CallbacksTest is Test {
         (QuarkWallet.QuarkOperation memory op1,) = new QuarkOperationHelper().newReplayableOpWithCalldata(
             aliceWallet, allowCallbacks, abi.encodeWithSignature("runWithoutAllow()"), ScriptType.ScriptSource, 1
         );
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
+        bytes memory signature1 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector));
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        aliceWallet.executeQuarkOperation(op1, signature1);
     }
 
     function testWithClearedCallback() public {
@@ -255,12 +255,12 @@ contract CallbacksTest is Test {
         (QuarkWallet.QuarkOperation memory op1,) = new QuarkOperationHelper().newReplayableOpWithCalldata(
             aliceWallet, allowCallbacks, abi.encodeWithSignature("runAllowThenClear()"), ScriptType.ScriptSource, 1
         );
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
+        bytes memory signature1 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector));
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        aliceWallet.executeQuarkOperation(op1, signature1);
     }
 
     function testRevertsOnCallbackWhenNoActiveCallback() public {
@@ -279,12 +279,12 @@ contract CallbacksTest is Test {
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector));
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
     }
 
     /* ===== callback reentrancy tests ===== */
@@ -342,13 +342,13 @@ contract CallbacksTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         deal(address(aliceWallet), 1000 wei);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
         assertEq(callbackCallerAddress.balance, 1000 wei);
     }
 
@@ -371,14 +371,14 @@ contract CallbacksTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 bad_v, bytes32 bad_r, bytes32 bad_s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, badOp);
+        bytes memory badOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, badOp);
 
         deal(address(aliceWallet), 1000 wei);
 
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectRevert(); // attacker tried to call back into the script with a changed fee
-        aliceWallet.executeQuarkOperation(badOp, bad_v, bad_r, bad_s);
+        aliceWallet.executeQuarkOperation(badOp, badOpSignature);
 
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -394,12 +394,11 @@ contract CallbacksTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 behaved_v, bytes32 behaved_r, bytes32 behaved_s) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, behavedOp);
+        bytes memory behavedSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, behavedOp);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(behavedOp, behaved_v, behaved_r, behaved_s);
+        aliceWallet.executeQuarkOperation(behavedOp, behavedSignature);
         // the well-behaved callback caller gets the correct fee
         assertEq(callbackCallerAddress.balance, 500 wei);
     }
@@ -425,13 +424,13 @@ contract CallbacksTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         deal(address(aliceWallet), 2 ether);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
         // Note: If this was exploitable, the callback caller would have 2 ether
         assertEq(callbackCallerAddress.balance, 1 ether);
     }

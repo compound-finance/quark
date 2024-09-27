@@ -177,9 +177,9 @@ contract UniswapFlashLoanTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         // Verify that user now has no WETH collateral on Comet, but only LINK
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 0);
@@ -261,10 +261,10 @@ contract UniswapFlashLoanTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(abi.encodeWithSelector(UniswapFlashLoan.InvalidCaller.selector));
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testRevertsForInsufficientFundsToRepayFlashLoan() public {
@@ -290,10 +290,10 @@ contract UniswapFlashLoanTest is Test {
             abi.encodeWithSelector(UniswapFlashLoan.run.selector, payload),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testTokensOrderInvariant() public {
@@ -321,8 +321,8 @@ contract UniswapFlashLoanTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
-        wallet.executeQuarkOperation(op, v, r, s);
+        bytes memory signature1 = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        wallet.executeQuarkOperation(op, signature1);
 
         // Lose 1 USDC to flash loan fee
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 9999e6);
@@ -349,9 +349,9 @@ contract UniswapFlashLoanTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
+        bytes memory signature2 = new SignatureHelper().signOp(alicePrivateKey, wallet, op2);
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op2, v2, r2, s2);
+        wallet.executeQuarkOperation(op2, signature2);
 
         // Lose 1 USDC to flash loan fee
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 9998e6);

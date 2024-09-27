@@ -51,13 +51,13 @@ contract RevertsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, revertsCode, abi.encodeWithSelector(Reverts.divideByZero.selector), ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         // Reverts with "panic: division or modulo by zero (0x12)"
         vm.expectRevert();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
     }
 
     function testRevertsInteger() public {
@@ -67,12 +67,12 @@ contract RevertsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, revertsCode, abi.encodeWithSelector(Reverts.revertSeven.selector), ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectRevert(hex"0000000000000000000000000000000000000000000000000000000000000007");
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
     }
 
     function testRevertsOutOfGas() public {
@@ -82,13 +82,13 @@ contract RevertsTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, revertsCode, abi.encodeWithSelector(Reverts.outOfGas.selector), ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         // Reverts with "EvmError: OutOfGas"
         vm.expectRevert();
-        aliceWallet.executeQuarkOperation{gas: 300_000}(op, v, r, s);
+        aliceWallet.executeQuarkOperation{gas: 300_000}(op, signature);
     }
 
     function testRevertsInvalidOpcode() public {
@@ -101,12 +101,12 @@ contract RevertsTest is Test {
             abi.encodeWithSelector(Reverts.invalidOpcode.selector, codeJar),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         // Reverts with "EvmError: InvalidFEOpcode"
         vm.expectRevert();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
     }
 }

@@ -108,11 +108,11 @@ contract QuarkWalletTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (address msgSender, address addressThis, uint256 msgValue) = abi.decode(result, (address, address, uint256));
         assertEq(msgSender, address(this), "Message sender should be address(this)");
@@ -152,14 +152,12 @@ contract QuarkWalletTest is Test {
         QuarkWallet.QuarkOperation memory opWithScriptAddress = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, opWithScriptAddress);
+        bytes memory signature1 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, opWithScriptAddress);
         QuarkWallet.QuarkOperation memory opWithScriptSource = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptSource
         );
         opWithScriptSource.nonce = new QuarkOperationHelper().incrementNonce(opWithScriptSource.nonce);
-        (uint8 v2, bytes32 r2, bytes32 s2) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, opWithScriptSource);
+        bytes memory signature2 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, opWithScriptSource);
         address scriptAddress = opWithScriptAddress.scriptAddress;
 
         // gas: meter execute
@@ -173,7 +171,7 @@ contract QuarkWalletTest is Test {
             false,
             ExecutionType.Signature
         );
-        aliceWallet.executeQuarkOperation(opWithScriptAddress, v, r, s);
+        aliceWallet.executeQuarkOperation(opWithScriptAddress, signature1);
 
         vm.expectEmit(true, true, true, true);
         emit QuarkExecution(
@@ -184,7 +182,7 @@ contract QuarkWalletTest is Test {
             false,
             ExecutionType.Signature
         );
-        aliceWallet.executeQuarkOperation(opWithScriptSource, v2, r2, s2);
+        aliceWallet.executeQuarkOperation(opWithScriptSource, signature2);
     }
 
     function testEmitsEventsInReplayableQuarkOperation() public {
@@ -196,8 +194,7 @@ contract QuarkWalletTest is Test {
             aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptAddress, 2
         );
         address scriptAddress = opWithScriptAddress.scriptAddress;
-        (uint8 v, bytes32 r, bytes32 s) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, opWithScriptAddress);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, opWithScriptAddress);
 
         // gas: meter execute
         vm.resumeGasMetering();
@@ -210,21 +207,21 @@ contract QuarkWalletTest is Test {
             true,
             ExecutionType.Signature
         );
-        aliceWallet.executeQuarkOperation(opWithScriptAddress, v, r, s);
+        aliceWallet.executeQuarkOperation(opWithScriptAddress, signature);
 
         // second execution
         vm.expectEmit(true, true, true, true);
         emit QuarkExecution(
             address(this), scriptAddress, opWithScriptAddress.nonce, submissionTokens[1], true, ExecutionType.Signature
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(opWithScriptAddress, submissionTokens[1], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(opWithScriptAddress, submissionTokens[1], signature);
 
         // third execution
         vm.expectEmit(true, true, true, true);
         emit QuarkExecution(
             address(this), scriptAddress, opWithScriptAddress.nonce, submissionTokens[2], true, ExecutionType.Signature
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(opWithScriptAddress, submissionTokens[2], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(opWithScriptAddress, submissionTokens[2], signature);
     }
 
     function testEmitsEventsInDirectExecute() public {
@@ -291,7 +288,7 @@ contract QuarkWalletTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
@@ -300,31 +297,31 @@ contract QuarkWalletTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op.nonce, bytes32(0))
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, bytes32(0), v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, bytes32(0), signature);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op.nonce, bytes32(uint256(1))
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, bytes32(uint256(1)), v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, bytes32(uint256(1)), signature);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op.nonce, EXHAUSTED_TOKEN
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, EXHAUSTED_TOKEN, v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, EXHAUSTED_TOKEN, signature);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op.nonce, bytes32(uint256(op.nonce) + 1)
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, bytes32(uint256(op.nonce) + 1), v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, bytes32(uint256(op.nonce) + 1), signature);
 
         // Run script
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, op.nonce, v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, op.nonce, signature);
 
         // Check it is no longer runnable
         vm.expectRevert(
@@ -332,7 +329,7 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, op.nonce
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, op.nonce, v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, op.nonce, signature);
     }
 
     function testDisallowAllNullScriptAddress() public {
@@ -347,14 +344,14 @@ contract QuarkWalletTest is Test {
             scriptCalldata: bytes(""),
             expiry: block.timestamp + 1000
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
 
         // operation containing no script will revert
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
 
         // direct execution of the null script will revert
         vm.pauseGasMetering();
@@ -379,14 +376,14 @@ contract QuarkWalletTest is Test {
             scriptCalldata: bytes(""),
             expiry: block.timestamp + 1000
         });
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
+        bytes memory signature2 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
 
         // gas: meter execute
         vm.resumeGasMetering();
 
         // operation on empty script will revert
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
-        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+        aliceWallet.executeQuarkOperation(op2, signature2);
 
         // direct execution of empty script will revert
         vm.pauseGasMetering();
@@ -412,13 +409,13 @@ contract QuarkWalletTest is Test {
             scriptCalldata: bytes("feefee"),
             expiry: block.timestamp + 1000
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
 
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
     }
 
     /* ===== storage tests ===== */
@@ -439,7 +436,7 @@ contract QuarkWalletTest is Test {
             ScriptType.ScriptAddress,
             4
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         assertEq(
             vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
@@ -448,21 +445,21 @@ contract QuarkWalletTest is Test {
 
         vm.resumeGasMetering();
 
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[0], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[0], signature);
         assertEq(
             vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
             bytes32(uint256(1))
         );
         assertEq(counter.number(), 1);
 
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], signature);
         assertEq(
             vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
             bytes32(uint256(2))
         );
         assertEq(counter.number(), 2);
 
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[2], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[2], signature);
         assertEq(
             vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
             bytes32(uint256(3))
@@ -470,7 +467,7 @@ contract QuarkWalletTest is Test {
         assertEq(counter.number(), 3);
 
         vm.expectRevert(abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector));
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[3], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[3], signature);
         assertEq(
             vm.load(address(aliceWallet), keccak256(abi.encodePacked(op.nonce, keccak256("count")))),
             bytes32(uint256(3))
@@ -494,7 +491,7 @@ contract QuarkWalletTest is Test {
             ScriptType.ScriptAddress,
             1
         );
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
+        bytes memory signature1 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
         address incrementerAddress = codeJar.saveCode(incrementer);
 
@@ -506,38 +503,38 @@ contract QuarkWalletTest is Test {
             scriptCalldata: abi.encodeWithSignature("incrementCounter2(address)", address(counter)),
             expiry: block.timestamp + 1000
         });
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
+        bytes memory signature2 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        aliceWallet.executeQuarkOperation(op1, signature1);
         // incrementer increments the counter thrice
         assertEq(counter.number(), 3);
         // when executing a replayable operation, you can change the call
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], v2, r2, s2);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], signature2);
         // incrementer increments the counter frice
         assertEq(counter.number(), 7);
         // but now both operations are exhausted
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, op1.nonce)
         );
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        aliceWallet.executeQuarkOperation(op1, signature1);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, submissionTokens[1]
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op1, submissionTokens[1], v1, r1, s1);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op1, submissionTokens[1], signature1);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, op2.nonce)
         );
-        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+        aliceWallet.executeQuarkOperation(op2, signature2);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, submissionTokens[1]
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], v2, r2, s2);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], signature2);
     }
 
     function testAllowsForReusedNonceWithChangedScript() public {
@@ -555,7 +552,7 @@ contract QuarkWalletTest is Test {
             ScriptType.ScriptAddress,
             1
         );
-        (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
+        bytes memory signature1 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
 
         QuarkWallet.QuarkOperation memory op2 = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -564,15 +561,15 @@ contract QuarkWalletTest is Test {
             ScriptType.ScriptAddress
         );
         op2.nonce = op1.nonce;
-        (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
+        bytes memory signature2 = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        aliceWallet.executeQuarkOperation(op1, signature1);
         // incrementer increments the counter thrice
         assertEq(counter.number(), 3);
         // when reusing the nonce but changing the script, allow
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], v2, r2, s2);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], signature2);
         // updated with larger incrementer script
         assertEq(counter.number(), 9);
     }
@@ -590,29 +587,26 @@ contract QuarkWalletTest is Test {
             ScriptType.ScriptAddress,
             1
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 3);
         // cannot replay the same operation directly...
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op.nonce, op.nonce)
         );
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 3);
 
         // can cancel the replayable nonce...
         vm.pauseGasMetering();
         QuarkWallet.QuarkOperation memory cancelOtherOp =
             new QuarkOperationHelper().cancelReplayableByNop(aliceWallet, op);
-        (uint8 cancelV, bytes32 cancelR, bytes32 cancelS) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
+        bytes memory cancelSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOtherOp);
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperationWithSubmissionToken(
-            cancelOtherOp, submissionTokens[1], cancelV, cancelR, cancelS
-        );
+        aliceWallet.executeQuarkOperationWithSubmissionToken(cancelOtherOp, submissionTokens[1], cancelSignature);
 
         // and now you can no longer replay
         vm.expectRevert(
@@ -620,7 +614,7 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1]
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], signature);
 
         // Ensure exhausted
         assertEq(nonceManager.submissions(address(aliceWallet), op.nonce), bytes32(type(uint256).max));
@@ -639,28 +633,27 @@ contract QuarkWalletTest is Test {
             ScriptType.ScriptAddress,
             1
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 3);
         // cannot replay the same operation directly...
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op.nonce, op.nonce)
         );
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 3);
 
         // can cancel the replayable nonce...
         vm.pauseGasMetering();
         QuarkWallet.QuarkOperation memory cancelOp = new QuarkOperationHelper().cancelReplayableByNewOp(aliceWallet, op);
-        (uint8 cancelV, bytes32 cancelR, bytes32 cancelS) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
+        bytes memory cancelSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
         emit QuarkNonceManager.NonceSubmitted(address(aliceWallet), op.nonce, bytes32(type(uint256).max));
-        aliceWallet.executeQuarkOperationWithSubmissionToken(cancelOp, submissionTokens[1], cancelV, cancelR, cancelS);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(cancelOp, submissionTokens[1], cancelSignature);
 
         // and now you can no longer replay
         vm.expectRevert(
@@ -668,7 +661,7 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1]
             )
         );
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], signature);
 
         // Ensure exhausted
         assertEq(nonceManager.submissions(address(aliceWallet), op.nonce), bytes32(type(uint256).max));
@@ -725,14 +718,14 @@ contract QuarkWalletTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, ethcall, ethcallCalldata, ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         assertEq(counter.number(), 0);
         assertEq(nonceManager.submissions(address(aliceWalletExecutable), nonce), bytes32(uint256(0)));
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
 
         assertEq(counter.number(), 3);
         assertEq(nonceManager.submissions(address(aliceWalletExecutable), nonce), bytes32(type(uint256).max));
@@ -844,16 +837,16 @@ contract QuarkWalletTest is Test {
         bytes32[] memory opDigests = new bytes32[](2);
         opDigests[0] = op1Digest;
         opDigests[1] = op2Digest;
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+        bytes memory signature = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
         // call once
         vm.resumeGasMetering();
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, signature);
 
         assertEq(counter.number(), 3);
 
         // call a second time
-        aliceWallet.executeMultiQuarkOperation(op2, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op2, opDigests, signature);
 
         assertEq(counter.number(), 6);
     }
@@ -885,12 +878,12 @@ contract QuarkWalletTest is Test {
 
         bytes32[] memory opDigests = new bytes32[](1);
         opDigests[0] = op1Digest;
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+        bytes memory signature = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
         // call with operation that is not part of opDigests
         vm.resumeGasMetering();
         vm.expectRevert(abi.encodeWithSelector(QuarkWallet.InvalidMultiQuarkOperation.selector));
-        aliceWallet.executeMultiQuarkOperation(op2, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op2, opDigests, signature);
 
         assertEq(counter.number(), 0);
     }
@@ -924,11 +917,11 @@ contract QuarkWalletTest is Test {
         bytes32[] memory opDigests = new bytes32[](2);
         opDigests[0] = op1Digest;
         opDigests[1] = op2Digest;
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+        bytes memory signature = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
         // call once
         vm.resumeGasMetering();
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, signature);
 
         assertEq(counter.number(), 3);
 
@@ -938,7 +931,7 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op1.nonce, op1.nonce
             )
         );
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, signature);
 
         assertEq(counter.number(), 3);
     }
@@ -974,29 +967,29 @@ contract QuarkWalletTest is Test {
         bytes32[] memory opDigests = new bytes32[](2);
         opDigests[0] = op1Digest;
         opDigests[1] = op2Digest;
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+        bytes memory signature = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
         vm.resumeGasMetering();
 
         // call op1, first
         assertEq(nonceManager.submissions(address(aliceWallet), op1.nonce), bytes32(0));
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, signature);
         assertEq(counter.number(), 3);
         assertEq(nonceManager.submissions(address(aliceWallet), op1.nonce), op1.nonce);
 
         // call op2, first
         assertEq(nonceManager.submissions(address(aliceWallet), op2.nonce), bytes32(0));
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, signature);
         assertEq(counter.number(), 7);
         assertEq(nonceManager.submissions(address(aliceWallet), op2.nonce), op2.nonce);
 
         // call op1, second
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[1], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[1], opDigests, signature);
         assertEq(counter.number(), 10);
         assertEq(nonceManager.submissions(address(aliceWallet), op1.nonce), submissionTokens1[1]);
 
         // call op1, third
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[2], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[2], opDigests, signature);
         assertEq(counter.number(), 13);
 
         // test all tokens do not replay now for op1
@@ -1005,32 +998,32 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, EXHAUSTED_TOKEN
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, EXHAUSTED_TOKEN, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, EXHAUSTED_TOKEN, opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, submissionTokens1[0]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[0], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[0], opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, submissionTokens1[1]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[1], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[1], opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op1.nonce, submissionTokens1[2]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[2], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[2], opDigests, signature);
 
         // call op2, second
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, signature);
         assertEq(counter.number(), 17);
 
         // call op2, third
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, signature);
         assertEq(counter.number(), 21);
 
         // test all tokens do not replay now for op2
@@ -1039,25 +1032,25 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, EXHAUSTED_TOKEN
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, EXHAUSTED_TOKEN, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, EXHAUSTED_TOKEN, opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[0]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[1]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[2]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, signature);
     }
 
     function testHalfReplayableMultiQuarkOperation() public {
@@ -1089,19 +1082,19 @@ contract QuarkWalletTest is Test {
         bytes32[] memory opDigests = new bytes32[](2);
         opDigests[0] = op1Digest;
         opDigests[1] = op2Digest;
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+        bytes memory signature = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
         vm.resumeGasMetering();
 
         // call op1
         assertEq(nonceManager.submissions(address(aliceWallet), op1.nonce), bytes32(0));
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, signature);
         assertEq(counter.number(), 3);
         assertEq(nonceManager.submissions(address(aliceWallet), op1.nonce), EXHAUSTED_TOKEN);
 
         // call op2, first
         assertEq(nonceManager.submissions(address(aliceWallet), op2.nonce), bytes32(0));
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, signature);
         assertEq(counter.number(), 7);
         assertEq(nonceManager.submissions(address(aliceWallet), op2.nonce), op2.nonce);
 
@@ -1111,18 +1104,18 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.NonReplayableNonce.selector, aliceWallet, op1.nonce, EXHAUSTED_TOKEN
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, EXHAUSTED_TOKEN, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, EXHAUSTED_TOKEN, opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(QuarkNonceManager.NonReplayableNonce.selector, aliceWallet, op1.nonce, op1.nonce)
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, op1.nonce, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, op1.nonce, opDigests, signature);
 
         // call op2, second
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, signature);
         assertEq(counter.number(), 11);
 
         // call op2, third
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, signature);
         assertEq(counter.number(), 15);
 
         // test all tokens do not replay now for op2
@@ -1131,25 +1124,25 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, EXHAUSTED_TOKEN
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, EXHAUSTED_TOKEN, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, EXHAUSTED_TOKEN, opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[0]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[1]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[2]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, signature);
     }
 
     function testReplayableMultiQuarkOperationWithSharedNonce() public {
@@ -1183,13 +1176,13 @@ contract QuarkWalletTest is Test {
         bytes32[] memory opDigests = new bytes32[](2);
         opDigests[0] = op1Digest;
         opDigests[1] = op2Digest;
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+        bytes memory signature = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
         vm.resumeGasMetering();
 
         // call op1, first
         assertEq(nonceManager.submissions(address(aliceWallet), op1.nonce), bytes32(0));
-        aliceWallet.executeMultiQuarkOperation(op1, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op1, opDigests, signature);
         assertEq(counter.number(), 3);
         assertEq(nonceManager.submissions(address(aliceWallet), op1.nonce), op1.nonce);
 
@@ -1199,22 +1192,22 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[0]
             )
         );
-        aliceWallet.executeMultiQuarkOperation(op2, opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperation(op2, opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[0]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[0], opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens1[0]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[0], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[0], opDigests, signature);
 
         // now submit op2 with submissionTokens[1]
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, signature);
         assertEq(counter.number(), 7);
 
         // ensure neither can be called with submissionTokens[1] now
@@ -1223,16 +1216,16 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[1]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[1], opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens1[1]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[1], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[1], opDigests, signature);
 
         // call op1, third
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[2], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[2], opDigests, signature);
         assertEq(counter.number(), 10);
 
         // ensure neither can be called with submissionTokens[2] now
@@ -1241,13 +1234,13 @@ contract QuarkWalletTest is Test {
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens2[2]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op2, submissionTokens2[2], opDigests, signature);
         vm.expectRevert(
             abi.encodeWithSelector(
                 QuarkNonceManager.InvalidSubmissionToken.selector, aliceWallet, op2.nonce, submissionTokens1[2]
             )
         );
-        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[2], opDigests, v, r, s);
+        aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[2], opDigests, signature);
     }
 
     /* ===== basic operation tests ===== */
@@ -1265,13 +1258,13 @@ contract QuarkWalletTest is Test {
             .newReplayableOpWithCalldata(
             aliceWallet, maxCounterScript, abi.encodeCall(MaxCounterScript.run, (counter)), ScriptType.ScriptAddress, 4
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // call once
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
         emit MaxCounterScript.Count(1);
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
 
         // gas: do not meter walletStorage
         vm.pauseGasMetering();
@@ -1286,7 +1279,7 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
         emit MaxCounterScript.Count(2);
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], signature);
 
         // gas: do not meter walletStorage
         vm.pauseGasMetering();
@@ -1301,7 +1294,7 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         vm.expectEmit(true, true, true, true);
         emit MaxCounterScript.Count(3);
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[2], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[2], signature);
 
         // gas: do not meter walletStorage
         vm.pauseGasMetering();
@@ -1315,7 +1308,7 @@ contract QuarkWalletTest is Test {
         // revert because max has been hit
         vm.expectRevert(abi.encodeWithSelector(MaxCounterScript.EnoughAlready.selector));
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[3], v, r, s);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[3], signature);
 
         // gas: do not meter walletStorage
         vm.pauseGasMetering();
@@ -1343,12 +1336,12 @@ contract QuarkWalletTest is Test {
         bytes memory revertsCode = new YulHelper().getCode("Reverts.sol/Reverts.json");
         QuarkWallet.QuarkOperation memory op =
             new QuarkOperationHelper().newBasicOp(aliceWallet, revertsCode, ScriptType.ScriptSource);
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectRevert(abi.encodeWithSelector(Reverts.Whoops.selector));
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
     }
 
     function testAtomicPing() public {
@@ -1357,14 +1350,14 @@ contract QuarkWalletTest is Test {
         bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
         QuarkWallet.QuarkOperation memory op =
             new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         // TODO: Check who emitted.
         vm.expectEmit(false, false, false, true);
         emit Ping(55);
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
     }
 
     function testAtomicPingWithExternalSignature() public {
@@ -1444,13 +1437,14 @@ contract QuarkWalletTest is Test {
         bytes memory sigHash =
             hex"1901420cb4769bd47ac11897b8b69b8d80a84b9ec8b69437cd42529681d583a6b5218c7d870a6510d1840f2ec48a08d65eb874fa8af841e45e3c9b8e5c244bdc015f";
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, keccak256(sigHash));
+        bytes memory signature = abi.encodePacked(r, s, v);
 
         // gas: meter execute
         vm.resumeGasMetering();
         // TODO: Check who emitted.
         vm.expectEmit(true, true, true, true);
         emit Ping(0xdd);
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
     }
 
     function testAtomicIncrementer() public {
@@ -1464,11 +1458,11 @@ contract QuarkWalletTest is Test {
             abi.encodeWithSignature("incrementCounter(address)", counter),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 3);
     }
 
@@ -1486,9 +1480,9 @@ contract QuarkWalletTest is Test {
             abi.encodeCall(PrecompileCaller.ecrecoverCall, (testHash, vt, rt, st)),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, signature);
         bytes memory output = abi.decode(rawOut, (bytes));
         assertEq(abi.decode(output, (address)), aliceAccount);
     }
@@ -1505,9 +1499,9 @@ contract QuarkWalletTest is Test {
     //         expiry: block.timestamp + 1000
     //     });
 
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+    //     bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
     //     vm.resumeGasMetering();
-    //     bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+    //     bytes memory rawOut = aliceWallet.executeQuarkOperation(op, signature);
     //     assertEq(abi.decode(rawOut, (address)), aliceAccount);
     // }
 
@@ -1521,9 +1515,9 @@ contract QuarkWalletTest is Test {
             abi.encodeCall(PrecompileCaller.sha256Call, (numberToHash)),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, signature);
         bytes memory output = abi.decode(rawOut, (bytes));
         assertEq(abi.decode(output, (bytes32)), sha256(abi.encodePacked(numberToHash)));
     }
@@ -1539,9 +1533,9 @@ contract QuarkWalletTest is Test {
     //         expiry: block.timestamp + 1000
     //     });
 
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+    //     bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
     //     vm.resumeGasMetering();
-    //     bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+    //     bytes memory output = aliceWallet.executeQuarkOperation(op, signature);
     //     assertEq(abi.decode(output, (bytes32)), sha256(abi.encodePacked(numberToHash)));
     // }
 
@@ -1555,9 +1549,9 @@ contract QuarkWalletTest is Test {
             abi.encodeCall(PrecompileCaller.ripemd160Call, (testBytes)),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory output = aliceWallet.executeQuarkOperation(op, signature);
         assertEq(abi.decode(output, (bytes20)), ripemd160(testBytes));
     }
 
@@ -1571,9 +1565,9 @@ contract QuarkWalletTest is Test {
     //         nonce: aliceWallet.nonceManager().nextNonce(address(aliceWallet)),
     //         expiry: block.timestamp + 1000
     //     });
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+    //     bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
     //     vm.resumeGasMetering();
-    //     bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+    //     bytes memory output = aliceWallet.executeQuarkOperation(op, signature);
     //     assertEq(bytes20(abi.decode(output, (bytes32)) << 96), ripemd160(testBytes));
     // }
 
@@ -1587,9 +1581,9 @@ contract QuarkWalletTest is Test {
             abi.encodeCall(PrecompileCaller.dataCopyCall, (testBytes)),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory output = aliceWallet.executeQuarkOperation(op, signature);
         assertEq(abi.decode(output, (bytes)), testBytes);
     }
 
@@ -1603,9 +1597,9 @@ contract QuarkWalletTest is Test {
     //         nonce: aliceWallet.nonceManager().nextNonce(address(aliceWallet)),
     //         expiry: block.timestamp + 1000
     //     });
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+    //     bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
     //     vm.resumeGasMetering();
-    //     bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+    //     bytes memory output = aliceWallet.executeQuarkOperation(op, signature);
     //     assertEq(output, testBytes);
     // }
 
@@ -1623,9 +1617,9 @@ contract QuarkWalletTest is Test {
             abi.encodeCall(PrecompileCaller.bigModExpCall, (base, exponent, modulus)),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory output = aliceWallet.executeQuarkOperation(op, signature);
         assertEq(abi.decode(output, (bytes32)), expected);
     }
 
@@ -1643,9 +1637,9 @@ contract QuarkWalletTest is Test {
     //         nonce: aliceWallet.nonceManager().nextNonce(address(aliceWallet)),
     //         expiry: block.timestamp + 1000
     //     });
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+    //     bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
     //     vm.resumeGasMetering();
-    //     bytes memory output = aliceWallet.executeQuarkOperation(op, v, r, s);
+    //     bytes memory output = aliceWallet.executeQuarkOperation(op, signature);
     //     assertEq(abi.decode(output, (bytes32)), expected);
     // }
 
@@ -1658,9 +1652,9 @@ contract QuarkWalletTest is Test {
             abi.encodeCall(PrecompileCaller.bn256AddCall, (uint256(1), uint256(2), uint256(1), uint256(2))),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, signature);
         uint256[2] memory output = abi.decode(rawOut, (uint256[2]));
         assertEq(output[0], uint256(0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd3));
         assertEq(output[1], uint256(0x15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4));
@@ -1680,9 +1674,9 @@ contract QuarkWalletTest is Test {
     //         nonce: aliceWallet.nonceManager().nextNonce(address(aliceWallet)),
     //         expiry: block.timestamp + 1000
     //     });
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+    //     bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
     //     vm.resumeGasMetering();
-    //     bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+    //     bytes memory rawOut = aliceWallet.executeQuarkOperation(op, signature);
     //     uint256[2] memory output = abi.decode(rawOut, (uint256[2]));
     //     assertEq(output[0], uint256(0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd3));
     //     assertEq(output[1], uint256(0x15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4));
@@ -1697,9 +1691,9 @@ contract QuarkWalletTest is Test {
             abi.encodeCall(PrecompileCaller.bn256ScalarMulCall, (uint256(1), uint256(2), uint256(3))),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, signature);
         uint256[2] memory output = abi.decode(rawOut, (uint256[2]));
         assertEq(output[0], uint256(0x0769bf9ac56bea3ff40232bcb1b6bd159315d84715b8e679f2d355961915abf0));
         assertEq(output[1], uint256(0x2ab799bee0489429554fdb7c8d086475319e63b40b9c5b57cdf1ff3dd9fe2261));
@@ -1718,9 +1712,9 @@ contract QuarkWalletTest is Test {
     //         nonce: aliceWallet.nonceManager().nextNonce(address(aliceWallet)),
     //         expiry: block.timestamp + 1000
     //     });
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+    //     bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
     //     vm.resumeGasMetering();
-    //     bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+    //     bytes memory rawOut = aliceWallet.executeQuarkOperation(op, signature);
     //     uint256[2] memory output = abi.decode(rawOut, (uint256[2]));
     //     assertEq(output[0], uint256(0x0769bf9ac56bea3ff40232bcb1b6bd159315d84715b8e679f2d355961915abf0));
     //     assertEq(output[1], uint256(0x2ab799bee0489429554fdb7c8d086475319e63b40b9c5b57cdf1ff3dd9fe2261));
@@ -1757,9 +1751,9 @@ contract QuarkWalletTest is Test {
             abi.encodeCall(PrecompileCaller.blake2FCall, (rounds, h, m, t, f)),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
         vm.resumeGasMetering();
-        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory rawOut = aliceWallet.executeQuarkOperation(op, signature);
         bytes32[2] memory output = abi.decode(rawOut, (bytes32[2]));
         assertEq(output[0], expected[0]);
         assertEq(output[1], expected[1]);
@@ -1796,9 +1790,9 @@ contract QuarkWalletTest is Test {
     //         nonce: aliceWallet.nonceManager().nextNonce(address(aliceWallet)),
     //         expiry: block.timestamp + 1000
     //     });
-    //     (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+    //     bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
     //     vm.resumeGasMetering();
-    //     bytes memory rawOut = aliceWallet.executeQuarkOperation(op, v, r, s);
+    //     bytes memory rawOut = aliceWallet.executeQuarkOperation(op, signature);
     //     bytes32[2] memory output = abi.decode(rawOut, (bytes32[2]));
     //     assertEq(output[0], expected[0]);
     //     assertEq(output[1], expected[1]);
@@ -1811,10 +1805,10 @@ contract QuarkWalletTest is Test {
             vm.pauseGasMetering();
             nonce = new QuarkOperationHelper().incrementNonce(nonce);
             QuarkWallet.QuarkOperation memory op = DummyQuarkOperation(address(uint160(i)), nonce);
-            (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+            bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
             vm.resumeGasMetering();
             vm.expectRevert(abi.encodeWithSelector(QuarkWallet.EmptyCode.selector));
-            aliceWallet.executeQuarkOperation(op, v, r, s);
+            aliceWallet.executeQuarkOperation(op, signature);
         }
     }
 

@@ -65,11 +65,11 @@ contract EthcallTest is Test {
         );
 
         assertEq(counter.number(), 0);
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 1);
     }
 
@@ -89,11 +89,11 @@ contract EthcallTest is Test {
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         assertEq(IComet(comet).balanceOf(address(wallet)), 0);
 
@@ -108,11 +108,11 @@ contract EthcallTest is Test {
             ),
             ScriptType.ScriptSource
         );
-        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        (signature) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         // Since there is rouding diff, assert on diff is less than 10 wei
         assertApproxEqAbs(1000e6, IComet(comet).balanceOf(address(wallet)), 2);
@@ -135,11 +135,11 @@ contract EthcallTest is Test {
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -152,11 +152,11 @@ contract EthcallTest is Test {
             ),
             ScriptType.ScriptSource
         );
-        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        (signature) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -169,11 +169,11 @@ contract EthcallTest is Test {
             ),
             ScriptType.ScriptSource
         );
-        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        (signature) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
     }
@@ -195,12 +195,12 @@ contract EthcallTest is Test {
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testEthcallShouldReturnCallResult() public {
@@ -218,11 +218,11 @@ contract EthcallTest is Test {
             ScriptType.ScriptSource
         );
 
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
+        bytes memory quarkReturn = wallet.executeQuarkOperation(op, signature);
         bytes memory returnData = abi.decode(quarkReturn, (bytes));
 
         assertEq(counter.number(), 4);
