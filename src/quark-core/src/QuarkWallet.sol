@@ -409,24 +409,6 @@ contract QuarkWallet is IERC1271 {
             }
         } else {
             // For EOA signers, this implementation of the QuarkWallet only supports ECDSA signatures
-            /*
-            * Code taken directly from OpenZeppelin ECDSA.tryRecover; see:
-            * https://github.com/OpenZeppelin/openzeppelin-contracts/blob/HEAD/contracts/utils/cryptography/ECDSA.sol#L64-L68
-            *
-            * This is effectively an optimized variant of the Reference Implementation; see:
-            * https://eips.ethereum.org/EIPS/eip-1271#reference-implementation
-            */
-            if (signature.length != 65) {
-                revert InvalidSignature();
-            }
-            bytes32 r;
-            bytes32 s;
-            uint8 v;
-            assembly {
-                r := mload(add(signature, 0x20))
-                s := mload(add(signature, 0x40))
-                v := byte(0, mload(add(signature, 0x60)))
-            }
             (address recoveredSigner, ECDSA.RecoverError recoverError) = ECDSA.tryRecover(digest, signature);
             if (recoverError != ECDSA.RecoverError.NoError) {
                 revert InvalidSignature();
