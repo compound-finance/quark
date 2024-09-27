@@ -108,11 +108,11 @@ contract ExecutorTest is Test {
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        aliceWallet.executeQuarkOperation(op, v, r, s);
+        aliceWallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 3);
     }
 }

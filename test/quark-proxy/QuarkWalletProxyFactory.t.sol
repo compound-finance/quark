@@ -127,7 +127,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         });
 
         // alice signs the operation
-        (uint8 v, bytes32 r, bytes32 s) =
+        bytes memory signature =
             new SignatureHelper().signOpForAddress(alicePrivateKey, factory.walletAddressFor(alice, address(0)), op);
 
         assertEq(counter.number(), 0);
@@ -139,7 +139,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
         emit WalletDeploy(alice, address(0), factory.walletAddressFor(alice, address(0)), bytes32(0));
-        factory.createAndExecute(alice, address(0), op, v, r, s);
+        factory.createAndExecute(alice, address(0), op, signature);
 
         // operation was executed
         assertEq(counter.number(), 3);
@@ -175,7 +175,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes32 salt = bytes32("salty salt salt");
 
         // alice signs the operation
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(
+        bytes memory signature = new SignatureHelper().signOpForAddress(
             alicePrivateKey, factory.walletAddressForSalt(alice, address(0), salt), op
         );
 
@@ -187,7 +187,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         vm.expectEmit(true, true, true, true);
         // it creates a wallet (with salt)
         emit WalletDeploy(alice, address(0), factory.walletAddressForSalt(alice, address(0), salt), salt);
-        factory.createAndExecute(alice, address(0), salt, op, v, r, s);
+        factory.createAndExecute(alice, address(0), salt, op, signature);
 
         // operation was executed
         assertEq(counter.number(), 3);
@@ -222,7 +222,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         });
 
         // alice signs the operation
-        (uint8 v, bytes32 r, bytes32 s) =
+        bytes memory signature =
             new SignatureHelper().signOpForAddress(alicePrivateKey, factory.walletAddressFor(alice, address(0)), op);
 
         assertEq(counter.number(), 0);
@@ -236,7 +236,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         factory.create(alice, address(0));
 
         // operation is executed
-        factory.createAndExecute(alice, address(0), op, v, r, s);
+        factory.createAndExecute(alice, address(0), op, signature);
 
         // operation was executed
         assertEq(counter.number(), 3);
@@ -290,20 +290,20 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes32[] memory opDigests = new bytes32[](2);
         opDigests[0] = op1Digest;
         opDigests[1] = op2Digest;
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+        bytes memory signature = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
         vm.resumeGasMetering();
         // call once
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
         emit WalletDeploy(alice, address(0), aliceWalletAddress, bytes32(0));
-        factory.createAndExecuteMulti(alice, address(0), op1, opDigests, v, r, s);
+        factory.createAndExecuteMulti(alice, address(0), op1, opDigests, signature);
 
         assertEq(counter.number(), 3);
         assertEq(nonceManager.submissions(aliceWalletAddress, op1.nonce), bytes32(type(uint256).max));
 
         // call a second time
-        factory.createAndExecuteMulti(alice, address(0), op2, opDigests, v, r, s);
+        factory.createAndExecuteMulti(alice, address(0), op2, opDigests, signature);
 
         assertEq(counter.number(), 6);
         assertEq(nonceManager.submissions(aliceWalletAddress, op2.nonce), bytes32(type(uint256).max));
@@ -347,20 +347,20 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes32[] memory opDigests = new bytes32[](2);
         opDigests[0] = op1Digest;
         opDigests[1] = op2Digest;
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+        bytes memory signature = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
         vm.resumeGasMetering();
         // call once
         vm.expectEmit(true, true, true, true);
         // it creates a wallet (with salt)
         emit WalletDeploy(alice, address(0), aliceWalletAddress, salt);
-        factory.createAndExecuteMulti(alice, address(0), salt, op1, opDigests, v, r, s);
+        factory.createAndExecuteMulti(alice, address(0), salt, op1, opDigests, signature);
 
         assertEq(counter.number(), 3);
         assertEq(nonceManager.submissions(aliceWalletAddress, op1.nonce), bytes32(type(uint256).max));
 
         // call a second time
-        factory.createAndExecuteMulti(alice, address(0), salt, op2, opDigests, v, r, s);
+        factory.createAndExecuteMulti(alice, address(0), salt, op2, opDigests, signature);
 
         assertEq(counter.number(), 6);
         assertEq(nonceManager.submissions(aliceWalletAddress, op2.nonce), bytes32(type(uint256).max));
@@ -407,7 +407,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         bytes32[] memory opDigests = new bytes32[](2);
         opDigests[0] = op1Digest;
         opDigests[1] = op2Digest;
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
+        bytes memory signature = new SignatureHelper().signMultiOp(alicePrivateKey, opDigests);
 
         // gas: meter create, createAndExecute
         vm.resumeGasMetering();
@@ -418,13 +418,13 @@ contract QuarkWalletProxyFactoryTest is Test {
         factory.create(alice, address(0));
 
         // call once
-        factory.createAndExecuteMulti(alice, address(0), op1, opDigests, v, r, s);
+        factory.createAndExecuteMulti(alice, address(0), op1, opDigests, signature);
 
         assertEq(counter.number(), 3);
         assertEq(nonceManager.submissions(aliceWalletAddress, op1.nonce), bytes32(type(uint256).max));
 
         // call a second time
-        factory.createAndExecuteMulti(alice, address(0), op2, opDigests, v, r, s);
+        factory.createAndExecuteMulti(alice, address(0), op2, opDigests, signature);
 
         assertEq(counter.number(), 6);
         assertEq(nonceManager.submissions(aliceWalletAddress, op2.nonce), bytes32(type(uint256).max));
@@ -452,7 +452,7 @@ contract QuarkWalletProxyFactoryTest is Test {
             isReplayable: false,
             expiry: block.timestamp + 1000
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
@@ -461,7 +461,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
         emit WalletDeploy(alice, address(0), aliceWallet, bytes32(0));
-        bytes memory result = factory.createAndExecute(alice, address(0), op, v, r, s);
+        bytes memory result = factory.createAndExecute(alice, address(0), op, signature);
 
         (address msgSender, address addressThis, uint256 msgValue) = abi.decode(result, (address, address, uint256));
         assertEq(msgSender, address(factory));
@@ -489,14 +489,14 @@ contract QuarkWalletProxyFactoryTest is Test {
             isReplayable: false,
             expiry: block.timestamp + 1000
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
 
         // we didn't include the script source in scriptSources and we never deployed it!
         vm.expectRevert(QuarkWallet.EmptyCode.selector);
-        factory.createAndExecute(alice, address(0), salt, op, v, r, s);
+        factory.createAndExecute(alice, address(0), salt, op, signature);
 
         // gas: do not meter set-up
         vm.pauseGasMetering();
@@ -504,7 +504,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         // but if we do add it...
         op.scriptSources = new bytes[](1);
         op.scriptSources[0] = getMessageDetails;
-        (v, r, s) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
+        (signature) = new SignatureHelper().signOpForAddress(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
@@ -513,7 +513,7 @@ contract QuarkWalletProxyFactoryTest is Test {
         vm.expectEmit(true, true, true, true);
         // it creates a wallet
         emit WalletDeploy(alice, address(0), aliceWallet, salt);
-        bytes memory result = factory.createAndExecute(alice, address(0), salt, op, v, r, s);
+        bytes memory result = factory.createAndExecute(alice, address(0), salt, op, signature);
 
         (address msgSender, address addressThis, uint256 msgValue) = abi.decode(result, (address, address, uint256));
         assertEq(msgSender, address(factory));
@@ -568,12 +568,12 @@ contract QuarkWalletProxyFactoryTest is Test {
             isReplayable: false,
             expiry: block.timestamp + 1000
         });
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWalletPrimary, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWalletPrimary, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         assertEq(counter.number(), 0);
-        aliceWalletPrimary.executeQuarkOperation(op, v, r, s);
+        aliceWalletPrimary.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 7);
     }
 }

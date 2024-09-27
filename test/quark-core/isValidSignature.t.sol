@@ -67,7 +67,8 @@ contract isValidSignatureTest is Test {
             keccak256(abi.encodePacked("\x19\x01", new SignatureHelper().domainSeparator(address(wallet)), structHash));
         bytes32 quarkMsgDigest = aliceWallet.getDigestForQuarkMessage(abi.encode(digest));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, quarkMsgDigest);
-        return (digest, abi.encodePacked(r, s, v));
+        bytes memory signature = abi.encodePacked(r, s, v);
+        return (digest, signature);
     }
 
     function createPermit2Signature(uint256 privateKey, Permit2Helper.PermitSingle memory permitSingle)
@@ -79,7 +80,8 @@ contract isValidSignatureTest is Test {
         bytes32 digest = Permit2Helper._hashTypedData(Permit2Helper.hash(permitSingle), domainSeparator);
         bytes32 quarkMsgDigest = aliceWallet.getDigestForQuarkMessage(abi.encode(digest));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, quarkMsgDigest);
-        return (digest, abi.encodePacked(r, s, v));
+        bytes memory signature = abi.encodePacked(r, s, v);
+        return (digest, signature);
     }
 
     /* wallet owned by EOA  */
