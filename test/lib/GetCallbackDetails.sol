@@ -5,7 +5,7 @@ import {QuarkWalletMetadata} from "quark-core/src/QuarkWallet.sol";
 import {QuarkScript} from "quark-core/src/QuarkScript.sol";
 
 contract GetCallbackDetails is QuarkScript {
-    function getCallbackAddress() public returns (address) {
+    function getCallbackAddress() public view returns (address) {
         bytes32 callbackSlot = QuarkWalletMetadata.CALLBACK_SLOT;
         address callbackAddress;
         assembly {
