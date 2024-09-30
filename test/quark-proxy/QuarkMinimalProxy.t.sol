@@ -59,12 +59,12 @@ contract QuarkMinimalProxyTest is Test {
             abi.encodeWithSignature("getSignerAndExecutor()"),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) =
+        bytes memory signature =
             new SignatureHelper().signOp(alicePrivateKey, QuarkWallet(payable(aliceWalletProxy)), op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = QuarkWallet(payable(aliceWalletProxy)).executeQuarkOperation(op, v, r, s);
+        bytes memory result = QuarkWallet(payable(aliceWalletProxy)).executeQuarkOperation(op, signature);
         (address signer, address executor) = abi.decode(result, (address, address));
         assertEq(signer, aliceAccount);
         assertEq(executor, address(0xabc));

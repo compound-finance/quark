@@ -124,9 +124,9 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         // When reaches here, meaning all checks are passed
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1_000_000_000);
@@ -170,7 +170,7 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -182,7 +182,7 @@ contract ConditionalMulticallTest is Test {
             )
         );
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testConditionalRunInvalidInput() public {
@@ -207,11 +207,11 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.expectRevert(abi.encodeWithSelector(ConditionalMulticall.InvalidInput.selector));
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testConditionalRunMulticallError() public {
@@ -274,7 +274,7 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ConditionalMulticall.MulticallError.selector,
@@ -284,7 +284,7 @@ contract ConditionalMulticallTest is Test {
             )
         );
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testConditionalRunEmptyInputIsValid() public {
@@ -303,11 +303,11 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // Empty array is a valid input representing a no-op, and it should not revert
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testConditionalRunOnPeriodicRepay() public {
@@ -368,7 +368,7 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         // Wallet doesn't have USDC, condition will fail
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -380,7 +380,7 @@ contract ConditionalMulticallTest is Test {
             )
         );
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         vm.pauseGasMetering();
         // Wallet has accrue 400 USDC
@@ -393,9 +393,9 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        (signature) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         vm.pauseGasMetering();
         // Wallet has accrued another 400 USDC
@@ -406,9 +406,9 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        (signature) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         vm.pauseGasMetering();
         // Wallet has accrued another 400 USDC
@@ -419,9 +419,9 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        (signature) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         vm.pauseGasMetering();
         // Wallet no longer borrows from Comet, condition 2 will fail
@@ -433,7 +433,7 @@ contract ConditionalMulticallTest is Test {
             abi.encodeWithSelector(ConditionalMulticall.run.selector, callContracts, callDatas, conditions, checkValues),
             ScriptType.ScriptAddress
         );
-        (v, r, s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        (signature) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ConditionalChecker.CheckFailed.selector,
@@ -444,7 +444,7 @@ contract ConditionalMulticallTest is Test {
             )
         );
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         // Wallet fully pays off debt
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 0);

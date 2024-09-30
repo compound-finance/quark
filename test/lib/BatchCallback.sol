@@ -8,17 +8,13 @@ contract BatchSend {
     function submitTwo(
         QuarkWallet wallet1,
         QuarkWallet.QuarkOperation memory op1,
-        uint8 v1,
-        bytes32 r1,
-        bytes32 s1,
+        bytes memory signature1,
         QuarkWallet wallet2,
         QuarkWallet.QuarkOperation memory op2,
-        uint8 v2,
-        bytes32 r2,
-        bytes32 s2
+        bytes memory signature2
     ) public returns (uint256) {
-        wallet1.executeQuarkOperation(op1, v1, r1, s1);
-        wallet2.executeQuarkOperation(op2, v2, r2, s2);
+        wallet1.executeQuarkOperation(op1, signature1);
+        wallet2.executeQuarkOperation(op2, signature2);
         return IncrementByCallback(address(wallet1)).number();
     }
 }
