@@ -5,7 +5,7 @@ on:
   pull_request:
 
 env:
-  FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: ir
 
 jobs:
   snapshot-gas:
@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           # grep -E '^test'  -- skip over test results, just get diffs
-          forge snapshot --via-ir --diff \
+          forge snapshot --diff \
             | grep -E '^test'   \
             | tee .gas-snapshot.new
         env:

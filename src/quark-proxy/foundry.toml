@@ -1,19 +1,17 @@
 [profile.default]
 solc = "0.8.27"
 evm_version = "cancun"
-
 libs = [ "../../lib" ]
-
 src = "src"
 out = "out"
 test = "../../test/quark-proxy"
-
-# optimizer config
-optimizer = true
-optimizer_runs = 1
+cbor_metadata = false
 bytecode_hash = "none"
 
 [profile.ir]
 via_ir = true
+optimizer = true
+# We optimize for deployment cost over runtime gas efficiency
+optimizer_runs = 1
 extra_output = [ "ir" ]
 extra_output_files = [ "ir" ]
