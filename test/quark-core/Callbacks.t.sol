@@ -138,7 +138,42 @@ contract CallbacksTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(parentOp, v, r, s);
+
         assertEq(counter.number(), 11);
+    }
+
+    function testNestedCallbackResetsCallbackSlot() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory getCallbackDetails = new YulHelper().getCode("GetCallbackDetails.sol/GetCallbackDetails.json");
+        bytes memory executeOtherScript =
+            new YulHelper().getCode("ExecuteOtherOperation.sol/ExecuteOtherOperation.json");
+
+        QuarkWallet.QuarkOperation memory nestedOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet, getCallbackDetails, abi.encodeWithSignature("getCallbackAddress()"), ScriptType.ScriptAddress
+        );
+
+        (uint8 v_, bytes32 r_, bytes32 s_) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+
+        QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            executeOtherScript,
+            abi.encodeWithSelector(ExecuteOtherOperation.run.selector, nestedOp, v_, r_, s_),
+            ScriptType.ScriptAddress
+        );
+
+        parentOp.nonce = new QuarkOperationHelper().incrementNonce(nestedOp.nonce);
+
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        bytes memory result = aliceWallet.executeQuarkOperation(parentOp, v, r, s);
+        // We decode twice because the result is encoded twice due to the nested operation
+        address innerCallbackAddress = abi.decode(abi.decode(result, (bytes)), (address));
+
+        // The inner callback address should be 0
+        assertEq(innerCallbackAddress, address(0));
     }
 
     function testNestedCallWithNoCallbackSucceeds() public {
