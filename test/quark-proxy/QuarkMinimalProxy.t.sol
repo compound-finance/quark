@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
@@ -7,7 +7,7 @@ import {Test} from "forge-std/Test.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 
 import {YulHelper} from "test/lib/YulHelper.sol";
@@ -17,7 +17,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 contract QuarkMinimalProxyTest is Test {
     CodeJar public codeJar;
     QuarkWallet public walletImplementation;
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
 
     uint256 alicePrivateKey = 0x8675309;
     address aliceAccount;
@@ -27,10 +27,10 @@ contract QuarkMinimalProxyTest is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to %s", address(codeJar));
 
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to %s", address(nonceManager));
 
-        walletImplementation = new QuarkWallet(codeJar, stateManager);
+        walletImplementation = new QuarkWallet(codeJar, nonceManager);
         console.log("QuarkWallet implementation deployed to %s", address(walletImplementation));
 
         aliceAccount = vm.addr(alicePrivateKey);

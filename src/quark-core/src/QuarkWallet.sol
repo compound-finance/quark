@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import {ECDSA} from "openzeppelin/utils/cryptography/ECDSA.sol";
 import {IERC1271} from "openzeppelin/interfaces/IERC1271.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {IHasSignerExecutor} from "quark-core/src/interfaces/IHasSignerExecutor.sol";
+import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
 
 /**
  * @title Quark Wallet Metadata
@@ -23,7 +24,7 @@ library QuarkWalletMetadata {
 
     /// @notice The EIP-712 typehash for authorizing an operation for this version of QuarkWallet
     bytes32 internal constant QUARK_OPERATION_TYPEHASH = keccak256(
-        "QuarkOperation(uint96 nonce,address scriptAddress,bytes[] scriptSources,bytes scriptCalldata,uint256 expiry)"
+        "QuarkOperation(bytes32 nonce,bool isReplayable,address scriptAddress,bytes[] scriptSources,bytes scriptCalldata,uint256 expiry)"
     );
 
     /// @notice The EIP-712 typehash for authorizing a MultiQuarkOperation for this version of QuarkWallet
@@ -39,6 +40,19 @@ library QuarkWalletMetadata {
     /// @notice The EIP-712 domain typehash used for MultiQuarkOperations for this version of QuarkWallet
     bytes32 internal constant MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version)");
+
+    /// @notice Well-known storage slot for the currently executing script's callback address (if any)
+    bytes32 internal constant CALLBACK_SLOT = bytes32(uint256(keccak256("quark.v1.callback")) - 1);
+
+    /// @notice Well-known storage slot for the currently executing script's address (if any)
+    bytes32 internal constant ACTIVE_SCRIPT_SLOT = bytes32(uint256(keccak256("quark.v1.active.script")) - 1);
+
+    /// @notice Well-known storage slot for the nonce of the script that's currently executing.
+    bytes32 internal constant ACTIVE_NONCE_SLOT = bytes32(uint256(keccak256("quark.v1.active.nonce")) - 1);
+
+    /// @notice Well-known storage slot for the submission token of the script that's currently executing.
+    bytes32 internal constant ACTIVE_SUBMISSION_TOKEN_SLOT =
+        bytes32(uint256(keccak256("quark.v1.active.submissionToken")) - 1);
 }
 
 /**
@@ -64,15 +78,20 @@ contract QuarkWallet is IERC1271 {
     }
 
     /// @notice Event emitted when a Quark script is executed by this Quark wallet
-    event ExecuteQuarkScript(
-        address indexed executor, address indexed scriptAddress, uint96 indexed nonce, ExecutionType executionType
+    event QuarkExecution(
+        address indexed executor,
+        address indexed scriptAddress,
+        bytes32 indexed nonce,
+        bytes32 submissionToken,
+        bool isReplayable,
+        ExecutionType executionType
     );
 
     /// @notice Address of CodeJar contract used to deploy transaction script source code
     CodeJar public immutable codeJar;
 
-    /// @notice Address of QuarkStateManager contract that manages nonces and nonce-namespaced transaction script storage
-    QuarkStateManager public immutable stateManager;
+    /// @notice Address of QuarkNonceManager contract that manages nonces for this quark wallet
+    QuarkNonceManager public immutable nonceManager;
 
     /// @notice Name of contract
     string public constant NAME = QuarkWalletMetadata.NAME;
@@ -107,8 +126,17 @@ contract QuarkWallet is IERC1271 {
         )
     );
 
-    /// @notice Well-known stateManager key for the currently executing script's callback address (if any)
-    bytes32 public constant CALLBACK_KEY = keccak256("callback.v1.quark");
+    /// @notice Well-known storage slot for the currently executing script's callback address (if any)
+    bytes32 public constant CALLBACK_SLOT = QuarkWalletMetadata.CALLBACK_SLOT;
+
+    /// @notice Well-known storage slot for the currently executing script's address (if any)
+    bytes32 public constant ACTIVE_SCRIPT_SLOT = QuarkWalletMetadata.ACTIVE_SCRIPT_SLOT;
+
+    /// @notice Well-known storage slot for the nonce of the script that's currently executing.
+    bytes32 public constant ACTIVE_NONCE_SLOT = QuarkWalletMetadata.ACTIVE_NONCE_SLOT;
+
+    /// @notice Well-known storage slot for the submission token of the script that's currently executing.
+    bytes32 public constant ACTIVE_SUBMISSION_TOKEN_SLOT = QuarkWalletMetadata.ACTIVE_SUBMISSION_TOKEN_SLOT;
 
     /// @notice The magic value to return for valid ERC1271 signature
     bytes4 internal constant EIP_1271_MAGIC_VALUE = 0x1626ba7e;
@@ -116,7 +144,9 @@ contract QuarkWallet is IERC1271 {
     /// @notice The structure of a signed operation to execute in the context of this wallet
     struct QuarkOperation {
         /// @notice Nonce identifier for the operation
-        uint96 nonce;
+        bytes32 nonce;
+        /// @notice Whether this script is replayable or not.
+        bool isReplayable;
         /// @notice The address of the transaction script to run
         address scriptAddress;
         /// @notice Creation codes Quark must ensure are deployed before executing this operation
@@ -130,11 +160,11 @@ contract QuarkWallet is IERC1271 {
     /**
      * @notice Construct a new QuarkWalletImplementation
      * @param codeJar_ The CodeJar contract used to deploy scripts
-     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
+     * @param nonceManager_ The QuarkNonceManager contract used to write/read nonces for this wallet
      */
-    constructor(CodeJar codeJar_, QuarkStateManager stateManager_) {
+    constructor(CodeJar codeJar_, QuarkNonceManager nonceManager_) {
         codeJar = codeJar_;
-        stateManager = stateManager_;
+        nonceManager = nonceManager_;
     }
 
     /**
@@ -150,9 +180,29 @@ contract QuarkWallet is IERC1271 {
         external
         returns (bytes memory)
     {
+        return executeQuarkOperationWithSubmissionToken(op, op.nonce, v, r, s);
+    }
+
+    /**
+     * @notice Executes a first play or a replay of a QuarkOperation via signature
+     * @dev Can only be called with signatures from the wallet's signer
+     * @param op A QuarkOperation struct
+     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
+     * @param v EIP-712 signature v value
+     * @param r EIP-712 signature r value
+     * @param s EIP-712 signature s value
+     * @return Return value from the executed operation
+     */
+    function executeQuarkOperationWithSubmissionToken(
+        QuarkOperation calldata op,
+        bytes32 submissionToken,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public returns (bytes memory) {
         bytes32 opDigest = getDigestForQuarkOperation(op);
 
-        return verifySigAndExecuteQuarkOperation(op, opDigest, v, r, s);
+        return verifySigAndExecuteQuarkOperation(op, submissionToken, opDigest, v, r, s);
     }
 
     /**
@@ -172,6 +222,28 @@ contract QuarkWallet is IERC1271 {
         bytes32 r,
         bytes32 s
     ) public returns (bytes memory) {
+        return executeMultiQuarkOperationWithSubmissionToken(op, op.nonce, opDigests, v, r, s);
+    }
+
+    /**
+     * @notice Executes a first play or a replay of a QuarkOperation that is part of a MultiQuarkOperation via signature
+     * @dev Can only be called with signatures from the wallet's signer
+     * @param op A QuarkOperation struct
+     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
+     * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
+     * @param v EIP-712 signature v value
+     * @param r EIP-712 signature r value
+     * @param s EIP-712 signature s value
+     * @return Return value from the executed operation
+     */
+    function executeMultiQuarkOperationWithSubmissionToken(
+        QuarkOperation calldata op,
+        bytes32 submissionToken,
+        bytes32[] memory opDigests,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public returns (bytes memory) {
         bytes32 opDigest = getDigestForQuarkOperation(op);
 
         bool isValidOp = false;
@@ -186,12 +258,13 @@ contract QuarkWallet is IERC1271 {
         }
         bytes32 multiOpDigest = getDigestForMultiQuarkOperation(opDigests);
 
-        return verifySigAndExecuteQuarkOperation(op, multiOpDigest, v, r, s);
+        return verifySigAndExecuteQuarkOperation(op, submissionToken, multiOpDigest, v, r, s);
     }
 
     /**
-     * @notice Verify a signature and execute a QuarkOperation
+     * @notice Verify a signature and execute a replayable QuarkOperation
      * @param op A QuarkOperation struct
+     * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
      * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
      * @param v EIP-712 signature v value
      * @param r EIP-712 signature r value
@@ -200,6 +273,7 @@ contract QuarkWallet is IERC1271 {
      */
     function verifySigAndExecuteQuarkOperation(
         QuarkOperation calldata op,
+        bytes32 submissionToken,
         bytes32 digest,
         uint8 v,
         bytes32 r,
@@ -217,9 +291,13 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(op.scriptSources[i]);
         }
 
-        emit ExecuteQuarkScript(msg.sender, op.scriptAddress, op.nonce, ExecutionType.Signature);
+        nonceManager.submit(op.nonce, op.isReplayable, submissionToken);
 
-        return stateManager.setActiveNonceAndCallback(op.nonce, op.scriptAddress, op.scriptCalldata);
+        emit QuarkExecution(
+            msg.sender, op.scriptAddress, op.nonce, submissionToken, op.isReplayable, ExecutionType.Signature
+        );
+
+        return executeScriptInternal(op.scriptAddress, op.scriptCalldata, op.nonce, submissionToken);
     }
 
     /**
@@ -232,7 +310,7 @@ contract QuarkWallet is IERC1271 {
      * @return Return value from the executed operation
      */
     function executeScript(
-        uint96 nonce,
+        bytes32 nonce,
         address scriptAddress,
         bytes calldata scriptCalldata,
         bytes[] calldata scriptSources
@@ -247,9 +325,11 @@ contract QuarkWallet is IERC1271 {
             codeJar.saveCode(scriptSources[i]);
         }
 
-        emit ExecuteQuarkScript(msg.sender, scriptAddress, nonce, ExecutionType.Direct);
+        nonceManager.submit(nonce, false, nonce);
 
-        return stateManager.setActiveNonceAndCallback(nonce, scriptAddress, scriptCalldata);
+        emit QuarkExecution(msg.sender, scriptAddress, nonce, nonce, false, ExecutionType.Direct);
+
+        return executeScriptInternal(scriptAddress, scriptCalldata, nonce, nonce);
     }
 
     /**
@@ -277,6 +357,7 @@ contract QuarkWallet is IERC1271 {
             abi.encode(
                 QUARK_OPERATION_TYPEHASH,
                 op.nonce,
+                op.isReplayable,
                 op.scriptAddress,
                 keccak256(encodedScriptSources),
                 keccak256(op.scriptCalldata),
@@ -378,17 +459,19 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @notice Execute a QuarkOperation with a lock acquired on nonce-namespaced storage
-     * @dev Can only be called by stateManager during setActiveNonceAndCallback()
+     * @notice Execute a script using the given calldata
      * @param scriptAddress Address of script to execute
      * @param scriptCalldata Encoded calldata for the call to execute on the scriptAddress
+     * @param nonce The nonce of the quark operation for this execution
+     * @param submissionToken The submission token for this quark execution
      * @return Result of executing the script, encoded as bytes
      */
-    function executeScriptWithNonceLock(address scriptAddress, bytes memory scriptCalldata)
-        external
-        returns (bytes memory)
-    {
-        require(msg.sender == address(stateManager));
+    function executeScriptInternal(
+        address scriptAddress,
+        bytes memory scriptCalldata,
+        bytes32 nonce,
+        bytes32 submissionToken
+    ) internal returns (bytes memory) {
         if (scriptAddress.code.length == 0) {
             revert EmptyCode();
         }
@@ -396,11 +479,49 @@ contract QuarkWallet is IERC1271 {
         bool success;
         uint256 returnSize;
         uint256 scriptCalldataLen = scriptCalldata.length;
+        bytes32 activeScriptSlot = ACTIVE_SCRIPT_SLOT;
+        bytes32 activeNonceSlot = ACTIVE_NONCE_SLOT;
+        bytes32 activeSubmissionTokenSlot = ACTIVE_SUBMISSION_TOKEN_SLOT;
+        bytes32 callbackSlot = CALLBACK_SLOT;
+        address oldActiveScript;
+        bytes32 oldActiveNonce;
+        bytes32 oldActiveSubmissionToken;
+        address oldCallback;
         assembly {
+            // Cache the previous values in each of the transient slots so they can be restored after the callcode
+            oldActiveScript := tload(activeScriptSlot)
+            oldActiveNonce := tload(activeNonceSlot)
+            oldActiveSubmissionToken := tload(activeSubmissionTokenSlot)
+            oldCallback := tload(callbackSlot)
+
+            // Transiently store the active script
+            tstore(activeScriptSlot, scriptAddress)
+
+            // Transiently store the active nonce
+            tstore(activeNonceSlot, nonce)
+
+            // Transiently store the active submission token
+            tstore(activeSubmissionTokenSlot, submissionToken)
+
+            // Transiently set the callback slot to 0
+            tstore(callbackSlot, 0)
+
             // Note: CALLCODE is used to set the QuarkWallet as the `msg.sender`
             success :=
                 callcode(gas(), scriptAddress, /* value */ 0, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
+
+            // Transiently restore the active script
+            tstore(activeScriptSlot, oldActiveScript)
+
+            // Transiently restore the active nonce
+            tstore(activeNonceSlot, oldActiveNonce)
+
+            // Transiently restore the active submission token
+            tstore(activeSubmissionTokenSlot, oldActiveSubmissionToken)
+
+            // Transiently restore the callback slot
+            tstore(callbackSlot, oldCallback)
         }
 
         bytes memory returnData = new bytes(returnSize);
@@ -422,7 +543,11 @@ contract QuarkWallet is IERC1271 {
      * @dev Reverts if callback is not enabled by the script
      */
     fallback(bytes calldata data) external payable returns (bytes memory) {
-        address callback = address(uint160(uint256(stateManager.read(CALLBACK_KEY))));
+        bytes32 callbackSlot = CALLBACK_SLOT;
+        address callback;
+        assembly {
+            callback := tload(callbackSlot)
+        }
         if (callback != address(0)) {
             (bool success, bytes memory result) = callback.delegatecall(data);
             if (!success) {

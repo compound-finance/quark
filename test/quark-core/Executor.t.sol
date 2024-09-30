@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/console.sol";
 
@@ -7,7 +7,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {QuarkWalletStandalone} from "quark-core/src/QuarkWalletStandalone.sol";
 
@@ -19,7 +19,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 contract ExecutorTest is Test {
     CodeJar public codeJar;
     Counter public counter;
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
 
     uint256 alicePrivateKey = 0xa11ce;
     address aliceAccount = vm.addr(alicePrivateKey);
@@ -33,18 +33,18 @@ contract ExecutorTest is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
 
         counter = new Counter();
         console.log("Counter deployed to: %s", address(counter));
 
         // alice sets her EOA to be her wallet's executor
-        aliceWallet = new QuarkWalletStandalone(aliceAccount, aliceAccount, codeJar, stateManager);
+        aliceWallet = new QuarkWalletStandalone(aliceAccount, aliceAccount, codeJar, nonceManager);
         console.log("aliceWallet at: %s", address(aliceWallet));
 
         // bob sets alice's wallet as his wallet's executor
-        bobWallet = new QuarkWalletStandalone(bobAccount, address(aliceWallet), codeJar, stateManager);
+        bobWallet = new QuarkWalletStandalone(bobAccount, address(aliceWallet), codeJar, nonceManager);
         console.log("bobWallet at: %s", address(bobWallet));
     }
 
@@ -60,17 +60,20 @@ contract ExecutorTest is Test {
 
         vm.startPrank(aliceAccount);
 
+        bytes32 nonce0 = new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWallet);
+        bytes32 nonce1 = new QuarkOperationHelper().semiRandomNonce(nonceManager, bobWallet);
+
         // gas: meter execute
         vm.resumeGasMetering();
 
         // execute counter.increment(5) as bob from alice's wallet (that is, from bob's wallet's executor)
         aliceWallet.executeScript(
-            stateManager.nextNonce(address(aliceWallet)),
+            nonce0,
             executeOnBehalfAddress,
             abi.encodeWithSignature(
-                "run(address,uint96,address,bytes)",
+                "run(address,bytes32,address,bytes)",
                 address(bobWallet),
-                stateManager.nextNonce(address(bobWallet)),
+                nonce1,
                 address(ethcallAddress),
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 5), 0
@@ -95,9 +98,9 @@ contract ExecutorTest is Test {
             aliceWallet,
             executeOnBehalf,
             abi.encodeWithSignature(
-                "run(address,uint96,address,bytes)",
+                "run(address,bytes32,address,bytes)",
                 address(bobWallet),
-                stateManager.nextNonce(address(bobWallet)),
+                new QuarkOperationHelper().semiRandomNonce(nonceManager, bobWallet),
                 address(ethcallAddress),
                 abi.encodeWithSignature(
                     "run(address,bytes,uint256)", address(counter), abi.encodeWithSignature("increment(uint256)", 3), 0

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -10,7 +10,7 @@ import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 
@@ -50,7 +50,7 @@ contract UniswapFlashSwapExactOutTest is Test {
             vm.envString("MAINNET_RPC_URL"),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkNonceManager())));
         ethcallAddress = QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(ethcall);
         multicallAddress = QuarkWallet(payable(factory.walletImplementation())).codeJar().saveCode(multicall);
         uniswapFlashSwapExactOutAddress =
@@ -209,7 +209,7 @@ contract UniswapFlashSwapExactOutTest is Test {
 
         // gas: meter execute
         vm.resumeGasMetering();
-        // Reverts when calling `allowCallback()`, which tries to get the `stateManager` from self
+        // Reverts when calling `allowCallback()`, which tries to get the `nonceManager` from self
         vm.expectRevert();
         UniswapFlashSwapExactOut(uniswapFlashSwapExactOutAddress).run(payload);
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "quark-core/src/QuarkWallet.sol";
@@ -55,6 +55,7 @@ contract SignatureHelper is Test {
             abi.encode(
                 QuarkWalletMetadata.QUARK_OPERATION_TYPEHASH,
                 op.nonce,
+                op.isReplayable,
                 op.scriptAddress,
                 keccak256(encodedArray),
                 keccak256(op.scriptCalldata),

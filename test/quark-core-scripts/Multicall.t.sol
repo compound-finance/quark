@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -8,7 +8,7 @@ import "forge-std/StdUtils.sol";
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 
@@ -56,7 +56,7 @@ contract MulticallTest is Test {
             vm.envString("MAINNET_RPC_URL"),
             18429607 // 2023-10-25 13:24:00 PST
         );
-        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkStateManager())));
+        factory = new QuarkWalletProxyFactory(address(new QuarkWallet(new CodeJar(), new QuarkNonceManager())));
         counter = new Counter();
         counter.setNumber(0);
 
@@ -389,8 +389,10 @@ contract MulticallTest is Test {
         // 1. transfer 0.5 WETH from wallet A to wallet B
         wallets[0] = address(walletA);
         walletCalls[0] = abi.encodeWithSignature(
-            "executeScript(uint96,address,bytes,bytes[])",
-            QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(address(walletA)),
+            "executeScript(bytes32,address,bytes,bytes[])",
+            new QuarkOperationHelper().semiRandomNonce(
+                QuarkWallet(payable(factory.walletImplementation())).nonceManager(), walletA
+            ),
             ethcallAddress,
             abi.encodeWithSelector(
                 Ethcall.run.selector,
@@ -402,11 +404,12 @@ contract MulticallTest is Test {
         );
 
         // 2. approve Comet cUSDCv3 to receive 0.5 WETH from wallet B
-        uint96 walletBNextNonce =
-            QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(address(walletB));
+        bytes32 walletBNextNonce = new QuarkOperationHelper().semiRandomNonce(
+            QuarkWallet(payable(factory.walletImplementation())).nonceManager(), walletB
+        );
         wallets[1] = address(walletB);
         walletCalls[1] = abi.encodeWithSignature(
-            "executeScript(uint96,address,bytes,bytes[])",
+            "executeScript(bytes32,address,bytes,bytes[])",
             walletBNextNonce,
             ethcallAddress,
             abi.encodeWithSelector(
@@ -421,8 +424,8 @@ contract MulticallTest is Test {
         // 3. supply 0.5 WETH from wallet B to Comet cUSDCv3
         wallets[2] = address(walletB);
         walletCalls[2] = abi.encodeWithSignature(
-            "executeScript(uint96,address,bytes,bytes[])",
-            walletBNextNonce + 1,
+            "executeScript(bytes32,address,bytes,bytes[])",
+            bytes32(uint256(walletBNextNonce) + 1),
             ethcallAddress,
             abi.encodeWithSelector(
                 Ethcall.run.selector,
@@ -491,7 +494,10 @@ contract MulticallTest is Test {
         deal(WETH, address(wallet), 100 ether);
 
         address subWallet1 = factory.walletAddressForSalt(alice, address(wallet), bytes32("1"));
-        uint96 nonce = QuarkWallet(payable(factory.walletImplementation())).stateManager().nextNonce(subWallet1);
+        bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(
+            QuarkWallet(payable(factory.walletImplementation())).nonceManager(), QuarkWallet(payable(subWallet1))
+        );
+
         // Steps: Wallet#1: Supply WETH to Comet -> Borrow USDC from Comet(USDC) to subwallet -> Create subwallet
         // -> Swap USDC to WETH on Uniswap -> Supply WETH to Comet(WETH)
         address[] memory callContracts = new address[](5);
@@ -546,7 +552,7 @@ contract MulticallTest is Test {
             abi.encodeCall(
                 QuarkWallet.executeScript,
                 (
-                    nonce + 1,
+                    new QuarkOperationHelper().incrementNonce(nonce),
                     legendCometSupplyScriptAddress,
                     abi.encodeCall(CometSupplyActions.supply, (cWETHv3, WETH, 2 ether)),
                     new bytes[](0)

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 
 /**
@@ -23,10 +23,10 @@ contract QuarkWalletStandalone is QuarkWallet, IHasSignerExecutor {
      * @param signer_ The address that is allowed to sign QuarkOperations for this wallet
      * @param executor_ The address that is allowed to directly execute Quark scripts for this wallet
      * @param codeJar_ The CodeJar contract used to deploy scripts
-     * @param stateManager_ The QuarkStateManager contract used to write/read nonces and storage for this wallet
+     * @param nonceManager_ The QuarkNonceManager contract used to write/read nonces for this wallet
      */
-    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkStateManager stateManager_)
-        QuarkWallet(codeJar_, stateManager_)
+    constructor(address signer_, address executor_, CodeJar codeJar_, QuarkNonceManager nonceManager_)
+        QuarkWallet(codeJar_, nonceManager_)
     {
         signer = signer_;
         executor = executor_;

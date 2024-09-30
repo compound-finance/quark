@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import {CodeJar} from "codejar/src/CodeJar.sol";
 
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 
 import {QuarkMinimalProxy} from "quark-proxy/src/QuarkMinimalProxy.sol";
@@ -26,7 +26,7 @@ contract ReplayableTransactionsTest is Test {
     event ClearNonce(address indexed wallet, uint96 nonce);
 
     CodeJar public codeJar;
-    QuarkStateManager public stateManager;
+    QuarkNonceManager public nonceManager;
     QuarkWallet public walletImplementation;
 
     uint256 alicePrivateKey = 0x8675309;
@@ -52,10 +52,10 @@ contract ReplayableTransactionsTest is Test {
         codeJar = new CodeJar();
         console.log("CodeJar deployed to: %s", address(codeJar));
 
-        stateManager = new QuarkStateManager();
-        console.log("QuarkStateManager deployed to: %s", address(stateManager));
+        nonceManager = new QuarkNonceManager();
+        console.log("QuarkNonceManager deployed to: %s", address(nonceManager));
 
-        walletImplementation = new QuarkWallet(codeJar, stateManager);
+        walletImplementation = new QuarkWallet(codeJar, nonceManager);
         console.log("QuarkWallet implementation: %s", address(walletImplementation));
 
         aliceWallet =
@@ -128,11 +128,13 @@ contract ReplayableTransactionsTest is Test {
         uint216 totalAmountToPurchase = 20 ether;
         RecurringPurchase.PurchaseConfig memory purchaseConfig =
             createPurchaseConfig(purchaseInterval, timesToPurchase, totalAmountToPurchase);
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+        (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
+            .newReplayableOpWithCalldata(
             aliceWallet,
             recurringPurchase,
             abi.encodeWithSelector(RecurringPurchase.purchase.selector, purchaseConfig),
-            ScriptType.ScriptAddress
+            ScriptType.ScriptAddress,
+            1
         );
         op.expiry = purchaseConfig.swapParams.deadline;
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -148,11 +150,11 @@ contract ReplayableTransactionsTest is Test {
 
         // 2a. Cannot buy again unless time interval has passed
         vm.expectRevert(RecurringPurchase.PurchaseConditionNotMet.selector);
-        aliceWallet.executeQuarkOperation(op, v1, r1, s1);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v1, r1, s1);
 
         // 2b. Execute recurring purchase a second time after warping 1 day
         vm.warp(block.timestamp + purchaseInterval);
-        aliceWallet.executeQuarkOperation(op, v1, r1, s1);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v1, r1, s1);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 20 ether);
     }
@@ -167,11 +169,13 @@ contract ReplayableTransactionsTest is Test {
         uint216 totalAmountToPurchase = 20 ether;
         RecurringPurchase.PurchaseConfig memory purchaseConfig =
             createPurchaseConfig(purchaseInterval, timesToPurchase, totalAmountToPurchase);
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+        (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
+            .newReplayableOpWithCalldata(
             aliceWallet,
             recurringPurchase,
             abi.encodeWithSelector(RecurringPurchase.purchase.selector, purchaseConfig),
-            ScriptType.ScriptAddress
+            ScriptType.ScriptAddress,
+            2
         );
         op.expiry = purchaseConfig.swapParams.deadline;
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -179,9 +183,10 @@ contract ReplayableTransactionsTest is Test {
         QuarkWallet.QuarkOperation memory cancelOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             recurringPurchase,
-            abi.encodeWithSelector(RecurringPurchase.cancel.selector),
+            abi.encodeWithSelector(RecurringPurchase.nop.selector),
             ScriptType.ScriptAddress
         );
+        cancelOp.nonce = op.nonce;
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, cancelOp);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 0 ether);
@@ -194,12 +199,23 @@ contract ReplayableTransactionsTest is Test {
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 10 ether);
 
         // 2. Cancel replayable transaction
-        aliceWallet.executeQuarkOperation(cancelOp, v2, r2, s2);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(cancelOp, submissionTokens[1], v2, r2, s2);
 
         // 3. Replayable transaction can no longer be executed
         vm.warp(block.timestamp + purchaseInterval);
-        vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
-        aliceWallet.executeQuarkOperation(op, v1, r1, s1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[1]
+            )
+        );
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v1, r1, s1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                QuarkNonceManager.NonReplayableNonce.selector, address(aliceWallet), op.nonce, submissionTokens[2]
+            )
+        );
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[2], v1, r1, s1);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 10 ether);
     }
@@ -211,6 +227,7 @@ contract ReplayableTransactionsTest is Test {
         deal(USDC, address(aliceWallet), 100_000e6);
         uint40 purchaseInterval = 86_400; // 1 day interval
         QuarkWallet.QuarkOperation memory op1;
+        bytes32[] memory submissionTokens;
         QuarkWallet.QuarkOperation memory op2;
         QuarkWallet.QuarkOperation memory cancelOp;
         // Local scope to avoid stack too deep
@@ -221,11 +238,12 @@ contract ReplayableTransactionsTest is Test {
             // Two purchase configs using the same nonce: one to purchase 10 ETH and the other to purchase 5 ETH
             RecurringPurchase.PurchaseConfig memory purchaseConfig1 =
                 createPurchaseConfig(purchaseInterval, timesToPurchase, totalAmountToPurchase1);
-            op1 = new QuarkOperationHelper().newBasicOpWithCalldata(
+            (op1, submissionTokens) = new QuarkOperationHelper().newReplayableOpWithCalldata(
                 aliceWallet,
                 recurringPurchase,
                 abi.encodeWithSelector(RecurringPurchase.purchase.selector, purchaseConfig1),
-                ScriptType.ScriptAddress
+                ScriptType.ScriptAddress,
+                5
             );
             op1.expiry = purchaseConfig1.swapParams.deadline;
             RecurringPurchase.PurchaseConfig memory purchaseConfig2 =
@@ -237,13 +255,16 @@ contract ReplayableTransactionsTest is Test {
                 ScriptType.ScriptAddress
             );
             op2.expiry = purchaseConfig2.swapParams.deadline;
+            op2.nonce = op1.nonce;
+            op2.isReplayable = true;
             cancelOp = new QuarkOperationHelper().newBasicOpWithCalldata(
                 aliceWallet,
                 recurringPurchase,
-                abi.encodeWithSelector(RecurringPurchase.cancel.selector),
+                abi.encodeWithSelector(RecurringPurchase.nop.selector),
                 ScriptType.ScriptAddress
             );
             cancelOp.expiry = op2.expiry;
+            cancelOp.nonce = op1.nonce;
         }
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op1);
         (uint8 v2, bytes32 r2, bytes32 s2) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op2);
@@ -259,7 +280,7 @@ contract ReplayableTransactionsTest is Test {
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 10 ether);
 
         // 1b. Execute recurring purchase order #2
-        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[1], v2, r2, s2);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 15 ether);
 
@@ -267,26 +288,26 @@ contract ReplayableTransactionsTest is Test {
         vm.warp(block.timestamp + purchaseInterval);
 
         // 3a. Execute recurring purchase order #1
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op1, submissionTokens[2], v1, r1, s1);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 25 ether);
 
         // 3b. Execute recurring purchase order #2
-        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[3], v2, r2, s2);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 30 ether);
 
         // 4. Cancel replayable transaction
-        aliceWallet.executeQuarkOperation(cancelOp, v3, r3, s3);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(cancelOp, submissionTokens[4], v3, r3, s3);
 
         // 5. Warp until next purchase period
         vm.warp(block.timestamp + purchaseInterval);
 
         // 6. Both recurring purchase orders can no longer be executed
-        vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
-        aliceWallet.executeQuarkOperation(op1, v1, r1, s1);
-        vm.expectRevert(QuarkStateManager.NonceAlreadySet.selector);
-        aliceWallet.executeQuarkOperation(op2, v2, r2, s2);
+        vm.expectRevert();
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op1, submissionTokens[4], v1, r1, s1);
+        vm.expectRevert();
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op2, submissionTokens[5], v2, r2, s2);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 30 ether);
     }
@@ -301,11 +322,13 @@ contract ReplayableTransactionsTest is Test {
         uint216 totalAmountToPurchase = 20 ether;
         RecurringPurchase.PurchaseConfig memory purchaseConfig =
             createPurchaseConfig(purchaseInterval, timesToPurchase, totalAmountToPurchase);
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+        (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
+            .newReplayableOpWithCalldata(
             aliceWallet,
             recurringPurchase,
             abi.encodeWithSelector(RecurringPurchase.purchase.selector, purchaseConfig),
-            ScriptType.ScriptAddress
+            ScriptType.ScriptAddress,
+            1
         );
         op.expiry = purchaseConfig.swapParams.deadline;
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -315,13 +338,13 @@ contract ReplayableTransactionsTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         // 1. Execute recurring purchase for the first time
-        aliceWallet.executeQuarkOperation(op, v1, r1, s1);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[0], v1, r1, s1);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 10 ether);
 
         // 2. Cannot buy again unless time interval has passed
         vm.expectRevert(RecurringPurchase.PurchaseConditionNotMet.selector);
-        aliceWallet.executeQuarkOperation(op, v1, r1, s1);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v1, r1, s1);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 10 ether);
     }
@@ -336,11 +359,12 @@ contract ReplayableTransactionsTest is Test {
         uint216 totalAmountToPurchase = 10 ether;
         RecurringPurchase.PurchaseConfig memory purchaseConfig =
             createPurchaseConfig(purchaseInterval, timesToPurchase, totalAmountToPurchase);
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+        (QuarkWallet.QuarkOperation memory op,) = new QuarkOperationHelper().newReplayableOpWithCalldata(
             aliceWallet,
             recurringPurchase,
             abi.encodeWithSelector(RecurringPurchase.purchase.selector, purchaseConfig),
-            ScriptType.ScriptAddress
+            ScriptType.ScriptAddress,
+            0
         );
         op.expiry = block.timestamp - 1; // Set Quark operation expiry to always expire
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -362,11 +386,12 @@ contract ReplayableTransactionsTest is Test {
         RecurringPurchase.PurchaseConfig memory purchaseConfig =
             createPurchaseConfig(purchaseInterval, timesToPurchase, totalAmountToPurchase);
         purchaseConfig.swapParams.deadline = block.timestamp - 1; // Set Uniswap deadline to always expire
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+        (QuarkWallet.QuarkOperation memory op,) = new QuarkOperationHelper().newReplayableOpWithCalldata(
             aliceWallet,
             recurringPurchase,
             abi.encodeWithSelector(RecurringPurchase.purchase.selector, purchaseConfig),
-            ScriptType.ScriptAddress
+            ScriptType.ScriptAddress,
+            0
         );
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -387,11 +412,13 @@ contract ReplayableTransactionsTest is Test {
         RecurringPurchase.PurchaseConfig memory purchaseConfig =
             createPurchaseConfig(purchaseInterval, timesToPurchase, totalAmountToPurchase);
         purchaseConfig.totalAmountToPurchase = 10 ether; // Will only be able to purchase once
-        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+        (QuarkWallet.QuarkOperation memory op, bytes32[] memory submissionTokens) = new QuarkOperationHelper()
+            .newReplayableOpWithCalldata(
             aliceWallet,
             recurringPurchase,
             abi.encodeWithSelector(RecurringPurchase.purchase.selector, purchaseConfig),
-            ScriptType.ScriptAddress
+            ScriptType.ScriptAddress,
+            1
         );
         op.expiry = purchaseConfig.swapParams.deadline;
         (uint8 v1, bytes32 r1, bytes32 s1) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
@@ -410,7 +437,7 @@ contract ReplayableTransactionsTest is Test {
 
         // 3. Purchasing again will go over the `totalAmountToPurchase` cap
         vm.expectRevert(RecurringPurchase.PurchaseConditionNotMet.selector);
-        aliceWallet.executeQuarkOperation(op, v1, r1, s1);
+        aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v1, r1, s1);
 
         assertEq(IERC20(WETH).balanceOf(address(aliceWallet)), 10 ether);
     }

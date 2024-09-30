@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -8,7 +8,7 @@ import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkWallet} from "quark-core/src/QuarkWallet.sol";
 import {BatchExecutor} from "quark-core/src/periphery/BatchExecutor.sol";
-import {QuarkStateManager} from "quark-core/src/QuarkStateManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 
 import {QuarkWalletProxyFactory} from "quark-proxy/src/QuarkWalletProxyFactory.sol";
 import {QuarkFactory} from "quark-factory/src/QuarkFactory.sol";
@@ -49,7 +49,7 @@ contract DeployQuarkWalletFactory is Script {
 
         quarkFactory.deployQuarkContracts();
 
-        console.log("Quark State Manager Deployed:", address(quarkFactory.quarkStateManager()));
+        console.log("Quark Nonce Manager Deployed:", address(quarkFactory.quarkNonceManager()));
         console.log("Quark Wallet Implementation Deployed:", address(quarkFactory.quarkWalletImpl()));
         console.log("Quark Wallet Proxy Factory Deployed:", address(quarkFactory.quarkWalletProxyFactory()));
         console.log("Batch Executor Deployed:", address(quarkFactory.batchExecutor()));

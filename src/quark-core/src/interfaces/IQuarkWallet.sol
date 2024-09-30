@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity 0.8.23;
+pragma solidity 0.8.27;
 
 /**
  * @title Quark Wallet interface
@@ -10,7 +10,9 @@ interface IQuarkWallet {
     /// @notice The structure of a signed operation to execute in the context of this wallet
     struct QuarkOperation {
         /// @notice Nonce identifier for the operation
-        uint96 nonce;
+        bytes32 nonce;
+        /// @notice Whether this script is replayable or not.
+        bool isReplayable;
         /// @notice The address of the transaction script to run
         address scriptAddress;
         /// @notice Creation codes Quark must ensure are deployed before executing this operation
@@ -21,6 +23,7 @@ interface IQuarkWallet {
         uint256 expiry;
     }
 
+    function nonceManager() external view returns (address);
     function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
         external
         returns (bytes memory);
@@ -32,7 +35,7 @@ interface IQuarkWallet {
         bytes32 s
     ) external returns (bytes memory);
     function executeScript(
-        uint96 nonce,
+        bytes32 nonce,
         address scriptAddress,
         bytes calldata scriptCalldata,
         bytes[] calldata scriptSources
