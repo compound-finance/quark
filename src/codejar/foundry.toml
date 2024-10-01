@@ -1,9 +1,14 @@
 [profile.default]
 solc = "0.8.27"
 evm_version = "cancun"
-
 libs = [ "../../lib" ]
-
 src = "src"
 out = "out"
 test = "../../test/codejar"
+
+[profile.ir]
+via_ir = true
+optimizer = true
+optimizer_runs = 100000000
+extra_output = [ "ir" ]
+extra_output_files = [ "ir" ]

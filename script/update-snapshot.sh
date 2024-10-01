@@ -1,3 +1,3 @@
 #!/bin/bash
 
-forge snapshot --via-ir
+FOUNDRY_PROFILE=ir forge snapshot

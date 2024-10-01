@@ -1,10 +1,13 @@
 [profile.default]
 solc = "0.8.27"
 evm_version = "cancun"
-
 libs = [ "./lib" ]
+bytecode_hash = "none"
+cbor_metadata = false
 
-# output intermediate representation
 [profile.ir]
-extra_output = ["ir"]
-extra_output_files = ["ir"]
+via_ir = true
+optimizer = true
+optimizer_runs = 100000000
+extra_output = [ "ir" ]
+extra_output_files = [ "ir" ]

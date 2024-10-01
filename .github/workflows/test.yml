@@ -5,7 +5,7 @@ on:
   pull_request:
 
 env:
-  FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: ir
 
 jobs:
   check:
@@ -30,12 +30,12 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge build --via-ir --sizes
+          forge build --sizes
         id: build
 
       - name: Run Forge tests
         run: |
-          forge test --via-ir
+          forge test
         id: test
         env:
           MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}

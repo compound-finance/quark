@@ -5,7 +5,7 @@ on:
   pull_request:
 
 env:
-  FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: ir
 
 jobs:
   check:
@@ -30,7 +30,7 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge build --via-ir --sizes
+          forge build --sizes
         id: build
 
       - name: Run Forge Format
