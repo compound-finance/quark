@@ -24,7 +24,7 @@ import {QuarkOperationHelper, ScriptType} from "test/lib/QuarkOperationHelper.so
 import {CounterScript} from "test/lib/CounterScript.sol";
 import {ExecuteOnBehalf} from "test/lib/ExecuteOnBehalf.sol";
 import {CallbackFromCounter} from "test/lib/CallbackFromCounter.sol";
-import {CallbackCaller, ExploitableScript, ProtectedScript} from "test/lib/CallcodeReentrancy.sol";
+import {CallbackCaller, ExploitableScript, ProtectedScript} from "test/lib/Reentrancy.sol";
 
 import {Ethcall} from "quark-core-scripts/src/Ethcall.sol";
 
@@ -289,7 +289,10 @@ contract CallbacksTest is Test {
 
     /* ===== callback reentrancy tests ===== */
 
-    function testCallcodeReentrancyExploitWithUnprotectedScript() public {
+    function testDelegatecallReentrancyExploitWithUnprotectedScript() public {
+        // Note: The explanation below is no longer relevant because we moved away from using
+        // `callcode`. However, we are leaving the explanation as documentation for posterity.
+
         /*
          * Notably, Quark uses `callcode` instead of `delegatecall` to execute script bytecode in
          * the context of a wallet. Consequently, it is possible to construct a sort of "only-self"
@@ -323,8 +326,8 @@ contract CallbacksTest is Test {
          * recursive callbacks and exploiting the wallet.
          */
         vm.pauseGasMetering();
-        bytes memory exploitableScript = new YulHelper().getCode("CallcodeReentrancy.sol/ExploitableScript.json");
-        bytes memory callbackCaller = new YulHelper().getCode("CallcodeReentrancy.sol/CallbackCaller.json");
+        bytes memory exploitableScript = new YulHelper().getCode("Reentrancy.sol/ExploitableScript.json");
+        bytes memory callbackCaller = new YulHelper().getCode("Reentrancy.sol/CallbackCaller.json");
 
         address callbackCallerAddress = codeJar.saveCode(callbackCaller);
 
@@ -349,11 +352,11 @@ contract CallbacksTest is Test {
         assertEq(callbackCallerAddress.balance, 1000 wei);
     }
 
-    function testCallcodeReentrancyProtectionWithProtectedScript() public {
+    function testDelegatecallReentrancyProtectionWithProtectedScript() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory protectedScript = new YulHelper().getCode("CallcodeReentrancy.sol/ProtectedScript.json");
-        bytes memory callbackCaller = new YulHelper().getCode("CallcodeReentrancy.sol/CallbackCaller.json");
+        bytes memory protectedScript = new YulHelper().getCode("Reentrancy.sol/ProtectedScript.json");
+        bytes memory callbackCaller = new YulHelper().getCode("Reentrancy.sol/CallbackCaller.json");
 
         address callbackCallerAddress = codeJar.saveCode(callbackCaller);
 
@@ -401,12 +404,13 @@ contract CallbacksTest is Test {
         assertEq(callbackCallerAddress.balance, 500 wei);
     }
 
-    // This exploit is possible despite the use of `onlyWallet` guard because it uses recursive reentrancy (using delegatecalls)
-    function testCallcodeReentrancyExploitWithProtectedScript() public {
+    // Note: This used to be exploitable when the script was protected using the `onlyWallet` modifier. Now that we
+    // switched over to a standard reentrancy guard (`nonReentrant`), this script is no longer exploitable.
+    function testReentrancyGuardProtectsAgainstDoubleDipping() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
-        bytes memory exploitableScript = new YulHelper().getCode("CallcodeReentrancy.sol/ExploitableScript.json");
-        bytes memory callbackCaller = new YulHelper().getCode("CallcodeReentrancy.sol/CallbackCaller.json");
+        bytes memory exploitableScript = new YulHelper().getCode("Reentrancy.sol/ExploitableScript.json");
+        bytes memory callbackCaller = new YulHelper().getCode("Reentrancy.sol/CallbackCaller.json");
 
         address callbackCallerAddress = codeJar.saveCode(callbackCaller);
 
@@ -428,6 +432,7 @@ contract CallbacksTest is Test {
         // gas: meter execute
         vm.resumeGasMetering();
         aliceWallet.executeQuarkOperation(op, v, r, s);
-        assertEq(callbackCallerAddress.balance, 2 ether);
+        // Note: If this was exploitable, the callback caller would have 2 ether
+        assertEq(callbackCallerAddress.balance, 1 ether);
     }
 }

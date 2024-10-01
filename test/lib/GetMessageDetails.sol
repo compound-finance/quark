@@ -2,7 +2,7 @@
 pragma solidity 0.8.27;
 
 contract GetMessageDetails {
-    function getMsgSenderAndValue() external payable returns (address, uint256) {
-        return (msg.sender, msg.value);
+    function getMsgDetails() external payable returns (address, address, uint256) {
+        return (msg.sender, address(this), msg.value);
     }
 }

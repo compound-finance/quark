@@ -106,7 +106,7 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
         bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptSource
+            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
@@ -114,8 +114,9 @@ contract QuarkWalletTest is Test {
         vm.resumeGasMetering();
         bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
 
-        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
-        assertEq(msgSender, address(aliceWallet));
+        (address msgSender, address addressThis, uint256 msgValue) = abi.decode(result, (address, address, uint256));
+        assertEq(msgSender, address(this), "Message sender should be address(this)");
+        assertEq(addressThis, address(aliceWallet), "address(this) should be Alice's wallet");
         assertEq(msgValue, 0);
     }
 
@@ -126,7 +127,7 @@ contract QuarkWalletTest is Test {
         bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWalletExecutable);
         address scriptAddress = codeJar.saveCode(getMessageDetails);
-        bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
+        bytes memory call = abi.encodeWithSignature("getMsgDetails()");
 
         vm.startPrank(aliceAccount);
 
@@ -136,8 +137,9 @@ contract QuarkWalletTest is Test {
 
         vm.stopPrank();
 
-        (address msgSender, uint256 msgValue) = abi.decode(result, (address, uint256));
-        assertEq(msgSender, address(aliceWalletExecutable));
+        (address msgSender, address addressThis, uint256 msgValue) = abi.decode(result, (address, address, uint256));
+        assertEq(msgSender, aliceAccount, "Message sender should be Alice's account");
+        assertEq(addressThis, address(aliceWalletExecutable), "address(this) should be Alice's wallet");
         assertEq(msgValue, 0);
     }
 
@@ -148,12 +150,12 @@ contract QuarkWalletTest is Test {
         vm.pauseGasMetering();
         bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         QuarkWallet.QuarkOperation memory opWithScriptAddress = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptAddress
+            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptAddress
         );
         (uint8 v, bytes32 r, bytes32 s) =
             new SignatureHelper().signOp(alicePrivateKey, aliceWallet, opWithScriptAddress);
         QuarkWallet.QuarkOperation memory opWithScriptSource = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptSource
+            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptSource
         );
         opWithScriptSource.nonce = new QuarkOperationHelper().incrementNonce(opWithScriptSource.nonce);
         (uint8 v2, bytes32 r2, bytes32 s2) =
@@ -191,11 +193,7 @@ contract QuarkWalletTest is Test {
         bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         (QuarkWallet.QuarkOperation memory opWithScriptAddress, bytes32[] memory submissionTokens) = new QuarkOperationHelper(
         ).newReplayableOpWithCalldata(
-            aliceWallet,
-            getMessageDetails,
-            abi.encodeWithSignature("getMsgSenderAndValue()"),
-            ScriptType.ScriptAddress,
-            2
+            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptAddress, 2
         );
         address scriptAddress = opWithScriptAddress.scriptAddress;
         (uint8 v, bytes32 r, bytes32 s) =
@@ -236,7 +234,7 @@ contract QuarkWalletTest is Test {
         bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         bytes32 nonce = new QuarkOperationHelper().semiRandomNonce(nonceManager, aliceWalletExecutable);
         address scriptAddress = codeJar.saveCode(getMessageDetails);
-        bytes memory call = abi.encodeWithSignature("getMsgSenderAndValue()");
+        bytes memory call = abi.encodeWithSignature("getMsgDetails()");
 
         vm.startPrank(aliceAccount);
 
@@ -291,7 +289,7 @@ contract QuarkWalletTest is Test {
 
         bytes memory getMessageDetails = new YulHelper().getCode("GetMessageDetails.sol/GetMessageDetails.json");
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
-            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgSenderAndValue()"), ScriptType.ScriptSource
+            aliceWallet, getMessageDetails, abi.encodeWithSignature("getMsgDetails()"), ScriptType.ScriptSource
         );
         (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 

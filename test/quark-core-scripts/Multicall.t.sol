@@ -81,7 +81,7 @@ contract MulticallTest is Test {
         multicallContract.run(callContracts, callDatas);
     }
 
-    function testCallcodeToMulticallSucceedsWhenUninitialized() public {
+    function testDelegatecallToMulticallSucceedsWhenInitialized() public {
         // gas: do not meter set-up
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));

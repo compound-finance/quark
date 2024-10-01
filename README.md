@@ -2,7 +2,7 @@
 
 ## Overview
 
-Quark is an Ethereum smart contract wallet system, designed to run custom code — termed Quark Operations — with each transaction. This functionality is achieved through Quark wallet's capability to execute code from a separate contract via a `callcode` or `delegatecall` operation. The system leverages _Code Jar_, using `CREATE2` to deploy EVM bytecode for efficient code re-use. Additionally, the _Quark Nonce Manager_ contract plays a pivotal role in managing nonces for each wallet operation. The system also includes a wallet factory for deterministic wallet creation and a suite of Core Scripts — audited, versatile contracts that form the foundation for complex Quark Operations such as multicalls and flash-loans.
+Quark is an Ethereum smart contract wallet system, designed to run custom code — termed Quark Operations — with each transaction. This functionality is achieved through Quark wallet's capability to execute code from a separate contract via a `delegatecall` operation. The system leverages _Code Jar_, using `CREATE2` to deploy EVM bytecode for efficient code re-use. Additionally, the _Quark Nonce Manager_ contract plays a pivotal role in managing nonces for each wallet operation. The system also includes a wallet factory for deterministic wallet creation and a suite of Core Scripts — audited, versatile contracts that form the foundation for complex Quark Operations such as multicalls and flash-loans.
 
 ## Contracts
 
@@ -49,7 +49,7 @@ flowchart TB
     factory -- 1. createAndExecute --> wallet
     wallet -- 2. saveCode --> jar
     jar -- 3. CREATE2  --> script
-    wallet -- 4. Executes script\nusing callcode --> script
+    wallet -- 4. Executes script\nusing delegatecall --> script
 ```
 
 ## Quark Wallet Features
