@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.27;
 
-import {IQuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
 import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 
 /**

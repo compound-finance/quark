@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.27;
 
-import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
-
 library QuarkNonceManagerMetadata {
     /// @notice Represents the unclaimed bytes32 value.
     bytes32 internal constant FREE = bytes32(uint256(0));
