@@ -158,6 +158,7 @@ abstract contract QuarkScript {
     /**
      * @notice Returns a key isolated to the active nonce of a script. This provides cooperative isolation of storage between scripts.
      * @param key The key to create an nonce-isolated version of
+     * @return The nonce-isolated version of the key
      */
     function getNonceIsolatedKey(bytes32 key) internal view returns (bytes32) {
         bytes32 nonce = getActiveNonce();
@@ -188,7 +189,6 @@ abstract contract QuarkScript {
     /**
      * @notice Returns the active replay count of this script. Thus, the first submission should return 0,
      *         the second submission 1, and so on.
-     * @param key The key to create an nonce-isolated version of
      */
     function getActiveReplayCount() internal view returns (uint256) {
         bytes32 nonce = getActiveNonce();
