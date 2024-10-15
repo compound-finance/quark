@@ -152,6 +152,22 @@ contract QuarkNonceManagerTest is Test {
         nonceManager.submit(nonce, false, nonce);
     }
 
+    function testNonReplayableEmitsEvent() public {
+        vm.expectEmit(true, true, true, true);
+        emit QuarkNonceManager.NonceSubmitted(address(this), NONCE_ONE, EXHAUSTED_TOKEN);
+        nonceManager.submit(NONCE_ONE, false, NONCE_ONE);
+
+        assertEq(nonceManager.submissions(address(this), NONCE_ONE), EXHAUSTED_TOKEN);
+    }
+
+    function testReplayableEmitsEvent() public {
+        vm.expectEmit(true, true, true, true);
+        emit QuarkNonceManager.NonceSubmitted(address(this), NONCE_ONE, NONCE_ONE);
+        nonceManager.submit(NONCE_ONE, true, NONCE_ONE);
+
+        assertEq(nonceManager.submissions(address(this), NONCE_ONE), NONCE_ONE);
+    }
+
     function testIsSet() public {
         // nonce is unset by default
         assertEq(nonceManager.submissions(address(this), NONCE_ONE), FREE_TOKEN);

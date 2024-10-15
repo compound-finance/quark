@@ -19,7 +19,7 @@ contract QuarkNonceManager {
     error InvalidNonce(address wallet, bytes32 nonce);
     error InvalidSubmissionToken(address wallet, bytes32 nonce, bytes32 submissionToken);
 
-    event NonceSubmitted(address wallet, bytes32 nonce, bytes32 submissionToken);
+    event NonceSubmitted(address indexed wallet, bytes32 nonce, bytes32 submissionToken);
 
     /// @notice Represents the unclaimed bytes32 value.
     bytes32 public constant FREE = QuarkNonceManagerMetadata.FREE;
@@ -70,7 +70,8 @@ contract QuarkNonceManager {
         }
 
         // Note: Even with a valid submission token, we always set non-replayables to exhausted (e.g. for cancellations)
-        submissions[msg.sender][nonce] = isReplayable ? submissionToken : EXHAUSTED;
+        submissionToken = isReplayable ? submissionToken : EXHAUSTED;
+        submissions[msg.sender][nonce] = submissionToken;
         emit NonceSubmitted(msg.sender, nonce, submissionToken);
     }
 }
