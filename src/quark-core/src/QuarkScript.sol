@@ -14,11 +14,11 @@ abstract contract QuarkScript {
     error InvalidActiveNonce();
     error InvalidActiveSubmissionToken();
 
-    /// @notice Storage location for the re-entrancy guard
+    /// @notice Transient storage location for the re-entrancy guard
     bytes32 internal constant REENTRANCY_FLAG_SLOT =
         bytes32(uint256(keccak256("quark.scripts.reentrancy.guard.v1")) - 1);
 
-    /// @notice A safer, but gassier reentrancy guard that writes the flag to the QuarkNonceManager
+    /// @notice Reentrancy guard that writes the flag to the wallet's transient storage
     modifier nonReentrant() {
         bytes32 slot = REENTRANCY_FLAG_SLOT;
         bytes32 flag;
@@ -60,18 +60,22 @@ abstract contract QuarkScript {
         _;
     }
 
+    /// @notice Returns the `signer` of the wallet
     function signer() internal view returns (address) {
         return IHasSignerExecutor(address(this)).signer();
     }
 
+    /// @notice Returns the `executor` of the wallet
     function executor() internal view returns (address) {
         return IHasSignerExecutor(address(this)).executor();
     }
 
+    /// @notice Returns the `NonceManager` of the wallet
     function nonceManager() internal view returns (QuarkNonceManager) {
         return QuarkNonceManager(IQuarkWallet(address(this)).nonceManager());
     }
 
+    /// @notice Enables callbacks to the wallet
     function allowCallback() internal {
         bytes32 callbackSlot = QuarkWalletMetadata.CALLBACK_SLOT;
         bytes32 activeScriptSlot = QuarkWalletMetadata.ACTIVE_SCRIPT_SLOT;
@@ -81,6 +85,7 @@ abstract contract QuarkScript {
         }
     }
 
+    /// @notice Disables callbacks to the wallet
     function clearCallback() internal {
         bytes32 callbackSlot = QuarkWalletMetadata.CALLBACK_SLOT;
         assembly {
@@ -88,14 +93,29 @@ abstract contract QuarkScript {
         }
     }
 
+    /**
+     * @notice Reads a uint256 from the wallet's storage
+     * @param key The key to read the value from
+     * @return The uint256 stored at the key
+     */
     function readU256(string memory key) internal view returns (uint256) {
         return uint256(read(key));
     }
 
+    /**
+     * @notice Reads a bytes32 from the wallet's storage
+     * @param key The key to read the value from
+     * @return The bytes32 stored at the key
+     */
     function read(string memory key) internal view returns (bytes32) {
         return read(keccak256(bytes(key)));
     }
 
+    /**
+     * @notice Reads a bytes32 from the wallet's storage
+     * @param key The key to read the value from
+     * @return The bytes32 stored at the key
+     */
     function read(bytes32 key) internal view returns (bytes32) {
         bytes32 value;
         bytes32 isolatedKey = getNonceIsolatedKey(key);
@@ -105,14 +125,29 @@ abstract contract QuarkScript {
         return value;
     }
 
+    /**
+     * @notice Writes a uint256 to the wallet's storage
+     * @param key The key to write the value to
+     * @param value The value to write to storage
+     */
     function writeU256(string memory key, uint256 value) internal {
         return write(key, bytes32(value));
     }
 
+    /**
+     * @notice Writes a bytes32 to the wallet's storage
+     * @param key The key to write the value to
+     * @param value The value to write to storage
+     */
     function write(string memory key, bytes32 value) internal {
         return write(keccak256(bytes(key)), value);
     }
 
+    /**
+     * @notice Writes a bytes32 to the wallet's storage
+     * @param key The key to write the value to
+     * @param value The value to write to storage
+     */
     function write(bytes32 key, bytes32 value) internal {
         bytes32 isolatedKey = getNonceIsolatedKey(key);
         assembly {
@@ -120,14 +155,17 @@ abstract contract QuarkScript {
         }
     }
 
-    // Returns a key isolated to the active nonce of a script
-    // This provide cooperative isolation of storage between scripts.
+    /**
+     * @notice Returns a key isolated to the active nonce of a script. This provides cooperative isolation of storage between scripts.
+     * @param key The key to create an nonce-isolated version of
+     * @return The nonce-isolated version of the key
+     */
     function getNonceIsolatedKey(bytes32 key) internal view returns (bytes32) {
         bytes32 nonce = getActiveNonce();
         return keccak256(abi.encodePacked(nonce, key));
     }
 
-    // Note: this may not be accurate after any nested calls from a script
+    /// @notice Returns the active nonce of the wallet
     function getActiveNonce() internal view returns (bytes32) {
         bytes32 activeNonceSlot = QuarkWalletMetadata.ACTIVE_NONCE_SLOT;
         bytes32 value;
@@ -138,7 +176,7 @@ abstract contract QuarkScript {
         return value;
     }
 
-    // Note: this may not be accurate after any nested calls from a script
+    /// @notice Returns the active submission token of the wallet
     function getActiveSubmissionToken() internal view returns (bytes32) {
         bytes32 activeSubmissionTokenSlot = QuarkWalletMetadata.ACTIVE_SUBMISSION_TOKEN_SLOT;
         bytes32 value;
@@ -148,9 +186,10 @@ abstract contract QuarkScript {
         return value;
     }
 
-    // Note: this may not be accurate after any nested calls from a script
-    // Returns the active replay count of this script. Thus, the first submission should return 0,
-    // the second submission 1, and so on. This must be called before the script makes any external calls.
+    /**
+     * @notice Returns the active replay count of this script. Thus, the first submission should return 0,
+     *         the second submission 1, and so on.
+     */
     function getActiveReplayCount() internal view returns (uint256) {
         bytes32 nonce = getActiveNonce();
         bytes32 submissionToken = getActiveSubmissionToken();
