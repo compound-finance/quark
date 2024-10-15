@@ -74,7 +74,12 @@ abstract contract QuarkScript {
         return QuarkNonceManager(IQuarkWallet(address(this)).nonceManager());
     }
 
-    /// @notice Enables callbacks to the wallet
+    /**
+     * @notice Enables callbacks to the wallet
+     * @dev Scripts should remember to disallow callbacks at the start of the callback function,
+     *      otherwise external contracts in the same Quark operation can continue to call into
+     *      the wallet.
+     */
     function allowCallback() internal {
         bytes32 callbackSlot = QuarkWalletMetadata.CALLBACK_SLOT;
         bytes32 activeScriptSlot = QuarkWalletMetadata.ACTIVE_SCRIPT_SLOT;
@@ -85,7 +90,7 @@ abstract contract QuarkScript {
     }
 
     /// @notice Disables callbacks to the wallet
-    function clearCallback() internal {
+    function disallowCallback() internal {
         bytes32 callbackSlot = QuarkWalletMetadata.CALLBACK_SLOT;
         assembly {
             tstore(callbackSlot, 0)

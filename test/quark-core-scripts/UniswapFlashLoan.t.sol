@@ -187,6 +187,53 @@ contract UniswapFlashLoanTest is Test {
         assertEq(IComet(comet).borrowBalanceOf(address(wallet)), 1000e6);
     }
 
+    function testRevertsForSecondCallback() public {
+        vm.pauseGasMetering();
+        QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
+
+        address[] memory callContracts = new address[](1);
+        bytes[] memory callDatas = new bytes[](1);
+
+        // Call into the wallet and try to execute the fallback function again using the callback mechanism
+        callContracts[0] = address(wallet);
+        callDatas[0] = abi.encodeWithSelector(
+            Ethcall.run.selector,
+            address(wallet),
+            abi.encodeCall(UniswapFlashLoan.uniswapV3FlashCallback, (100, 500, bytes(""))),
+            0
+        );
+
+        QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
+            wallet,
+            uniswapFlashLoan,
+            abi.encodeWithSelector(
+                UniswapFlashLoan.run.selector,
+                UniswapFlashLoan.UniswapFlashLoanPayload({
+                    token0: USDC,
+                    token1: DAI,
+                    fee: 100,
+                    amount0: 1000e6,
+                    amount1: 0,
+                    callContract: multicallAddress,
+                    callData: abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas)
+                })
+            ),
+            ScriptType.ScriptAddress
+        );
+        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+
+        vm.resumeGasMetering();
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Multicall.MulticallError.selector,
+                0,
+                callContracts[0],
+                abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
+            )
+        );
+        wallet.executeQuarkOperation(op, v, r, s);
+    }
+
     function testRevertsForInvalidCaller() public {
         vm.pauseGasMetering();
         QuarkWallet wallet = QuarkWallet(factory.create(alice, address(0)));
