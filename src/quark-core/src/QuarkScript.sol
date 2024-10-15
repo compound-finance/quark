@@ -178,10 +178,6 @@ abstract contract QuarkScript {
         bytes32 submissionToken = getActiveSubmissionToken();
         uint256 n;
 
-        if (submissionToken == QuarkNonceManagerMetadata.EXHAUSTED) {
-            return 0;
-        }
-
         for (n = 0; submissionToken != nonce; n++) {
             submissionToken = keccak256(abi.encodePacked(submissionToken));
         }
