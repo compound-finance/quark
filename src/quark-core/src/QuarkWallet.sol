@@ -8,7 +8,6 @@ import {CodeJar} from "codejar/src/CodeJar.sol";
 
 import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {IHasSignerExecutor} from "quark-core/src/interfaces/IHasSignerExecutor.sol";
-import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
 
 /**
  * @title Quark Wallet Metadata

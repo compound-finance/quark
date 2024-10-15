@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity 0.8.27;
 
-import {QuarkWallet, QuarkWalletMetadata, IHasSignerExecutor, IQuarkWallet} from "quark-core/src/QuarkWallet.sol";
+import {QuarkWalletMetadata, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
 import {QuarkNonceManager, QuarkNonceManagerMetadata} from "quark-core/src/QuarkNonceManager.sol";
+import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
 
 /**
  * @title Quark Script
@@ -11,8 +12,6 @@ import {QuarkNonceManager, QuarkNonceManagerMetadata} from "quark-core/src/Quark
  */
 abstract contract QuarkScript {
     error ReentrantCall();
-    error InvalidActiveNonce();
-    error InvalidActiveSubmissionToken();
 
     /// @notice Transient storage location for the re-entrancy guard
     bytes32 internal constant REENTRANCY_FLAG_SLOT =
