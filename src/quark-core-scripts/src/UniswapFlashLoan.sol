@@ -71,6 +71,7 @@ contract UniswapFlashLoan is IUniswapV3FlashCallback, QuarkScript {
      */
     function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {
         disallowCallback();
+
         FlashLoanCallbackPayload memory input = abi.decode(data, (FlashLoanCallbackPayload));
         IUniswapV3Pool pool =
             IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), input.poolKey));
