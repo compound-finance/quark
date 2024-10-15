@@ -41,16 +41,16 @@ library QuarkWalletMetadata {
     bytes32 internal constant MULTI_QUARK_OPERATION_DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version)");
 
-    /// @notice Well-known storage slot for the currently executing script's callback address (if any)
+    /// @notice Well-known transient storage slot for the currently executing script's callback address (if any)
     bytes32 internal constant CALLBACK_SLOT = bytes32(uint256(keccak256("quark.v1.callback")) - 1);
 
-    /// @notice Well-known storage slot for the currently executing script's address (if any)
+    /// @notice Well-known transient storage slot for the currently executing script's address (if any)
     bytes32 internal constant ACTIVE_SCRIPT_SLOT = bytes32(uint256(keccak256("quark.v1.active.script")) - 1);
 
-    /// @notice Well-known storage slot for the nonce of the script that's currently executing.
+    /// @notice Well-known transient storage slot for the nonce of the script that's currently executing.
     bytes32 internal constant ACTIVE_NONCE_SLOT = bytes32(uint256(keccak256("quark.v1.active.nonce")) - 1);
 
-    /// @notice Well-known storage slot for the submission token of the script that's currently executing.
+    /// @notice Well-known transient storage slot for the submission token of the script that's currently executing.
     bytes32 internal constant ACTIVE_SUBMISSION_TOKEN_SLOT =
         bytes32(uint256(keccak256("quark.v1.active.submissionToken")) - 1);
 }
@@ -126,16 +126,16 @@ contract QuarkWallet is IERC1271 {
         )
     );
 
-    /// @notice Well-known storage slot for the currently executing script's callback address (if any)
+    /// @notice Well-known transient storage slot for the currently executing script's callback address (if any)
     bytes32 public constant CALLBACK_SLOT = QuarkWalletMetadata.CALLBACK_SLOT;
 
-    /// @notice Well-known storage slot for the currently executing script's address (if any)
+    /// @notice Well-known transient storage slot for the currently executing script's address (if any)
     bytes32 public constant ACTIVE_SCRIPT_SLOT = QuarkWalletMetadata.ACTIVE_SCRIPT_SLOT;
 
-    /// @notice Well-known storage slot for the nonce of the script that's currently executing.
+    /// @notice Well-known transient storage slot for the nonce of the script that's currently executing.
     bytes32 public constant ACTIVE_NONCE_SLOT = QuarkWalletMetadata.ACTIVE_NONCE_SLOT;
 
-    /// @notice Well-known storage slot for the submission token of the script that's currently executing.
+    /// @notice Well-known transient storage slot for the submission token of the script that's currently executing.
     bytes32 public constant ACTIVE_SUBMISSION_TOKEN_SLOT = QuarkWalletMetadata.ACTIVE_SUBMISSION_TOKEN_SLOT;
 
     /// @notice The magic value to return for valid ERC1271 signature
@@ -333,7 +333,7 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @dev Returns the domain separator for this Quark wallet
+     * @notice Returns the domain separator for this Quark wallet
      * @return Domain separator
      */
     function getDomainSeparator() internal view returns (bytes32) {
@@ -343,7 +343,7 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @dev Returns the EIP-712 digest for a QuarkOperation
+     * @notice Returns the EIP-712 digest for a QuarkOperation
      * @param op A QuarkOperation struct
      * @return EIP-712 digest
      */
@@ -368,7 +368,7 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @dev Returns the EIP-712 digest for a MultiQuarkOperation
+     * @notice Returns the EIP-712 digest for a MultiQuarkOperation
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
      * @return EIP-712 digest
      */
@@ -379,7 +379,7 @@ contract QuarkWallet is IERC1271 {
     }
 
     /**
-     * @dev Returns the EIP-712 digest of a QuarkMessage that can be signed by `signer`
+     * @notice Returns the EIP-712 digest of a QuarkMessage that can be signed by `signer`
      * @param message Message that should be hashed
      * @return Message hash
      */

@@ -43,9 +43,9 @@ contract QuarkNonceManager {
 
     /**
      * @notice Attempts a first or subsequent submission of a given nonce from a wallet.
-     * @param nonce The nonce of the chain to submit.
+     * @param nonce The nonce of the Quark operation to submit. This value is the root of the nonce-chain that the submissionToken is a part of.
      * @param isReplayable True only if the operation has been marked as replayable. Otherwise, submission token must be the EXHAUSTED value.
-     * @param submissionToken The token for this submission. For single-use operations, set `submissionToken` to `uint256(-1)`. For first-use replayable operations, set `submissionToken` = `nonce`. Otherwise, the next submission token from the nonce-chain.
+     * @param submissionToken The token for this submission. For single-use operations and first-use replayable operations, set `submissionToken` = `nonce`. Otherwise, the next submission token from the nonce-chain.
      */
     function submit(bytes32 nonce, bool isReplayable, bytes32 submissionToken) external {
         bytes32 lastTokenSubmission = submissions[msg.sender][nonce];
@@ -71,7 +71,7 @@ contract QuarkNonceManager {
             revert InvalidSubmissionToken(msg.sender, nonce, submissionToken);
         }
 
-        // Note: even with a valid submission token, we always set non-replayables to exhausted (e.g. for cancellations)
+        // Note: Even with a valid submission token, we always set non-replayables to exhausted (e.g. for cancellations)
         submissions[msg.sender][nonce] = isReplayable ? submissionToken : EXHAUSTED;
         emit NonceSubmitted(msg.sender, nonce, submissionToken);
     }
