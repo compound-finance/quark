@@ -154,7 +154,7 @@ contract UniswapFlashSwapExactOutTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.resumeGasMetering();
         vm.expectRevert(
@@ -165,7 +165,7 @@ contract UniswapFlashSwapExactOutTest is Test {
                 abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
             )
         );
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testInvalidCallerFlashSwap() public {
