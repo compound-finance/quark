@@ -87,7 +87,7 @@ contract QuarkWalletProxyFactory {
      * @param signer Address to set as the signer of the QuarkWallet
      * @param executor Address to set as the executor of the QuarkWallet
      * @param op The QuarkOperation to execute on the wallet
-     * @param signature A EIP-712 signature
+     * @param signature A digital signature, e.g. EIP-712
      * @return bytes Return value of executing the operation
      */
     function createAndExecute(
@@ -105,7 +105,7 @@ contract QuarkWalletProxyFactory {
      * @param executor Address to set as the executor of the QuarkWallet
      * @param salt Salt value of QuarkWallet to create and execute operation with
      * @param op The QuarkOperation to execute on the wallet
-     * @param signature A EIP-712 signature
+     * @param signature A digital signature, e.g. EIP-712
      * @return bytes Return value of executing the operation
      */
     function createAndExecute(
@@ -129,7 +129,7 @@ contract QuarkWalletProxyFactory {
      * @param executor Address to set as the executor of the QuarkWallet
      * @param op The QuarkOperation to execute on the wallet
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
-     * @param signature A EIP-712 signature
+     * @param signature A digital signature, e.g. EIP-712
      * @return bytes Return value of executing the operation
      */
     function createAndExecuteMulti(
@@ -149,7 +149,7 @@ contract QuarkWalletProxyFactory {
      * @param salt Salt value of QuarkWallet to create and execute operation with
      * @param op The QuarkOperation to execute on the wallet
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
-     * @param signature A EIP-712 signature
+     * @param signature A digital signature, e.g. EIP-712
      * @return bytes Return value of executing the operation
      */
     function createAndExecuteMulti(

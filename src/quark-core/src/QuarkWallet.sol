@@ -170,7 +170,7 @@ contract QuarkWallet is IERC1271 {
      * @notice Execute a QuarkOperation via signature
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
-     * @param signature A EIP-712 signature
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
     function executeQuarkOperation(QuarkOperation calldata op, bytes calldata signature)
@@ -185,7 +185,7 @@ contract QuarkWallet is IERC1271 {
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
      * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
-     * @param signature A EIP-712 signature
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
     function executeQuarkOperationWithSubmissionToken(
@@ -203,7 +203,7 @@ contract QuarkWallet is IERC1271 {
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
-     * @param signature A EIP-712 signature
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
     function executeMultiQuarkOperation(
@@ -220,7 +220,7 @@ contract QuarkWallet is IERC1271 {
      * @param op A QuarkOperation struct
      * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
-     * @param signature A EIP-712 signature
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
     function executeMultiQuarkOperationWithSubmissionToken(
@@ -251,7 +251,7 @@ contract QuarkWallet is IERC1271 {
      * @param op A QuarkOperation struct
      * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
      * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
-     * @param signature A EIP-712 signature
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
     function verifySigAndExecuteQuarkOperation(
