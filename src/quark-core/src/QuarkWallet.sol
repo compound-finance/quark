@@ -487,7 +487,7 @@ contract QuarkWallet is IERC1271 {
         bytes32 oldActiveSubmissionToken;
         address oldCallback;
         assembly {
-            // Cache the previous values in each of the transient slots so they can be restored after the callcode
+            // Cache the previous values in each of the transient slots so they can be restored after executing the script
             oldActiveScript := tload(activeScriptSlot)
             oldActiveNonce := tload(activeNonceSlot)
             oldActiveSubmissionToken := tload(activeSubmissionTokenSlot)
@@ -505,9 +505,7 @@ contract QuarkWallet is IERC1271 {
             // Transiently set the callback slot to 0
             tstore(callbackSlot, 0)
 
-            // Note: CALLCODE is used to set the QuarkWallet as the `msg.sender`
-            success :=
-                callcode(gas(), scriptAddress, /* value */ 0, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
+            success := delegatecall(gas(), scriptAddress, add(scriptCalldata, 0x20), scriptCalldataLen, 0x0, 0)
             returnSize := returndatasize()
 
             // Transiently restore the active script
