@@ -70,8 +70,8 @@ contract QuarkNonceManager {
         }
 
         // Note: Even with a valid submission token, we always set non-replayables to exhausted (e.g. for cancellations)
-        submissionToken = isReplayable ? submissionToken : EXHAUSTED;
-        submissions[msg.sender][nonce] = submissionToken;
-        emit NonceSubmitted(msg.sender, nonce, submissionToken);
+        bytes32 finalSubmissionToken = isReplayable ? submissionToken : EXHAUSTED;
+        submissions[msg.sender][nonce] = finalSubmissionToken;
+        emit NonceSubmitted(msg.sender, nonce, finalSubmissionToken);
     }
 }
