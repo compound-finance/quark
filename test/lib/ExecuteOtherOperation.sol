@@ -10,4 +10,11 @@ contract ExecuteOtherOperation is QuarkScript {
         allowCallback();
         return QuarkWallet(payable(address(this))).executeQuarkOperation(op, signature);
     }
+
+    function executeFor(address quarkWalletAddress, QuarkWallet.QuarkOperation memory op, bytes memory signature)
+        external
+        returns (bytes memory)
+    {
+        return QuarkWallet(payable(quarkWalletAddress)).executeQuarkOperation(op, signature);
+    }
 }

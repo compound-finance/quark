@@ -69,6 +69,7 @@ contract QuarkWallet is IERC1271 {
     error NoActiveCallback();
     error SignatureExpired();
     error Unauthorized();
+    error UnauthorizedNestedOperation();
 
     /// @notice Enum specifying the method of execution for running a Quark script
     enum ExecutionType {
@@ -454,6 +455,15 @@ contract QuarkWallet is IERC1271 {
             oldActiveNonce := tload(activeNonceSlot)
             oldActiveSubmissionToken := tload(activeSubmissionTokenSlot)
             oldCallback := tload(callbackSlot)
+
+            // Prevent nested operations coming from an outside caller (i.e. not the Quark wallet itself)
+            if and(iszero(eq(oldActiveScript, 0)), iszero(eq(caller(), address()))) {
+                let errorSignature := 0x0c484db9 // Signature for UnauthorizedNestedOperation()
+                let ptr := mload(0x40)
+                mstore(ptr, errorSignature)
+                // Error signature is left-padded with 0s, so we want to fetch the last 4 bytes starting at the 29th byte
+                revert(add(ptr, 0x1c), 0x04)
+            }
 
             // Transiently store the active script
             tstore(activeScriptSlot, scriptAddress)
