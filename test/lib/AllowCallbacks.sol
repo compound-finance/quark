@@ -22,7 +22,7 @@ contract AllowCallbacks is QuarkScript {
 
     function runAllowThenClear() public returns (uint256) {
         allowCallback();
-        clearCallback();
+        disallowCallback();
         return new Comebacker().comeback() * 2;
     }
 

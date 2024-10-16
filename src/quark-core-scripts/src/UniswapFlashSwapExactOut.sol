@@ -74,6 +74,8 @@ contract UniswapFlashSwapExactOut is IUniswapV3SwapCallback, QuarkScript {
      * @param data FlashSwap encoded to bytes passed from UniswapV3Pool.swap(); contains script info to execute (possibly with checks) before returning the owed amount
      */
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {
+        disallowCallback();
+
         FlashSwapExactOutInput memory input = abi.decode(data, (FlashSwapExactOutInput));
         IUniswapV3Pool pool =
             IUniswapV3Pool(PoolAddress.computeAddress(UniswapFactoryAddress.getAddress(), input.poolKey));
