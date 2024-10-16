@@ -16,9 +16,7 @@ contract BatchExecutor {
     struct OperationParams {
         address account;
         QuarkWallet.QuarkOperation op;
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
+        bytes signature;
         uint256 gasLimit;
     }
 
@@ -42,7 +40,7 @@ contract BatchExecutor {
      * @return Success and return value from the executed operation
      */
     function executeOperation(OperationParams memory op) internal returns (bool, bytes memory) {
-        bytes memory data = abi.encodeWithSelector(QuarkWallet.executeQuarkOperation.selector, op.op, op.v, op.r, op.s);
+        bytes memory data = abi.encodeWithSelector(QuarkWallet.executeQuarkOperation.selector, op.op, op.signature);
         // We purposely ignore success and return values since the BatchExecutor will most likely be called by an EOA
         // Lower-level call is used to avoid reverting on failure
         (bool success, bytes memory retData) = op.account.call{gas: op.gasLimit}(data);

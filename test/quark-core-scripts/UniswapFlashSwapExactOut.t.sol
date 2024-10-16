@@ -108,9 +108,9 @@ contract UniswapFlashSwapExactOutTest is Test {
             abi.encodeWithSelector(UniswapFlashSwapExactOut.run.selector, payload),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
 
         // Verify that user is now supplying 10 + 1 WETH
         assertEq(IComet(comet).collateralBalanceOf(address(wallet), WETH), 11 ether);
@@ -154,7 +154,7 @@ contract UniswapFlashSwapExactOutTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.resumeGasMetering();
         vm.expectRevert(
@@ -165,7 +165,7 @@ contract UniswapFlashSwapExactOutTest is Test {
                 abi.encodeWithSelector(QuarkWallet.NoActiveCallback.selector)
             )
         );
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testInvalidCallerFlashSwap() public {
@@ -193,10 +193,10 @@ contract UniswapFlashSwapExactOutTest is Test {
             ),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert(abi.encodeWithSelector(UniswapFlashSwapExactOut.InvalidCaller.selector));
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testNotEnoughToPayFlashSwap() public {
@@ -237,10 +237,10 @@ contract UniswapFlashSwapExactOutTest is Test {
             abi.encodeWithSelector(UniswapFlashSwapExactOut.run.selector, payload),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testRevertsIfCalledDirectly() public {

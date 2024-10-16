@@ -87,20 +87,16 @@ contract QuarkWalletProxyFactory {
      * @param signer Address to set as the signer of the QuarkWallet
      * @param executor Address to set as the executor of the QuarkWallet
      * @param op The QuarkOperation to execute on the wallet
-     * @param v EIP-712 Signature `v` value
-     * @param r EIP-712 Signature `r` value
-     * @param s EIP-712 Signature `s` value
+     * @param signature A digital signature, e.g. EIP-712
      * @return bytes Return value of executing the operation
      */
     function createAndExecute(
         address signer,
         address executor,
-        QuarkWallet.QuarkOperation memory op,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        QuarkWallet.QuarkOperation calldata op,
+        bytes calldata signature
     ) external returns (bytes memory) {
-        return createAndExecute(signer, executor, DEFAULT_SALT, op, v, r, s);
+        return createAndExecute(signer, executor, DEFAULT_SALT, op, signature);
     }
 
     /**
@@ -109,26 +105,22 @@ contract QuarkWalletProxyFactory {
      * @param executor Address to set as the executor of the QuarkWallet
      * @param salt Salt value of QuarkWallet to create and execute operation with
      * @param op The QuarkOperation to execute on the wallet
-     * @param v EIP-712 Signature `v` value
-     * @param r EIP-712 Signature `r` value
-     * @param s EIP-712 Signature `s` value
+     * @param signature A digital signature, e.g. EIP-712
      * @return bytes Return value of executing the operation
      */
     function createAndExecute(
         address signer,
         address executor,
         bytes32 salt,
-        QuarkWallet.QuarkOperation memory op,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        QuarkWallet.QuarkOperation calldata op,
+        bytes calldata signature
     ) public returns (bytes memory) {
         address payable walletAddress = walletAddressForSalt(signer, executor, salt);
         if (walletAddress.code.length == 0) {
             create(signer, executor, salt);
         }
 
-        return QuarkWallet(walletAddress).executeQuarkOperation(op, v, r, s);
+        return QuarkWallet(walletAddress).executeQuarkOperation(op, signature);
     }
 
     /**
@@ -137,9 +129,7 @@ contract QuarkWalletProxyFactory {
      * @param executor Address to set as the executor of the QuarkWallet
      * @param op The QuarkOperation to execute on the wallet
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
-     * @param v EIP-712 Signature `v` value
-     * @param r EIP-712 Signature `r` value
-     * @param s EIP-712 Signature `s` value
+     * @param signature A digital signature, e.g. EIP-712
      * @return bytes Return value of executing the operation
      */
     function createAndExecuteMulti(
@@ -147,11 +137,9 @@ contract QuarkWalletProxyFactory {
         address executor,
         QuarkWallet.QuarkOperation calldata op,
         bytes32[] calldata opDigests,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes calldata signature
     ) external returns (bytes memory) {
-        return createAndExecuteMulti(signer, executor, DEFAULT_SALT, op, opDigests, v, r, s);
+        return createAndExecuteMulti(signer, executor, DEFAULT_SALT, op, opDigests, signature);
     }
 
     /**
@@ -161,9 +149,7 @@ contract QuarkWalletProxyFactory {
      * @param salt Salt value of QuarkWallet to create and execute operation with
      * @param op The QuarkOperation to execute on the wallet
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
-     * @param v EIP-712 Signature `v` value
-     * @param r EIP-712 Signature `r` value
-     * @param s EIP-712 Signature `s` value
+     * @param signature A digital signature, e.g. EIP-712
      * @return bytes Return value of executing the operation
      */
     function createAndExecuteMulti(
@@ -172,16 +158,14 @@ contract QuarkWalletProxyFactory {
         bytes32 salt,
         QuarkWallet.QuarkOperation calldata op,
         bytes32[] calldata opDigests,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes calldata signature
     ) public returns (bytes memory) {
         address payable walletAddress = walletAddressForSalt(signer, executor, salt);
         if (walletAddress.code.length == 0) {
             create(signer, executor, salt);
         }
 
-        return QuarkWallet(walletAddress).executeMultiQuarkOperation(op, opDigests, v, r, s);
+        return QuarkWallet(walletAddress).executeMultiQuarkOperation(op, opDigests, signature);
     }
 
     /**

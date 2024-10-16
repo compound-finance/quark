@@ -75,11 +75,11 @@ contract NoncerTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("checkNonce()"), ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (bytes32 nonceResult) = abi.decode(result, (bytes32));
         assertEq(nonceResult, op.nonce);
@@ -92,11 +92,11 @@ contract NoncerTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("checkSubmissionToken()"), ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (bytes32 submissionTokenResult) = abi.decode(result, (bytes32));
         assertEq(submissionTokenResult, op.nonce);
@@ -110,11 +110,11 @@ contract NoncerTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("checkReplayCount()"), ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (uint256 replayCount) = abi.decode(result, (uint256));
         assertEq(replayCount, 0);
@@ -132,26 +132,21 @@ contract NoncerTest is Test {
             aliceWallet, noncerScript, abi.encodeWithSignature("checkNonce()"), ScriptType.ScriptSource
         );
         nestedOp.nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 2); // Don't overlap on nonces
-        (uint8 nestedV, bytes32 nestedR, bytes32 nestedS) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+        bytes memory nestedOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             noncerScript,
             abi.encodeWithSignature(
-                "nestedNonce((bytes32,bool,address,bytes[],bytes,uint256),uint8,bytes32,bytes32)",
-                nestedOp,
-                nestedV,
-                nestedR,
-                nestedS
+                "nestedNonce((bytes32,bool,address,bytes[],bytes,uint256),bytes)", nestedOp, nestedOpSignature
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (bytes32 pre, bytes32 post, bytes memory innerResult) = abi.decode(result, (bytes32, bytes32, bytes));
         assertEq(pre, op.nonce);
@@ -168,26 +163,21 @@ contract NoncerTest is Test {
             aliceWallet, noncerScript, abi.encodeWithSignature("checkSubmissionToken()"), ScriptType.ScriptSource
         );
         nestedOp.nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 2); // Don't overlap on nonces
-        (uint8 nestedV, bytes32 nestedR, bytes32 nestedS) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+        bytes memory nestedOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             noncerScript,
             abi.encodeWithSignature(
-                "nestedSubmissionToken((bytes32,bool,address,bytes[],bytes,uint256),uint8,bytes32,bytes32)",
-                nestedOp,
-                nestedV,
-                nestedR,
-                nestedS
+                "nestedSubmissionToken((bytes32,bool,address,bytes[],bytes,uint256),bytes)", nestedOp, nestedOpSignature
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (bytes32 pre, bytes32 post, bytes memory innerResult) = abi.decode(result, (bytes32, bytes32, bytes));
         assertEq(pre, op.nonce);
@@ -207,13 +197,13 @@ contract NoncerTest is Test {
             .newReplayableOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("nestedPlay(address)", stow), ScriptType.ScriptSource, 1
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
-        stow.setNestedOperation(op, submissionTokens[1], v, r, s);
+        stow.setNestedOperation(op, submissionTokens[1], signature);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (uint256 y) = abi.decode(result, (uint256));
         assertEq(y, 61);
@@ -227,26 +217,21 @@ contract NoncerTest is Test {
             aliceWallet, noncerScript, abi.encodeWithSignature("checkReplayCount()"), ScriptType.ScriptSource
         );
         nestedOp.nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 2); // Don't overlap on nonces
-        (uint8 nestedV, bytes32 nestedR, bytes32 nestedS) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+        bytes memory nestedOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             noncerScript,
             abi.encodeWithSignature(
-                "nestedReplayCount((bytes32,bool,address,bytes[],bytes,uint256),uint8,bytes32,bytes32)",
-                nestedOp,
-                nestedV,
-                nestedR,
-                nestedS
+                "nestedReplayCount((bytes32,bool,address,bytes[],bytes,uint256),bytes)", nestedOp, nestedOpSignature
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (uint256 pre, uint256 post, bytes memory innerResult) = abi.decode(result, (uint256, uint256, bytes));
         assertEq(pre, 0);
@@ -264,26 +249,21 @@ contract NoncerTest is Test {
             aliceWallet, maxCounter, abi.encodeWithSignature("run(address)", address(counter)), ScriptType.ScriptSource
         );
         nestedOp.nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 2); // Don't overlap on nonces
-        (uint8 nestedV, bytes32 nestedR, bytes32 nestedS) =
-            new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+        bytes memory nestedOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
 
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
             noncerScript,
             abi.encodeWithSignature(
-                "postNestRead((bytes32,bool,address,bytes[],bytes,uint256),uint8,bytes32,bytes32)",
-                nestedOp,
-                nestedV,
-                nestedR,
-                nestedS
+                "postNestRead((bytes32,bool,address,bytes[],bytes,uint256),bytes)", nestedOp, nestedOpSignature
             ),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         uint256 value = abi.decode(result, (uint256));
         assertEq(value, 0);
@@ -310,16 +290,16 @@ contract NoncerTest is Test {
             .newReplayableOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("checkNonce()"), ScriptType.ScriptSource, 1
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (bytes32 nonceResult) = abi.decode(result, (bytes32));
         assertEq(nonceResult, op.nonce);
 
-        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
+        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], signature);
 
         (nonceResult) = abi.decode(result, (bytes32));
         assertEq(nonceResult, op.nonce);
@@ -333,16 +313,16 @@ contract NoncerTest is Test {
             .newReplayableOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("checkSubmissionToken()"), ScriptType.ScriptSource, 1
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (bytes32 submissionTokenResult) = abi.decode(result, (bytes32));
         assertEq(submissionTokenResult, submissionTokens[0]);
 
-        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
+        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], signature);
 
         (submissionTokenResult) = abi.decode(result, (bytes32));
         assertEq(submissionTokenResult, submissionTokens[1]);
@@ -356,21 +336,21 @@ contract NoncerTest is Test {
             .newReplayableOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("checkReplayCount()"), ScriptType.ScriptSource, 2
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (uint256 replayCount) = abi.decode(result, (uint256));
         assertEq(replayCount, 0);
 
-        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], v, r, s);
+        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[1], signature);
 
         (replayCount) = abi.decode(result, (uint256));
         assertEq(replayCount, 1);
 
-        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[2], v, r, s);
+        result = aliceWallet.executeQuarkOperationWithSubmissionToken(op, submissionTokens[2], signature);
 
         (replayCount) = abi.decode(result, (uint256));
         assertEq(replayCount, 2);
@@ -385,7 +365,7 @@ contract NoncerTest is Test {
             .newReplayableOpWithCalldata(
             aliceWallet, noncerScript, abi.encodeWithSignature("checkReplayCount()"), ScriptType.ScriptSource, 2
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, op);
 
         QuarkWallet.QuarkOperation memory checkReplayCountOp = new QuarkOperationHelper().newBasicOpWithCalldata(
             aliceWallet,
@@ -394,18 +374,18 @@ contract NoncerTest is Test {
             ScriptType.ScriptSource,
             op.nonce
         );
-        (uint8 checkReplayCountOpV, bytes32 checkReplayCountOpR, bytes32 checkReplayCountOpS) =
+        bytes memory checkReplayCountSignature =
             new SignatureHelper().signOp(alicePrivateKey, aliceWallet, checkReplayCountOp);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory result = aliceWallet.executeQuarkOperation(op, v, r, s);
+        bytes memory result = aliceWallet.executeQuarkOperation(op, signature);
 
         (uint256 replayCount) = abi.decode(result, (uint256));
         assertEq(replayCount, 0);
 
         result = aliceWallet.executeQuarkOperationWithSubmissionToken(
-            checkReplayCountOp, submissionTokens[1], checkReplayCountOpV, checkReplayCountOpR, checkReplayCountOpS
+            checkReplayCountOp, submissionTokens[1], checkReplayCountSignature
         );
 
         (replayCount) = abi.decode(result, (uint256));

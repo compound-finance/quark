@@ -110,11 +110,11 @@ contract MulticallTest is Test {
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 15);
     }
 
@@ -149,11 +149,11 @@ contract MulticallTest is Test {
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
         assertEq(counter.number(), 15);
     }
 
@@ -199,11 +199,11 @@ contract MulticallTest is Test {
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
         assertEq(IERC20(USDC).balanceOf(address(wallet)), 1000e6);
         assertEq(IComet(cUSDCv3).collateralBalanceOf(address(wallet), WETH), 100 ether);
         assertApproxEqAbs(IComet(cUSDCv3).borrowBalanceOf(address(wallet)), 1000e6, 2);
@@ -231,12 +231,12 @@ contract MulticallTest is Test {
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.expectRevert(abi.encodeWithSelector(Multicall.InvalidInput.selector));
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testMulticallError() public {
@@ -290,7 +290,7 @@ contract MulticallTest is Test {
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.expectRevert(
@@ -302,7 +302,7 @@ contract MulticallTest is Test {
             )
         );
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testEmptyInputIsValid() public {
@@ -319,12 +319,12 @@ contract MulticallTest is Test {
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
         // Empty array is a valid input representing a no-op, and it should not revert
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
     }
 
     function testMulticallShouldReturnCallResults() public {
@@ -358,11 +358,11 @@ contract MulticallTest is Test {
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
-        bytes memory quarkReturn = wallet.executeQuarkOperation(op, v, r, s);
+        bytes memory quarkReturn = wallet.executeQuarkOperation(op, signature);
 
         bytes[] memory returnDatas = abi.decode(quarkReturn, (bytes[]));
         assertEq(counter.number(), 15);
@@ -471,12 +471,12 @@ contract MulticallTest is Test {
         QuarkWallet.QuarkOperation memory op = new QuarkOperationHelper().newBasicOpWithCalldata(
             primary, multicall, abi.encodeWithSelector(Multicall.run.selector, targets, calls), ScriptType.ScriptSource
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, primary, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, primary, op);
 
         // gas: meter execute
         vm.resumeGasMetering();
 
-        primary.executeQuarkOperation(op, v, r, s);
+        primary.executeQuarkOperation(op, signature);
         // wallet A should still have 0.5 ether...
         assertEq(IERC20(WETH).balanceOf(address(walletA)), 0.5 ether);
         // wallet B should have 0 ether...
@@ -567,10 +567,10 @@ contract MulticallTest is Test {
             abi.encodeWithSelector(Multicall.run.selector, callContracts, callDatas),
             ScriptType.ScriptAddress
         );
-        (uint8 v, bytes32 r, bytes32 s) = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
+        bytes memory signature = new SignatureHelper().signOp(alicePrivateKey, wallet, op);
 
         vm.resumeGasMetering();
-        wallet.executeQuarkOperation(op, v, r, s);
+        wallet.executeQuarkOperation(op, signature);
         assertEq(IComet(cUSDCv3).collateralBalanceOf(address(wallet), WETH), 100 ether);
         assertEq(IComet(cUSDCv3).borrowBalanceOf(address(wallet)), 10_000e6);
         assertApproxEqAbs(IComet(cWETHv3).balanceOf(address(subWallet1)), 2 ether, 1);

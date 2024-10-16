@@ -170,16 +170,14 @@ contract QuarkWallet is IERC1271 {
      * @notice Execute a QuarkOperation via signature
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
-     * @param v EIP-712 signature v value
-     * @param r EIP-712 signature r value
-     * @param s EIP-712 signature s value
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
-    function executeQuarkOperation(QuarkOperation calldata op, uint8 v, bytes32 r, bytes32 s)
+    function executeQuarkOperation(QuarkOperation calldata op, bytes calldata signature)
         external
         returns (bytes memory)
     {
-        return executeQuarkOperationWithSubmissionToken(op, op.nonce, v, r, s);
+        return executeQuarkOperationWithSubmissionToken(op, op.nonce, signature);
     }
 
     /**
@@ -187,21 +185,17 @@ contract QuarkWallet is IERC1271 {
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
      * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
-     * @param v EIP-712 signature v value
-     * @param r EIP-712 signature r value
-     * @param s EIP-712 signature s value
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
     function executeQuarkOperationWithSubmissionToken(
         QuarkOperation calldata op,
         bytes32 submissionToken,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes calldata signature
     ) public returns (bytes memory) {
         bytes32 opDigest = getDigestForQuarkOperation(op);
 
-        return verifySigAndExecuteQuarkOperation(op, submissionToken, opDigest, v, r, s);
+        return verifySigAndExecuteQuarkOperation(op, submissionToken, opDigest, signature);
     }
 
     /**
@@ -209,19 +203,15 @@ contract QuarkWallet is IERC1271 {
      * @dev Can only be called with signatures from the wallet's signer
      * @param op A QuarkOperation struct
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
-     * @param v EIP-712 signature v value
-     * @param r EIP-712 signature r value
-     * @param s EIP-712 signature s value
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
     function executeMultiQuarkOperation(
         QuarkOperation calldata op,
-        bytes32[] memory opDigests,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes32[] calldata opDigests,
+        bytes calldata signature
     ) public returns (bytes memory) {
-        return executeMultiQuarkOperationWithSubmissionToken(op, op.nonce, opDigests, v, r, s);
+        return executeMultiQuarkOperationWithSubmissionToken(op, op.nonce, opDigests, signature);
     }
 
     /**
@@ -230,18 +220,14 @@ contract QuarkWallet is IERC1271 {
      * @param op A QuarkOperation struct
      * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
      * @param opDigests A list of EIP-712 digests for the operations in a MultiQuarkOperation
-     * @param v EIP-712 signature v value
-     * @param r EIP-712 signature r value
-     * @param s EIP-712 signature s value
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
     function executeMultiQuarkOperationWithSubmissionToken(
         QuarkOperation calldata op,
         bytes32 submissionToken,
-        bytes32[] memory opDigests,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes32[] calldata opDigests,
+        bytes calldata signature
     ) public returns (bytes memory) {
         bytes32 opDigest = getDigestForQuarkOperation(op);
 
@@ -257,7 +243,7 @@ contract QuarkWallet is IERC1271 {
         }
         bytes32 multiOpDigest = getDigestForMultiQuarkOperation(opDigests);
 
-        return verifySigAndExecuteQuarkOperation(op, submissionToken, multiOpDigest, v, r, s);
+        return verifySigAndExecuteQuarkOperation(op, submissionToken, multiOpDigest, signature);
     }
 
     /**
@@ -265,25 +251,21 @@ contract QuarkWallet is IERC1271 {
      * @param op A QuarkOperation struct
      * @param submissionToken The submission token for the replayable quark operation for QuarkNonceManager. This is initially the `op.nonce`, and for replayable operations, it is the next token in the nonce chain.
      * @param digest A EIP-712 digest for either a QuarkOperation or MultiQuarkOperation to verify the signature against
-     * @param v EIP-712 signature v value
-     * @param r EIP-712 signature r value
-     * @param s EIP-712 signature s value
+     * @param signature A digital signature, e.g. EIP-712
      * @return Return value from the executed operation
      */
     function verifySigAndExecuteQuarkOperation(
         QuarkOperation calldata op,
         bytes32 submissionToken,
         bytes32 digest,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes calldata signature
     ) internal returns (bytes memory) {
         if (block.timestamp >= op.expiry) {
             revert SignatureExpired();
         }
 
         // if the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
+        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, signature);
 
         // guarantee every script in scriptSources is deployed
         for (uint256 i = 0; i < op.scriptSources.length; ++i) {
@@ -398,29 +380,11 @@ contract QuarkWallet is IERC1271 {
      * @return The ERC-1271 "magic value" that indicates the signature is valid
      */
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
-        /*
-         * Code taken directly from OpenZeppelin ECDSA.tryRecover; see:
-         * https://github.com/OpenZeppelin/openzeppelin-contracts/blob/HEAD/contracts/utils/cryptography/ECDSA.sol#L64-L68
-         *
-         * This is effectively an optimized variant of the Reference Implementation; see:
-         * https://eips.ethereum.org/EIPS/eip-1271#reference-implementation
-         */
-        if (signature.length != 65) {
-            revert InvalidSignature();
-        }
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-        assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := byte(0, mload(add(signature, 0x60)))
-        }
         // Note: The following logic further encodes the provided `hash` with the wallet's domain
         // to prevent signature replayability for Quark wallets owned by the same `signer`
         bytes32 digest = getDigestForQuarkMessage(abi.encode(hash));
         // If the signature check does not revert, the signature is valid
-        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, v, r, s);
+        checkValidSignatureInternal(IHasSignerExecutor(address(this)).signer(), digest, signature);
         return EIP_1271_MAGIC_VALUE;
     }
 
@@ -431,12 +395,9 @@ contract QuarkWallet is IERC1271 {
      * to the smart contract; if the smart contract that owns the wallet has no
      * code, the signature will be treated as an EIP-712 signature and revert
      */
-    function checkValidSignatureInternal(address signatory, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
-        internal
-        view
-    {
+    function checkValidSignatureInternal(address signatory, bytes32 digest, bytes memory signature) internal view {
         if (signatory.code.length > 0) {
-            bytes memory signature = abi.encodePacked(r, s, v);
+            // For EIP-1271 smart contract signers, the signature can be of any signature scheme (e.g. BLS, Passkey)
             (bool success, bytes memory data) =
                 signatory.staticcall(abi.encodeWithSelector(EIP_1271_MAGIC_VALUE, digest, signature));
             if (!success) {
@@ -447,7 +408,8 @@ contract QuarkWallet is IERC1271 {
                 revert InvalidEIP1271Signature();
             }
         } else {
-            (address recoveredSigner, ECDSA.RecoverError recoverError) = ECDSA.tryRecover(digest, v, r, s);
+            // For EOA signers, this implementation of the QuarkWallet only supports ECDSA signatures
+            (address recoveredSigner, ECDSA.RecoverError recoverError) = ECDSA.tryRecover(digest, signature);
             if (recoverError != ECDSA.RecoverError.NoError) {
                 revert InvalidSignature();
             }
