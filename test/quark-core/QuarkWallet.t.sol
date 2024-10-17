@@ -29,6 +29,8 @@ import {PrecompileCaller} from "test/lib/PrecompileCaller.sol";
 import {MaxCounterScript} from "test/lib/MaxCounterScript.sol";
 import {GetMessageDetails} from "test/lib/GetMessageDetails.sol";
 import {CheckNonceScript} from "test/lib/CheckNonceScript.sol";
+import {BatchSend} from "test/lib/BatchCallback.sol";
+import {ExecuteOtherOperation} from "test/lib/ExecuteOtherOperation.sol";
 
 contract QuarkWalletTest is Test {
     enum ExecutionType {
@@ -1241,6 +1243,68 @@ contract QuarkWalletTest is Test {
             )
         );
         aliceWallet.executeMultiQuarkOperationWithSubmissionToken(op1, submissionTokens1[2], opDigests, signature);
+    }
+
+    /* ===== nested operation tests ===== */
+
+    // Note: Nested quark operations called from outside the Quark wallet will revert
+    function testQuarkOperationRevertsOnNestedCallFromOutsideContract() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        ExecuteOtherOperation executeOtherOperation = new ExecuteOtherOperation();
+        bytes memory ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
+        bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
+        QuarkWallet.QuarkOperation memory nestedOp =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
+        nestedOp.nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 2); // Don't overlap on nonces
+        bytes memory nestedOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+        QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            ethcall,
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                address(executeOtherOperation),
+                abi.encodeCall(ExecuteOtherOperation.executeFor, (address(aliceWallet), nestedOp, nestedOpSignature)),
+                0
+            ),
+            ScriptType.ScriptSource
+        );
+        bytes memory parentOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectRevert(abi.encodeWithSelector(QuarkWallet.UnauthorizedNestedOperation.selector));
+        aliceWallet.executeQuarkOperation(parentOp, parentOpSignature);
+    }
+
+    // Note: Nested quark operations called from the Quark wallet itself will not revert
+    function testQuarkOperationDoesNotRevertOnNestedCallFromSelf() public {
+        // gas: do not meter set-up
+        vm.pauseGasMetering();
+        bytes memory ethcall = new YulHelper().getCode("Ethcall.sol/Ethcall.json");
+        bytes memory ping = new YulHelper().getCode("Logger.sol/Logger.json");
+        QuarkWallet.QuarkOperation memory nestedOp =
+            new QuarkOperationHelper().newBasicOp(aliceWallet, ping, ScriptType.ScriptAddress);
+        nestedOp.nonce = bytes32(uint256(keccak256(abi.encodePacked(block.timestamp))) - 2); // Don't overlap on nonces
+        bytes memory nestedOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, nestedOp);
+        QuarkWallet.QuarkOperation memory parentOp = new QuarkOperationHelper().newBasicOpWithCalldata(
+            aliceWallet,
+            ethcall,
+            abi.encodeWithSelector(
+                Ethcall.run.selector,
+                address(aliceWallet),
+                abi.encodeCall(QuarkWallet.executeQuarkOperation, (nestedOp, nestedOpSignature)),
+                0
+            ),
+            ScriptType.ScriptSource
+        );
+        bytes memory parentOpSignature = new SignatureHelper().signOp(alicePrivateKey, aliceWallet, parentOp);
+
+        // gas: meter execute
+        vm.resumeGasMetering();
+        vm.expectEmit(false, false, false, true);
+        emit Ping(55);
+        aliceWallet.executeQuarkOperation(parentOp, parentOpSignature);
     }
 
     /* ===== basic operation tests ===== */
