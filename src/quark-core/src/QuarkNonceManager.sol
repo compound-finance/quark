@@ -19,7 +19,7 @@ contract QuarkNonceManager {
     error InvalidNonce(address wallet, bytes32 nonce);
     error InvalidSubmissionToken(address wallet, bytes32 nonce, bytes32 submissionToken);
 
-    event NonceSubmitted(address indexed wallet, bytes32 nonce, bytes32 submissionToken);
+    event NonceSubmitted(address indexed wallet, bytes32 indexed nonce, bytes32 submissionToken);
 
     /// @notice Represents the unclaimed bytes32 value.
     bytes32 public constant FREE = QuarkNonceManagerMetadata.FREE;
