@@ -23,13 +23,25 @@ interface IQuarkWallet {
         uint256 expiry;
     }
 
+    function codeJar() external view returns (address);
     function nonceManager() external view returns (address);
     function executeQuarkOperation(QuarkOperation calldata op, bytes memory signature)
         external
         returns (bytes memory);
+    function executeQuarkOperationWithSubmissionToken(
+        QuarkOperation calldata op,
+        bytes32 submissionToken,
+        bytes calldata signature
+    ) external returns (bytes memory);
     function executeMultiQuarkOperation(QuarkOperation calldata op, bytes32[] memory opDigests, bytes memory signature)
         external
         returns (bytes memory);
+    function executeMultiQuarkOperationWithSubmissionToken(
+        QuarkOperation calldata op,
+        bytes32 submissionToken,
+        bytes32[] calldata opDigests,
+        bytes calldata signature
+    ) external returns (bytes memory);
     function executeScript(
         bytes32 nonce,
         address scriptAddress,
@@ -39,7 +51,4 @@ interface IQuarkWallet {
     function getDigestForQuarkOperation(QuarkOperation calldata op) external view returns (bytes32);
     function getDigestForMultiQuarkOperation(bytes32[] memory opDigests) external pure returns (bytes32);
     function getDigestForQuarkMessage(bytes memory message) external view returns (bytes32);
-    function executeScriptWithNonceLock(address scriptAddress, bytes memory scriptCalldata)
-        external
-        returns (bytes memory);
 }

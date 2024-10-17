@@ -210,7 +210,7 @@ contract QuarkWallet is IERC1271 {
         QuarkOperation calldata op,
         bytes32[] calldata opDigests,
         bytes calldata signature
-    ) public returns (bytes memory) {
+    ) external returns (bytes memory) {
         return executeMultiQuarkOperationWithSubmissionToken(op, op.nonce, opDigests, signature);
     }
 
