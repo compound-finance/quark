@@ -2,7 +2,7 @@
 pragma solidity 0.8.27;
 
 import {QuarkWalletMetadata, IHasSignerExecutor} from "quark-core/src/QuarkWallet.sol";
-import {QuarkNonceManager, QuarkNonceManagerMetadata} from "quark-core/src/QuarkNonceManager.sol";
+import {QuarkNonceManager} from "quark-core/src/QuarkNonceManager.sol";
 import {IQuarkWallet} from "quark-core/src/interfaces/IQuarkWallet.sol";
 
 /**
