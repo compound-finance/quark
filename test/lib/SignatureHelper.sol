@@ -40,9 +40,6 @@ contract SignatureHelper is Test {
         if (signature.length != 65) {
             revert InvalidSignatureLength();
         }
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
         assembly {
             r := mload(add(signature, 0x20))
             s := mload(add(signature, 0x40))
