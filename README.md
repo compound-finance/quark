@@ -188,27 +188,44 @@ $ git add .gas-snapshot && git commit -m "commit new baseline gas snapshot"
 
 ## Deploy
 
-To run the deploy, first, find the _Code Jar_ address, or deploy _Code Jar_ via:
+### CodeJar
 
-```sh
-./script/deploy-code-jar.sh
-```
+> [!IMPORTANT]
+> Before deploying Quark, you must first deploy CodeJar. This step is crucial as the entire Quark system depends on deterministic addresses, all of which originate from CodeJar. CodeJar is the only contract deployed from an EOA, meaning the EOA's nonce determines CodeJar's deployment address. Always ensure CodeJar is deployed from the EOA's first transaction (nonce 0) to maintain address consistency.
 
-Then deploy Quark via:
-
-```sh
-CODE_JAR=... ./script/deploy-quark.sh
-```
-
-To actually deploy contracts on-chain, the following env variables need to be set:
-
+To ensure CodeJar is deployed to the same address across all chains, follow these steps:
+1. Update your Foundry to version[`nightly-36cbce7c78b56dd68359084a5d8b03f84efed8fb`](https://github.com/foundry-rs/foundry/releases/tag/nightly-36cbce7c78b56dd68359084a5d8b03f84efed8fb). This ensures consistent compiler settings, as different Foundry versions may use different settings under the hood.
+2. Check out the correct release of Quark at [release-v2024-03-27+2249648](https://github.com/compound-finance/quark/releases/tag/release-v2024-03-27%2B2249648). This guarantees you're deploying a fixed version of CodeJar.
+3. Set the following env variables:
 ```sh
 # Required
 RPC_URL=
 DEPLOYER_PK=
 # Optional for verifying deployed contracts
 ETHERSCAN_KEY=
+```
+4. Perform a dry run deployment to verify the CodeJar deployment address. Triple-check that this matches your expected address:
+
+```sh
+set -a && source .env && ./script/deploy-code-jar.sh
+```
+5. Ensure your deployer account has sufficient gas, then execute the actual deployment:
+
+```sh
+set -a && source .env && ./script/deploy-code-jar.sh --broadcast
+```
+
+### Quark
+
+To run the deploy, we need to ensure that Code Jar is already deployed on the chain. Once it has been, set the following env variables:
+
+```sh
+# Required
+RPC_URL=
+DEPLOYER_PK=
 CODE_JAR=
+# Optional for verifying deployed contracts
+ETHERSCAN_KEY=
 ```
 
 Once the env variables are defined, run the following command:
@@ -219,8 +236,6 @@ set -a && source .env && ./script/deploy-quark.sh --broadcast
 
 ## CodeJar Deployments
 
-Using artifacts from [release-v2024-03-27+2249648](https://github.com/compound-finance/quark/releases/tag/release-v2024-03-27%2B2249648).
-
 | Network           | CodeJar Address                            |
 | ----------------- | ------------------------------------------ |
 | Mainnet           | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
@@ -228,6 +243,8 @@ Using artifacts from [release-v2024-03-27+2249648](https://github.com/compound-f
 | Sepolia           | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
 | Arbitrum          | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
 | Optimism          | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
+| World Chain       | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
+| Unichain          | Pending |
 | Polygon           | Pending |
 | Scroll            | Pending |
 | Base Sepolia      | 0x2b68764bCfE9fCD8d5a30a281F141f69b69Ae3C8 |
