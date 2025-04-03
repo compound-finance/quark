@@ -14,7 +14,8 @@ else
   wallet_args="--unlocked"
 fi
 
-if [ -n "$ETHERSCAN_KEY" ]; then
+# During a dry-run (without the `broadcast` flag), verification should be turned off
+if [[ "$*" == *"--broadcast"* ]] && [ -n "$ETHERSCAN_KEY" ]; then
   etherscan_args="--verify --etherscan-api-key $ETHERSCAN_KEY"
 else
   etherscan_args=""
